@@ -1,0 +1,280 @@
+/* ==========================================================================
+   青羽阅读 - 高级感设计系统变量 (Premium Design System)
+   ========================================================================== */
+
+/*
+ * 1. CSS 变量定义 (用于动态主题和运行时引用)
+ * 建议在 main.ts 或 App.vue 中引入此文件
+ */
+:root {
+  // --- 品牌主色 (Brand Colors) ---
+  --primary-color: #409eff;
+  --primary-hover: #66b1ff;
+  --primary-active: #337ecc;
+  --secondary-color: #764ba2; // 增加辅助紫，用于渐变
+  --accent-color: #c0a062; // 金色，用于榜单/高亮
+
+  // --- 渐变色系 (Gradients) ---
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-text: linear-gradient(45deg, #2c3e50, #409eff);
+  --gradient-gold: linear-gradient(135deg, #ffd700, #ffed4e);
+
+  // --- 背景色系 (Backgrounds) ---
+  --bg-color: #ffffff;
+  --bg-page: #f8f9fb; // 极浅的灰蓝色，比纯白更有质感
+  --bg-card: #ffffff;
+  --bg-glass: rgba(255, 255, 255, 0.75); // 毛玻璃背景色
+  --bg-glass-strong: rgba(255, 255, 255, 0.85);
+
+  // --- 文本色系 (Typography) ---
+  --text-main: #1a1a1a; // 更深，提升对比度
+  --text-regular: #2c3e50; // 偏蓝的深灰，更高级
+  --text-secondary: #8590a6; // 柔和的次级文本
+  --text-placeholder: #c0c4cc;
+  --text-on-primary: #ffffff;
+
+  // --- 阴影系统 (Shadows - 核心升级) ---
+  // 基础柔和阴影
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05);
+  // 悬浮阴影 (带位移)
+  --shadow-hover: 0 10px 30px rgba(0, 0, 0, 0.1);
+  // 品牌色发光阴影
+  --shadow-primary: 0 4px 15px rgba(64, 158, 255, 0.3);
+  // 深度阴影 (用于弹窗/Banner)
+  --shadow-depth: 0 20px 50px -12px rgba(0, 0, 0, 0.15);
+
+  // --- 边框与圆角 (Borders) ---
+  --border-color: rgba(0, 0, 0, 0.06); // 极淡的边框
+  --border-radius-md: 12px;
+  --border-radius-lg: 16px; // 卡片标准圆角
+  --border-radius-xl: 24px; // 容器/Banner标准圆角
+  --border-radius-pill: 50px; // 胶囊按钮
+
+  // ==================== 编辑器CSS变量 (Editor CSS Variables - --qy-editor- prefix) ====================
+  // --- 编辑器核心颜色 (Editor Core Colors) ---
+  --qy-editor-bg: #1e1e1e;
+  --qy-editor-fg: #d4d4d4;
+  --qy-editor-toolbar-bg: #252526;
+  --qy-editor-statusbar-bg: #007acc;
+  --qy-editor-statusbar-fg: #ffffff;
+  --qy-editor-statusbar-border: #007acc;
+  --qy-editor-selection-bg: #264f78;
+  --qy-editor-cursor: #aeafad;
+  --qy-editor-whitespace: #404040;
+  --qy-editor-line-number: #858585;
+  --qy-editor-active-line-number: #c6c6c6;
+  --qy-editor-border: #3c3c3c;
+
+  // --- 编辑器侧边栏 (Editor Sidebar) ---
+  --qy-editor-sidebar-bg: #252526;
+  --qy-editor-sidebar-fg: #cccccc;
+  --qy-editor-sidebar-hover: #2a2d2e;
+
+  // --- 编辑器树形列表 (Editor Tree List) ---
+  --qy-editor-tree-bg: var(--qy-editor-sidebar-bg);
+  --qy-editor-tree-fg: var(--qy-editor-sidebar-fg);
+  --qy-editor-tree-hover: #2a2d2e;
+  --qy-editor-tree-selected: #094771;
+  --qy-editor-tree-selected-fg: #ffffff;
+
+  // --- 编辑器通用元素 (Editor Common Elements) ---
+  --qy-editor-focus-border: #007acc;
+  --qy-editor-link-fg: #3794ff;
+  --qy-editor-link-active-fg: #3794ff;
+  --qy-editor-scrollbar-thumb: #424242;
+  --qy-editor-scrollbar-thumb-hover: #4f4f4f;
+
+  // --- 编辑器状态颜色 (Editor Status Colors) ---
+  --qy-editor-status-saving: #ffd700;
+  --qy-editor-status-unsaved: #ff6b6b;
+
+  // --- 编辑器交互颜色 (Editor Interaction Colors) ---
+  --qy-editor-btn-hover: rgba(255, 255, 255, 0.1);
+  --qy-editor-btn-active: rgba(255, 255, 255, 0.15);
+
+  // ==================== 过渡动画时长 (Transition Durations) ====================
+  --transition-duration-instant: 50ms;   // 即时响应（如hover）
+  --transition-duration-fast: 100ms;     // 快速动画（如按钮）
+  --transition-duration-base: 200ms;     // 基础动画（如面板）
+  --transition-duration-normal: 300ms;   // 正常动画（如淡入淡出）
+  --transition-duration-slow: 400ms;     // 慢速动画（如复杂变换）
+  --transition-duration-slower: 600ms;   // 更慢动画（如页面切换）
+
+  // ==================== 缓动函数 (Easing Functions) ====================
+  --transition-ease-linear: linear;
+  --transition-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --transition-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --transition-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-ease-out-quart: cubic-bezier(0.165, 0.84, 0.44, 1);
+
+  // ==================== 组合过渡 (Combined Transitions) ====================
+  --transition-fast: var(--transition-duration-fast) var(--transition-ease-out);
+  --transition-base: var(--transition-duration-base) var(--transition-ease-out);
+  --transition-normal: var(--transition-duration-normal) var(--transition-ease-in-out);
+  --transition-slow: var(--transition-duration-slow) var(--transition-ease-out-quart);
+
+  // --- 向后兼容：VSCode变量别名 (Backward Compatibility: VSCode Aliases) ---
+  --vscode-editor-background: var(--qy-editor-bg);
+  --vscode-editor-foreground: var(--qy-editor-fg);
+  --vscode-toolbar-background: var(--qy-editor-toolbar-bg);
+  --vscode-statusbar-background: var(--qy-editor-statusbar-bg);
+  --vscode-statusbar-foreground: var(--qy-editor-statusbar-fg);
+  --vscode-statusbar-border: var(--qy-editor-statusbar-border);
+  --vscode-selection-background: var(--qy-editor-selection-bg);
+  --vscode-cursor-color: var(--qy-editor-cursor);
+  --vscode-whitespace: var(--qy-editor-whitespace);
+  --vscode-line-number: var(--qy-editor-line-number);
+  --vscode-active-line-number: var(--qy-editor-active-line-number);
+  --vscode-border: var(--qy-editor-border);
+  --vscode-sideBar-background: var(--qy-editor-sidebar-bg);
+  --vscode-sideBar-foreground: var(--qy-editor-sidebar-fg);
+  --vscode-toolbar-hoverBackground: var(--qy-editor-tree-hover);
+  --vscode-inactiveSelectionBackground: var(--qy-editor-tree-selected);
+  --vscode-inactiveSelectionForeground: var(--qy-editor-tree-selected-fg);
+  --vscode-focusBorder: var(--qy-editor-focus-border);
+  --vscode-textLink-foreground: var(--qy-editor-link-fg);
+  --vscode-textLink-activeForeground: var(--qy-editor-link-active-fg);
+  --vscode-scrollbarSlider-background: var(--qy-editor-scrollbar-thumb);
+  --vscode-scrollbarSlider-hoverBackground: var(--qy-editor-scrollbar-thumb-hover);
+  --editor-status-saving: var(--qy-editor-status-saving);
+  --editor-status-unsaved: var(--qy-editor-status-unsaved);
+  --editor-button-hover: var(--qy-editor-btn-hover);
+  --editor-button-active: var(--qy-editor-btn-active);
+
+}
+
+/*
+ * 2. SCSS 变量 (用于编译时计算和 Mixins)
+ */
+
+// ==================== 色彩映射 (SCSS Map) ====================
+$primary-color: var(--primary-color);
+$text-main: var(--text-main);
+$text-secondary: var(--text-secondary);
+$bg-page: var(--bg-page);
+
+// 辅助功能色
+$success: #67c23a;
+$warning: #e6a23c;
+$danger: #f56c6c;
+$info: #909399;
+
+// ==================== 字体系统 (Typography) ====================
+$font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC',
+  'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+$font-family-heading: 'Oswald', 'Playfair Display', $font-family-base; // 标题特殊字体
+
+// 字号层级
+$font-size-xs: 12px;
+$font-size-sm: 13px;
+$font-size-base: 14px; // 正文
+$font-size-md: 16px; // 小标题
+$font-size-lg: 18px;
+$font-size-xl: 24px; // 模块标题
+$font-size-xxl: 32px; // 页面大标题
+
+// 字重
+$font-weight-light: 300;
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-bold: 600;
+$font-weight-heavy: 800;
+
+// ==================== 间距系统 (Spacing) ====================
+$spacing-base: 4px;
+$spacing-xs: $spacing-base * 2; // 8px
+$spacing-sm: $spacing-base * 3; // 12px
+$spacing-md: $spacing-base * 4; // 16px
+$spacing-lg: $spacing-base * 6; // 24px
+$spacing-xl: $spacing-base * 8; // 32px
+$spacing-section: 60px; // 区块间距
+
+// ==================== 布局 (Layout) ====================
+$header-height: 70px; // 增高头部
+$container-width: 1440px; // 更宽的视野
+$container-padding: 40px; // 页面左右留白
+
+// 响应式断点
+$bp-mobile: 768px;
+$bp-tablet: 1024px;
+$bp-desktop: 1280px;
+
+// ==================== 动画时长 (Animation Durations) ====================
+$duration-instant: var(--transition-duration-instant);
+$duration-fast: var(--transition-duration-fast);
+$duration-base: var(--transition-duration-base);
+$duration-normal: var(--transition-duration-normal);
+$duration-slow: var(--transition-duration-slow);
+$duration-slower: var(--transition-duration-slower);
+
+// ==================== 缓动函数 (Easing Functions) ====================
+$ease-linear: var(--transition-ease-linear);
+$ease-in: var(--transition-ease-in);
+$ease-out: var(--transition-ease-out);
+$ease-in-out: var(--transition-ease-in-out);
+$ease-out-quart: var(--transition-ease-out-quart);
+
+// ==================== 向后兼容 (Backward Compatibility) ====================
+// 保留旧的变量名，指向新的变量
+$duration-old-base: 0.3s;
+$duration-old-fast: 0.2s;
+
+// ==================== Z-Index ====================
+$z-bg: 0;
+$z-content: 10;
+$z-sticky: 100;
+$z-overlay: 200;
+$z-header: 1000;
+$z-modal: 2000;
+$z-toast: 3000;
+
+/*
+ * 3. 实用 Mixins (工具)
+ */
+
+// 毛玻璃效果 Mixin
+@mixin glass-effect($blur: 12px, $opacity: 0.75) {
+  background: rgba(255, 255, 255, $opacity);
+  backdrop-filter: blur($blur);
+  -webkit-backdrop-filter: blur($blur);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+// 文本截断 (单行/多行)
+@mixin text-ellipsis($lines: 1) {
+  @if $lines == 1 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  } @else {
+    display: -webkit-box;
+    -webkit-line-clamp: $lines;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+// 隐藏滚动条但可滚动
+@mixin hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// 高级卡片悬浮效果
+@mixin premium-card-hover {
+  transition: transform $duration-base $ease-out-quart, box-shadow $duration-base $ease-out-quart;
+
+  &:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-hover);
+  }
+}
+
+// ==================== 兼容旧代码 (Compatibility) ====================
+// 将旧变量名指向新变量，防止报错
+$bg-color: var(--bg-color); // 修复 $bg-color 未定义
+$text-primary: var(--text-main); // 修复 $text-primary 未定义
+$border-radius-base: var(--border-radius-lg); // 修复圆角变量

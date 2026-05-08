@@ -1,0 +1,28 @@
+// 搜索功能公共样式
+
+.button-toggle {
+  padding: 8px 16px;
+  border: 1px solid var(--el-border-color);
+  background: var(--el-bg-color);
+  color: var(--el-text-color-primary);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+  font-size: 14px;
+
+  &:hover {
+    border-color: var(--el-color-primary);
+    color: var(--el-color-primary);
+  }
+
+  &.active {
+    background: var(--el-color-primary);
+    color: #fff;
+    border-color: var(--el-color-primary);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}

@@ -1,0 +1,386 @@
+/**
+ * Editor Themes — 编辑器多主题系统
+ *
+ * 作用域：[data-editor-theme="<name>"] 属性选择器
+ * 主题：light（经典白）、sepia（暖纸）、dark（深空）、focus（专注）
+ * 与全站主题完全隔离，仅在编辑器根元素内生效
+ *
+ * @version 2.0.0
+ */
+
+/* ============================================
+   Light — 经典白（默认）
+   风格：现代中性风（Notion/Linear）
+   ============================================ */
+
+[data-editor-theme="light"] {
+  /* ===== 背景层次 ===== */
+  --editor-bg-base: #ffffff;
+  --editor-bg-surface: #f8fafc;
+  --editor-bg-elevated: #f1f5f9;
+  --editor-bg-overlay: #e2e8f0;
+  --editor-bg-actbar: #f1f5f9;
+
+  /* ===== 文字 ===== */
+  --editor-text-primary: #0f172a;
+  --editor-text-secondary: #334155;
+  --editor-text-muted: #64748b;
+  --editor-text-ghost: #94a3b8;
+  --editor-text-inverse: #ffffff;
+
+  /* ===== 品牌强调 ===== */
+  --editor-accent: #06b6d4;
+  --editor-accent-hover: #0891b2;
+  --editor-accent-soft: #ecfeff;
+  --editor-accent-soft-border: #a5f3fc;
+
+  /* ===== 边框 ===== */
+  --editor-border: #e2e8f0;
+  --editor-border-light: #f1f5f9;
+  --editor-border-focus: #06b6d4;
+
+  /* ===== 阴影 ===== */
+  --editor-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --editor-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --editor-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.10), 0 4px 8px rgba(0, 0, 0, 0.06);
+
+  /* ===== Activity Bar ===== */
+  --editor-actbar-width: 44px;
+  --editor-actbar-icon: #64748b;
+  --editor-actbar-icon-hover: #0f172a;
+  --editor-actbar-icon-active: #06b6d4;
+  --editor-actbar-active-bg: #ecfeff;
+
+  /* ===== 内容排版 ===== */
+  --editor-content-bg: #ffffff;
+  --editor-content-fg: #1e293b;
+  --editor-content-heading-color: #0f172a;
+  --editor-content-selection-bg: rgba(6, 182, 212, 0.15);
+  --editor-content-placeholder-color: #94a3b8;
+  --editor-content-line-height: 1.75;
+  --editor-content-font-family: 'Noto Serif SC', 'Source Han Serif SC', Georgia, 'Times New Roman', serif;
+  --editor-content-link-color: #0891b2;
+  --editor-content-code-bg: #f1f5f9;
+  --editor-content-code-fg: #e11d48;
+  --editor-content-blockquote-border: #cbd5e1;
+  --editor-content-blockquote-fg: #64748b;
+
+  /* ===== 布局尺寸 ===== */
+  --editor-topbar-height: 44px;
+  --editor-statusbar-height: 28px;
+  --editor-left-panel-width: 240px;
+  --editor-right-panel-width: 320px;
+  --editor-right-panel-min: 280px;
+  --editor-right-panel-max: 480px;
+
+  /* ===== 圆角 ===== */
+  --editor-radius-sm: 4px;
+  --editor-radius-md: 6px;
+  --editor-radius-lg: 8px;
+
+  /* ===== 过渡动画 ===== */
+  --editor-transition-fast: 120ms ease-out;
+  --editor-transition-base: 200ms ease-out;
+  --editor-transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ===== 空状态插图色 ===== */
+  --empty-ill-bg: #f1f5f9;
+  --empty-ill-stroke: #cbd5e1;
+  --empty-ill-fill: #f8fafc;
+  --empty-ill-line: #e2e8f0;
+  --empty-title: #334155;
+  --empty-desc: #64748b;
+  --empty-btn-fg: #6366f1;
+  --empty-btn-bg: #eef2ff;
+  --empty-btn-hover: #e0e7ff;
+}
+
+/* ============================================
+   Sepia — 暖纸/护眼
+   风格：纸质书阅读体验，暖色调护眼
+   ============================================ */
+
+[data-editor-theme="sepia"] {
+  /* ===== 背景层次 ===== */
+  --editor-bg-base: #faf6f0;
+  --editor-bg-surface: #f5ede0;
+  --editor-bg-elevated: #efe5d3;
+  --editor-bg-overlay: #e2d5c3;
+  --editor-bg-actbar: #f0e8d8;
+
+  /* ===== 文字 ===== */
+  --editor-text-primary: #3e2c1c;
+  --editor-text-secondary: #5c4833;
+  --editor-text-muted: #8b7355;
+  --editor-text-ghost: #b09e82;
+  --editor-text-inverse: #faf6f0;
+
+  /* ===== 品牌强调 ===== */
+  --editor-accent: #c47a2a;
+  --editor-accent-hover: #a8651e;
+  --editor-accent-soft: rgba(196, 122, 42, 0.10);
+  --editor-accent-soft-border: rgba(196, 122, 42, 0.25);
+
+  /* ===== 边框 ===== */
+  --editor-border: #e2d5c3;
+  --editor-border-light: #efe5d3;
+  --editor-border-focus: #c47a2a;
+
+  /* ===== 阴影 ===== */
+  --editor-shadow-sm: 0 1px 3px rgba(62, 44, 28, 0.06), 0 1px 2px rgba(62, 44, 28, 0.04);
+  --editor-shadow-md: 0 4px 12px rgba(62, 44, 28, 0.08), 0 2px 4px rgba(62, 44, 28, 0.04);
+  --editor-shadow-lg: 0 8px 24px rgba(62, 44, 28, 0.10), 0 4px 8px rgba(62, 44, 28, 0.06);
+
+  /* ===== Activity Bar ===== */
+  --editor-actbar-width: 44px;
+  --editor-actbar-icon: #8b7355;
+  --editor-actbar-icon-hover: #3e2c1c;
+  --editor-actbar-icon-active: #c47a2a;
+  --editor-actbar-active-bg: rgba(196, 122, 42, 0.10);
+
+  /* ===== 内容排版 ===== */
+  --editor-content-bg: #fdf8f0;
+  --editor-content-fg: #3e2c1c;
+  --editor-content-heading-color: #2a1e10;
+  --editor-content-selection-bg: rgba(196, 122, 42, 0.18);
+  --editor-content-placeholder-color: #b09e82;
+  --editor-content-line-height: 1.8;
+  --editor-content-font-family: 'Noto Serif SC', 'Source Han Serif SC', Georgia, 'Times New Roman', serif;
+  --editor-content-link-color: #a8651e;
+  --editor-content-code-bg: #f0e8d8;
+  --editor-content-code-fg: #9a3412;
+  --editor-content-blockquote-border: #d4c4a8;
+  --editor-content-blockquote-fg: #8b7355;
+
+  /* ===== 布局尺寸 ===== */
+  --editor-topbar-height: 44px;
+  --editor-statusbar-height: 28px;
+  --editor-left-panel-width: 240px;
+  --editor-right-panel-width: 320px;
+  --editor-right-panel-min: 280px;
+  --editor-right-panel-max: 480px;
+
+  /* ===== 圆角 ===== */
+  --editor-radius-sm: 4px;
+  --editor-radius-md: 6px;
+  --editor-radius-lg: 8px;
+
+  /* ===== 过渡动画 ===== */
+  --editor-transition-fast: 120ms ease-out;
+  --editor-transition-base: 200ms ease-out;
+  --editor-transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ===== 空状态插图色 ===== */
+  --empty-ill-bg: #f5ede0;
+  --empty-ill-stroke: #d4c4b0;
+  --empty-ill-fill: #faf6f0;
+  --empty-ill-line: #e8dcc8;
+  --empty-title: #5c4833;
+  --empty-desc: #8b7355;
+  --empty-btn-fg: #c47a2a;
+  --empty-btn-bg: rgba(196, 122, 42, 0.10);
+  --empty-btn-hover: rgba(196, 122, 42, 0.18);
+}
+
+/* ============================================
+   Dark — 深空
+   风格：Catppuccin Mocha，舒适暗色
+   ============================================ */
+
+[data-editor-theme="dark"] {
+  /* ===== 背景层次 ===== */
+  --editor-bg-base: #1e1e2e;
+  --editor-bg-surface: #181825;
+  --editor-bg-elevated: #313244;
+  --editor-bg-overlay: #45475a;
+  --editor-bg-actbar: #181825;
+
+  /* ===== 文字 ===== */
+  --editor-text-primary: #cdd6f4;
+  --editor-text-secondary: #bac2de;
+  --editor-text-muted: #a6adc8;
+  --editor-text-ghost: #585b70;
+  --editor-text-inverse: #1e1e2e;
+
+  /* ===== 品牌强调 ===== */
+  --editor-accent: #89dceb;
+  --editor-accent-hover: #74c7ec;
+  --editor-accent-soft: rgba(137, 220, 235, 0.12);
+  --editor-accent-soft-border: rgba(137, 220, 235, 0.3);
+
+  /* ===== 边框 ===== */
+  --editor-border: #313244;
+  --editor-border-light: #45475a;
+  --editor-border-focus: #89dceb;
+
+  /* ===== 阴影 ===== */
+  --editor-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --editor-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --editor-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+  /* ===== Activity Bar ===== */
+  --editor-actbar-width: 44px;
+  --editor-actbar-icon: #585b70;
+  --editor-actbar-icon-hover: #cdd6f4;
+  --editor-actbar-icon-active: #89dceb;
+  --editor-actbar-active-bg: rgba(137, 220, 235, 0.12);
+
+  /* ===== 内容排版 ===== */
+  --editor-content-bg: #1e1e2e;
+  --editor-content-fg: #cdd6f4;
+  --editor-content-heading-color: #f5e0dc;
+  --editor-content-selection-bg: rgba(137, 220, 235, 0.18);
+  --editor-content-placeholder-color: #585b70;
+  --editor-content-line-height: 1.75;
+  --editor-content-font-family: 'Noto Serif SC', 'Source Han Serif SC', Georgia, 'Times New Roman', serif;
+  --editor-content-link-color: #89dceb;
+  --editor-content-code-bg: #313244;
+  --editor-content-code-fg: #f38ba8;
+  --editor-content-blockquote-border: #45475a;
+  --editor-content-blockquote-fg: #a6adc8;
+
+  /* ===== 布局尺寸 ===== */
+  --editor-topbar-height: 44px;
+  --editor-statusbar-height: 28px;
+  --editor-left-panel-width: 240px;
+  --editor-right-panel-width: 320px;
+  --editor-right-panel-min: 280px;
+  --editor-right-panel-max: 480px;
+
+  /* ===== 圆角 ===== */
+  --editor-radius-sm: 4px;
+  --editor-radius-md: 6px;
+  --editor-radius-lg: 8px;
+
+  /* ===== 过渡动画 ===== */
+  --editor-transition-fast: 120ms ease-out;
+  --editor-transition-base: 200ms ease-out;
+  --editor-transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ===== 空状态插图色 ===== */
+  --empty-ill-bg: #313244;
+  --empty-ill-stroke: #585b70;
+  --empty-ill-fill: #45475a;
+  --empty-ill-line: #4c4f63;
+  --empty-title: #bac2de;
+  --empty-desc: #a6adc8;
+  --empty-btn-fg: #89dceb;
+  --empty-btn-bg: rgba(137, 220, 235, 0.12);
+  --empty-btn-hover: rgba(137, 220, 235, 0.22);
+}
+
+/* ============================================
+   Focus — 专注/禅模式
+   风格：极简白底，降低 UI 干扰，内容居中
+   ============================================ */
+
+[data-editor-theme="focus"] {
+  /* ===== 背景层次 ===== */
+  --editor-bg-base: #ffffff;
+  --editor-bg-surface: #fafafa;
+  --editor-bg-elevated: #f5f5f5;
+  --editor-bg-overlay: #e5e5e5;
+  --editor-bg-actbar: #fafafa;
+
+  /* ===== 文字 ===== */
+  --editor-text-primary: #171717;
+  --editor-text-secondary: #525252;
+  --editor-text-muted: #a3a3a3;
+  --editor-text-ghost: #d4d4d4;
+  --editor-text-inverse: #ffffff;
+
+  /* ===== 品牌强调 ===== */
+  --editor-accent: #737373;
+  --editor-accent-hover: #525252;
+  --editor-accent-soft: rgba(115, 115, 115, 0.08);
+  --editor-accent-soft-border: rgba(115, 115, 115, 0.15);
+
+  /* ===== 边框 ===== */
+  --editor-border: #e5e5e5;
+  --editor-border-light: #f5f5f5;
+  --editor-border-focus: #737373;
+
+  /* ===== 阴影（极轻） ===== */
+  --editor-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --editor-shadow-md: 0 2px 6px rgba(0, 0, 0, 0.04);
+  --editor-shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+  /* ===== Activity Bar ===== */
+  --editor-actbar-width: 44px;
+  --editor-actbar-icon: #a3a3a3;
+  --editor-actbar-icon-hover: #525252;
+  --editor-actbar-icon-active: #525252;
+  --editor-actbar-active-bg: rgba(115, 115, 115, 0.08);
+
+  /* ===== 内容排版（更宽松） ===== */
+  --editor-content-bg: #ffffff;
+  --editor-content-fg: #262626;
+  --editor-content-heading-color: #171717;
+  --editor-content-selection-bg: rgba(115, 115, 115, 0.12);
+  --editor-content-placeholder-color: #d4d4d4;
+  --editor-content-line-height: 1.9;
+  --editor-content-font-family: 'Noto Serif SC', 'Source Han Serif SC', Georgia, 'Times New Roman', serif;
+  --editor-content-link-color: #525252;
+  --editor-content-code-bg: #f5f5f5;
+  --editor-content-code-fg: #b91c1c;
+  --editor-content-blockquote-border: #d4d4d4;
+  --editor-content-blockquote-fg: #a3a3a3;
+
+  /* ===== 布局尺寸 ===== */
+  --editor-topbar-height: 44px;
+  --editor-statusbar-height: 28px;
+  --editor-left-panel-width: 240px;
+  --editor-right-panel-width: 320px;
+  --editor-right-panel-min: 280px;
+  --editor-right-panel-max: 480px;
+
+  /* ===== 圆角 ===== */
+  --editor-radius-sm: 4px;
+  --editor-radius-md: 6px;
+  --editor-radius-lg: 8px;
+
+  /* ===== 过渡动画 ===== */
+  --editor-transition-fast: 120ms ease-out;
+  --editor-transition-base: 200ms ease-out;
+  --editor-transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ===== 空状态插图色 ===== */
+  --empty-ill-bg: #f1f5f9;
+  --empty-ill-stroke: #cbd5e1;
+  --empty-ill-fill: #f8fafc;
+  --empty-ill-line: #e2e8f0;
+  --empty-title: #334155;
+  --empty-desc: #64748b;
+  --empty-btn-fg: #6366f1;
+  --empty-btn-bg: #eef2ff;
+  --empty-btn-hover: #e0e7ff;
+}
+
+/* ============================================
+   Focus 模式专属布局样式
+   ============================================ */
+
+[data-editor-theme="focus"] .qy-tiptap-editor__content {
+  max-width: 720px;
+  margin: 0 auto;
+  padding-left: 48px;
+  padding-right: 48px;
+}
+
+[data-editor-theme="focus"] .workspace-topbar {
+  opacity: 0.35;
+  transition: opacity 300ms ease;
+}
+
+[data-editor-theme="focus"] .workspace-topbar:hover {
+  opacity: 1;
+}
+
+[data-editor-theme="focus"] .workspace-statusbar {
+  opacity: 0.35;
+  transition: opacity 300ms ease;
+}
+
+[data-editor-theme="focus"] .workspace-statusbar:hover {
+  opacity: 1;
+}

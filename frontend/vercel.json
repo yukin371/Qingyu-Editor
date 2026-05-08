@@ -1,0 +1,44 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "env": {
+    "VITE_API_BASE_URL": "https://your-backend-domain.com/api/v1",
+    "VITE_WS_BASE_URL": "wss://your-backend-domain.com/ws",
+    "VITE_ENABLE_MOCK": "false",
+    "VITE_ENABLE_DEVTOOLS": "false"
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "https://your-backend-domain.com/api/$1"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies
+node_modules
+dist
+dist-ssr
+*.local
+.npm-cache
+
+# Editor directories and files
+.claude/
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Environment variables
+.env.local
+.env.*.local
+
+# Build
+dist/
+build/
+storybook-static/
+
+# Git worktrees
+.worktrees/
+
+# Test reports and screenshots
+test-results/
+playwright-report/
+tests/e2e/screenshots/
+coverage/
+html/
+.serena/
+
+# Test output files
+test-output.txt
+type-check-output.txt
+*.txt.bak
+demo-style-comparison-full.png
+.gitnexus
+AGENTS.md
+CLAUDE.md

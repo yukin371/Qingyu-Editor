@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>认证调试工具</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .section {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #409eff;
+            padding-bottom: 10px;
+        }
+        .key {
+            color: #409eff;
+            font-weight: bold;
+        }
+        .value {
+            color: #333;
+            word-break: break-all;
+        }
+        button {
+            background: #409eff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #66b1ff;
+        }
+        button.danger {
+            background: #f56c6c;
+        }
+        button.danger:hover {
+            background: #f78989;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 认证调试工具</h1>
+
+    <div class="section">
+        <h3>LocalStorage 状态</h3>
+        <div id="localStorage-status"></div>
+        <button onclick="clearAuth()">清除认证信息</button>
+    </div>
+
+    <div class="section">
+        <h3>JWT Token 解析</h3>
+        <div id="token-info"></div>
+    </div>
+
+    <div class="section">
+        <h3>测试 API 请求</h3>
+        <button onclick="testWriterAPI()">测试 /api/v1/writer/projects</button>
+        <button onclick="testAuthAPI()">测试 /api/v1/shared/auth/roles</button>
+        <div id="api-result"></div>
+    </div>
+
+    <script>
+        // 显示 LocalStorage 状态
+        function showLocalStorageStatus() {
+            const keys = ['qingyu_token', 'qingyu_refreshToken', 'qingyu_user', 'qingyu_roles'];
+            let html = '<table style="width:100%">';
+            html += '<tr><th style="text-align:left">Key</th><th style="text-align:left">Value</th></tr>';
+
+            keys.forEach(key => {
+                const value = localStorage.getItem(key);
+                html += '<tr>';
+                html += `<td><span class="key">${key}</span></td>`;
+                if (value) {
+                    if (key.includes('token')) {
+                        html += `<td><span class="value">${value.substring(0, 50)}...</span></td>`;
+                    } else {
+                        html += `<td><span class="value">${value}</span></td>`;
+                    }
+                } else {
+                    html += `<td><span class="value" style="color:#999;">(空)</span></td>`;
+                }
+                html += '</tr>';
+            });
+
+            html += '</table>';
+            document.getElementById('localStorage-status').innerHTML = html;
+        }
+
+        // 解析 JWT Token
+        function parseJWT(token) {
+            if (!token) return null;
+
+            try {
+                const parts = token.split('.');
+                if (parts.length !== 3) return null;
+
+                const payload = parts[1];
+                const decoded = atob(payload);
+                return JSON.parse(decoded);
+            } catch (e) {
+                console.error('Token 解析失败:', e);
+                return null;
+            }
+        }
+
+        // 显示 Token 信息
+        function showTokenInfo() {
+            const token = localStorage.getItem('qingyu_token');
+            let html = '';
+
+            if (!token) {
+                html = '<p style="color:#f56c6c;">❌ 未找到 Token</p>';
+            } else {
+                const claims = parseJWT(token);
+                if (!claims) {
+                    html = '<p style="color:#f56c6c;">❌ Token 格式错误</p>';
+                } else {
+                    html = '<table style="width:100%">';
+                    html += '<tr><th style="text-align:left">Claim</th><th style="text-align:left">Value</th></tr>';
+
+                    Object.keys(claims).forEach(key => {
+                        const value = JSON.stringify(claims[key]);
+                        html += '<tr>';
+                        html += `<td><span class="key">${key}</span></td>`;
+                        html += `<td><span class="value">${value}</span></td>`;
+                        html += '</tr>';
+                    });
+
+                    html += '</table>';
+
+                    // 检查 Token 是否过期
+                    const now = Math.floor(Date.now() / 1000);
+                    if (claims.exp && claims.exp < now) {
+                        html += '<p style="color:#f56c6c;">❌ Token 已过期</p>';
+                    } else if (claims.exp) {
+                        const remaining = claims.exp - now;
+                        const minutes = Math.floor(remaining / 60);
+                        const seconds = remaining % 60;
+                        html += `<p style="color:#67c23a;">✅ Token 有效，剩余时间: ${minutes}分${seconds}秒</p>`;
+                    }
+                }
+            }
+
+            document.getElementById('token-info').innerHTML = html;
+        }
+
+        // 清除认证信息
+        function clearAuth() {
+            localStorage.removeItem('qingyu_token');
+            localStorage.removeItem('qingyu_refreshToken');
+            localStorage.removeItem('qingyu_user');
+            localStorage.removeItem('qingyu_roles');
+            showLocalStorageStatus();
+            showTokenInfo();
+        }
+
+        // 测试 API 请求
+        async function testAPI(url) {
+            const token = localStorage.getItem('qingyu_token');
+            let html = `<h4>请求: ${url}</h4>`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                html += `<p>状态码: <span class="${response.ok ? 'value' : 'value'}" style="color:${response.ok ? '#67c23a' : '#f56c6c'}">${response.status}</span></p>`;
+
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                } else {
+                    const text = await response.text();
+                    html += '<pre>' + text + '</pre>';
+                }
+            } catch (error) {
+                html += `<p style="color:#f56c6c;">❌ 请求失败: ${error.message}</p>`;
+            }
+
+            document.getElementById('api-result').innerHTML = html;
+        }
+
+        function testWriterAPI() {
+            testAPI('/api/v1/writer/projects');
+        }
+
+        function testAuthAPI() {
+            testAPI('/api/v1/shared/auth/roles');
+        }
+
+        // 初始化
+        showLocalStorageStatus();
+        showTokenInfo();
+    </script>
+</body>
+</html>

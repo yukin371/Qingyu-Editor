@@ -1,0 +1,22 @@
+<script>
+  // Fix for Storybook 8.6.x preparing-story overlay not being removed
+  // Monitors the storybook-root element and removes the overlay once content renders
+  window.addEventListener('load', () => {
+    const observer = new MutationObserver(() => {
+      const root = document.getElementById('storybook-root')
+      if (root && root.innerHTML.trim().length > 0) {
+        document.body.classList.add('sb-show-preparing-story')
+        document.querySelectorAll('.sb-preparing-story, .sb-preparing-docs').forEach(el => el.remove())
+        observer.disconnect()
+      }
+    })
+    if (document.getElementById('storybook-root')) {
+      observer.observe(document.getElementById('storybook-root'), { childList: true, subtree: true })
+    }
+    // Fallback: remove overlay after 3 seconds regardless
+    setTimeout(() => {
+      document.body.classList.add('sb-show-preparing-story')
+      document.querySelectorAll('.sb-preparing-story, .sb-preparing-docs').forEach(el => el.remove())
+    }, 3000)
+  })
+</script>

@@ -1,0 +1,180 @@
+/**
+ * 青羽阅读器 - 设计系统变量 (Reader Design System Variables)
+ * TDD Phase 2: 统一阅读器主题变量和字体系统
+ *
+ * 修复内容:
+ * - P0: 暗色主题使用 #121212 而非纯黑 #000000 (Material Design 推荐)
+ * - P0: 夜间主题使用 #1a1a1a 而非纯黑
+ * - P0: 完整的中文字体回退栈
+ */
+
+/* ==========================================================================
+   1. CSS 变量定义 (用于动态主题和运行时引用)
+   ========================================================================== */
+
+:root {
+  // ==================== 主题色（修订版）====================
+  // 主色调
+  --color-primary: #5b8cff;
+  --color-accent: #c0a062;
+
+  // ==================== 阅读器主题（P0修复：避免纯黑）====================
+  // 浅色主题（日间）
+  --reader-light-bg: #ffffff;
+  --reader-light-text: #2c3e50;
+
+  // 护眼主题（羊皮纸）
+  --reader-sepia-bg: #f4ecd8;
+  --reader-sepia-text: #5c4a2f;
+
+  // ✅ P0修复：夜间主题使用 #1a1a1a（而非纯黑，更柔和）
+  --reader-night-bg: #1a1a1a;
+  --reader-night-text: #c9c9c9;
+
+  // ✅ P0修复：暗色主题使用 #121212（Material Design推荐值）
+  --reader-dark-bg: #121212;
+  --reader-dark-text: #e0e0e0;
+
+  // 护眼绿主题
+  --reader-eyecare-bg: #c7edcc;
+  --reader-eyecare-text: #333333;
+
+  // ==================== P0修复：中文字体回退栈 ====================
+  // 衬线字体（阅读器专用，适合长文阅读）
+  --font-serif-zh: 'Noto Serif SC', 'Source Han Serif SC', 'SimSun', 'Songti SC', 'STSong', 'AR PL UMing CN', serif;
+
+  // 无衬线字体（UI界面专用）
+  --font-sans-zh: 'Noto Sans SC', 'Source Han Sans SC', 'PingFang SC', 'Microsoft YaHei', 'Heiti SC', 'STHeiti', 'Arial', sans-serif;
+
+  // 等宽字体（编辑器专用）
+  --font-mono-zh: 'JetBrains Mono', 'Fira Code', 'Consolas', 'SF Mono', 'Monaco', 'Menlo', 'Courier New', 'Noto Sans SC', monospace;
+
+  // ==================== 字体应用变量 ====================
+  --font-family-reader: var(--font-serif-zh);      // 阅读器使用衬线字体
+  --font-family-editor: var(--font-mono-zh);       // 编辑器使用等宽字体
+  --font-family-ui: var(--font-sans-zh);           // UI使用无衬线字体
+
+  // ==================== 主题状态映射 ====================
+  // 浅色主题（默认）
+  --reader-bg: var(--reader-light-bg);
+  --reader-text: var(--reader-light-text);
+}
+
+/* ==========================================================================
+   2. 主题类（用于动态切换）
+   ========================================================================== */
+
+// 暗色主题（使用 #121212，Material Design 推荐值）
+.theme-dark {
+  --reader-bg: var(--reader-dark-bg);
+  --reader-text: var(--reader-dark-text);
+}
+
+// 夜间主题（使用 #1a1a1a，稍亮于暗色主题）
+.theme-night {
+  --reader-bg: var(--reader-night-bg);
+  --reader-text: var(--reader-night-text);
+}
+
+// 护眼主题（羊皮纸色）
+.theme-sepia {
+  --reader-bg: var(--reader-sepia-bg);
+  --reader-text: var(--reader-sepia-text);
+}
+
+// 护眼绿主题
+.theme-eyecare {
+  --reader-bg: var(--reader-eyecare-bg);
+  --reader-text: var(--reader-eyecare-text);
+}
+
+/* ==========================================================================
+   3. 统一组件样式（Qingyu Design System）
+   ========================================================================== */
+
+// 统一卡片样式
+.qy-card {
+  background: var(--el-bg-color, #ffffff);
+  border: 1px solid var(--el-border-color, rgba(0, 0, 0, 0.06));
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+}
+
+// 统一按钮样式
+.qy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-family: var(--font-family-ui);
+  font-size: 14px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
+  user-select: none;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  // 主要按钮
+  &--primary {
+    background: var(--color-primary, #5b8cff);
+    color: #ffffff;
+
+    &:hover:not(:disabled) {
+      opacity: 0.9;
+    }
+  }
+
+  // 幽灵按钮（透明背景+边框）
+  &--ghost {
+    background: transparent;
+    border: 1px solid var(--el-border-color, rgba(0, 0, 0, 0.06));
+    color: var(--text-regular, #2c3e50);
+
+    &:hover:not(:disabled) {
+      background: rgba(0, 0, 0, 0.04);
+    }
+  }
+
+  // 成功按钮
+  &--success {
+    background: var(--color-success-500, #10b981);
+    color: #ffffff;
+
+    &:hover:not(:disabled) {
+      opacity: 0.9;
+    }
+  }
+
+  // 警告按钮
+  &--warning {
+    background: var(--color-warning-500, #f59e0b);
+    color: #ffffff;
+
+    &:hover:not(:disabled) {
+      opacity: 0.9;
+    }
+  }
+
+  // 危险按钮
+  &--danger {
+    background: var(--color-danger-500, #ef4444);
+    color: #ffffff;
+
+    &:hover:not(:disabled) {
+      opacity: 0.9;
+    }
+  }
+}

@@ -1,0 +1,456 @@
+/* ============================================
+   Qingyu 前端主样式文件
+   ============================================ */
+
+/* 主题过渡动画 */
+@import './styles/theme-transition.css';
+
+/* 导入 Tailwind v4 */
+@import 'tailwindcss';
+
+/* 导入设计令牌（Tailwind v4 CSS-First 配置） */
+@import './design-system/tokens/theme.css';
+
+/* ============================================
+   全局基础样式
+   ============================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-sans);
+  color: var(--color-ink-primary);
+  background-color: var(--color-slate-50);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 应用背景 */
+#app {
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--color-slate-50);
+}
+
+/* ============================================
+   工具类
+   ============================================ */
+
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-4);
+}
+
+/* 响应式容器内边距 */
+@media (min-width: 640px) {
+  .container {
+    padding: 0 var(--spacing-6);
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding: 0 var(--spacing-8);
+  }
+}
+
+/* ============================================
+   Element Plus 样式调整（过渡期使用）
+   ============================================ */
+
+/* TODO: 逐步替换为 Qy 组件后移除这些样式 */
+
+.el-button {
+  font-weight: var(--font-weight-medium);
+}
+
+/* Element Plus 图标尺寸兜底，防止异常放大 */
+.el-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+}
+
+.el-icon svg {
+  width: 1em;
+  height: 1em;
+}
+
+.el-alert__icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.el-alert__icon .el-icon,
+.el-alert__icon svg {
+  width: 1em;
+  height: 1em;
+}
+
+/* Element Plus 空状态图像兜底，防止异常放大 */
+.el-empty__image {
+  max-width: 160px;
+}
+
+.el-empty__image img,
+.el-empty__image svg {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* Element Plus 评分星标稳态修复：
+   在复杂页面和全局样式混用场景下，el-rate 图标可能继承到异常字号。
+   这里固定尺寸计算链为：el-rate(--el-rate-icon-size) -> icon(1em) -> svg(1em)。 */
+.el-rate {
+  --el-rate-icon-size: 16px;
+}
+
+.el-rate .el-rate__icon {
+  font-size: var(--el-rate-icon-size) !important;
+  line-height: 1 !important;
+}
+
+.el-rate .el-rate__item {
+  line-height: 1 !important;
+}
+
+.el-rate .el-rate__icon:not(.el-rate__decimal) {
+  width: var(--el-rate-icon-size) !important;
+  height: var(--el-rate-icon-size) !important;
+  min-width: var(--el-rate-icon-size) !important;
+  min-height: var(--el-rate-icon-size) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transform: none !important;
+}
+
+.el-rate .el-rate__icon .el-icon,
+.el-rate .el-rate__icon .el-icon svg {
+  width: 1em !important;
+  height: 1em !important;
+  font-size: inherit !important;
+}
+
+/* Element Plus 弹窗定位基线修复：
+   当前项目的全局布局和样式组合会导致 overlay 退化为普通文档流元素，
+   使 el-dialog 出现在页面底部而不是视口中央。这里恢复为固定定位。 */
+.el-overlay.el-modal-dialog {
+  position: fixed !important;
+  inset: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.el-overlay.el-modal-dialog .el-overlay-dialog {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: calc(100vh - 48px);
+}
+
+.el-overlay.el-modal-dialog .el-dialog {
+  margin: 0 auto !important;
+}
+
+.el-overlay.el-modal-dialog .admin-modal-card.el-dialog {
+  width: min(var(--el-dialog-width, 640px), calc(100vw - 48px)) !important;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 20px;
+  box-shadow:
+    0 24px 64px rgba(15, 23, 42, 0.18),
+    0 8px 24px rgba(15, 23, 42, 0.1);
+  color: #0f172a;
+  overflow: hidden;
+}
+
+.el-overlay.el-modal-dialog .admin-modal-card .el-dialog__header {
+  padding: 22px 24px 18px;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.98) 0%, rgba(255, 255, 255, 0.96) 100%);
+  border-bottom: 1px solid #e2e8f0;
+  margin-right: 0;
+}
+
+.el-overlay.el-modal-dialog .admin-modal-card .el-dialog__title {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #0f172a;
+  letter-spacing: 0.01em;
+}
+
+.el-overlay.el-modal-dialog .admin-modal-card .el-dialog__headerbtn {
+  top: 18px;
+  right: 18px;
+}
+
+.el-overlay.el-modal-dialog .admin-modal-card .el-dialog__body {
+  padding: 24px;
+  background: transparent;
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+.el-overlay.el-modal-dialog .admin-modal-card .el-dialog__footer {
+  padding: 16px 24px 24px;
+  border-top: 1px solid #eef2f7;
+  background: rgba(248, 250, 252, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.el-overlay.el-modal-dialog .admin-modal-card .el-form-item {
+  margin-bottom: 20px;
+}
+
+.el-overlay.el-modal-dialog .admin-modal-card .el-form-item__label {
+  color: #475569;
+  font-weight: 600;
+}
+
+.el-overlay.el-modal-dialog .admin-modal-card .el-input__wrapper,
+.el-overlay.el-modal-dialog .admin-modal-card .el-select__wrapper,
+.el-overlay.el-modal-dialog .admin-modal-card .el-date-editor.el-input__wrapper,
+.el-overlay.el-modal-dialog .admin-modal-card .el-range-editor.el-input__wrapper {
+  min-height: 40px;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  box-shadow: inset 0 0 0 1px #cbd5e1 !important;
+  transition:
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.el-overlay.el-modal-dialog .admin-modal-card .el-input__wrapper:hover,
+.el-overlay.el-modal-dialog .admin-modal-card .el-select__wrapper:hover,
+.el-overlay.el-modal-dialog .admin-modal-card .el-date-editor.el-input__wrapper:hover,
+.el-overlay.el-modal-dialog .admin-modal-card .el-range-editor.el-input__wrapper:hover {
+  box-shadow: inset 0 0 0 1px #94a3b8 !important;
+}
+
+.el-overlay.el-modal-dialog .admin-modal-card .el-input__wrapper.is-focus,
+.el-overlay.el-modal-dialog .admin-modal-card .el-select__wrapper.is-focused,
+.el-overlay.el-modal-dialog .admin-modal-card .el-date-editor.el-input__wrapper.is-focus,
+.el-overlay.el-modal-dialog .admin-modal-card .el-range-editor.el-input__wrapper.is-active {
+  box-shadow:
+    inset 0 0 0 1px #2563eb,
+    0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+}
+
+.el-overlay.el-modal-dialog .admin-modal-card .el-input__inner,
+.el-overlay.el-modal-dialog .admin-modal-card .el-select__selected-item {
+  color: #0f172a;
+}
+
+.el-overlay.el-modal-dialog .admin-modal-card .el-textarea__inner {
+  min-height: 96px;
+  border-radius: 14px !important;
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #0f172a;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.el-overlay.el-modal-dialog .admin-modal-card .el-textarea__inner:hover {
+  border-color: #94a3b8 !important;
+}
+
+.el-overlay.el-modal-dialog .admin-modal-card .el-textarea__inner:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+}
+
+.el-overlay.el-modal-dialog .admin-modal-card .el-input-number {
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px #cbd5e1;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.el-overlay.el-modal-dialog .admin-modal-card .el-input-number:hover {
+  box-shadow: inset 0 0 0 1px #94a3b8;
+}
+
+.el-overlay.el-modal-dialog .admin-modal-card .el-input-number .el-input__wrapper {
+  box-shadow: none !important;
+}
+
+.el-overlay.el-modal-dialog .admin-modal-card .form-hint {
+  color: #94a3b8;
+}
+
+.el-overlay.el-modal-dialog .admin-modal-card .el-input-number {
+  max-width: 180px;
+}
+
+.el-overlay.el-modal-dialog .admin-modal-card .el-switch {
+  flex-shrink: 0;
+}
+
+/* ============================================
+   自定义组件样式
+   ============================================ */
+
+/* 可以在这里添加项目特定的全局样式 */
+
+/* Element Plus 样式调整 */
+.el-button {
+  font-weight: 500;
+}
+
+/* 工具类 */
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Admin 下拉统一弹层样式（el-select 的 popper-class="admin-select-popper"） */
+.admin-select-popper.el-popper {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12) !important;
+  padding: 6px !important;
+}
+
+.admin-select-popper .el-popper__arrow,
+.admin-select-popper .el-popper__arrow::before {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+.admin-select-popper .el-select-dropdown {
+  background: #ffffff !important;
+}
+
+.admin-select-popper .el-select-dropdown__list {
+  padding: 0 !important;
+}
+
+.admin-select-popper .el-select-dropdown__item {
+  min-height: 34px !important;
+  line-height: 34px !important;
+  padding: 0 12px !important;
+  border-radius: 8px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  color: #1e293b;
+}
+
+.admin-select-popper .el-select-dropdown__item.hover,
+.admin-select-popper .el-select-dropdown__item:hover {
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+}
+
+.admin-select-popper .el-select-dropdown__item.is-selected {
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+  font-weight: 600;
+}
+
+/* Admin 输入框统一样式（筛选区与表单） */
+.admin-content .el-input__wrapper,
+.admin-content .el-date-editor.el-input__wrapper,
+.admin-content .el-range-editor.el-input__wrapper {
+  min-height: 36px;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  box-shadow: inset 0 0 0 1px #dbe3ef !important;
+  transition:
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.admin-content .el-input__wrapper:hover,
+.admin-content .el-date-editor.el-input__wrapper:hover,
+.admin-content .el-range-editor.el-input__wrapper:hover {
+  box-shadow: inset 0 0 0 1px #93c5fd !important;
+}
+
+.admin-content .el-input__wrapper.is-focus,
+.admin-content .el-date-editor.el-input__wrapper.is-focus,
+.admin-content .el-range-editor.el-input__wrapper.is-focus,
+.admin-content .el-range-editor.el-input__wrapper.is-active {
+  box-shadow:
+    inset 0 0 0 1px #3b82f6,
+    0 0 0 3px rgba(59, 130, 246, 0.12) !important;
+}
+
+.admin-content .el-input__inner::placeholder,
+.admin-content .el-textarea__inner::placeholder {
+  color: #94a3b8;
+}
+
+.admin-content .el-input__inner {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  padding-left: 10px !important;
+  text-align: left !important;
+}
+
+.admin-content .el-input__inner:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.admin-content .el-input__prefix {
+  margin-left: 6px !important;
+  margin-right: 4px !important;
+}
+
+.admin-content .el-textarea__inner {
+  border-radius: 10px !important;
+  border: 1px solid #dbe3ef !important;
+  padding-left: 10px !important;
+}
+
+.admin-content .el-textarea__inner:hover {
+  border-color: #93c5fd !important;
+}
+
+.admin-content .el-textarea__inner:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12) !important;
+}
+
+/* 响应式断点 */
+@media (min-width: 640px) {
+  .container {
+    padding: 0 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding: 0 2rem;
+  }
+}

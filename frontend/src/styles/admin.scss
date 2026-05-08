@@ -1,0 +1,393 @@
+/**
+ * 管理员后台专用样式
+ */
+
+// 管理员颜色方案
+$admin-primary: #409eff;
+$admin-success: #67c23a;
+$admin-warning: #e6a23c;
+$admin-danger: #f56c6c;
+$admin-info: #909399;
+
+$admin-bg: #f5f7fa;
+$admin-border: #dcdfe6;
+$admin-text: #303133;
+$admin-text-secondary: #606266;
+$admin-text-placeholder: #909399;
+
+// 响应式断点
+$breakpoint-xs: 576px;
+$breakpoint-sm: 768px;
+$breakpoint-md: 992px;
+$breakpoint-lg: 1200px;
+$breakpoint-xl: 1920px;
+
+// 卡片样式
+.admin-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  }
+
+  &-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid $admin-border;
+
+    h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: $admin-text;
+    }
+  }
+
+  &-body {
+    color: $admin-text-secondary;
+    line-height: 1.6;
+  }
+
+  &-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid $admin-border;
+  }
+}
+
+// 表格样式
+.admin-table {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+
+  .el-table {
+    border-radius: 8px;
+    overflow: hidden;
+
+    th {
+      background: #f5f7fa;
+      color: $admin-text;
+      font-weight: 600;
+    }
+
+    td {
+      color: $admin-text-secondary;
+    }
+  }
+}
+
+// 表单样式
+.admin-form {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+
+  .el-form-item__label {
+    font-weight: 500;
+    color: $admin-text;
+  }
+}
+
+// 筛选器样式
+.admin-filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+
+  .el-input,
+  .el-select {
+    min-width: 200px;
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    flex-direction: column;
+
+    .el-input,
+    .el-select {
+      width: 100%;
+    }
+  }
+}
+
+// 分页样式
+.admin-pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+// 统计卡片网格
+.admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+
+  @media (max-width: $breakpoint-sm) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// 图表容器
+.admin-chart {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  height: 100%;
+
+  &-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid $admin-border;
+
+    h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: $admin-text;
+    }
+  }
+
+  &-body {
+    position: relative;
+  }
+}
+
+// 图表网格
+.admin-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+
+  @media (max-width: $breakpoint-md) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// 空状态
+.admin-empty {
+  padding: 60px 20px;
+  text-align: center;
+  color: $admin-text-placeholder;
+
+  i {
+    font-size: 64px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
+}
+
+// 加载状态
+.admin-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: $admin-text-placeholder;
+
+  .el-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
+}
+
+// 标签样式
+.admin-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+
+  &.success {
+    background: #f0f9ff;
+    color: $admin-success;
+  }
+
+  &.warning {
+    background: #fdf6ec;
+    color: $admin-warning;
+  }
+
+  &.danger {
+    background: #fef0f0;
+    color: $admin-danger;
+  }
+
+  &.info {
+    background: #f4f4f5;
+    color: $admin-info;
+  }
+}
+
+// 徽章样式
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: $admin-danger;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+// 工具提示
+.admin-tooltip {
+  position: relative;
+  cursor: help;
+
+  &:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    font-size: 12px;
+    white-space: nowrap;
+    border-radius: 4px;
+    z-index: 1000;
+  }
+}
+
+// 响应式工具类
+.hidden-xs {
+  @media (max-width: $breakpoint-xs) {
+    display: none !important;
+  }
+}
+
+.hidden-sm {
+  @media (max-width: $breakpoint-sm) {
+    display: none !important;
+  }
+}
+
+.hidden-md {
+  @media (max-width: $breakpoint-md) {
+    display: none !important;
+  }
+}
+
+.hidden-lg {
+  @media (max-width: $breakpoint-lg) {
+    display: none !important;
+  }
+}
+
+// 动画
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease;
+}
+
+// 滚动条样式
+.admin-scrollbar {
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $admin-border;
+    border-radius: 4px;
+
+    &:hover {
+      background: darken($admin-border, 10%);
+    }
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+// 打印样式
+@media print {
+  .admin-sidebar,
+  .admin-header,
+  .admin-filters,
+  .el-button,
+  .el-pagination {
+    display: none !important;
+  }
+
+  .admin-card,
+  .admin-table {
+    box-shadow: none !important;
+    page-break-inside: avoid;
+  }
+}

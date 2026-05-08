@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="480" viewBox="0 0 320 480" fill="none">
+  <defs>
+    <linearGradient id="verdant-bg" x1="36" y1="20" x2="286" y2="462" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#052E2B"/>
+      <stop offset="0.46" stop-color="#0F766E"/>
+      <stop offset="1" stop-color="#34D399"/>
+    </linearGradient>
+    <linearGradient id="verdant-river" x1="84" y1="198" x2="244" y2="398" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="white" stop-opacity="0.08"/>
+    </linearGradient>
+  </defs>
+  <rect width="320" height="480" rx="28" fill="url(#verdant-bg)"/>
+  <path d="M266 54C242 94 230 122 222 168C212 228 222 300 250 432H286V54H266Z" fill="white" fill-opacity="0.12"/>
+  <path d="M70 418C102 372 122 324 146 276C170 228 202 194 252 176C218 220 208 272 202 326C196 376 206 408 226 432H70V418Z" fill="url(#verdant-river)"/>
+  <rect x="42" y="48" width="84" height="22" rx="11" fill="white" fill-opacity="0.18"/>
+  <rect x="42" y="90" width="172" height="18" rx="9" fill="white" fill-opacity="0.92"/>
+  <rect x="42" y="118" width="118" height="12" rx="6" fill="white" fill-opacity="0.58"/>
+  <rect x="42" y="152" width="76" height="18" rx="9" fill="#FDE68A" fill-opacity="0.88"/>
+  <circle cx="232" cy="118" r="18" fill="white" fill-opacity="0.2"/>
+</svg>

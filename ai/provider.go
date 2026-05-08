@@ -1,5 +1,7 @@
 package ai
 
+import "fmt"
+
 // Provider AI 提供商接口
 type Provider interface {
 	Name() string

@@ -1,0 +1,442 @@
+/**
+ * src/styles/common.scss
+ * 通用样式、布局辅助类与原子类
+ * 已适配 Premium Design System
+ */
+@use 'sass:string';
+@use './variables.scss' as *;
+
+// ==================== 基础设置 (Reset & Base) ====================
+
+body {
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  font-family: $font-family-base;
+  -webkit-font-smoothing: antialiased; // 字体抗锯齿，更清晰
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+}
+
+// ==================== 布局辅助类 (Layout) ====================
+
+// 响应式主容器
+.container {
+  width: 100%;
+  max-width: $container-width; // 1440px
+  margin: 0 auto;
+  padding: 0 $container-padding; // 40px
+
+  // 响应式调整
+  @media (max-width: $bp-mobile) {
+    padding: 0 $spacing-md; // 移动端缩小边距
+  }
+}
+
+// 页面全屏包装器
+.page-wrapper {
+  min-height: calc(100vh - #{$header-height});
+  background-color: var(--bg-page);
+  position: relative;
+}
+
+// 页面头部 (带渐变标题)
+.page-header {
+  margin-bottom: $spacing-xl;
+  text-align: center;
+  padding-top: $spacing-lg;
+
+  h1 {
+    font-size: $font-size-xxl;
+    font-weight: $font-weight-heavy;
+    margin-bottom: $spacing-sm;
+    letter-spacing: -0.5px;
+
+    // 渐变文字效果
+    background: var(--gradient-text);
+    -webkit-background-clip: text;
+    color: transparent;
+    display: inline-block;
+  }
+
+  .subtitle {
+    font-size: $font-size-md;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+}
+
+// 内容区块 (基础白底)
+.content-section {
+  background: var(--bg-card);
+  border-radius: var(--border-radius-lg);
+  padding: $spacing-lg;
+  margin-bottom: $spacing-lg;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--border-color);
+}
+
+// 毛玻璃区块 (新特性)
+.glass-panel {
+  @include glass-effect; // 调用 variables 中的 mixin
+  border-radius: var(--border-radius-lg);
+  padding: $spacing-lg;
+}
+
+// ==================== 间距辅助类 (Spacing Helpers) ====================
+// 生成规则: .m-t-md (margin-top: 16px), .p-a-lg (padding: 24px)
+
+// 映射方向简写
+$directions: (
+  t: top,
+  r: right,
+  b: bottom,
+  l: left,
+  a: null // all,
+);
+
+// 映射尺寸
+$sizes: (
+  0: 0,
+  xs: $spacing-xs,
+  // 8px
+  sm: $spacing-sm,
+  // 12px
+  md: $spacing-md,
+  // 16px
+  lg: $spacing-lg,
+  // 24px
+  xl: $spacing-xl,
+  // 32px
+  xxl: $spacing-section // 60px,
+);
+
+// 生成 Margin 类 (.m-t-md, .m-a-lg)
+@each $dir-key, $dir-value in $directions {
+  @each $size-key, $size-value in $sizes {
+    .m-#{$dir-key}-#{$size-key} {
+      @if $dir-value {
+        margin-#{$dir-value}: $size-value !important;
+      } @else {
+        margin: $size-value !important;
+      }
+    }
+  }
+}
+
+// 生成 Padding 类 (.p-t-md, .p-a-lg)
+@each $dir-key, $dir-value in $directions {
+  @each $size-key, $size-value in $sizes {
+    .p-#{$dir-key}-#{$size-key} {
+      @if $dir-value {
+        padding-#{$dir-value}: $size-value !important;
+      } @else {
+        padding: $size-value !important;
+      }
+    }
+  }
+}
+
+// ==================== 文本辅助类 (Typography) ====================
+
+// 对齐
+.text-left {
+  text-align: left !important;
+}
+.text-center {
+  text-align: center !important;
+}
+.text-right {
+  text-align: right !important;
+}
+
+// 颜色 (使用 CSS 变量)
+.text-main {
+  color: var(--text-main) !important;
+}
+.text-regular {
+  color: var(--text-regular) !important;
+}
+.text-secondary {
+  color: var(--text-secondary) !important;
+}
+.text-placeholder {
+  color: var(--text-placeholder) !important;
+}
+.text-primary {
+  color: var(--primary-color) !important;
+}
+.text-gradient {
+  background: var(--gradient-text);
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+// 大小
+.text-xs {
+  font-size: $font-size-xs !important;
+}
+.text-sm {
+  font-size: $font-size-sm !important;
+}
+.text-base {
+  font-size: $font-size-base !important;
+}
+.text-md {
+  font-size: $font-size-md !important;
+}
+.text-lg {
+  font-size: $font-size-lg !important;
+}
+.text-xl {
+  font-size: $font-size-xl !important;
+}
+.text-xxl {
+  font-size: $font-size-xxl !important;
+}
+
+// 粗细
+.font-light {
+  font-weight: $font-weight-light !important;
+}
+.font-normal {
+  font-weight: $font-weight-normal !important;
+}
+.font-medium {
+  font-weight: $font-weight-medium !important;
+}
+.font-bold {
+  font-weight: $font-weight-bold !important;
+}
+.font-heavy {
+  font-weight: $font-weight-heavy !important;
+}
+
+// 截断
+.text-ellipsis {
+  @include text-ellipsis(1);
+}
+.line-clamp-2 {
+  @include text-ellipsis(2);
+}
+.line-clamp-3 {
+  @include text-ellipsis(3);
+}
+
+// ==================== Flex布局辅助类 ====================
+// 保持原有逻辑，增加 gap 支持
+
+.d-flex {
+  display: flex !important;
+}
+.d-inline-flex {
+  display: inline-flex !important;
+}
+.d-block {
+  display: block !important;
+}
+.d-none {
+  display: none !important;
+}
+
+.flex-column {
+  flex-direction: column !important;
+}
+.flex-wrap {
+  flex-wrap: wrap !important;
+}
+
+.justify-start {
+  justify-content: flex-start !important;
+}
+.justify-end {
+  justify-content: flex-end !important;
+}
+.justify-center {
+  justify-content: center !important;
+}
+.justify-between {
+  justify-content: space-between !important;
+}
+.justify-around {
+  justify-content: space-around !important;
+}
+
+.align-start {
+  align-items: flex-start !important;
+}
+.align-center {
+  align-items: center !important;
+}
+.align-end {
+  align-items: flex-end !important;
+}
+.align-baseline {
+  align-items: baseline !important;
+}
+
+.flex-1 {
+  flex: 1 !important;
+}
+.flex-none {
+  flex: none !important;
+}
+
+// Gap 辅助 (新)
+.gap-xs {
+  gap: $spacing-xs !important;
+}
+.gap-sm {
+  gap: $spacing-sm !important;
+}
+.gap-md {
+  gap: $spacing-md !important;
+}
+.gap-lg {
+  gap: $spacing-lg !important;
+}
+
+// ==================== 高级卡片样式 (Premium Card) ====================
+
+.card {
+  background: var(--bg-card);
+  border-radius: var(--border-radius-lg); // 16px
+  // 默认柔和阴影
+  box-shadow: var(--shadow-soft);
+  border: 1px solid transparent;
+  overflow: hidden;
+
+  // 调用高级悬浮 Mixin
+  @include premium-card-hover;
+}
+
+.card__header {
+  padding: $spacing-md $spacing-lg;
+  border-bottom: 1px solid var(--border-color);
+  font-size: $font-size-md;
+  font-weight: $font-weight-bold;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card__body {
+  padding: $spacing-lg;
+}
+
+.card__footer {
+  padding: $spacing-md $spacing-lg;
+  border-top: 1px solid var(--border-color);
+  background: #fafafa; // 稍微深一点的底色区分 footer
+}
+
+// 无边框模式
+.card--borderless {
+  box-shadow: none;
+  border: 1px solid var(--border-color);
+}
+
+.card--borderless:hover {
+  box-shadow: var(--shadow-hover);
+  border-color: transparent;
+}
+
+// ==================== 滚动条美化 (Scrollbar) ====================
+
+.scrollbar-custom {
+  @include hide-scrollbar; // 默认隐藏，Hover 或兼容处理
+
+  // Chrome/Safari
+  &::-webkit-scrollbar {
+    display: block;
+    width: 6px;
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #dcdfe6;
+    border-radius: 10px;
+    transition: background 0.3s;
+
+    &:hover {
+      background: #c0c4cc;
+    }
+  }
+}
+
+// ==================== 状态组件 (Status) ====================
+
+// 加载中
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  color: var(--primary-color);
+}
+
+// 空状态
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-section 0;
+  color: var(--text-secondary);
+
+  &__icon {
+    font-size: 80px;
+    margin-bottom: $spacing-lg;
+    opacity: 0.5;
+    color: #e0e3e9; // 极淡的灰色图标
+  }
+
+  &__text {
+    font-size: $font-size-md;
+    color: var(--text-secondary);
+  }
+}
+
+// ==================== 响应式辅助 (Responsive) ====================
+
+// 移动端隐藏 (< 768px)
+@media (max-width: $bp-mobile) {
+  .d-mobile-none {
+    display: none !important;
+  }
+}
+
+// 桌面端隐藏 (>= 768px)
+@media (min-width: $bp-mobile) {
+  .d-desktop-none {
+    display: none !important;
+  }
+}
+
+// ==================== 动画 (Transitions) ====================
+
+// 淡入淡出
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity $duration-base ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+// 列表项动画
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.4s $ease-out-quart;
+}
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}

@@ -1,0 +1,530 @@
+/**
+ * Tool Panel Shared Styles — 辅助工具面板共享样式
+ *
+ * 所有辅助工具面板（结构舞台、故事分支、图谱、大纲树、时间线等）
+ * 统一使用全局 Design Token，确保风格一致。
+ *
+ * 使用方式：在工具组件的 <style> 中 @import 此文件，
+ * 或直接使用 .tool-panel 前缀的 BEM 类名。
+ *
+ * @version 1.0.0
+ */
+
+// ---------------------------------------------------------------------------
+// 工具面板容器
+// ---------------------------------------------------------------------------
+
+.tool-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--editor-bg-base, #ffffff);
+  border-radius: var(--editor-radius-lg, 8px);
+  border: 1px solid var(--editor-border, #e2e8f0);
+  overflow: hidden;
+}
+
+// ---------------------------------------------------------------------------
+// 面板头部
+// ---------------------------------------------------------------------------
+
+.tool-panel__header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-3, 12px);
+  padding: var(--spacing-4, 16px);
+  border-bottom: 1px solid var(--editor-border, #e2e8f0);
+  background: var(--editor-bg-surface, #f8fafc);
+}
+
+.tool-panel__header-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1, 4px);
+}
+
+.tool-panel__eyebrow {
+  margin: 0;
+  font-size: var(--font-size-xs, 12px);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--editor-accent, #06b6d4);
+  font-weight: var(--font-weight-bold, 700);
+}
+
+.tool-panel__title {
+  margin: 0;
+  font-size: var(--font-size-lg, 18px);
+  color: var(--editor-text-primary, #0f172a);
+  font-weight: var(--font-weight-bold, 700);
+  line-height: var(--line-height-tight, 1.25);
+}
+
+.tool-panel__subtitle {
+  margin: var(--spacing-1, 4px) 0 0;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--editor-text-muted, #64748b);
+  line-height: var(--line-height-normal, 1.5);
+}
+
+.tool-panel__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2, 8px);
+  flex-shrink: 0;
+}
+
+// ---------------------------------------------------------------------------
+// 面板主体
+// ---------------------------------------------------------------------------
+
+.tool-panel__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--spacing-3, 12px);
+}
+
+// ---------------------------------------------------------------------------
+// 工具栏
+// ---------------------------------------------------------------------------
+
+.tool-panel__toolbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-2, 8px) var(--spacing-3, 12px);
+  gap: var(--spacing-3, 12px);
+}
+
+.tool-panel__toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2, 8px);
+  flex: 1;
+}
+
+.tool-panel__toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2, 8px);
+}
+
+// ---------------------------------------------------------------------------
+// 统一按钮样式
+// ---------------------------------------------------------------------------
+
+.tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-1, 4px);
+  padding: var(--spacing-1, 4px) var(--spacing-2, 8px);
+  border: 1px solid var(--editor-border, #e2e8f0);
+  border-radius: var(--editor-radius-md, 6px);
+  background: var(--editor-bg-base, #ffffff);
+  color: var(--editor-text-muted, #64748b);
+  font-size: var(--font-size-xs, 12px);
+  font-weight: var(--font-weight-semibold, 600);
+  cursor: pointer;
+  transition:
+    background var(--editor-transition-fast, 120ms ease-out),
+    border-color var(--editor-transition-fast, 120ms ease-out),
+    color var(--editor-transition-fast, 120ms ease-out),
+    box-shadow var(--editor-transition-fast, 120ms ease-out);
+  white-space: nowrap;
+  user-select: none;
+
+  &:hover:not(:disabled) {
+    background: var(--editor-bg-elevated, #f1f5f9);
+    border-color: var(--editor-text-ghost, #94a3b8);
+    color: var(--editor-text-primary, #0f172a);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  &:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
+  }
+}
+
+.tool-btn--primary {
+  border-color: var(--editor-accent, #06b6d4);
+  background: var(--editor-accent, #06b6d4);
+  color: var(--editor-text-inverse, #ffffff);
+
+  &:hover:not(:disabled) {
+    background: var(--editor-accent-hover, #0891b2);
+    border-color: var(--editor-accent-hover, #0891b2);
+    color: var(--editor-text-inverse, #ffffff);
+    box-shadow: var(--editor-shadow-sm);
+  }
+}
+
+.tool-btn--ghost {
+  border-color: transparent;
+  background: transparent;
+
+  &:hover:not(:disabled) {
+    background: var(--editor-bg-elevated, #f1f5f9);
+    border-color: transparent;
+  }
+}
+
+.tool-btn--pill {
+  border-radius: var(--radius-full, 9999px);
+  padding: var(--spacing-1, 4px) var(--spacing-3, 12px);
+}
+
+.tool-btn--danger {
+  color: var(--color-danger-500, #ef4444);
+  border-color: var(--color-danger-100, #fee2e2);
+
+  &:hover:not(:disabled) {
+    background: var(--color-danger-50, #fef2f2);
+    border-color: var(--color-danger-300, #fca5a5);
+    color: var(--color-danger-600, #dc2626);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 标签/筛选 Chips
+// ---------------------------------------------------------------------------
+
+.tool-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1, 4px);
+  padding: 2px var(--spacing-2, 8px);
+  border-radius: var(--radius-full, 9999px);
+  border: 1px solid var(--editor-border, #e2e8f0);
+  background: var(--editor-bg-elevated, #f1f5f9);
+  color: var(--editor-text-muted, #64748b);
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold, 600);
+  cursor: pointer;
+  transition:
+    background var(--editor-transition-fast, 120ms ease-out),
+    border-color var(--editor-transition-fast, 120ms ease-out),
+    color var(--editor-transition-fast, 120ms ease-out);
+  white-space: nowrap;
+  user-select: none;
+
+  &:hover {
+    background: var(--editor-bg-overlay, #e2e8f0);
+  }
+
+  &.is-active,
+  &.active {
+    background: var(--editor-accent-soft, #ecfeff);
+    border-color: var(--editor-accent-soft-border, #a5f3fc);
+    color: var(--editor-accent, #06b6d4);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 卡片
+// ---------------------------------------------------------------------------
+
+.tool-card {
+  padding: var(--spacing-4, 16px);
+  border-radius: var(--editor-radius-lg, 8px);
+  border: 1px solid var(--editor-border, #e2e8f0);
+  background: var(--editor-bg-base, #ffffff);
+  transition:
+    border-color var(--editor-transition-fast, 120ms ease-out),
+    box-shadow var(--editor-transition-fast, 120ms ease-out);
+
+  &:hover {
+    border-color: var(--editor-text-ghost, #94a3b8);
+    box-shadow: var(--editor-shadow-sm);
+  }
+
+  &.is-selected,
+  &.selected {
+    border-color: var(--editor-accent, #06b6d4);
+    box-shadow: 0 0 0 2px var(--editor-accent-soft-border, #a5f3fc);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 搜索框
+// ---------------------------------------------------------------------------
+
+.tool-search {
+  position: relative;
+  width: 240px;
+
+  &__icon {
+    position: absolute;
+    left: var(--spacing-3, 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--editor-text-ghost, #94a3b8);
+  }
+
+  &__input {
+    width: 100%;
+    height: 32px;
+    padding: 0 var(--spacing-2, 8px) 0 36px;
+    border-radius: var(--editor-radius-md, 6px);
+    border: 1px solid var(--editor-border, #e2e8f0);
+    background: var(--editor-bg-surface, #f8fafc);
+    font-size: var(--font-size-xs, 12px);
+    color: var(--editor-text-primary, #0f172a);
+    outline: none;
+    transition:
+      border-color var(--editor-transition-fast, 120ms ease-out),
+      box-shadow var(--editor-transition-fast, 120ms ease-out);
+
+    &::placeholder {
+      color: var(--editor-text-ghost, #94a3b8);
+    }
+
+    &:focus {
+      border-color: var(--editor-border-focus, #06b6d4);
+      box-shadow: 0 0 0 2px var(--editor-accent-soft-border, #a5f3fc);
+      background: var(--editor-bg-base, #ffffff);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 状态指示器
+// ---------------------------------------------------------------------------
+
+.tool-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1, 4px);
+  font-size: var(--font-size-xs, 12px);
+  color: var(--editor-text-muted, #64748b);
+  font-weight: var(--font-weight-semibold, 600);
+
+  &__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-success-400, #34d399);
+    box-shadow: 0 0 6px rgba(52, 211, 153, 0.4);
+  }
+
+  &--loading .tool-status__dot {
+    background: var(--editor-accent, #06b6d4);
+    animation: tool-status-pulse 1.5s infinite;
+  }
+
+  &--error .tool-status__dot {
+    background: var(--color-danger-400, #f87171);
+    box-shadow: 0 0 6px rgba(248, 113, 113, 0.4);
+  }
+}
+
+@keyframes tool-status-pulse {
+  0%, 100% {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 空状态
+// ---------------------------------------------------------------------------
+
+.tool-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-8, 32px) var(--spacing-4, 16px);
+  border-radius: var(--editor-radius-lg, 8px);
+  border: 1px dashed var(--editor-border, #e2e8f0);
+  background: var(--editor-bg-surface, #f8fafc);
+  color: var(--editor-text-muted, #64748b);
+  font-size: var(--font-size-sm, 14px);
+  text-align: center;
+  line-height: var(--line-height-relaxed, 1.75);
+}
+
+// ---------------------------------------------------------------------------
+// 详情面板 (右侧)
+// ---------------------------------------------------------------------------
+
+.tool-detail {
+  position: absolute;
+  right: var(--spacing-4, 16px);
+  bottom: var(--spacing-4, 16px);
+  width: 280px;
+  max-height: calc(100% - 160px);
+  border-radius: var(--editor-radius-lg, 8px);
+  border: 1px solid var(--editor-border, #e2e8f0);
+  background: var(--editor-bg-base, #ffffff);
+  box-shadow: var(--editor-shadow-lg);
+  padding: var(--spacing-4, 16px);
+  overflow-y: auto;
+  z-index: 20;
+}
+
+.tool-detail__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-2, 8px);
+}
+
+.tool-detail__title {
+  margin: 0;
+  font-size: var(--font-size-base, 16px);
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--editor-text-primary, #0f172a);
+  line-height: var(--line-height-tight, 1.25);
+}
+
+.tool-detail__desc {
+  margin: var(--spacing-1, 4px) 0 0;
+  font-size: var(--font-size-sm, 14px);
+  line-height: var(--line-height-relaxed, 1.75);
+  color: var(--editor-text-muted, #64748b);
+}
+
+.tool-detail__meta {
+  margin-top: var(--spacing-3, 12px);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-2, 8px);
+}
+
+.tool-detail__meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--spacing-1, 4px) var(--spacing-2, 8px);
+  border-radius: var(--editor-radius-md, 6px);
+  background: var(--editor-bg-surface, #f8fafc);
+}
+
+.tool-detail__meta-label {
+  font-size: 10px;
+  color: var(--editor-text-ghost, #94a3b8);
+  font-weight: var(--font-weight-bold, 700);
+  text-transform: uppercase;
+}
+
+.tool-detail__meta-value {
+  font-size: var(--font-size-sm, 14px);
+  color: var(--editor-text-primary, #0f172a);
+  font-weight: var(--font-weight-bold, 700);
+}
+
+// ---------------------------------------------------------------------------
+// 指标栏 (mini metrics)
+// ---------------------------------------------------------------------------
+
+.tool-metrics {
+  display: flex;
+  gap: var(--spacing-4, 16px);
+  padding: var(--spacing-1, 4px) var(--spacing-3, 12px);
+  border-radius: var(--editor-radius-lg, 8px);
+  border: 1px solid var(--editor-border-light, #f1f5f9);
+  background: var(--editor-bg-surface, #f8fafc);
+}
+
+.tool-metric {
+  display: flex;
+  flex-direction: column;
+  line-height: var(--line-height-tight, 1.25);
+
+  &__label {
+    font-size: 10px;
+    color: var(--editor-text-ghost, #94a3b8);
+    font-weight: var(--font-weight-bold, 700);
+    text-transform: uppercase;
+  }
+
+  &__value {
+    font-size: var(--font-size-sm, 14px);
+    color: var(--editor-text-primary, #0f172a);
+    font-weight: var(--font-weight-bold, 700);
+  }
+
+  &--accent &__value {
+    color: var(--editor-accent, #06b6d4);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tab 切换
+// ---------------------------------------------------------------------------
+
+.tool-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--editor-bg-elevated, #f1f5f9);
+  padding: var(--spacing-1, 4px);
+  border-radius: var(--editor-radius-md, 6px);
+  border: 1px solid var(--editor-border, #e2e8f0);
+}
+
+.tool-tab {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2, 8px);
+  padding: var(--spacing-2, 8px) var(--spacing-4, 16px);
+  border-radius: var(--editor-radius-md, 6px);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--editor-text-muted, #64748b);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-semibold, 600);
+  cursor: pointer;
+  transition:
+    background var(--editor-transition-fast, 120ms ease-out),
+    color var(--editor-transition-fast, 120ms ease-out),
+    border-color var(--editor-transition-fast, 120ms ease-out);
+  white-space: nowrap;
+
+  &:hover {
+    color: var(--editor-text-secondary, #334155);
+    background: var(--editor-bg-surface, #f8fafc);
+  }
+
+  &.is-active {
+    background: var(--editor-bg-base, #ffffff);
+    color: var(--editor-accent, #06b6d4);
+    border-color: var(--editor-accent-soft-border, #a5f3fc);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 响应式断点
+// ---------------------------------------------------------------------------
+
+@media (max-width: 1024px) {
+  .tool-panel__header {
+    flex-direction: column;
+  }
+
+  .tool-panel__header-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .tool-detail {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    max-height: none;
+  }
+}

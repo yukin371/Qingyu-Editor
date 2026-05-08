@@ -1,13 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Qingyu-Editor</title>
-</head>
-<body>
-<div id="app"></div>
-<script src="./src/main.ts" type="module"></script>
-</body>
-</html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="青羽 - 优质网络文学阅读平台">
+    <meta name="keywords" content="在线阅读,网络小说,文学,青羽">
 
+    <!-- Digital Atelier 主题字体 - Newsreader & Manrope -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&display=swap" rel="stylesheet">
+
+    <!-- 安全响应头配置 -->
+    <!-- 内容安全策略 (CSP) - 开发环境配置，允许Vite HMR和开发工具 -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' ws: http:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; img-src 'self' data: https: http:; font-src 'self' data: https://fonts.gstatic.com https://unpkg.com; connect-src 'self' ws://localhost:* http://localhost:* https:; frame-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self';">
+
+    <!-- 防止点击劫持攻击 -->
+    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+
+    <!-- 防止MIME类型嗅探 -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+
+    <!-- 启用浏览器XSS防护 -->
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+
+    <!-- 推荐人策略 -->
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+
+    <!-- 权限策略 -->
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
+
+    <title>青羽 - 在线阅读平台</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,284 @@
+/**
+ * Digital Atelier Theme - 深空科幻写作编辑器主题
+ *
+ * 设计理念：星空下的数字工作室
+ * - 深蓝黑色背景营造沉浸感
+ * - 青色/紫色光晕增添科幻氛围
+ * - 玻璃拟态面板保持现代感
+ * - 羊皮纸写作区回归文学本质
+ */
+
+// ==================== CSS Variables ====================
+:root {
+  // Primary Colors - Cyan
+  --da-primary: #7de9ff;
+  --da-primary-dim: #1ad0eb;
+  --da-primary-fixed: #3adffa;
+  --da-primary-container: rgba(58, 223, 250, 0.15);
+  --da-on-primary: #005561;
+  --da-on-primary-fixed: #00363e;
+
+  // Secondary Colors - Violet
+  --da-secondary: #c0c1ff;
+  --da-secondary-dim: #6063ee;
+  --da-secondary-fixed: #e1e0ff;
+  --da-secondary-container: rgba(96, 99, 238, 0.15);
+  --da-on-secondary: #2724b8;
+
+  // Tertiary Colors - Lavender
+  --da-tertiary: #cebdff;
+  --da-tertiary-dim: #a88cfb;
+  --da-tertiary-fixed: #c1acff;
+  --da-tertiary-container: rgba(193, 172, 255, 0.15);
+  --da-on-tertiary: #482995;
+
+  // Surface Colors
+  --da-background: #060e20;
+  --da-background-alt: #081329;
+  --da-surface: #0c1934;
+  --da-surface-bright: #172b54;
+  --da-surface-dim: #060e20;
+  --da-surface-container: #0c1934;
+  --da-surface-container-low: #081329;
+  --da-surface-container-high: #101e3e;
+  --da-surface-container-highest: #142449;
+  --da-surface-variant: #142449;
+
+  // Glass Effect
+  --da-glass-bg: rgba(20, 36, 73, 0.4);
+  --da-glass-blur: 24px;
+  --da-glass-border: rgba(56, 71, 109, 0.3);
+
+  // Text Colors
+  --da-on-surface: #dee5ff;
+  --da-on-surface-variant: #9baad6;
+  --da-on-background: #dee5ff;
+
+  // Outline & Border
+  --da-outline: #65759e;
+  --da-outline-variant: #38476d;
+  --da-border-subtle: rgba(56, 71, 109, 0.2);
+
+  // Status Colors
+  --da-error: #fd6f85;
+  --da-error-dim: #c8475d;
+  --da-error-container: #8a1632;
+  --da-success: #4ade80;
+  --da-warning: #fbbf24;
+
+  // Shadows & Glows
+  --da-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --da-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --da-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
+  --da-glow-cyan: 0 0 20px rgba(125, 233, 255, 0.3);
+  --da-glow-cyan-strong: 0 0 30px rgba(125, 233, 255, 0.5);
+  --da-glow-violet: 0 0 20px rgba(206, 189, 255, 0.3);
+
+  // Typography
+  --da-font-headline: 'Newsreader', 'Noto Serif SC', 'Source Han Serif SC', Georgia, serif;
+  --da-font-body: 'Newsreader', 'Noto Serif SC', 'Source Han Serif SC', Georgia, serif;
+  --da-font-label: 'Manrope', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --da-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  // Spacing
+  --da-spacing-xs: 4px;
+  --da-spacing-sm: 8px;
+  --da-spacing-md: 16px;
+  --da-spacing-lg: 24px;
+  --da-spacing-xl: 32px;
+  --da-spacing-2xl: 48px;
+
+  // Border Radius
+  --da-radius-sm: 8px;
+  --da-radius-md: 12px;
+  --da-radius-lg: 16px;
+  --da-radius-xl: 24px;
+  --da-radius-full: 9999px;
+
+  // Transitions
+  --da-transition-fast: 0.15s ease;
+  --da-transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --da-transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+
+  // Navbar
+  --da-navbar-height: 56px;
+  --da-sidebar-width: 80px;
+}
+
+// ==================== Base Theme Class ====================
+.digital-atelier-theme {
+  background-color: var(--da-background);
+  color: var(--da-on-surface);
+  font-family: var(--da-font-body);
+  min-height: 100vh;
+
+  // Scrollbar
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--da-surface-container-low);
+    border-radius: var(--da-radius-full);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--da-outline-variant);
+    border-radius: var(--da-radius-full);
+
+    &:hover {
+      background: var(--da-outline);
+    }
+  }
+}
+
+// ==================== Glass Panel Mixin ====================
+@mixin glass-panel {
+  background: var(--da-glass-bg);
+  backdrop-filter: blur(var(--da-glass-blur));
+  -webkit-backdrop-filter: blur(var(--da-glass-blur));
+  border: 1px solid var(--da-glass-border);
+}
+
+// ==================== Glow Effects ====================
+@mixin glow-cyan {
+  box-shadow: var(--da-glow-cyan);
+}
+
+@mixin glow-cyan-strong {
+  box-shadow: var(--da-glow-cyan-strong);
+}
+
+@mixin glow-violet {
+  box-shadow: var(--da-glow-violet);
+}
+
+// ==================== Manuscript Paper Effect ====================
+@mixin manuscript-paper {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  box-shadow:
+    0 0 80px -20px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+// ==================== Button Styles ====================
+.da-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--da-spacing-sm);
+  padding: var(--da-spacing-sm) var(--da-spacing-md);
+  border-radius: var(--da-radius-sm);
+  font-family: var(--da-font-label);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all var(--da-transition-fast);
+  border: 1px solid transparent;
+
+  &--primary {
+    background: linear-gradient(135deg, var(--da-primary) 0%, var(--da-primary-dim) 100%);
+    color: var(--da-on-primary);
+    border-color: transparent;
+
+    &:hover {
+      box-shadow: var(--da-glow-cyan);
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
+  }
+
+  &--ghost {
+    background: transparent;
+    color: var(--da-primary);
+    border-color: var(--da-outline-variant);
+
+    &:hover {
+      background: var(--da-primary-container);
+      border-color: var(--da-primary);
+    }
+  }
+
+  &--icon {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: var(--da-radius-full);
+    background: transparent;
+    color: var(--da-on-surface-variant);
+    border: none;
+
+    &:hover {
+      background: var(--da-primary-container);
+      color: var(--da-primary);
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+}
+
+// ==================== Animation Keyframes ====================
+@keyframes da-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes da-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(125, 233, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(125, 233, 255, 0.5);
+  }
+}
+
+@keyframes da-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes da-cursor-blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+// ==================== Utility Classes ====================
+.da-text-gradient {
+  background: linear-gradient(135deg, var(--da-primary) 0%, var(--da-tertiary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.da-glass {
+  @include glass-panel;
+}
+
+.da-glow-cyan {
+  @include glow-cyan;
+}
+
+.da-glow-violet {
+  @include glow-violet;
+}
