@@ -115,7 +115,7 @@ describe('WorkspaceRightPanel', () => {
     await wrapper.findAll('.workspace-activity-bar__item')[1].trigger('click')
 
     expect(wrapper.findAll('.workspace-activity-bar__item')[1].classes()).toContain('active')
-    expect(wrapper.text()).toContain('当前章节分析台')
+    expect(wrapper.get('[data-testid="story-harness-panel"]').text()).toContain('harness')
   })
 
   it('relays structure-plan creation requests outward', async () => {
