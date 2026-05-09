@@ -2,9 +2,6 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
-import { useAuthStore } from '@/stores/auth'
-import { setIsTestMode } from '@/utils/test-mode-api-interceptor'
-import { setForcedTestMode } from '@/core/services/mock-data-manager'
 
 // Qingyu 全局服务
 import { message, messageBox, notification } from '@/design-system/services'
@@ -90,9 +87,6 @@ declare module 'vue' {
 const bootstrap = async () => {
   const { default: ElementPlus } = await import('element-plus')
   app.use(ElementPlus)
-  useAuthStore(pinia).ensureTestModeMockSession(true)
-  setForcedTestMode(true)
-  setIsTestMode(true)
 
   app.mount('#app')
 }

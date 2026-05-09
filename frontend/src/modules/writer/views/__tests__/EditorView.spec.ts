@@ -35,6 +35,6 @@ describe('EditorView legacy shell', () => {
     const wrapper = mount(EditorView)
 
     expect(wrapper.find('[data-testid="editor-view-legacy"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('正在切换到新的 Writer Workspace')
+    expect(wrapper.text()).toContain('正在切换到写作工作区')
   })
 })

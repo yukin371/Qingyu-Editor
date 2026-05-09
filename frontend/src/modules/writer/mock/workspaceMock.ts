@@ -1,10 +1,10 @@
 import { DocumentStatus, DocumentType, type Document } from '../types/document'
 import {
-  YUNLAN_BOOK_ID,
-  YUNLAN_BOOK_TITLE,
-  createYunlanReaderChapters,
-  yunlanBookMeta,
-} from '@/modules/bookstore/yunlanDemo.mock'
+  WRITER_SAMPLE_BOOK_ID,
+  WRITER_SAMPLE_BOOK_TITLE,
+  createWriterSampleReaderChapters,
+  writerSampleBookMeta,
+} from './yunlanWriterMock'
 import type { OutlineNode } from '@/types/writer'
 
 export interface WorkspaceProjectSummary {
@@ -48,7 +48,7 @@ const iso = (offsetMs: number) => new Date(now - offsetMs).toISOString()
 
 const WRITER_YUNLAN_PROJECT_ID = 'project-yljs-1'
 
-const readerChapters = createYunlanReaderChapters(3)
+const readerChapters = createWriterSampleReaderChapters(3)
 
 const createYunlanDocs = (projectId: string): Document[] => {
   const sceneId1 = `${projectId}-scene-1`
@@ -193,11 +193,11 @@ ${chapter.content}
 const buildYunlanMock = (projectId: string): WorkspaceMockProject => ({
   project: {
     id: projectId,
-    title: YUNLAN_BOOK_TITLE,
+    title: WRITER_SAMPLE_BOOK_TITLE,
     status: 'writing',
-    wordCount: yunlanBookMeta.wordCount,
+    wordCount: writerSampleBookMeta.wordCount,
     chapterCount: 3,
-    updatedAt: new Date(yunlanBookMeta.lastUpdate.replace(' ', 'T')).toISOString(),
+    updatedAt: new Date(writerSampleBookMeta.lastUpdate.replace(' ', 'T')).toISOString(),
   },
   docs: createYunlanDocs(projectId),
   chapters: createYunlanChapterSummary(projectId),
@@ -207,10 +207,10 @@ const buildYunlanMock = (projectId: string): WorkspaceMockProject => ({
 
 const workspaceMockProjects: Record<string, WorkspaceMockProject> = {
   [WRITER_YUNLAN_PROJECT_ID]: buildYunlanMock(WRITER_YUNLAN_PROJECT_ID),
-  [YUNLAN_BOOK_ID]: buildYunlanMock(YUNLAN_BOOK_ID),
+  [WRITER_SAMPLE_BOOK_ID]: buildYunlanMock(WRITER_SAMPLE_BOOK_ID),
 }
 
-const YUNLAN_PROJECT_ALIASES = new Set([WRITER_YUNLAN_PROJECT_ID, YUNLAN_BOOK_ID])
+const YUNLAN_PROJECT_ALIASES = new Set([WRITER_YUNLAN_PROJECT_ID, WRITER_SAMPLE_BOOK_ID])
 
 export const getWorkspaceMockProject = (projectId?: string | null): WorkspaceMockProject | null => {
   if (!projectId) return null

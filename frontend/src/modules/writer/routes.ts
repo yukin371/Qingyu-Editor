@@ -5,19 +5,19 @@ const writerRoutes: RouteRecordRaw[] = [
     path: '/writer',
     name: 'writer-home',
     component: () => import('./views/ProjectWorkspace.vue'),
-    meta: { title: '编辑器', requiresAuth: true },
+    meta: { title: '编辑器' },
   },
   {
     path: '/writer/projects',
     name: 'writer-projects',
     component: () => import('./views/ProjectWorkspace.vue'),
-    meta: { title: '编辑器', requiresAuth: true },
+    meta: { title: '编辑器' },
   },
   {
     path: '/writer/project/:projectId',
     name: 'writer-project',
     component: () => import('./views/ProjectWorkspace.vue'),
-    meta: { title: '编辑器', requiresAuth: true },
+    meta: { title: '编辑器' },
     props: true,
   },
   {
@@ -32,7 +32,7 @@ const writerRoutes: RouteRecordRaw[] = [
         ...(to.params.chapterId ? { chapterId: String(to.params.chapterId) } : {}),
       },
     }),
-    meta: { requiresAuth: true, deprecated: true, replacement: 'writer-project' },
+    meta: { deprecated: true, replacement: 'writer-project' },
   },
 ]
 

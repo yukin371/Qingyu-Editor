@@ -24,6 +24,8 @@
 
 - **工具唯一入口**：`relations / timeline / branches / structure` 只允许通过 `WorkspaceToolOverlay` 承载；不要再让 `WorkspaceEditorContent` 主内容区直接切成工具页。
 - **编辑器是默认首页**：独立编辑器的 `/` 与 `/writer` 都应优先落到 `ProjectWorkspace`，不要再让 `WriterDashboard`、`ProjectListView` 或平台式头部导航充当默认宿主。
+- **历史入口页只保留 redirect shell**：`WriterDashboard`、`EditorView` 这类 legacy 入口若仍需留文件，应仅做轻量重定向或占位，不再承载真实 dashboard、认证态或平台式卡片布局。
+- **桌面启动链保持最小化**：`frontend/src/main.ts` 与 `router/*` 不应再强制注入 auth session、websocket 或全局 mock 状态；mock/test-mode 只允许通过显式 `?test=true` 进入，避免桌面宿主继续背在线平台启动逻辑。
 - **布局壳 owner 单一**：`WorkspaceShell` 负责上/中/下区域的视口壳，`EditorLayout` 负责左/主/右分栏；`ProjectWorkspace` 只做数据编排、事件桥接和 slot 装配。
 - **资产总览也走 overlay owner**：`assets` 与 `structure / relations / timeline / branches` 一样，只允许通过 `WorkspaceToolOverlay` 承载；分类状态 owner 在 overlay，自身视图只负责展示与发事件，避免路由、宿主、视图三处各维护一套资产分类状态。
 - **结构舞台跳资产总览也只走 overlay 切换**：`StructureInspectorPanel` 里的“查看全局资产”只允许发 `switch-tool('assets')`，再由 `StructureStageView -> WorkspaceToolOverlay` 透传；不要在结构舞台内部内嵌资产列表、复制分类状态，或新增第二套资产宿主。
@@ -60,6 +62,7 @@
 - **右栏设定速查与 overlay 资产总览共用同一套资产聚合口径**：右栏 `AssetListPanel / AssetDetailPanel` 与 `EncyclopediaView` 必须继续复用统一资产数据来源和分类口径；不要让右栏为了方便再维护一套单独的资产 store 或分类枚举。
 - **右栏设定按钮当前只到前端占位，不要偷做第二套持久化 owner**：设定面板里的新建 / 编辑 / 删除目前只提供前端按钮与 `TODO` 提示；在 backend / shared entity owner 未明确前，不得在 writer 宿主内本地落盘成第二套资产真相。
 - **编辑器外观偏好 owner 是 `editorAppearanceStore`**：字号、行距、版心、字体族与紧凑工具栏都应统一走 `editorAppearanceStore` 本地偏好；`TipTapEditorView` 只负责输出 CSS variables，`QyTipTapEditor` 只消费 `toolbarPreset`，不要再在组件内各自维护一份主题/排版状态。
+- **编辑器图片先走本地嵌入，不走在线存储**：`QyTipTapEditor` 当前应通过 writer 自己的图片适配层把 PNG/JPG/GIF 转成 data URL 直接写入正文，避免依赖 `/shared/storage/*` 这类在线平台 API；若未来要改成本地资产目录，也应由 writer/Wails owner 接管，而不是回退到 shared online storage。
 - **资产总览图谱深链由 overlay 接管**：`EncyclopediaView` 只负责发 `focus-graph-asset + switch-tool` 事件，不自己持有图谱 focus 状态；`WorkspaceToolOverlay` 是这条 focus payload 的 owner，并只把一次性聚焦参数透传给 `CharacterGraphView`。不要把图谱定点跳转状态再塞回路由、store 或资产视图本身。
 - **最近章节/节点数属于前端聚合口径**：资产总览里的“最近出现章节 / 关联结构节点数”目前由 `writerAssetRefs` 与 `OutlineNode.documentId` 绑定推导，只代表当前前端已知引用，不等同于后端统一事实。若未来后端补正式字段，必须先明确新 owner，再替换这层前端聚合逻辑。
 - **资产深链当前默认落全局图谱**：从资产总览点进“关系图谱”时，`CharacterGraphView` 当前会切到全局图谱并高亮目标节点，以保证角色/地点/物件最小可达；组织/概念若尚无图谱节点，只允许提示“未接入”，不要伪造成已接线成功。

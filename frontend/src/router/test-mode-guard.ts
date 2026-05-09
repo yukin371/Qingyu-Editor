@@ -8,7 +8,7 @@
  * 1. 检测当前 URL 是否包含 ?test=true 参数
  * 2. 在路由跳转时自动保留 test 参数
  * 3. 提供退出测试模式的机制
- * 4. 添加测试模式标识到页面
+ * 4. 为桌面宿主保留最小 Mock 模式兼容
  */
 
 import type { Router } from 'vue-router'
@@ -30,8 +30,6 @@ export function setupTestModeGuard(router: Router) {
     if (hasTestParam && !targetHasTestParam) {
       // 保留原有的 test 参数
       const newQuery = { ...to.query, [TEST_PARAM_KEY]: 'true' }
-
-      console.log('[TestMode] Auto-adding test parameter to:', to.path)
 
       // 使用 replace 避免产生额外的历史记录
       return {
@@ -57,10 +55,9 @@ export function setupTestModeGuard(router: Router) {
   // 在 afterEach 中更新测试模式标识
   router.afterEach((to) => {
     const hasTestParam = hasTestParameter(to.query)
-    
+
     if (hasTestParam) {
       addTestModeIndicator()
-      console.log('[TestMode] Test mode active for:', to.path)
     } else {
       removeTestModeIndicator()
     }
@@ -94,30 +91,18 @@ function addTestModeIndicator() {
     indicator.id = TEST_MODE_INDICATOR_ID
     indicator.className = 'fixed top-4 right-4 z-[10000] cursor-move'
     indicator.innerHTML = `
-      <div class="test-mode-badge flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-full text-xs font-semibold shadow-lg transition-all duration-300 hover:shadow-xl">
+      <div class="test-mode-badge flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900 px-3 py-1.5 text-[11px] font-medium text-white shadow-lg">
         <span class="indicator-dot w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-        <span class="indicator-text tracking-wide">Mock Mode</span>
-        <button class="demohub-btn ml-1 w-6 h-6 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-all duration-200" title="返回 DemoHub">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-          </svg>
-        </button>
-        <button class="exit-btn ml-1 w-6 h-6 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white text-sm transition-all duration-200 hover:scale-110" title="退出 Mock 模式">×</button>
+        <span class="indicator-text tracking-[0.08em] uppercase">Mock</span>
+        <button class="exit-btn flex h-5 w-5 items-center justify-center rounded-full bg-white/10 text-[12px] text-white transition-colors duration-150 hover:bg-white/20" title="退出 Mock 模式">×</button>
       </div>
     `
-    
+
     document.body.appendChild(indicator)
-    
+
     // 绑定拖动功能
     makeDraggable(indicator)
-    
-    // 绑定 DemoHub 按钮（返回）
-    const demohubBtn = indicator.querySelector('.demohub-btn')
-    demohubBtn?.addEventListener('click', (e) => {
-      e.stopPropagation()
-      navigateToDemoHub()
-    })
-    
+
     // 绑定退出按钮事件
     const exitBtn = indicator.querySelector('.exit-btn')
     exitBtn?.addEventListener('click', (e) => {
@@ -185,17 +170,6 @@ function makeDraggable(element: HTMLElement) {
 }
 
 /**
- * 导航到 DemoHub
- */
-function navigateToDemoHub() {
-  // 使用 window.location 导航，并保持 test 参数
-  const url = new URL(window.location.href)
-  url.pathname = '/demo'
-  url.searchParams.set('test', 'true')
-  window.location.href = url.toString()
-}
-
-/**
  * 移除测试模式标识
  */
 function removeTestModeIndicator() {
@@ -230,25 +204,25 @@ function setupLinkInterceptor(router: Router) {
   document.addEventListener('click', (e) => {
     const target = e.target as HTMLElement
     const link = target.closest('a') as HTMLAnchorElement
-    
+
     if (!link) return
-    
+
     // 检查是否是内部链接
     const href = link.getAttribute('href')
     if (!href || href.startsWith('http://') || href.startsWith('https://') || href.startsWith('#')) {
       return
     }
-    
+
     // 检查当前是否在测试模式
     const currentUrl = new URL(window.location.href)
-    const hasTestParam = currentUrl.searchParams.has(TEST_PARAM_KEY) && 
+    const hasTestParam = currentUrl.searchParams.has(TEST_PARAM_KEY) &&
                         currentUrl.searchParams.get(TEST_PARAM_KEY) === 'true'
-    
+
     if (!hasTestParam) return
-    
+
     // 阻止默认行为
     e.preventDefault()
-    
+
     // 构建新的 URL，添加 test 参数
     let newHref = href
     if (href.includes('?')) {
@@ -256,7 +230,7 @@ function setupLinkInterceptor(router: Router) {
     } else {
       newHref += `?${TEST_PARAM_KEY}=true`
     }
-    
+
     // 使用 router.push 进行导航
     router.push(newHref)
   }, true)

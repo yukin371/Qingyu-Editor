@@ -3,7 +3,6 @@
  */
 import { ref, reactive, type Ref, type ComputedRef } from 'vue'
 import { message } from '@/design-system/services'
-import { useAuthStore } from '@/stores/auth'
 import {
   getPublishRecords,
   publishChapter as apiPublishChapter,
@@ -14,7 +13,7 @@ import {
   type PublishStats,
   type ChapterPublishConfig,
 } from '@/modules/writer/api'
-import { syncPublishedBookFromRecords } from '@/modules/workflow/publishedBridge'
+import { syncPublishedBookFromRecords } from '@/modules/writer/mock/publishedBridge'
 import { getWorkspaceMockProject } from '@/modules/writer/mock/workspaceMock'
 
 // 导出类型
@@ -34,8 +33,6 @@ export function useChapterManager(
   isMockProjectContext: Ref<boolean>,
   currentLocalProject: ComputedRef<LocalProject>,
 ) {
-  const authStore = useAuthStore()
-
   // 章节发布状态
   const loadingRecords = ref(false)
   const publishRecords = ref<PublishRecord[]>([])
@@ -151,7 +148,6 @@ export function useChapterManager(
           target.published_at = new Date().toISOString()
         }
         persistMockPublication(bookId.value)
-        authStore.promoteToAuthorByPublishing(false)
         message.success('发布成功（Mock）')
         loadPublishRecords()
         loadStats()
@@ -163,9 +159,6 @@ export function useChapterManager(
         chapter_number: record.chapter_number,
         project_id: bookId.value,
       } as ChapterPublishConfig & { project_id: string })
-      authStore.promoteToAuthorByPublishing(false)
-      // 发布成功后刷新用户信息，若后端已自动升级作者角色可立即生效
-      await authStore.getUserInfo().catch(() => undefined)
       message.success('发布成功')
       loadPublishRecords()
       loadStats()

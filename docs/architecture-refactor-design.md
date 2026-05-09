@@ -3,11 +3,25 @@
 **日期**: 2026-05-09
 **状态**: 设计中
 **范围**: Qingyu-Editor 全栈（Go 后端 + Vue 前端）
-**目标**: 从"前端搬运 + 后端空壳"重整为"数据桥驱动的独立桌面应用"
+**目标**: 从"前端搬运 + 后端空壳"重整为"仅保留 writer 的独立桌面应用"
 
 ---
 
 ## 一、现状诊断
+
+### 0.1 方向校正（2026-05-10）
+
+这份设计需要先做一个方向修正：`Qingyu-Editor` 不应继续以“尽量兼容原在线系统”为前提，而应明确收敛为 **桌面写作宿主**。
+
+新的硬边界如下：
+
+- **运行时只服务 writer**：根入口、根路由、启动链只为写作工作区服务。
+- **平台能力不是兼容保留，而是待隔离/待移除**：publish、revenue、statistics、community、reader、social、admin、notification、vip 等不再视为桌面主链能力。
+- **桌面端唯一数据路径**：`writer -> data bridge -> Wails -> Go service -> SQLite/本地文件`。
+- **显式兼容优先于隐式强绑**：`?test=true`、mock 数据、旧链接重定向可以保留，但只能作为显式兼容层，不能继续强制注入到桌面宿主启动链。
+- **目标不是回放在线产品，而是维护一个简洁、可扩展的桌面编辑器**。
+
+因此，后续实施优先级应从“补齐所有平台映射”调整为“先切断在线平台依赖，再收口 writer 内核”。
 
 ### 1.1 问题总览
 
@@ -105,6 +119,34 @@ func (a *App) AICall(cfg ai.Config, prompt string, context string) (string, erro
 ---
 
 ## 二、目标架构
+
+### 2.0 桌面化目标
+
+桌面版目标架构应比当前文档更强硬：
+
+```text
+App Shell（桌面宿主）
+  -> writer routes
+    -> ProjectWorkspace
+      -> WorkspaceShell / Editor / Right Panel / Overlay
+        -> writer stores & composables
+          -> data-bridge/wails
+            -> Go services
+              -> SQLite / 本地文件 / AI provider
+```
+
+不再保留以下运行时前提：
+
+- 全局 auth session
+- websocket 页面守卫
+- 在线平台 test-mode 强制注入
+- 书城/社区/财务/用户中心等平台导航壳
+
+保留项仅限于：
+
+- 旧 writer 链接兼容重定向
+- 显式 `?test=true` 的 mock fallback
+- 仍未完成 Wails 化的 writer 内部临时桥接
 
 ### 2.1 分层架构
 
@@ -320,6 +362,73 @@ Data Bridge 是前端与 Wails 后端之间的适配层：
 - **接口抽象**：composable 不直接调用 Wails，而是调用 data-bridge 提供的接口
 - **类型安全**：所有 Go struct 在 TypeScript 端有对应的类型定义
 - **可切换**：未来可切换为 HTTP 后端（平台回流时），只需替换 data-bridge 实现
+
+### 4.4 前端清理优先级（修正版）
+
+在桌面宿主里，前端清理顺序应重排为四层，而不是继续按“在线系统平移”思路扩张：
+
+#### Phase A：入口层去平台化
+
+目标：
+
+- `main.ts` 不再强制注入 auth/mock session/websocket 语义
+- `router/guards.ts` 收口为桌面最小守卫
+- `writer/routes.ts` 去掉 `requiresAuth`
+
+退出条件：
+
+- 应用启动无需登录态
+- 根路由只承载 writer desktop
+- 显式 `?test=true` 仍可保留
+
+#### Phase B：writer 内部泄漏点收口
+
+目标：
+
+- 去掉 `useChapterManager` 对 auth / publish bridge 的强耦合
+- 让 `workspaceMock` 不再依赖书城 Demo 数据
+- 抽离 `QyTipTapEditor` 的本地上传 owner，停止直连在线 storage API
+
+退出条件：
+
+- writer mock 与 writer runtime 不再依赖 bookstore / workflow / shared online storage
+
+#### Phase C：物理模块隔离与归档
+
+目标：
+
+- 先做引用面盘点，再归档/删除非 writer 模块与非 writer store
+- 用当前 git 提交作为恢复基线，避免误删
+
+优先对象：
+
+- `frontend/src/modules/admin`
+- `bookstore`
+- `community`
+- `reader`
+- `social`
+- `finance`
+- `notification`
+- `vip`
+- `workflow`
+- 根级 `frontend/src/stores` 非 writer store
+
+退出条件：
+
+- 根入口与 writer 主链不再依赖这些模块
+- 物理目录完成归档或删除，并有可恢复基线
+
+#### Phase D：writer 内核继续瘦身
+
+目标：
+
+- 评估 `storyHarness`、`batchOperationStore`、旧 `editor/` 与 `v3/` 残留
+- 保留仍属于桌面写作闭环的能力，移除只属于历史平台实验的半成品
+
+退出条件：
+
+- writer 内部只保留清晰的桌面产品语义
+- 组件与 store 结构能支撑后续长期维护
 
 ### 4.2 目录结构
 

@@ -182,7 +182,7 @@ import { SmartKeyword, type KeywordInfo } from '../QySmartKeyword/extensions/Sma
 import { ParagraphWithId } from '../QySmartKeyword/extensions/ParagraphWithId'
 import { AiDiffExtension } from '../QySmartKeyword/extensions/AiDiffExtension'
 import { searchProjectKeywords, type ParagraphContent } from '@/modules/writer/api/wrapper'
-import { storageAPI } from '@/modules/shared/api/storage'
+import { createEmbeddedEditorImage } from '@/modules/writer/services/editorImageAsset.service'
 
 const props = withDefaults(
   defineProps<{
@@ -307,46 +307,18 @@ async function handleImageSelect(event: Event) {
   const file = input.files?.[0]
   if (!file) return
 
-  // 验证文件类型
-  if (!file.type.startsWith('image/')) {
-    alert('请选择图片文件')
-    return
-  }
-
-  // 验证文件大小（限制10MB）
-  const maxSize = 10 * 1024 * 1024
-  if (file.size > maxSize) {
-    alert('图片大小不能超过10MB')
-    return
-  }
-
   isUploadingImage.value = true
 
   try {
-    // 上传图片到服务器
-    const response = await storageAPI.uploadFile(file, `writer/${props.projectId}/images`, 'image')
-    const uploadData = response.data
+    const imageAsset = await createEmbeddedEditorImage(file)
 
-    if (!uploadData?.file?.fileId) {
-      throw new Error('上传失败：未获取到文件ID')
-    }
+    editor.value?.chain().focus().setImage({ src: imageAsset.src, alt: imageAsset.alt }).run()
 
-    // 获取文件访问URL
-    const urlResponse = await storageAPI.getFileURL(uploadData.file.fileId, 86400 * 365) // 1年有效期
-    const imageUrl = urlResponse.data?.url
-
-    if (!imageUrl) {
-      throw new Error('获取图片URL失败')
-    }
-
-    // 在编辑器中插入图片
-    editor.value?.chain().focus().setImage({ src: imageUrl, alt: file.name }).run()
-
-    // 清空 input 以便重复选择同一文件
     input.value = ''
-  } catch (error) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : '图片上传失败，请重试'
     console.error('图片上传失败:', error)
-    alert('图片上传失败，请重试')
+    alert(message)
   } finally {
     isUploadingImage.value = false
   }

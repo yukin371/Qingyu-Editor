@@ -1,10 +1,10 @@
-import { writerSampleBookMeta } from '@/modules/writer/mock/yunlanWriterMock'
-import { getWorkspaceMockProject } from '@/modules/writer/mock/workspaceMock'
+import { writerSampleBookMeta } from './yunlanWriterMock'
+import { getWorkspaceMockProject } from './workspaceMock'
 import type { PublishRecord } from '@/modules/writer/api/publish'
 
-const STORAGE_KEY = 'qingyu:workflow:published-books:v1'
+const STORAGE_KEY = 'qingyu:writer:published-preview:v1'
 
-export interface PublishedBridgeChapter {
+type PublishedBridgeChapter = {
   id: string
   chapterNum: number
   title: string
@@ -14,26 +14,24 @@ export interface PublishedBridgeChapter {
   publishedAt?: string
 }
 
-export interface PublishedBridgeBook {
-  id: string
-  title: string
-  author: string
-  cover: string
-  description: string
-  tags: string[]
-  category: string
-  categoryName: string
-  status: 'serializing' | 'completed'
-  wordCount: number
-  chapterCount: number
-  rating: number
-  viewCount: number
-  favoriteCount: number
-  lastUpdateTime: string
-}
-
-export interface PublishedBridgeBookDetail {
-  book: PublishedBridgeBook
+type PublishedBridgeBookDetail = {
+  book: {
+    id: string
+    title: string
+    author: string
+    cover: string
+    description: string
+    tags: string[]
+    category: string
+    categoryName: string
+    status: 'serializing' | 'completed'
+    wordCount: number
+    chapterCount: number
+    rating: number
+    viewCount: number
+    favoriteCount: number
+    lastUpdateTime: string
+  }
   chapters: PublishedBridgeChapter[]
 }
 
@@ -88,11 +86,9 @@ const buildBaseFromWriterProject = (
       id: projectId,
       title: mockProject.project.title || fallbackTitle || projectId,
       author: writerSampleBookMeta.author,
-      cover: writerSampleBookMeta.cover || '/images/covers/yunlan-cover.png',
-      description: writerSampleBookMeta.introduction || '来自创作端发布的内容。',
-      tags: Array.isArray(writerSampleBookMeta.tags)
-        ? [...writerSampleBookMeta.tags]
-        : ['创作发布'],
+      cover: writerSampleBookMeta.cover || '',
+      description: writerSampleBookMeta.introduction || '来自写作工作区的本地发布预览内容。',
+      tags: [...(writerSampleBookMeta.tags || ['创作发布'])],
       category: '虚构文学',
       categoryName: '虚构文学',
       status: 'serializing',
@@ -148,58 +144,4 @@ export const syncPublishedBookFromRecords = (
   storage[projectId] = detail
   writeStorage(storage)
   return detail
-}
-
-export const listPublishedBookDetails = (): PublishedBridgeBookDetail[] => {
-  return Object.values(readStorage())
-}
-
-export const listPublishedBookBriefs = (filters?: {
-  q?: string
-  status?: string
-  tags?: string[]
-}): PublishedBridgeBook[] => {
-  const q = (filters?.q || '').trim().toLowerCase()
-  const status = (filters?.status || '').trim()
-  const tags = filters?.tags || []
-
-  return listPublishedBookDetails()
-    .map((item) => item.book)
-    .filter((book) => {
-      if (status && book.status !== status) return false
-      if (tags.length > 0) {
-        const hasTag = tags.some((tag) => (book.tags || []).includes(tag))
-        if (!hasTag) return false
-      }
-      if (!q) return true
-      return (
-        book.title.toLowerCase().includes(q) ||
-        book.author.toLowerCase().includes(q) ||
-        (book.tags || []).join(' ').toLowerCase().includes(q)
-      )
-    })
-}
-
-export const getPublishedBookDetail = (bookId: string): PublishedBridgeBookDetail | null => {
-  return readStorage()[bookId] || null
-}
-
-export const shouldUsePublishedBridge = (
-  source: unknown,
-  bookId: string | null | undefined,
-): boolean => {
-  const normalizedBookId = String(bookId || '').trim()
-  if (source !== 'published' || !normalizedBookId) {
-    return false
-  }
-  return !!getPublishedBookDetail(normalizedBookId)
-}
-
-export const getPublishedChapterById = (
-  bookId: string,
-  chapterId: string,
-): PublishedBridgeChapter | null => {
-  const detail = getPublishedBookDetail(bookId)
-  if (!detail) return null
-  return detail.chapters.find((item) => item.id === chapterId) || null
 }
