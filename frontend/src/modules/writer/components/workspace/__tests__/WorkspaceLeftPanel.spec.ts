@@ -55,7 +55,15 @@ function mountPanel(collapsed: boolean) {
     global: {
       stubs: {
         QyIcon: { template: '<span />' },
-        ProjectSidebar: { template: '<div />' },
+        ProjectSidebar: {
+          emits: ['add-doc', 'add-volume'],
+          template: `
+            <div>
+              <button data-testid="sidebar-add-doc" @click="$emit('add-doc')">add-doc</button>
+              <button data-testid="sidebar-add-volume" @click="$emit('add-volume')">add-volume</button>
+            </div>
+          `,
+        },
         OutlineTreePanel: { template: '<div />' },
       },
     },
@@ -102,5 +110,13 @@ describe('WorkspaceLeftPanel', () => {
     await relationItem.trigger('click')
 
     expect(wrapper.emitted('open-fullscreen-tool')?.[0]).toEqual(['relations'])
+  })
+
+  it('透传左栏的新建卷事件', async () => {
+    const wrapper = mountPanel(false)
+
+    await wrapper.get('[data-testid="sidebar-add-volume"]').trigger('click')
+
+    expect(wrapper.emitted('add-volume')).toHaveLength(1)
   })
 })

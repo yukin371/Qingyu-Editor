@@ -1,4 +1,7 @@
-import type { WorkspacePanelDefinition } from '@/modules/writer/types/workspaceLayout'
+import type {
+  RightToolType,
+  WorkspacePanelDefinition,
+} from '@/modules/writer/types/workspaceLayout'
 
 export const workspacePanelRegistry: WorkspacePanelDefinition[] = [
   {
@@ -76,3 +79,40 @@ export const workspacePanelRegistry: WorkspacePanelDefinition[] = [
 export const workspacePanelRegistryById = Object.fromEntries(
   workspacePanelRegistry.map((panel) => [panel.id, panel]),
 ) as Record<string, WorkspacePanelDefinition>
+
+export const RIGHT_TOOL_CONFIG: Record<
+  RightToolType,
+  {
+    mode: 'single' | 'dual'
+    hasListPanel: boolean
+    label: string
+    icon: string
+  }
+> = {
+  ai: {
+    mode: 'single',
+    hasListPanel: false,
+    label: 'AI',
+    icon: 'MagicStick',
+  },
+  assets: {
+    mode: 'dual',
+    hasListPanel: true,
+    label: '设定',
+    icon: 'Collection',
+  },
+  proofread: {
+    mode: 'single',
+    hasListPanel: false,
+    label: '校对',
+    icon: 'DocumentChecked',
+  },
+  inspiration: {
+    mode: 'single',
+    hasListPanel: false,
+    label: '灵感',
+    icon: 'Lightbulb',
+  },
+}
+
+export const RIGHT_TOOL_ORDER = Object.keys(RIGHT_TOOL_CONFIG) as RightToolType[]

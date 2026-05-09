@@ -1,48 +1,45 @@
 <template>
   <div
     class="workspace-right-panel-shell"
-    :class="{ 'is-collapsed': collapsed, 'is-immersive-hidden': isImmersiveMode }"
+    :class="{
+      'is-collapsed': collapsed || !workspaceLayoutStore.rightToolArea.visible,
+      'is-immersive-hidden': isImmersiveMode,
+    }"
   >
     <div class="workspace-right-panel-body">
-    <WorkspaceRightPane
-      :active-panel-id="activePanelId"
-      :project-id="projectId"
-      :chapter-id="chapterId"
-      :chapter-title="chapterTitle"
-      :source-text="sourceText"
-      :ai-action-trigger="aiActionTrigger"
-      :ai-apply-feedback="aiApplyFeedback"
-      :workflow-context="workflowContext"
-      :draft-proposals="draftProposals"
-      :chapter-count="harnessData?.chapterCount || 0"
-      :directory-count="0"
-      :active-tool-label="activePanelTitle"
-      :save-status-label="''"
-      :project-display-name="chapterTitle"
-      :harness-data="harnessData"
-      @ai-apply="(payload: WriterAIApplyPayload) => $emit('ai-apply', payload)"
-      @proposal-draft="(payload) => $emit('proposal-draft', payload)"
+      <ToolRightPanel
+        :active-tool="workspaceLayoutStore.rightToolArea.activeTool"
+        :project-id="projectId"
+        :chapter-id="chapterId"
+        :chapter-title="chapterTitle"
+        :chapters="chapters"
+        :source-text="sourceText"
+        :ai-action-trigger="aiActionTrigger"
+        :ai-apply-feedback="aiApplyFeedback"
+        :workflow-context="workflowContext"
+        :draft-proposals="draftProposals"
+        @ai-apply="(payload: WriterAIApplyPayload) => $emit('ai-apply', payload)"
+        @proposal-draft="(payload) => $emit('proposal-draft', payload)"
         @proposal-status-change="(payload) => $emit('proposal-status-change', payload)"
-        @trigger-ai-action="(payload) => $emit('trigger-ai-action', payload)"
         @create-structure-plan="(payload) => $emit('create-structure-plan', payload)"
+        @jump-to-chapter="(chapterId) => $emit('jump-to-chapter', chapterId)"
+        @close="handleCloseRightTool"
       />
     </div>
 
     <WorkspaceRightActivityBar
       :collapsed="collapsed"
-      :active-panel-id="activePanelId"
-      :panel-ids="rightPanelIds"
-      @toggle="$emit('toggle')"
-      @select-panel="activePanelId = $event"
+      :visible="workspaceLayoutStore.rightToolArea.visible"
+      :active-tool="workspaceLayoutStore.rightToolArea.activeTool"
+      @select-tool="handleRightToolSelect"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import ToolRightPanel from '@/modules/writer/components/workspace/ToolRightPanel.vue'
 import WorkspaceRightActivityBar from '@/modules/writer/components/workspace/WorkspaceRightActivityBar.vue'
-import WorkspaceRightPane from '@/modules/writer/components/workspace/WorkspaceRightPane.vue'
-import { workspacePanelRegistryById } from '@/modules/writer/config/workspacePanels'
+import { usePanelStore } from '@/modules/writer/stores/panelStore'
 import { useWorkspaceLayoutStore } from '@/modules/writer/stores/workspaceLayoutStore'
 import type {
   WriterAIApplyPayload,
@@ -51,77 +48,64 @@ import type {
   WriterResultCandidate,
   WriterStructurePlanPayload,
 } from '@/modules/writer/types/workflow'
-import type {
-  StoryHarnessChangeRequestDecision,
-  StoryHarnessCharacterSummary,
-  StoryHarnessChangeRequestPreview,
-  StoryHarnessRelationSummary,
-} from '@/modules/writer/stores/v3/storyHarnessStore'
-import type { WriterWorkflowActionRequest } from '@/modules/writer/types/workflow'
+import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
+import type { RightToolType } from '@/modules/writer/types/workspaceLayout'
 
 // =======================
 // Props & Emits
 // =======================
-const props = defineProps<{
+defineProps<{
   collapsed: boolean
   isImmersiveMode: boolean
   projectId: string
   chapterId: string
   chapterTitle: string
+  chapters: SidebarChapterSummary[]
   sourceText: string
   aiActionTrigger: import('@/modules/writer/types/workflow').WriterAIActionTrigger | null
   aiApplyFeedback: import('@/modules/writer/types/workflow').WriterAIApplyFeedback | null
   workflowContext: import('@/modules/writer/types/workflow').WriterWorkflowContext
   draftProposals: WriterDraftProposal[]
-  harnessData?: {
-    projectId: string
-    chapterId: string
-    chapterTitle: string
-    content: string
-    chapterCount: number
-    scopeLabel?: string
-    entityStats?: {
-      characters: number
-      locations: number
-      items: number
-      concepts: number
-    }
-    activeCharacters?: StoryHarnessCharacterSummary[]
-    activeRelations?: StoryHarnessRelationSummary[]
-    changeRequests?: StoryHarnessChangeRequestPreview[]
-    handleChangeRequestDecision?: (
-      requestId: string,
-      decision: StoryHarnessChangeRequestDecision,
-    ) => Promise<boolean>
-    handleTriggerIndex?: () => Promise<void>
-    isTriggeringIndex?: boolean
-  }
 }>()
 
-const emit = defineEmits<{
-  (e: 'toggle'): void
+defineEmits<{
   (e: 'ai-apply', payload: WriterAIApplyPayload): void
   (e: 'proposal-draft', payload: WriterResultCandidate): void
   (
     e: 'proposal-status-change',
     payload: { proposalId: string; status: WriterDraftProposalStatus },
   ): void
-  (e: 'trigger-ai-action', payload: WriterWorkflowActionRequest): void
   (e: 'create-structure-plan', payload: WriterStructurePlanPayload): void
+  (e: 'jump-to-chapter', chapterId: string): void
 }>()
 
+const panelStore = usePanelStore()
 const workspaceLayoutStore = useWorkspaceLayoutStore()
-const activePanelId = computed({
-  get: () => workspaceLayoutStore.areas.right.activePanelId || 'ai',
-  set: (value) => {
-    workspaceLayoutStore.setAreaActivePanel('right', value)
-  },
-})
-const rightPanelIds = computed(() => workspaceLayoutStore.areas.right.panelIds)
-const activePanelTitle = computed(() => {
-  if (!activePanelId.value) return '右侧面板'
-  return workspacePanelRegistryById[activePanelId.value]?.title || '右侧面板'
-})
+
+const handleRightToolSelect = (toolId: RightToolType) => {
+  if (panelStore.rightCollapsed) {
+    panelStore.setRightCollapsed(false)
+    workspaceLayoutStore.setRightToolActive(toolId)
+    return
+  }
+  const isSameTool =
+    workspaceLayoutStore.rightToolArea.activeTool === toolId &&
+    workspaceLayoutStore.rightToolArea.visible
+
+  workspaceLayoutStore.toggleRightTool(toolId)
+
+  if (isSameTool) {
+    panelStore.setRightCollapsed(true)
+    return
+  }
+
+  panelStore.setRightCollapsed(false)
+}
+
+const handleCloseRightTool = () => {
+  workspaceLayoutStore.setRightToolVisible(false)
+  panelStore.setRightCollapsed(true)
+}
 </script>
 
 <style scoped lang="scss">
@@ -144,6 +128,7 @@ const activePanelTitle = computed(() => {
   position: relative;
   display: flex;
   flex-direction: column;
+  border-left: 1px solid var(--editor-border, #e2e8f0);
   transition:
     opacity 200ms ease-out,
     width 200ms ease-out;
@@ -155,6 +140,7 @@ const activePanelTitle = computed(() => {
   .workspace-right-panel-body {
     width: 0;
     opacity: 0;
+    border-left-width: 0;
     pointer-events: none;
     overflow: hidden;
   }

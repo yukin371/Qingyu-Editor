@@ -11,6 +11,7 @@ import type {
   UpdateShortcutsRequest,
   ShortcutCategory,
 } from '../types/editor'
+import { isWailsWriterAvailable, wailsWriterBridge } from '../data-bridge/wails'
 
 const BASE_DOC_URL = '/writer/documents'
 const BASE_USER_URL = '/writer/user'
@@ -38,6 +39,9 @@ export const editorApi = {
    * @security BearerAuth
    */
   getContent(documentId: string) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.editor.getContent(documentId)
+    }
     return httpService.get<DocumentContentResponse>(`${BASE_DOC_URL}/${documentId}/content`)
   },
 
@@ -53,6 +57,9 @@ export const editorApi = {
    * @security BearerAuth
    */
   updateContent(documentId: string, data: UpdateContentRequest) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.editor.updateContent(documentId, data as any)
+    }
     return httpService.put<void>(`${BASE_DOC_URL}/${documentId}/content`, data)
   },
 
@@ -68,6 +75,9 @@ export const editorApi = {
    * @security BearerAuth
    */
   autoSave(documentId: string, data: AutoSaveRequest) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.editor.autoSave(documentId, data as any)
+    }
     return httpService.post<AutoSaveResponse>(`${BASE_DOC_URL}/${documentId}/autosave`, data, {
       silent: true,
       skipErrorHandler: true,
@@ -85,7 +95,31 @@ export const editorApi = {
    * @security BearerAuth
    */
   getSaveStatus(documentId: string) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.editor.getSaveStatus(documentId)
+    }
     return httpService.get<SaveStatusResponse>(`${BASE_DOC_URL}/${documentId}/save-status`)
+  },
+
+  getContents(documentId: string) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.editor.getContents(documentId)
+    }
+    return httpService.get(`${BASE_DOC_URL}/${documentId}/contents`)
+  },
+
+  replaceContents(documentId: string, contents: unknown[]) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.editor.replaceContents(documentId, contents as any[])
+    }
+    return httpService.put(`${BASE_DOC_URL}/${documentId}/contents`, { contents })
+  },
+
+  reindexContents(documentId: string) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.editor.reindexContents(documentId)
+    }
+    return httpService.post(`${BASE_DOC_URL}/${documentId}/contents/reindex`)
   },
 
   // ==========================================

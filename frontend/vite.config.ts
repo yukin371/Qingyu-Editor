@@ -10,6 +10,7 @@ import { fileURLToPath, URL } from 'node:url'
 // Vitest 和 Storybook 环境下禁用，避免兼容性问题
 const isTest = process.env.VITEST || process.env.NODE_ENV === 'test'
 const isStorybook = process.env.STORYBOOK === 'true' || process.env.npm_lifecycle_event === 'storybook'
+const enableVueDevTools = process.env.VITE_ENABLE_VUE_DEVTOOLS === 'true'
 const plugins = [tailwindcss(), vue({
   // 启用 JSX 支持
   script: {
@@ -17,7 +18,7 @@ const plugins = [tailwindcss(), vue({
     propsDestructure: true
   }
 }), vueJsx()]
-if (!isTest && !isStorybook) {
+if (!isTest && !isStorybook && enableVueDevTools) {
   plugins.push(VueDevTools())
 }
 

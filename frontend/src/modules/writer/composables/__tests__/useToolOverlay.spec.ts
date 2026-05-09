@@ -45,4 +45,20 @@ describe('useToolOverlay', () => {
     expect(overlay.visible.value).toBe(true)
     expect(overlay.activeTool.value).toBe('structure')
   })
+
+  it('openFromRightPanel 应携带右栏上下文进入 overlay', () => {
+    const overlay = useToolOverlay()
+
+    overlay.openFromRightPanel('assets', {
+      assetsCategory: 'organizations',
+      assetId: 'org-1',
+    })
+
+    expect(overlay.visible.value).toBe(true)
+    expect(overlay.activeTool.value).toBe('assets')
+    expect(overlay.context.value).toMatchObject({
+      assetsCategory: 'organizations',
+      assetId: 'org-1',
+    })
+  })
 })

@@ -1,4 +1,5 @@
 import httpService from '@/core/services/http.service'
+import { isWailsWriterAvailable, wailsWriterBridge } from '../data-bridge/wails'
 
 // ==========================================
 // 类型定义 (对应 Go 后端 Models)
@@ -156,6 +157,9 @@ export const projectApi = {
       tags: data.tags,
       visibility: data.visibility,
     }
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.project.create(mappedData)
+    }
     return httpService.post<ProjectDetailResponse>(BASE_URL, mappedData)
   },
 
@@ -170,6 +174,9 @@ export const projectApi = {
    * @security BearerAuth
    */
   list(params?: ProjectListParams) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.project.list(params)
+    }
     const query = params
       ? {
           ...params,
@@ -192,6 +199,9 @@ export const projectApi = {
    * @security BearerAuth
    */
   getDetail(id: string) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.project.get(id)
+    }
     return httpService.get<ProjectDetailResponse>(`${BASE_URL}/${id}`)
   },
 
@@ -207,6 +217,9 @@ export const projectApi = {
    * @security BearerAuth
    */
   update(id: string, data: UpdateProjectRequest) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.project.update(id, data as Record<string, unknown>)
+    }
     return httpService.put<void>(`${BASE_URL}/${id}`, data)
   },
 
@@ -221,6 +234,9 @@ export const projectApi = {
    * @security BearerAuth
    */
   delete(id: string) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.project.delete(id)
+    }
     return httpService.delete<void>(`${BASE_URL}/${id}`)
   },
 

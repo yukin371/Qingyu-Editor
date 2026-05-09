@@ -154,7 +154,7 @@ describe('WorkspaceEditorContent', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('请选择章节')
+    expect(wrapper.text()).toContain('选择章节后开始写作')
     expect(wrapper.find('[data-testid="workspace-writing-surface"]').exists()).toBe(false)
   })
 

@@ -6,6 +6,74 @@ export function AICall(arg1, arg2, arg3) {
   return window['go']['main']['App']['AICall'](arg1, arg2, arg3);
 }
 
+export function CreateChapter(arg1) {
+  return window['go']['main']['App']['CreateChapter'](arg1);
+}
+
+export function CreateProject(arg1) {
+  return window['go']['main']['App']['CreateProject'](arg1);
+}
+
+export function CreateVolume(arg1) {
+  return window['go']['main']['App']['CreateVolume'](arg1);
+}
+
+export function DeleteChapter(arg1) {
+  return window['go']['main']['App']['DeleteChapter'](arg1);
+}
+
+export function DeleteProject(arg1) {
+  return window['go']['main']['App']['DeleteProject'](arg1);
+}
+
+export function DeleteVolume(arg1) {
+  return window['go']['main']['App']['DeleteVolume'](arg1);
+}
+
+export function GetChapter(arg1) {
+  return window['go']['main']['App']['GetChapter'](arg1);
+}
+
+export function GetProject(arg1) {
+  return window['go']['main']['App']['GetProject'](arg1);
+}
+
 export function InitDatabase() {
   return window['go']['main']['App']['InitDatabase']();
+}
+
+export function ListChapters(arg1) {
+  return window['go']['main']['App']['ListChapters'](arg1);
+}
+
+export function ListProjects() {
+  return window['go']['main']['App']['ListProjects']();
+}
+
+export function ListVolumes(arg1) {
+  return window['go']['main']['App']['ListVolumes'](arg1);
+}
+
+export function MoveChapter(arg1) {
+  return window['go']['main']['App']['MoveChapter'](arg1);
+}
+
+export function ReorderChapters(arg1) {
+  return window['go']['main']['App']['ReorderChapters'](arg1);
+}
+
+export function ReorderVolumes(arg1) {
+  return window['go']['main']['App']['ReorderVolumes'](arg1);
+}
+
+export function UpdateChapter(arg1, arg2) {
+  return window['go']['main']['App']['UpdateChapter'](arg1, arg2);
+}
+
+export function UpdateProject(arg1, arg2) {
+  return window['go']['main']['App']['UpdateProject'](arg1, arg2);
+}
+
+export function UpdateVolume(arg1, arg2) {
+  return window['go']['main']['App']['UpdateVolume'](arg1, arg2);
 }

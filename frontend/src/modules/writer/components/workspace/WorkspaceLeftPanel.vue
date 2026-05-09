@@ -23,6 +23,7 @@
         :projects="projects"
         :chapters="chapters"
         @add-doc="emit('add-doc')"
+        @add-volume="emit('add-volume')"
         @open-directory-outline="(id: string) => emit('open-directory-outline', id)"
         @delete-chapter="(id: string) => emit('delete-chapter', id)"
       />
@@ -92,6 +93,7 @@ const emit = defineEmits<{
   (e: 'update:projectId', value: string): void
   (e: 'update:chapterId', value: string): void
   (e: 'add-doc'): void
+  (e: 'add-volume'): void
   (e: 'open-directory-outline', directoryId: string): void
   (e: 'delete-chapter', chapterId: string): void
   (e: 'create-outline-root'): void

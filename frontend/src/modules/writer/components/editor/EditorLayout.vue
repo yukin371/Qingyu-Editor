@@ -372,7 +372,7 @@ onMounted(() => {})
   min-height: 0;
   overflow: hidden;
   position: relative;
-  gap: 10px;
+  gap: 0;
   padding: 0;
   background: var(--editor-bg-surface);
 
@@ -457,8 +457,8 @@ onMounted(() => {})
 
 // ==================== 面板状态样式 ====================
 .panel-collapsed {
-  width: 48px !important;
-  min-width: 48px !important;
+  width: 56px !important;
+  min-width: 56px !important;
   overflow: hidden;
 
   :deep(.side-panel) {
@@ -584,7 +584,7 @@ onMounted(() => {})
   }
 
   .panel-collapsed {
-    width: 48px !important;
+    width: 56px !important;
 
     :deep(.side-panel) {
       .panel-header,

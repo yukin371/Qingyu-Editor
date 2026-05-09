@@ -83,6 +83,12 @@ npm run dev
 # 后端: http://localhost:8080 (需单独启动)
 ```
 
+如需手动开启 `Vue DevTools` 插件链，可使用：
+
+```bash
+VITE_ENABLE_VUE_DEVTOOLS=true npm run dev
+```
+
 ### 完整服务（前端+后端）
 
 ```bash

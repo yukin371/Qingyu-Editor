@@ -10,14 +10,14 @@
         :active-tool-label="activeToolLabel"
         :save-status-label="saveStatusLabel"
         :is-immersive-mode="isImmersiveMode"
-        :active-right-panel-id="workspaceLayoutStore.areas.right.activePanelId"
         :active-bottom-panel-id="workspaceLayoutStore.areas.bottom.activePanelId"
         @save="handleTipTapSave"
         @export="handleExportDraft"
         @share="handleShareDraft"
         @back="handleBackToDashboard"
+        @toggle-immersive="handleToggleImmersive"
+        @open-right-tool="handleOpenRightTool"
         @toggle-bottom-panel="toggleBottomPanel"
-        @move-panel="handleMovePanel"
         @apply-layout-preset="applyLayoutPreset"
       />
     </template>
@@ -34,6 +34,7 @@
           :projects="projects"
           :chapters="flatChapters"
           @add-doc="handleAddDoc"
+          @add-volume="handleCreateOutlineRoot"
           @open-directory-outline="handleOpenDirectoryOutline"
           @delete-chapter="handleDeleteChapter"
           @create-outline-root="handleCreateOutlineRoot"
@@ -94,32 +95,17 @@
           :project-id="currentProjectId"
           :chapter-id="displayChapterId"
           :chapter-title="displayChapterTitle"
+          :chapters="flatChapters"
           :source-text="currentChapterPlainText"
           :ai-action-trigger="aiActionTrigger"
           :ai-apply-feedback="aiApplyFeedback"
           :workflow-context="workflowContext"
           :draft-proposals="visibleDraftProposals"
-          :harness-data="{
-            projectId: currentProjectId,
-            chapterId: displayChapterId,
-            chapterTitle: displayChapterTitle,
-            content: tipTapContent,
-            chapterCount: flatChapters.length,
-            scopeLabel: currentScopeLabel,
-            entityStats: storyHarnessEntityStats,
-            activeCharacters: activeScopeCharacters,
-            activeRelations: activeScopeRelations,
-            changeRequests: storyHarnessChangeRequests,
-            handleChangeRequestDecision,
-            handleTriggerIndex: handleStoryHarnessTriggerIndex,
-            isTriggeringIndex: isStoryHarnessTriggering,
-          }"
-          @toggle="toggleRightPanel"
           @ai-apply="handleAIApplyGeneratedText"
           @proposal-draft="handleProposalDraft"
           @proposal-status-change="handleProposalStatusChange"
-          @trigger-ai-action="handleWorkflowAction"
           @create-structure-plan="handleCreateStructurePlan"
+          @jump-to-chapter="handleChapterIdUpdate"
         />
       </template>
       </EditorLayout>
@@ -206,6 +192,7 @@ import { useDocumentStore } from '@/modules/writer/stores/documentStore'
 import { useEditorStore, type ActiveTool } from '@/modules/writer/stores/editorStore'
 import { usePanelStore } from '@/modules/writer/stores/panelStore'
 import { useEditorThemeStore } from '@/modules/writer/stores/editorThemeStore'
+import { useEditorAppearanceStore } from '@/modules/writer/stores/editorAppearanceStore'
 import { useWriterStore } from '@/modules/writer/stores/writerStore'
 import { getWorkspaceMockProject } from '@/modules/writer/mock/workspaceMock'
 import { DocumentType } from '@/modules/writer/types/document'
@@ -289,6 +276,7 @@ const documentStore = useDocumentStore()
 const editorStore = useEditorStore()
 const panelStore = usePanelStore()
 const editorThemeStore = useEditorThemeStore()
+const editorAppearanceStore = useEditorAppearanceStore()
 const writerStore = useWriterStore()
 const workspaceLayoutStore = useWorkspaceLayoutStore()
 
@@ -355,25 +343,21 @@ const toggleBottomPanel = () => {
   )
 }
 
-const handleBottomPanelSelect = (panelId: WorkspacePanelId) => {
-  workspaceLayoutStore.setAreaActivePanel('bottom', panelId)
-}
-
-const handleMovePanel = ({
-  panelId,
-  targetArea,
-}: {
-  panelId: WorkspacePanelId
-  targetArea: 'right' | 'bottom'
-}) => {
-  workspaceLayoutStore.movePanelToArea(panelId, targetArea)
-
-  if (targetArea === 'right') {
+const handleOpenRightTool = (tool: 'ai' | 'assets' | 'proofread' | 'inspiration') => {
+  if (panelStore.rightCollapsed) {
     panelStore.setRightCollapsed(false)
+    workspaceLayoutStore.setRightToolActive(tool)
     return
   }
+  workspaceLayoutStore.toggleRightTool(tool)
+}
 
-  workspaceLayoutStore.setAreaVisibility('bottom', true)
+const handleToggleImmersive = () => {
+  editorStore.setActiveTool(isImmersiveMode.value ? 'writing' : 'immersive')
+}
+
+const handleBottomPanelSelect = (panelId: WorkspacePanelId) => {
+  workspaceLayoutStore.setAreaActivePanel('bottom', panelId)
 }
 
 const applyLayoutPreset = (preset: WorkspaceLayoutPreset) => {
@@ -522,18 +506,6 @@ const createDocFields: FormField[] = [
 // =======================
 // 事件处理
 // =======================
-const toggleLeftPanel = () => {
-  if (isImmersiveMode.value) return
-  panelStore.setLeftCollapsed(!panelStore.leftCollapsed)
-}
-
-const toggleRightPanel = () => {
-  if (isImmersiveMode.value) return
-  panelStore.setRightCollapsed(!panelStore.rightCollapsed)
-}
-void toggleLeftPanel
-void toggleRightPanel
-
 const resetWorkflowTransientState = (options?: { clearActionTrigger?: boolean }) => {
   if (options?.clearActionTrigger ?? true) {
     aiActionTrigger.value = null
@@ -1572,6 +1544,7 @@ onMounted(async () => {
 
   // 恢复编辑器主题
   editorThemeStore.initTheme()
+  editorAppearanceStore.initAppearance()
   const pId = currentProjectId.value
   if (pId) {
     const bootstrapTasks: Array<Promise<unknown>> = [

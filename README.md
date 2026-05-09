@@ -49,6 +49,18 @@ wails dev
 wails build
 ```
 
+Windows 下也可以直接在 `Qingyu-Editor` 目录执行：
+
+```powershell
+.\dev-wails.ps1
+```
+
+如果希望双击启动，可直接运行：
+
+```bat
+dev-wails.cmd
+```
+
 ## 状态
 
 当前为初始骨架阶段，详细设计文档见主仓库 `docs/plans/2026-04-06-qingyu-editor-standalone-design.md`。

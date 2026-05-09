@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type {
+  RightToolAreaState,
+  RightToolPanelWidths,
+  RightToolType,
   WorkspaceAreaId,
   WorkspaceAreaState,
   WorkspaceLayoutPreset,
@@ -10,13 +13,21 @@ import type {
   WorkspaceSidebarTab,
 } from '@/modules/writer/types/workspaceLayout'
 
-const STORAGE_KEY = 'qingyu_editor_workspace_layout_v1'
+const STORAGE_KEY = 'qingyu_editor_workspace_layout_v2'
 
 function createDefaultSnapshot(): WorkspaceLayoutSnapshot {
   return {
     preset: 'default',
     leftSidebarTab: 'chapters',
     rightPanelTab: 'chat',
+    rightToolArea: {
+      visible: true,
+      activeTool: 'ai',
+      widths: {
+        list: 200,
+        detail: 320,
+      },
+    },
     areas: {
       left: {
         visible: true,
@@ -24,14 +35,14 @@ function createDefaultSnapshot(): WorkspaceLayoutSnapshot {
         panelIds: ['chapters', 'outline'],
       },
       right: {
-        visible: true,
-        activePanelId: 'ai',
-        panelIds: ['ai', 'harness'],
+        visible: false,
+        activePanelId: 'harness',
+        panelIds: ['harness'],
       },
       bottom: {
         visible: false,
         activePanelId: 'status',
-        panelIds: ['status', 'context'],
+        panelIds: ['status', 'context', 'harness'],
       },
       overlay: {
         visible: false,
@@ -39,6 +50,41 @@ function createDefaultSnapshot(): WorkspaceLayoutSnapshot {
         panelIds: ['assets', 'relations', 'timeline', 'branches'],
       },
     },
+  }
+}
+
+function sanitizeRightToolWidths(
+  value: Partial<RightToolPanelWidths> | undefined,
+  fallback: RightToolPanelWidths,
+): RightToolPanelWidths {
+  const normalizeWidth = (width: unknown, min: number, max: number, defaultValue: number) => {
+    if (typeof width !== 'number' || Number.isNaN(width)) {
+      return defaultValue
+    }
+    return Math.max(min, Math.min(max, Math.round(width)))
+  }
+
+  return {
+    list: normalizeWidth(value?.list, 160, 320, fallback.list),
+    detail: normalizeWidth(value?.detail, 240, 560, fallback.detail),
+  }
+}
+
+function sanitizeRightToolArea(
+  value: Partial<RightToolAreaState> | undefined,
+  fallback: RightToolAreaState,
+): RightToolAreaState {
+  const activeTool: RightToolType =
+    value?.activeTool === 'assets' ||
+    value?.activeTool === 'proofread' ||
+    value?.activeTool === 'inspiration'
+      ? value.activeTool
+      : fallback.activeTool
+
+  return {
+    visible: typeof value?.visible === 'boolean' ? value.visible : fallback.visible,
+    activeTool,
+    widths: sanitizeRightToolWidths(value?.widths, fallback.widths),
   }
 }
 
@@ -74,6 +120,7 @@ function loadSnapshot(): WorkspaceLayoutSnapshot {
         parsed.leftSidebarTab === 'outline' ? parsed.leftSidebarTab : fallback.leftSidebarTab,
       rightPanelTab:
         parsed.rightPanelTab === 'harness' ? parsed.rightPanelTab : fallback.rightPanelTab,
+      rightToolArea: sanitizeRightToolArea(parsed.rightToolArea, fallback.rightToolArea),
       areas: {
         left: sanitizeAreaState(parsed.areas?.left, fallback.areas.left),
         right: sanitizeAreaState(parsed.areas?.right, fallback.areas.right),
@@ -118,6 +165,7 @@ export const useWorkspaceLayoutStore = defineStore('writer-workspace-layout', ()
   })
 
   const areas = computed(() => snapshot.value.areas)
+  const rightToolArea = computed(() => snapshot.value.rightToolArea)
 
   const setAreaVisibility = (areaId: WorkspaceAreaId, visible: boolean) => {
     snapshot.value.areas[areaId].visible = visible
@@ -129,6 +177,38 @@ export const useWorkspaceLayoutStore = defineStore('writer-workspace-layout', ()
       snapshot.value.areas[areaId].panelIds.push(panelId)
     }
     snapshot.value.areas[areaId].activePanelId = panelId
+    saveSnapshot()
+  }
+
+  const setRightToolVisible = (visible: boolean) => {
+    snapshot.value.rightToolArea.visible = visible
+    saveSnapshot()
+  }
+
+  const setRightToolActive = (tool: RightToolType) => {
+    snapshot.value.rightToolArea.activeTool = tool
+    snapshot.value.rightToolArea.visible = true
+    saveSnapshot()
+  }
+
+  const toggleRightTool = (tool: RightToolType) => {
+    if (snapshot.value.rightToolArea.activeTool === tool && snapshot.value.rightToolArea.visible) {
+      snapshot.value.rightToolArea.visible = false
+    } else {
+      snapshot.value.rightToolArea.activeTool = tool
+      snapshot.value.rightToolArea.visible = true
+    }
+    saveSnapshot()
+  }
+
+  const updateRightToolPanelWidths = (widths: Partial<RightToolPanelWidths>) => {
+    snapshot.value.rightToolArea.widths = sanitizeRightToolWidths(
+      {
+        ...snapshot.value.rightToolArea.widths,
+        ...widths,
+      },
+      snapshot.value.rightToolArea.widths,
+    )
     saveSnapshot()
   }
 
@@ -156,17 +236,19 @@ export const useWorkspaceLayoutStore = defineStore('writer-workspace-layout', ()
     if (layoutPreset === 'focus') {
       next.areas.left.visible = false
       next.areas.right.visible = false
+      next.rightToolArea.visible = false
     }
 
     if (layoutPreset === 'outline-first') {
       next.leftSidebarTab = 'outline'
       next.areas.left.activePanelId = 'outline'
+      next.rightToolArea.visible = false
     }
 
     if (layoutPreset === 'ai-first') {
       next.rightPanelTab = 'chat'
-      next.areas.right.activePanelId = 'ai'
-      next.areas.right.visible = true
+      next.rightToolArea.activeTool = 'ai'
+      next.rightToolArea.visible = true
     }
 
     snapshot.value = next
@@ -183,8 +265,13 @@ export const useWorkspaceLayoutStore = defineStore('writer-workspace-layout', ()
     areas,
     leftSidebarTab,
     rightPanelTab,
+    rightToolArea,
     setAreaVisibility,
     setAreaActivePanel,
+    setRightToolVisible,
+    setRightToolActive,
+    toggleRightTool,
+    updateRightToolPanelWidths,
     movePanelToArea,
     applyPreset,
     resetLayout,

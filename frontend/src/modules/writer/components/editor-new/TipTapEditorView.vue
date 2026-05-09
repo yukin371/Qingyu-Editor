@@ -2,6 +2,7 @@
   <div
     class="tiptap-editor-view"
     :class="{ 'tiptap-editor-view--without-ref': !showReferencePanel }"
+    :style="appearanceStore.cssVariables"
     data-testid="tiptap-editor-view"
   >
     <div class="tiptap-editor-view__body">
@@ -11,23 +12,14 @@
         </div>
       </header>
 
-      <div v-if="isDocumentEmpty" class="editor-empty-banner">
-        <div class="editor-empty-banner__copy">
-          <strong>开始写作这一章</strong>
-          <span>用 <code>@</code> 建立上下文关联</span>
-        </div>
-      </div>
-
-      <div
-        class="tiptap-editor-view__content"
-        :class="{ 'tiptap-editor-view__content--empty': isDocumentEmpty }"
-      >
+      <div class="tiptap-editor-view__content">
         <QyTipTapEditor
           :model-value="modelValue"
           :project-id="projectId"
           :document-id="documentId"
           :readonly="readonly"
           :placeholder="placeholder"
+          :toolbar-preset="appearanceStore.compactToolbar ? 'writer' : 'default'"
           @update:model-value="(val) => $emit('update:modelValue', val)"
           @save="handleSave"
           @keyword-click="(kw) => $emit('keyword-click', kw)"
@@ -138,6 +130,7 @@ import { QyEntityScanPanel } from '@/design-system/components/editor'
 import type { ScannedEntity } from '@/modules/writer/composables/useEntityScanner'
 import { useEntityScanner } from '@/modules/writer/composables/useEntityScanner'
 import type { ParagraphContent } from '@/modules/writer/api/wrapper'
+import { useEditorAppearanceStore } from '@/modules/writer/stores/editorAppearanceStore'
 import { useEditorStore } from '@/modules/writer/stores/editorStore'
 import { extractPlainTextFromEditorContent } from '@/modules/writer/utils/editorContent'
 
@@ -179,9 +172,9 @@ const emit = defineEmits<{
 }>()
 
 const editorStore = useEditorStore()
+const appearanceStore = useEditorAppearanceStore()
 const { scannedEntities, isScanning, scheduleScan, ignoreEntity, ignoreAll } = useEntityScanner()
 const plainTextContent = computed(() => extractPlainTextFromEditorContent(props.modelValue || ''))
-const isDocumentEmpty = computed(() => plainTextContent.value.trim().length === 0)
 
 // 自动保存跟踪状态
 const trackedDocumentId = ref<string>('')
@@ -419,16 +412,18 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
 .tiptap-editor-view {
   height: 100%;
   display: flex;
-  gap: 14px;
-  padding: 12px;
-  background: var(--editor-bg-surface);
+  gap: 0;
+  padding: 0;
+  background: #fff;
 }
 
 .tiptap-editor-view--without-ref {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   gap: 0;
   padding: 0;
-  background: transparent;
+  background: #fff;
 }
 
 .tiptap-editor-view__body {
@@ -436,18 +431,16 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
   min-width: 0;
   display: flex;
   flex-direction: column;
-  border-radius: var(--editor-radius-lg, 8px);
-  border: 1px solid var(--editor-border);
+  border: none;
   overflow: hidden;
   background: var(--editor-bg-base);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   height: 100%;
 }
 
 .editor-toolbar {
   border-bottom: 1px solid var(--editor-border);
-  background: var(--editor-bg-surface);
-  padding: 8px 14px;
+  background: #fff;
+  padding: 8px 16px;
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -459,39 +452,6 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-}
-
-.editor-empty-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--editor-border);
-  background: var(--editor-bg-elevated);
-}
-
-.editor-empty-banner__copy {
-  min-width: 0;
-  display: grid;
-  gap: 4px;
-}
-
-.editor-empty-banner__copy strong {
-  color: var(--editor-text-primary);
-  font-size: 15px;
-}
-
-.editor-empty-banner__copy span {
-  color: var(--editor-text-secondary);
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.editor-empty-banner__copy code {
-  border-radius: 6px;
-  background: var(--editor-accent-soft);
-  color: var(--editor-accent);
-  padding: 1px 5px;
 }
 
 .meta-chip {
@@ -521,33 +481,16 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
   white-space: nowrap;
 }
 
-.tiptap-editor-view__body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  border-radius: var(--editor-radius-lg, 8px);
-  border: 1px solid var(--editor-border);
-  overflow: hidden;
-  background: var(--editor-bg-base);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  height: 100%;
-}
-
 .tiptap-editor-view__content {
   flex: 1;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
   padding: 0;
-  background: var(--editor-bg-base);
+  background: #fff;
   position: relative;
   display: flex;
   flex-direction: column;
-}
-
-.tiptap-editor-view__content--empty {
-  background: var(--editor-bg-elevated);
 }
 
 .selection-toolbar {
@@ -556,13 +499,11 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
   transform: translate(-50%, calc(-100% - 12px));
   display: inline-flex;
   gap: 6px;
-  padding: 8px;
-  border-radius: 18px;
+  padding: 6px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(148, 163, 184, 0.22);
-  box-shadow:
-    0 18px 34px rgba(15, 23, 42, 0.14),
-    0 2px 8px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
   backdrop-filter: blur(14px);
 }
 
@@ -586,7 +527,7 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
   align-items: flex-start;
   gap: 2px;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: 8px;
   background: transparent;
   color: var(--editor-text-primary);
   padding: 8px 12px 9px;
@@ -658,22 +599,20 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
 .tiptap-editor-view__ref {
   width: 320px;
   flex-shrink: 0;
-  border-radius: var(--editor-radius-lg, 8px);
-  border: 1px solid var(--editor-border);
-  padding: 14px;
+  border-left: 1px solid var(--editor-border);
+  padding: 14px 14px 18px;
   overflow: auto;
-  background: var(--editor-bg-base);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  background: #fff;
 }
 
 .ref-header {
   padding-bottom: 10px;
-  border-bottom: 1px dashed var(--editor-border);
+  border-bottom: 1px solid var(--editor-border);
 }
 
 .entity-scan-section {
   margin-top: 12px;
-  border-radius: 10px;
+  border-radius: 6px;
   overflow: hidden;
   border: 1px solid var(--editor-border);
 }
@@ -700,10 +639,10 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
 }
 
 .stat {
-  border-radius: 12px;
+  border-radius: 6px;
   padding: 8px;
-  border: 1px solid var(--editor-accent-soft-border);
-  background: var(--editor-accent-soft);
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
   text-align: center;
 }
 
@@ -753,9 +692,8 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
   gap: 8px;
   align-items: center;
   padding: 8px 10px;
-  border: 1px solid var(--editor-border);
-  border-radius: 10px;
-  background: var(--editor-bg-base);
+  border-bottom: 1px solid var(--editor-border);
+  background: transparent;
 }
 
 .ref-list li.is-character {
@@ -794,10 +732,8 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
 
 .ref-empty {
   margin-top: 12px;
-  padding: 12px;
-  border-radius: 10px;
-  background: var(--editor-bg-elevated);
-  border: 1px dashed var(--editor-border);
+  padding: 12px 0 0;
+  border-top: 1px dashed var(--editor-border);
   color: var(--editor-text-muted);
   font-size: 12px;
   line-height: 1.5;
@@ -818,46 +754,43 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
 }
 
 :deep(.qy-tiptap-toolbar) {
-  margin: 14px auto 0;
-  width: fit-content;
-  border: 1px solid var(--editor-border);
-  border-radius: 14px;
-  background: var(--editor-bg-surface);
-  padding: 7px 8px;
+  margin: 0;
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--editor-border);
+  border-radius: 0;
+  background: #fff;
+  padding: 8px 18px 6px;
   gap: 4px;
-  box-shadow: 0 10px 22px rgba(29, 43, 78, 0.06);
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
 }
 
 :deep(.qy-tiptap-toolbar button) {
-  min-width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  border-color: var(--editor-border);
-  background: var(--editor-bg-base);
+  min-width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border-color: transparent;
+  background: transparent;
   color: var(--editor-text-secondary);
   font-weight: 700;
   transition:
-    transform 0.18s ease,
     background 0.18s ease,
     color 0.18s ease,
-    border-color 0.18s ease,
-    box-shadow 0.18s ease;
+    border-color 0.18s ease;
 }
 
 :deep(.qy-tiptap-toolbar button:hover) {
-  transform: translateY(-1px);
-  border-color: var(--editor-accent);
+  background: #f3f4f6;
+  border-color: #e5e7eb;
   color: var(--editor-text-primary);
-  box-shadow: 0 8px 14px rgba(39, 70, 135, 0.08);
 }
 
 :deep(.qy-tiptap-toolbar button.active) {
-  background: var(--editor-accent);
-  border-color: var(--editor-accent);
-  color: #fff;
-  box-shadow: 0 10px 20px rgba(42, 79, 163, 0.18);
+  background: var(--editor-accent-soft);
+  border-color: var(--editor-accent-soft-border);
+  color: var(--editor-accent);
 }
 
 :deep(.qy-tiptap-toolbar .sep) {
@@ -866,13 +799,19 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
 }
 
 :deep(.qy-tiptap-editor__content) {
-  padding: 18px 22px 22px;
+  padding: 0;
+  background: #fff;
 }
 
 :deep(.ProseMirror) {
   min-height: calc(100% - 4px);
-  padding: 6px 0 80px;
+  max-width: var(--writer-content-width, 860px);
+  margin: 0 auto;
+  padding: 26px 8px 96px;
   color: var(--editor-content-fg);
+  font-size: var(--writer-font-size, 19px);
+  line-height: var(--writer-line-height, 1.95);
+  font-family: var(--writer-font-family);
 }
 
 :deep(.ProseMirror p.is-editor-empty:first-child::before) {
@@ -893,7 +832,7 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
 
 @media (max-width: 768px) {
   .tiptap-editor-view {
-    padding: 8px;
+    padding: 0;
   }
 
   .editor-toolbar {
@@ -905,22 +844,14 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
     grid-template-columns: 1fr;
   }
 
-  .tiptap-editor-view__content {
-    padding: 8px;
-  }
-
-  .editor-empty-banner {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
   :deep(.qy-tiptap-toolbar) {
-    margin: 10px 10px 0;
+    padding-left: 12px;
+    padding-right: 12px;
     overflow-x: auto;
   }
 
-  :deep(.qy-tiptap-editor__content) {
-    padding: 16px 16px 20px;
+  :deep(.ProseMirror) {
+    padding-top: 18px;
   }
 }
 
@@ -929,8 +860,5 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
     transition: none;
   }
 
-  :deep(.qy-tiptap-toolbar button:hover) {
-    transform: none;
-  }
 }
 </style>

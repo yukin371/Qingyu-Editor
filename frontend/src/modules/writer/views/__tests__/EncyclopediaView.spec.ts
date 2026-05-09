@@ -224,7 +224,7 @@ describe('EncyclopediaView', () => {
     expect(wrapper.text()).toContain('物件')
     expect(wrapper.text()).toContain('组织')
     expect(wrapper.text()).toContain('概念')
-    expect(wrapper.text()).toContain('最近章节')
+    expect(wrapper.text()).toContain('第一章')
     expect(wrapper.text()).toContain('伏笔与未确认资产候选暂不进入资产总览')
 
     const organizationChip = wrapper
@@ -257,7 +257,7 @@ describe('EncyclopediaView', () => {
 
     const switchButton = wrapper
       .findAll('button')
-      .find((button) => button.text().includes('关系图谱'))
+      .find((button) => button.attributes('title') === '关系图谱')
 
     expect(switchButton).toBeTruthy()
     await switchButton!.trigger('click')
@@ -274,7 +274,7 @@ describe('EncyclopediaView', () => {
 
     const chapterButton = wrapper
       .findAll('button')
-      .find((button) => button.text().includes('前往章节'))
+      .find((button) => button.attributes('title') === '前往章节')
 
     expect(chapterButton).toBeTruthy()
     await chapterButton!.trigger('click')

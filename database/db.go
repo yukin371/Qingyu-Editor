@@ -5,15 +5,24 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 // DB 全局数据库实例
 var DB *sql.DB
+var dbMu sync.Mutex
 
 // Init 初始化 SQLite 数据库，执行迁移
 func Init(appName string) error {
+	dbMu.Lock()
+	defer dbMu.Unlock()
+
+	if DB != nil {
+		return nil
+	}
+
 	dataDir, err := userDataDir(appName)
 	if err != nil {
 		return fmt.Errorf("获取数据目录失败: %w", err)
@@ -25,17 +34,41 @@ func Init(appName string) error {
 		return fmt.Errorf("打开数据库失败: %w", err)
 	}
 
+	if err := DB.Ping(); err != nil {
+		DB.Close()
+		DB = nil
+		return fmt.Errorf("连接数据库失败: %w", err)
+	}
+
 	if err := migrate(); err != nil {
+		DB.Close()
+		DB = nil
 		return fmt.Errorf("数据库迁移失败: %w", err)
 	}
 
 	return nil
 }
 
+func Ensure(appName string) error {
+	return Init(appName)
+}
+
+func Get() (*sql.DB, error) {
+	if DB == nil {
+		return nil, fmt.Errorf("数据库尚未初始化")
+	}
+	return DB, nil
+}
+
 // Close 关闭数据库连接
 func Close() error {
+	dbMu.Lock()
+	defer dbMu.Unlock()
+
 	if DB != nil {
-		return DB.Close()
+		err := DB.Close()
+		DB = nil
+		return err
 	}
 	return nil
 }

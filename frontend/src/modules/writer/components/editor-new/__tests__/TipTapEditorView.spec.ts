@@ -33,7 +33,7 @@ describe('TipTapEditorView', () => {
     saveParagraphs.mockResolvedValue(undefined)
   })
 
-  it('shows empty-state guidance when the document has no plain text', () => {
+  it('keeps the same editor shell when the document has no plain text', () => {
     const wrapper = mount(TipTapEditorView, {
       props: {
         modelValue: JSON.stringify({ type: 'doc', content: [{ type: 'paragraph' }] }),
@@ -48,8 +48,8 @@ describe('TipTapEditorView', () => {
       },
     })
 
-    expect(wrapper.find('.editor-empty-banner').exists()).toBe(true)
-    expect(wrapper.text()).toContain('开始写作这一章')
+    expect(wrapper.find('.editor-empty-banner').exists()).toBe(false)
+    expect(wrapper.find('.qy-tiptap-editor-stub').exists()).toBe(true)
   })
 
   it('emits selection-action with apply mode derived from the action', async () => {

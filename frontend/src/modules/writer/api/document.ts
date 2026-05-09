@@ -6,6 +6,7 @@ import type {
   CreateDocumentResponse, // 假设你需要后端返回的新ID等
 } from '../types/document'
 import { outlineApi } from './outline'
+import { isWailsWriterAvailable, wailsWriterBridge } from '../data-bridge/wails'
 
 // 为了处理移动和排序，我们需要定义额外的请求接口
 // 这些接口通常比较简单，直接定义在 API 文件中即可，或者放在 types/document.ts 中
@@ -45,6 +46,9 @@ export const documentApi = {
    * POST /api/v1/writer/project/{projectId}/documents
    */
   create(projectId: string, data: CreateDocumentRequest) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.document.create(projectId, data as unknown as Record<string, unknown>)
+    }
     return httpService.post<CreateDocumentResponse>(
       `${BASE_PROJECT_DOC_URL}/${projectId}/documents`,
       data,
@@ -56,6 +60,9 @@ export const documentApi = {
    * GET /api/v1/writer/documents/{id}
    */
   getDetail(documentId: string) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.document.get(documentId)
+    }
     return httpService.get<Document>(`${BASE_DOC_URL}/${documentId}`)
   },
 
@@ -64,6 +71,9 @@ export const documentApi = {
    * PUT /api/v1/writer/documents/{id}
    */
   update(documentId: string, data: UpdateDocumentMetaRequest) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.document.update(documentId, data as Record<string, unknown>)
+    }
     return httpService.put<void>(`${BASE_DOC_URL}/${documentId}`, data)
   },
 
@@ -72,6 +82,9 @@ export const documentApi = {
    * DELETE /api/v1/writer/documents/{id}
    */
   delete(documentId: string) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.document.delete(documentId)
+    }
     return httpService.delete<void>(`${BASE_DOC_URL}/${documentId}`)
   },
 
@@ -84,6 +97,9 @@ export const documentApi = {
    * GET /api/v1/writer/project/{projectId}/documents
    */
   list(projectId: string, params?: { page?: number; pageSize?: number }) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.document.list(projectId, params)
+    }
     return httpService.get<{ documents: Document[]; total: number }>(
       `${BASE_PROJECT_DOC_URL}/${projectId}/documents`,
       params as any,
@@ -95,6 +111,9 @@ export const documentApi = {
    * GET /api/v1/writer/project/{projectId}/documents/tree
    */
   getTree(projectId: string) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.document.getTree(projectId)
+    }
     // 根据后端返回类型调整泛型，可能是 Document[] 也可能是 { tree: Document[] }
     // 这里假设后端 DocumentTreeResponse 结构包含 tree 字段或本身就是数组
     return httpService.get<any>(`${BASE_PROJECT_DOC_URL}/${projectId}/documents/tree`)
@@ -109,7 +128,10 @@ export const documentApi = {
    * PUT /api/v1/writer/documents/{id}/move
    */
   move(documentId: string, data: MoveDocumentRequest) {
-    return httpService.put<void>(`${BASE_DOC_URL}/${documentId}/move`, data)
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.document.move(documentId, data)
+    }
+    return httpService.put<{ code: number; message?: string }>(`${BASE_DOC_URL}/${documentId}/move`, data)
   },
 
   /**

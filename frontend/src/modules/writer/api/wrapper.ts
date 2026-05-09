@@ -9,6 +9,8 @@
 
 import { getApi } from './generated/writer'
 import { request } from '@/utils/request-adapter'
+import { documentApi } from './document'
+import { editorApi } from './editor'
 
 // 获取生成的API对象
 const api = getApi()
@@ -230,54 +232,23 @@ export const deleteProject = projectApi.deleteProject
 // ==================== 文档相关 API ====================
 
 export const getDocuments = (projectId: string, params?: { page?: number; pageSize?: number }) =>
-  request({
-    url: `/api/v1/writer/project/${projectId}/documents`,
-    method: 'get',
-    params,
-  })
+  documentApi.list(projectId, params)
 export const getProjectDocuments = getDocuments
-export const getDocument = api.getApiV1DocumentsId
-export const getDocumentById = api.getApiV1DocumentsId
-export const getDocumentContent = (id: string) =>
-  request<{
-    documentId: string
-    content: string
-    version: number
-    wordCount: number
-    updatedAt: string
-  }>({
-    url: `/api/v1/writer/documents/${id}/content`,
-    method: 'get',
-  })
-export const getDocumentTree = (projectId: string) =>
-  request({
-    url: `/api/v1/writer/project/${projectId}/documents/tree`,
-    method: 'get',
-  })
-export const getSaveStatus = (id: string) =>
-  request<{
-    documentId: string
-    lastSavedAt: string
-    currentVersion: number
-    isSaving: boolean
-    wordCount: number
-  }>({
-    url: `/api/v1/writer/documents/${id}/save-status`,
-    method: 'get',
-  })
+export const getDocument = (id: string) => documentApi.getDetail(id)
+export const getDocumentById = getDocument
+export const getDocumentContent = (id: string) => editorApi.getContent(id)
+export const getDocumentTree = (projectId: string) => documentApi.getTree(projectId)
+export const getSaveStatus = (id: string) => editorApi.getSaveStatus(id)
 
 /**
  * 创建文档（在指定项目下）
  */
 export const createDocument = (projectId: string, body: Record<string, unknown>) =>
-  request({
-    url: `/api/v1/writer/project/${projectId}/documents`,
-    method: 'post',
-    data: body,
-  })
+  documentApi.create(projectId, body as any)
 
-export const updateDocument = api.putApiV1DocumentsId
-export const deleteDocument = api.deleteApiV1DocumentsId
+export const updateDocument = (id: string, body: Record<string, unknown>) =>
+  documentApi.update(id, body as any)
+export const deleteDocument = (id: string) => documentApi.delete(id)
 
 /**
  * 自动保存文档
@@ -285,18 +256,7 @@ export const deleteDocument = api.deleteApiV1DocumentsId
 export const autosaveDocument = (
   id: string,
   body: { content: string; currentVersion?: number; saveType?: 'auto' | 'manual' },
-) =>
-  request<{
-    saved: boolean
-    newVersion: number
-    wordCount: number
-    savedAt: string
-    hasConflict: boolean
-  }>({
-    url: `/api/v1/writer/documents/${id}/autosave`,
-    method: 'post',
-    data: body,
-  })
+) => editorApi.autoSave(id, body as any)
 
 /**
  * 更新文档内容
@@ -304,17 +264,26 @@ export const autosaveDocument = (
 export const updateDocumentContent = (
   id: string,
   body: { content: string; version?: number; contentType?: string },
-) =>
-  request<void>({
-    url: `/api/v1/writer/documents/${id}/content`,
-    method: 'put',
-    data: body,
-  })
+) => editorApi.updateContent(id, body as any)
 
 /**
  * 移动文档
  */
-export const moveDocument = api.putApiV1DocumentsIdMove
+export const moveDocument = (id: string, body: Record<string, unknown>) =>
+  documentApi.move(id, {
+    parentId:
+      typeof body.parentId === 'string'
+        ? body.parentId
+        : typeof body.newParentId === 'string'
+          ? body.newParentId
+          : undefined,
+    order:
+      typeof body.order === 'number'
+        ? body.order
+        : typeof body.newOrder === 'number'
+          ? body.newOrder
+          : undefined,
+  })
 
 /**
  * 更新字数统计
@@ -332,36 +301,18 @@ export const updateDocumentWordCount = (
 /**
  * 获取文档分段内容（Editor V2）
  */
-export const getDocumentContents = (id: string) =>
-  request<{
-    documentId: string
-    contents: ParagraphContent[]
-    total: number
-    wordCount: number
-    updatedAt: string
-  }>({
-    url: `/api/v1/writer/documents/${id}/contents`,
-    method: 'get',
-  })
+export const getDocumentContents = (id: string) => editorApi.getContents(id) as any
 
 /**
  * 批量替换文档分段内容（Editor V2）
  */
 export const replaceDocumentContents = (id: string, contents: ParagraphContent[]) =>
-  request<{ documentId: string; total: number; wordCount: number; updatedAt: string }>({
-    url: `/api/v1/writer/documents/${id}/contents`,
-    method: 'put',
-    data: { contents },
-  })
+  editorApi.replaceContents(id, contents) as any
 
 /**
  * 重建文档段落顺序（Editor V2）
  */
-export const reindexDocumentContents = (id: string) =>
-  request<{ documentId: string; total: number }>({
-    url: `/api/v1/writer/documents/${id}/contents/reindex`,
-    method: 'post',
-  })
+export const reindexDocumentContents = (id: string) => editorApi.reindexContents(id) as any
 
 /**
  * 关键词检索（支持拼音模糊/补全）

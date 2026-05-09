@@ -1,0 +1,45 @@
+#!/usr/bin/env sh
+
+###############################################################################
+# Qingyu-Editor pre-commit hook
+#
+# Wails 项目（Go + Vue）：
+#   - Go: go vet
+#   - Frontend: type-check（仅检查暂存的 .ts/.vue 文件所属模块）
+###############################################################################
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+FRONTEND_DIR="$ROOT_DIR/frontend"
+
+# ---- Go vet ----
+STAGED_GO=$(git diff --cached --name-only --diff-filter=ACM -- '*.go' 2>/dev/null || true)
+
+if [ -n "$STAGED_GO" ]; then
+  echo "🔧 检测到 Go 文件变更，执行 go vet..."
+  cd "$ROOT_DIR"
+  if ! go vet ./... 2>&1; then
+    echo "❌ go vet 检查失败，请修复后重新提交"
+    exit 1
+  fi
+  echo "✅ go vet 通过"
+fi
+
+# ---- Frontend type-check ----
+STAGED_TS=$(git diff --cached --name-only --diff-filter=ACM -- 'frontend/**/*.ts' 'frontend/**/*.vue' 'frontend/**/*.tsx' 2>/dev/null || true)
+
+if [ -n "$STAGED_TS" ]; then
+  echo "🔧 检测到前端文件变更，执行类型检查..."
+  cd "$FRONTEND_DIR"
+
+  if [ ! -d "node_modules" ]; then
+    echo "⚠️  node_modules 不存在，跳过类型检查（请先执行 npm install）"
+  else
+    if ! npx vue-tsc --noEmit -p tsconfig.app.json 2>&1; then
+      echo "❌ 类型检查失败，请修复后重新提交"
+      exit 1
+    fi
+    echo "✅ 类型检查通过"
+  fi
+fi
+
+echo "✅ Qingyu-Editor pre-commit 检查通过"

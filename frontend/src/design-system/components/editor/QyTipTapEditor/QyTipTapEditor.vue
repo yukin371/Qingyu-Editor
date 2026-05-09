@@ -1,37 +1,64 @@
 ﻿<template>
-  <div class="qy-tiptap-editor" @click="handleEditorClick">
+  <div
+    class="qy-tiptap-editor"
+    :class="{ 'qy-tiptap-editor--writer': toolbarPreset === 'writer' }"
+    @click="handleEditorClick"
+  >
     <div class="qy-tiptap-toolbar">
-      <button type="button" :class="{ active: isActive('bold') }" @click="run('toggleBold')">
-        <strong>B</strong>
+      <button
+        type="button"
+        :class="{ active: isActive('bold') }"
+        title="加粗"
+        aria-label="加粗"
+        @click="run('toggleBold')"
+      >
+        <span class="toolbar-symbol">B</span>
       </button>
-      <button type="button" :class="{ active: isActive('italic') }" @click="run('toggleItalic')">
-        <em>I</em>
+      <button
+        type="button"
+        :class="{ active: isActive('italic') }"
+        title="斜体"
+        aria-label="斜体"
+        @click="run('toggleItalic')"
+      >
+        <span class="toolbar-symbol toolbar-symbol--italic">I</span>
       </button>
       <button
         type="button"
         :class="{ active: isActive('underline') }"
+        title="下划线"
+        aria-label="下划线"
         @click="run('toggleUnderline')"
       >
-        <u>U</u>
+        <span class="toolbar-symbol toolbar-symbol--underline">U</span>
       </button>
-      <span class="sep" />
+      <span class="sep" v-if="toolbarPreset !== 'writer'" />
       <button
+        v-if="toolbarPreset !== 'writer'"
         type="button"
         :class="{ active: isActive('heading', { level: 1 }) }"
+        title="标题 1"
+        aria-label="标题 1"
         @click="run('toggleHeading1')"
       >
         H1
       </button>
       <button
+        v-if="toolbarPreset !== 'writer'"
         type="button"
         :class="{ active: isActive('heading', { level: 2 }) }"
+        title="标题 2"
+        aria-label="标题 2"
         @click="run('toggleHeading2')"
       >
         H2
       </button>
       <button
+        v-if="toolbarPreset !== 'writer'"
         type="button"
         :class="{ active: isActive('heading', { level: 3 }) }"
+        title="标题 3"
+        aria-label="标题 3"
         @click="run('toggleHeading3')"
       >
         H3
@@ -39,28 +66,39 @@
       <button
         type="button"
         :class="{ active: isActive('blockquote') }"
+        title="引用"
+        aria-label="引用"
         @click="run('toggleBlockquote')"
       >
-        引用
+        <span class="toolbar-quote">“”</span>
       </button>
       <button
+        v-if="toolbarPreset !== 'writer'"
         type="button"
         :class="{ active: isActive('codeBlock') }"
+        title="代码块"
+        aria-label="代码块"
         @click="run('toggleCodeBlock')"
       >
         代码
       </button>
       <span class="sep" />
       <button
+        v-if="toolbarPreset !== 'writer'"
         type="button"
         :class="{ active: isActive('bulletList') }"
+        title="无序列表"
+        aria-label="无序列表"
         @click="run('toggleBulletList')"
       >
         无序
       </button>
       <button
+        v-if="toolbarPreset !== 'writer'"
         type="button"
         :class="{ active: isActive('orderedList') }"
+        title="有序列表"
+        aria-label="有序列表"
         @click="run('toggleOrderedList')"
       >
         有序
@@ -71,12 +109,19 @@
         :class="{ active: isActive('image') }"
         @click="run('insertImage')"
         :disabled="isUploadingImage"
+        :title="isUploadingImage ? '图片上传中' : '插入图片'"
+        :aria-label="isUploadingImage ? '图片上传中' : '插入图片'"
       >
-        {{ isUploadingImage ? '上传中...' : '图片' }}
+        <QyIcon v-if="!isUploadingImage" name="Picture" :size="14" />
+        <span v-else class="toolbar-loading">...</span>
       </button>
       <span class="sep" />
-      <button type="button" @click="run('undo')">撤销</button>
-      <button type="button" @click="run('redo')">重做</button>
+      <button type="button" title="撤销" aria-label="撤销" @click="run('undo')">
+        <QyIcon name="ArrowLeft" :size="14" />
+      </button>
+      <button type="button" title="重做" aria-label="重做" @click="run('redo')">
+        <QyIcon name="ArrowRight" :size="14" />
+      </button>
     </div>
 
     <!-- 隐藏的文件输入框 -->
@@ -132,6 +177,7 @@ import Image from '@tiptap/extension-image'
 import QyKeywordPopover from '../QySmartKeyword/QyKeywordPopover.vue'
 import QyCompletionPopover from '../QySmartKeyword/QyCompletionPopover.vue'
 import QyEntityCreateDialog from '../QySmartKeyword/QyEntityCreateDialog.vue'
+import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
 import { SmartKeyword, type KeywordInfo } from '../QySmartKeyword/extensions/SmartKeyword'
 import { ParagraphWithId } from '../QySmartKeyword/extensions/ParagraphWithId'
 import { AiDiffExtension } from '../QySmartKeyword/extensions/AiDiffExtension'
@@ -145,11 +191,13 @@ const props = withDefaults(
     readonly?: boolean
     documentId?: string
     placeholder?: string
+    toolbarPreset?: 'default' | 'writer'
   }>(),
   {
     readonly: false,
     documentId: '',
     placeholder: '开始写作，输入 @ 触发实体补全…',
+    toolbarPreset: 'default',
   },
 )
 
@@ -928,38 +976,63 @@ onBeforeUnmount(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--editor-content-bg);
+  background: transparent;
 }
 .qy-tiptap-toolbar {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 16px 6px;
   border-bottom: 1px solid var(--editor-border);
-  background: var(--editor-bg-surface);
+  background: transparent;
+}
+.qy-tiptap-editor--writer .qy-tiptap-toolbar {
+  gap: 4px;
 }
 .qy-tiptap-toolbar button {
-  border: 1px solid var(--editor-border);
+  min-width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
   border-radius: 6px;
-  background: var(--editor-content-bg);
-  padding: 4px 8px;
+  background: transparent;
+  padding: 0 8px;
   font-size: 12px;
+  color: var(--editor-text-secondary);
   cursor: pointer;
+  transition:
+    background-color 0.14s ease,
+    border-color 0.14s ease,
+    color 0.14s ease;
+}
+.qy-tiptap-toolbar button:hover {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: var(--editor-text-primary);
 }
 .qy-tiptap-toolbar button.active {
-  color: #fff;
-  background: var(--editor-accent);
-  border-color: var(--editor-accent);
+  color: var(--editor-accent);
+  background: var(--editor-accent-soft);
+  border-color: var(--editor-accent-soft-border);
+}
+.qy-tiptap-toolbar button:disabled {
+  cursor: progress;
+  opacity: 0.6;
 }
 .sep {
   width: 1px;
-  height: 20px;
-  background: var(--editor-bg-elevated);
+  height: 16px;
+  margin: 0 2px;
+  background: var(--editor-border);
 }
 .qy-tiptap-editor__content {
   flex: 1;
   overflow: auto;
-  padding: 14px;
+  padding: 0;
 }
 :deep(.ProseMirror) {
   min-height: 380px;
@@ -968,6 +1041,24 @@ onBeforeUnmount(() => {
   color: var(--editor-content-fg);
   white-space: pre-wrap;
   word-break: break-word;
+}
+.toolbar-symbol {
+  font-weight: 700;
+  line-height: 1;
+}
+.toolbar-symbol--italic {
+  font-style: italic;
+}
+.toolbar-symbol--underline {
+  text-decoration: underline;
+}
+.toolbar-quote {
+  font-size: 12px;
+  line-height: 1;
+}
+.toolbar-loading {
+  font-size: 12px;
+  line-height: 1;
 }
 :deep(.ProseMirror p) {
   margin: 0;

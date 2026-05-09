@@ -1,8 +1,9 @@
 <template>
   <header class="workspace-topbar">
     <div class="workspace-topbar__left">
+      <div class="topbar-brand">作家2</div>
       <button class="topbar-back-btn" :title="'返回工作台'" @click="$emit('back')">
-        <QyIcon name="ArrowLeft" :size="14" />
+        <QyIcon name="Files" :size="14" />
         <span>{{ projectDisplayName }}</span>
       </button>
     </div>
@@ -10,19 +11,58 @@
     <div class="workspace-topbar__center">
       <span class="chapter-title">{{ currentChapterTitle || '未选择章节' }}</span>
       <span v-if="saveStatusLabel" class="status-text">· {{ saveStatusLabel }}</span>
+      <span class="tool-chip">{{ activeToolLabel }}</span>
     </div>
 
     <div class="workspace-topbar__right">
-      <button class="topbar-btn" :title="'保存'" @click="$emit('save')">
+      <div class="topbar-quick-actions">
+        <button
+          class="topbar-icon-btn"
+          :title="isImmersiveMode ? '退出全屏' : '全屏'"
+          @click="$emit('toggle-immersive')"
+        >
+          <QyIcon :name="isImmersiveMode ? 'Minus' : 'FullScreen'" :size="14" />
+        </button>
+        <button class="topbar-icon-btn" :title="'设定'" @click="$emit('open-right-tool', 'assets')">
+          <QyIcon name="FolderOpened" :size="14" />
+        </button>
+        <button
+          class="topbar-icon-btn"
+          :title="'校对'"
+          @click="$emit('open-right-tool', 'proofread')"
+        >
+          <QyIcon name="CircleCheck" :size="14" />
+        </button>
+        <button
+          class="topbar-icon-btn"
+          :title="'灵感'"
+          @click="$emit('open-right-tool', 'inspiration')"
+        >
+          <QyIcon name="MagicStick" :size="14" />
+        </button>
+        <button class="topbar-icon-btn" :title="'AI 助手'" @click="$emit('open-right-tool', 'ai')">
+          <QyIcon name="ChatDotRound" :size="14" />
+        </button>
+        <button class="topbar-icon-btn" :title="'历史/底栏'" @click="$emit('toggle-bottom-panel')">
+          <QyIcon name="RefreshLeft" :size="14" />
+        </button>
+      </div>
+
+      <button class="topbar-btn topbar-btn--compact" :title="'保存'" @click="$emit('save')">
         <QyIcon name="DocumentChecked" :size="14" />
-        <span>保存</span>
       </button>
-      <button class="topbar-btn" :title="'导出'" @click="$emit('export')">
+      <button class="topbar-btn topbar-btn--compact topbar-btn--primary" :title="'导出正文'" @click="$emit('export')">
         <QyIcon name="Download" :size="14" />
-        <span>导出</span>
+      </button>
+      <button
+        class="topbar-btn topbar-btn--icon"
+        :title="'设置'"
+        @click="showWorkspaceSettings = true"
+      >
+        <QyIcon name="SetUp" :size="16" />
       </button>
       <div class="topbar-divider"></div>
-      <!-- 溢出菜单 -->
+
       <div class="topbar-overflow" @click.stop>
         <button class="topbar-btn topbar-btn--icon" :title="'更多操作'" @click="overflowOpen = !overflowOpen">
           <QyIcon name="MoreFilled" :size="16" />
@@ -40,28 +80,9 @@
             <span>切换底栏</span>
           </button>
           <button
-            v-if="activeRightPanelId"
             class="topbar-overflow__item"
-            @click="
-              $emit('move-panel', { panelId: activeRightPanelId, targetArea: 'bottom' });
-              overflowOpen = false
-            "
+            @click="showShortcutSettings = true; overflowOpen = false"
           >
-            <QyIcon name="Bottom" :size="14" />
-            <span>右栏面板移到底栏</span>
-          </button>
-          <button
-            v-if="activeBottomPanelId"
-            class="topbar-overflow__item"
-            @click="
-              $emit('move-panel', { panelId: activeBottomPanelId, targetArea: 'right' });
-              overflowOpen = false
-            "
-          >
-            <QyIcon name="Right" :size="14" />
-            <span>底栏面板移到右栏</span>
-          </button>
-          <button class="topbar-overflow__item" @click="showShortcutSettings = true; overflowOpen = false">
             <QyIcon name="SetUp" :size="14" />
             <span>快捷键设置</span>
           </button>
@@ -95,27 +116,10 @@
             <QyIcon name="MagicStick" :size="14" />
             <span>AI 优先</span>
           </button>
-          <div class="topbar-overflow__divider"></div>
-          <!-- 外观/主题切换 -->
-          <div class="topbar-overflow__label">外观</div>
-          <div class="theme-options">
-            <button
-              v-for="(meta, key) in EDITOR_THEMES"
-              :key="key"
-              class="theme-option"
-              :class="{ 'theme-option--active': editorThemeStore.currentTheme === key }"
-              @click="editorThemeStore.setTheme(key as EditorThemeName); overflowOpen = false"
-            >
-              <span class="theme-option__preview" :style="{ background: meta.previewColor }"></span>
-              <span class="theme-option__label">{{ meta.label }}</span>
-              <QyIcon v-if="editorThemeStore.currentTheme === key" name="Check" :size="12" class="theme-option__check" />
-            </button>
-          </div>
         </div>
       </div>
     </div>
 
-    <!-- 快捷键设置弹窗 -->
     <el-dialog
       v-model="showShortcutSettings"
       title="快捷键设置"
@@ -126,6 +130,17 @@
     >
       <ShortcutSettingsPanel />
     </el-dialog>
+
+    <el-dialog
+      v-model="showWorkspaceSettings"
+      title="工作区设置"
+      width="720px"
+      :close-on-click-modal="true"
+      :append-to-body="true"
+      class="workspace-settings-dialog"
+    >
+      <WorkspaceSettingsPanel />
+    </el-dialog>
   </header>
 </template>
 
@@ -134,13 +149,8 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { ElDialog } from 'element-plus'
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
 import ShortcutSettingsPanel from '../settings/ShortcutSettingsPanel.vue'
-import { useEditorThemeStore, EDITOR_THEMES } from '@/modules/writer/stores/editorThemeStore'
-import type { EditorThemeName } from '@/modules/writer/stores/editorThemeStore'
-import type {
-  WorkspaceAreaId,
-  WorkspaceLayoutPreset,
-  WorkspacePanelId,
-} from '@/modules/writer/types/workspaceLayout'
+import WorkspaceSettingsPanel from '../settings/WorkspaceSettingsPanel.vue'
+import type { WorkspaceLayoutPreset } from '@/modules/writer/types/workspaceLayout'
 
 defineProps<{
   projectDisplayName: string
@@ -148,8 +158,6 @@ defineProps<{
   activeToolLabel: string
   saveStatusLabel: string
   isImmersiveMode: boolean
-  activeRightPanelId?: WorkspacePanelId | null
-  activeBottomPanelId?: WorkspacePanelId | null
 }>()
 
 defineEmits<{
@@ -158,13 +166,14 @@ defineEmits<{
   (e: 'export'): void
   (e: 'share'): void
   (e: 'toggle-bottom-panel'): void
-  (e: 'move-panel', payload: { panelId: WorkspacePanelId; targetArea: Extract<WorkspaceAreaId, 'right' | 'bottom'> }): void
+  (e: 'toggle-immersive'): void
+  (e: 'open-right-tool', tool: 'ai' | 'assets' | 'proofread' | 'inspiration'): void
   (e: 'apply-layout-preset', preset: WorkspaceLayoutPreset): void
 }>()
 
 const overflowOpen = ref(false)
 const showShortcutSettings = ref(false)
-const editorThemeStore = useEditorThemeStore()
+const showWorkspaceSettings = ref(false)
 
 function closeOverflow() {
   overflowOpen.value = false
@@ -176,46 +185,66 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
 
 <style scoped lang="scss">
 .workspace-topbar {
-  height: 44px;
-  padding: 0 12px;
+  height: 48px;
+  padding: 0 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: var(--editor-bg-surface, #f8fafc);
+  background: linear-gradient(180deg, #fafafa, #f5f7fa);
   border-bottom: 1px solid var(--editor-border, #e2e8f0);
   flex-shrink: 0;
   position: relative;
   z-index: 10;
 }
 
-// ── Left: back + project name ──
 .workspace-topbar__left {
   min-width: 0;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: #e8edf5;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .topbar-back-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 28px;
-  padding: 0 8px;
-  border: none;
-  border-radius: var(--editor-radius-md, 6px);
-  background: transparent;
-  color: var(--editor-text-muted, #64748b);
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(203, 213, 225, 0.9);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #475569;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
+  transition:
+    background 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease;
   white-space: nowrap;
-  max-width: 180px;
+  max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
 
   &:hover {
-    background: var(--editor-bg-elevated, #f1f5f9);
+    background: #ffffff;
+    border-color: #93c5fd;
     color: var(--editor-text-primary, #0f172a);
   }
 
@@ -226,25 +255,24 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   }
 }
 
-// ── Center: chapter title + save status ──
 .workspace-topbar__center {
   flex: 1;
   min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   overflow: hidden;
 }
 
 .chapter-title {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   color: var(--editor-text-primary, #0f172a);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 260px;
+  max-width: 360px;
 }
 
 .status-text {
@@ -254,56 +282,109 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   flex-shrink: 0;
 }
 
-// ── Right: action buttons ──
+.tool-chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .workspace-topbar__right {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex-shrink: 0;
+}
+
+.topbar-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid rgba(203, 213, 225, 0.9);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.topbar-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  width: 30px;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+
+  &:hover {
+    background: #eef2f7;
+    color: #0f172a;
+  }
 }
 
 .topbar-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 28px;
-  padding: 0 8px;
-  border: 1px solid var(--editor-border, #e2e8f0);
-  border-radius: var(--editor-radius-md, 6px);
-  background: var(--editor-bg-base, #ffffff);
-  color: var(--editor-text-muted, #64748b);
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(203, 213, 225, 0.9);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #475569;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
   white-space: nowrap;
 
   &:hover {
-    background: var(--editor-bg-elevated, #f1f5f9);
-    border-color: var(--editor-border-focus, #06b6d4);
+    background: #ffffff;
+    border-color: #93c5fd;
     color: var(--editor-text-primary, #0f172a);
   }
 
-  &--icon {
-    padding: 0 6px;
-    border: none;
-    background: transparent;
+  &--primary {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
 
     &:hover {
-      background: var(--editor-bg-elevated, #f1f5f9);
-      border: none;
+      background: #1d4ed8;
+      border-color: #1d4ed8;
+      color: #ffffff;
     }
+  }
+
+  &--icon {
+    padding: 0 8px;
+  }
+
+  &--compact {
+    width: 32px;
+    justify-content: center;
+    padding: 0;
   }
 }
 
 .topbar-divider {
   width: 1px;
-  height: 18px;
-  background: var(--editor-border, #e2e8f0);
+  height: 20px;
+  background: rgba(203, 213, 225, 0.9);
   margin: 0 2px;
 }
 
-// ── Overflow menu ──
 .topbar-overflow {
   position: relative;
 }
@@ -312,13 +393,13 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  background: var(--editor-bg-base, #ffffff);
-  border: 1px solid var(--editor-border, #e2e8f0);
-  border-radius: var(--editor-radius-lg, 8px);
-  box-shadow: var(--editor-shadow-md, 0 4px 12px rgba(0,0,0,0.08));
-  padding: 4px;
+  background: #ffffff;
+  border: 1px solid rgba(203, 213, 225, 0.9);
+  border-radius: 10px;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.1);
+  padding: 6px;
   z-index: 100;
-  min-width: 120px;
+  min-width: 160px;
 }
 
 .topbar-overflow__item {
@@ -328,7 +409,7 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   width: 100%;
   padding: 6px 10px;
   border: none;
-  border-radius: var(--editor-radius-md, 6px);
+  border-radius: 8px;
   background: transparent;
   color: var(--editor-text-muted, #64748b);
   font-size: 12px;
@@ -356,52 +437,4 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   letter-spacing: 0.05em;
 }
 
-.theme-options {
-  padding: 2px 4px 4px;
-}
-
-.theme-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 6px 8px;
-  border: none;
-  border-radius: var(--editor-radius-md, 6px);
-  background: transparent;
-  cursor: pointer;
-  transition: background 120ms ease;
-
-  &:hover {
-    background: var(--editor-bg-elevated, #f1f5f9);
-  }
-
-  &--active {
-    background: var(--editor-accent-soft, #ecfeff);
-  }
-}
-
-.theme-option__preview {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  border: 1px solid var(--editor-border, #e2e8f0);
-  flex-shrink: 0;
-}
-
-.theme-option__label {
-  flex: 1;
-  font-size: 12px;
-  color: var(--editor-text-secondary, #334155);
-  text-align: left;
-}
-
-.theme-option--active .theme-option__label {
-  color: var(--editor-accent, #06b6d4);
-  font-weight: 600;
-}
-
-.theme-option__check {
-  color: var(--editor-accent, #06b6d4);
-}
 </style>

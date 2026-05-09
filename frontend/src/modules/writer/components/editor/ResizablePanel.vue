@@ -189,15 +189,15 @@ defineExpose({
 
 /* 折叠状态 */
 .resizable-panel--collapsed-right {
-  width: 66px !important;
-  min-width: 66px !important;
+  width: 56px !important;
+  min-width: 56px !important;
   overflow: visible;
   border: none;
 }
 
 .resizable-panel--collapsed-left {
-  width: 66px !important;
-  min-width: 66px !important;
+  width: 56px !important;
+  min-width: 56px !important;
   overflow: visible;
   border: none;
 }
@@ -205,6 +205,22 @@ defineExpose({
 .resizable-panel--collapsed-left .panel-content,
 .resizable-panel--collapsed-right .panel-content {
   overflow: visible;
+}
+
+.resizable-panel--collapsed-left :deep(.drag-handle),
+.resizable-panel--collapsed-right :deep(.drag-handle) {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--drag-handle-width, 10px);
+}
+
+.resizable-panel--collapsed-left :deep(.drag-handle) {
+  right: 0;
+}
+
+.resizable-panel--collapsed-right :deep(.drag-handle) {
+  left: 0;
 }
 
 /* 拖拽状态 */

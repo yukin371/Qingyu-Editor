@@ -1,6 +1,5 @@
 <template>
   <div class="sidebar-container chapter-list" data-testid="chapter-list">
-    <!-- 1. 顶部区域：单行标题 + 最近项目快速切换 -->
     <div class="sidebar-header">
       <div class="project-bar">
         <div class="project-title" :title="currentProjectTitle">
@@ -19,12 +18,11 @@
       </div>
     </div>
 
-    <!-- 2. 工具栏：搜索 -->
-    <div class="sidebar-toolbar">
+    <div class="sidebar-search">
       <el-autocomplete
         v-model="searchKeyword"
         :fetch-suggestions="fetchKeywordSuggestions"
-        placeholder="搜索章节/角色/地点..."
+        placeholder="全书"
         clearable
         class="search-input"
         @select="handleSuggestionSelect"
@@ -33,32 +31,78 @@
         <template #default="{ item }">
           <div class="keyword-option">
             <span class="keyword-option__name">{{ item.value }}</span>
-            <span class="keyword-option__meta"
-              >{{ item.typeLabel }} · {{ item.matchModeLabel }}</span
-            >
+            <span class="keyword-option__meta">{{ item.typeLabel }} · {{ item.matchModeLabel }}</span>
           </div>
         </template>
       </el-autocomplete>
     </div>
 
-    <!-- 4. VSCode风格目录树 -->
-    <div class="explorer-header" @click="isTreeExpanded = !isTreeExpanded">
-      <div class="explorer-title">
-        <QyIcon name="ArrowRight" :size="14" :class="chevronClass" />
-        <span>目录</span>
-        <span class="section-count">{{ displayChapters.length }}</span>
-      </div>
-      <div class="explorer-actions" @click.stop>
+    <div class="sidebar-actions">
+      <button
+        type="button"
+        class="action-icon-btn action-icon-btn--primary"
+        title="新建章节"
+        aria-label="新建章节"
+        @click="$emit('add-doc')"
+      >
+        <QyIcon name="Plus" :size="14" />
+      </button>
+      <button
+        type="button"
+        class="action-icon-btn"
+        title="新建卷"
+        aria-label="新建卷"
+        @click="$emit('add-volume')"
+      >
+        <QyIcon name="Folder" :size="14" />
+      </button>
+    </div>
+
+    <div class="sidebar-tools">
+      <span class="sidebar-tools__hint">
+        {{ draftOnly ? '仅看草稿' : sortMode === 'updated' ? '最近更新' : '章节顺序' }}
+      </span>
+      <div class="tool-icons">
         <button
-          class="explorer-action-btn explorer-action-btn--primary"
-          title="新增文档"
-          data-testid="add-document-button"
-          @click="$emit('add-doc')"
+          type="button"
+          class="tool-icon-btn"
+          :class="{ 'is-active': draftOnly }"
+          title="仅看草稿"
+          aria-label="仅看草稿"
+          @click="draftOnly = !draftOnly"
         >
-          <QyIcon name="Plus" :size="12" style="margin-right: 2px" />
-          添加
+          <QyIcon name="EditPen" :size="14" />
+        </button>
+        <button
+          type="button"
+          class="tool-icon-btn"
+          :class="{ 'is-active': sortMode === 'updated' }"
+          title="按最近更新排序"
+          aria-label="按最近更新排序"
+          @click="sortMode = sortMode === 'updated' ? 'chapter' : 'updated'"
+        >
+          <QyIcon name="Filter" :size="14" />
+        </button>
+        <button type="button" class="tool-icon-btn" title="重置筛选" @click="resetFilters">
+          <QyIcon name="RefreshLeft" :size="14" />
+        </button>
+        <button
+          type="button"
+          class="tool-icon-btn"
+          :title="isTreeExpanded ? '收起目录' : '展开目录'"
+          @click="isTreeExpanded = !isTreeExpanded"
+        >
+          <QyIcon name="ArrowRight" :size="14" :class="chevronClass" />
         </button>
       </div>
+    </div>
+
+    <div class="explorer-header" @click="isTreeExpanded = !isTreeExpanded">
+      <div class="explorer-title">
+        <span>章节</span>
+        <span class="section-count">{{ displayChapters.length }}</span>
+      </div>
+      <span class="explorer-caption">{{ draftOnly ? '仅看草稿' : '全部章节' }}</span>
     </div>
 
     <div v-show="isTreeExpanded" class="sidebar-list">
@@ -100,7 +144,6 @@
               >
                 {{ row.chapter.chapterNum }}.
               </span>
-              <!-- 搜索高亮处理 -->
               <span v-safe-html="highlightText(getDisplayTitle(row.chapter), searchKeyword)"></span>
             </div>
 
@@ -110,7 +153,7 @@
               <span>{{ fromNow(row.chapter.updatedAt) }}</span>
             </div>
             <div class="item-meta item-meta--directory" v-else>
-              <span>{{ row.childrenCount }} 个章节 · 点击左侧查看细纲</span>
+              <span>{{ row.childrenCount }} 个章节</span>
             </div>
           </div>
         </button>
@@ -134,21 +177,50 @@
           />
         </QyGhostButton>
 
-        <!-- 操作菜单 -->
         <div class="item-actions" @click.stop>
           <QyDropdown
             :items="chapterActionItems"
             @select="(cmd: string) => handleAction(cmd as 'edit' | 'delete', row.chapter)"
           >
-            <div class="action-btn">
+            <div class="action-menu-btn">
               <QyIcon name="MoreFilled" :size="14" />
             </div>
           </QyDropdown>
         </div>
       </div>
 
-      <!-- 空状态 -->
-      <Empty v-if="visibleRows.length === 0" description="暂无章节" size="sm" class="list-empty" />
+      <div v-if="visibleRows.length === 0" class="list-empty">
+        <strong>{{ isFilteringList ? '没有匹配结果' : '还没有章节' }}</strong>
+        <span>
+          {{
+            isFilteringList
+              ? '清空搜索或筛选后再试。'
+              : '先创建章节或卷，再开始整理目录。'
+          }}
+        </span>
+        <div class="list-empty__actions">
+          <button
+            v-if="isFilteringList"
+            type="button"
+            class="list-empty__btn"
+            @click="resetFilters"
+          >
+            清空筛选
+          </button>
+          <template v-else>
+            <button
+              type="button"
+              class="list-empty__btn list-empty__btn--primary"
+              @click="$emit('add-doc')"
+            >
+              新建章
+            </button>
+            <button type="button" class="list-empty__btn" @click="$emit('add-volume')">
+              新建卷
+            </button>
+          </template>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -156,13 +228,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { QyGhostButton, QyIcon, QyDropdown } from '@/design-system/components'
-import { Empty } from '@/design-system/base'
 import type { DropdownItem } from '@/design-system/components'
 import { messageBox } from '@/design-system/services'
 import { useWriterStore } from '@/modules/writer/stores/writerStore'
 import { sanitizeText } from '@/utils/sanitize'
 
-// 定义类型 (建议从 types/project.ts 引入)
 interface ProjectSummary {
   id: string
   title: string
@@ -207,8 +277,8 @@ interface KeywordSuggestion {
 interface Props {
   projects: ProjectSummary[]
   chapters: ChapterSummary[]
-  projectId?: string // v-model:projectId
-  chapterId?: string // v-model:chapterId
+  projectId?: string
+  chapterId?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -220,14 +290,16 @@ const emit = defineEmits<{
   'update:projectId': [id: string]
   'update:chapterId': [id: string]
   'add-doc': []
+  'add-volume': []
   'open-directory-outline': [id: string]
   'edit-chapter': [chapter: ChapterSummary]
   'delete-chapter': [id: string]
 }>()
 
-// 状态
 const searchKeyword = ref('')
 const isTreeExpanded = ref(true)
+const draftOnly = ref(false)
+const sortMode = ref<'chapter' | 'updated'>('chapter')
 const writerStore = useWriterStore()
 const collapsedDirectoryIds = ref<Set<string>>(new Set())
 let suggestionTimer: ReturnType<typeof setTimeout> | null = null
@@ -235,7 +307,6 @@ const chevronClass = computed(() =>
   isTreeExpanded.value ? 'tree-chevron expanded' : 'tree-chevron',
 )
 
-// 双向绑定代理
 const internalProjectId = computed({
   get: () => props.projectId || '',
   set: (val) => emit('update:projectId', val),
@@ -258,7 +329,6 @@ const recentProjects = computed(() => {
   })
 })
 
-// 项目切换菜单项
 const projectSwitchItems = computed<DropdownItem[]>(() =>
   recentProjects.value.map((p) => ({
     key: p.id,
@@ -267,7 +337,6 @@ const projectSwitchItems = computed<DropdownItem[]>(() =>
   })),
 )
 
-// 章节操作菜单项
 const chapterActionItems: DropdownItem[] = [
   { key: 'edit', label: '重命名/设置', icon: 'icon-edit' },
   { key: 'delete', label: '删除章节', icon: 'icon-delete', danger: true, divider: true },
@@ -352,12 +421,27 @@ const handleSuggestionSelect = (item: KeywordSuggestion) => {
   }
 }
 
-// 章节列表逻辑（筛选项目 + 排序，不含目录折叠）
-const displayChapters = computed(() => {
-  // 1. 筛选项目
-  let list = props.chapters.filter((c) => c.projectId === internalProjectId.value)
+const resetFilters = () => {
+  searchKeyword.value = ''
+  draftOnly.value = false
+  sortMode.value = 'chapter'
+}
 
-  // 2. 搜索过滤
+const projectChapters = computed(() =>
+  props.chapters.filter((chapter) => chapter.projectId === internalProjectId.value),
+)
+
+const isFilteringList = computed(
+  () => Boolean(searchKeyword.value.trim()) || draftOnly.value || sortMode.value === 'updated',
+)
+
+const displayChapters = computed(() => {
+  let list = [...projectChapters.value]
+
+  if (draftOnly.value) {
+    list = list.filter((c) => c.status === 'draft' || c.nodeType === 'directory')
+  }
+
   if (searchKeyword.value.trim()) {
     const k = searchKeyword.value.toLowerCase()
     list = list.filter(
@@ -365,7 +449,14 @@ const displayChapters = computed(() => {
     )
   }
 
-  // 3. 排序：优先 sortOrder，再回退 chapterNum
+  if (sortMode.value === 'updated') {
+    return list.sort((a, b) => {
+      const ta = new Date(a.updatedAt).getTime() || 0
+      const tb = new Date(b.updatedAt).getTime() || 0
+      return tb - ta
+    })
+  }
+
   return list.sort((a, b) => (a.sortOrder || a.chapterNum) - (b.sortOrder || b.chapterNum))
 })
 
@@ -469,7 +560,6 @@ const visibleRows = computed<ExplorerRow[]>(() => {
   return rows
 })
 
-// 操作处理
 const handleSelectChapter = (chapter: ChapterSummary) => {
   modelChapterId.value = chapter.id
 }
@@ -505,14 +595,13 @@ const handleAction = async (cmd: 'edit' | 'delete', chapter: ChapterSummary) => 
       )
       emit('delete-chapter', chapter.id)
     } catch {
-      // 用户取消删除操作，无需处理
+      // 用户取消
     }
   }
 }
 
-// 工具函数
 const formatCount = (n: number) => {
-  if (n >= 10000) return (n / 10000).toFixed(1) + 'w'
+  if (n >= 10000) return `${(n / 10000).toFixed(1)}w`
   return n
 }
 
@@ -538,14 +627,12 @@ const getDisplayTitle = (chapter: ChapterSummary) =>
 
 const highlightText = (text: string, keyword: string) => {
   if (!keyword) return sanitizeText(text)
-  // 先转义HTML特殊字符，防止XSS攻击
   const escapedText = sanitizeText(text)
   const escapedKeyword = sanitizeText(keyword)
   const reg = new RegExp(`(${escapedKeyword})`, 'gi')
   return escapedText.replace(reg, '<span class="text-highlight">$1</span>')
 }
 
-// 自动选择第一个项目
 watch(
   () => props.projects,
   (newVal) => {
@@ -586,192 +673,215 @@ onBeforeUnmount(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: transparent;
-  transition: width 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
-  position: relative;
+  background: #fff;
 }
 
-// 1. 头部
+.sidebar-header,
+.sidebar-search,
+.sidebar-actions,
+.sidebar-tools,
+.explorer-header {
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
 .sidebar-header {
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-  background: transparent;
-
-  .project-bar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .project-title {
-    flex: 1;
-    min-width: 0;
-    display: block;
-    font-size: 16px;
-    font-weight: 700;
-    color: #0f172a;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .recent-switch-btn {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    height: 30px;
-    padding: 0 10px;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    background: #ffffff;
-    color: #334155;
-    font-size: 12px;
-    cursor: pointer;
-
-    &:hover:not(:disabled) {
-      border-color: #93c5fd;
-      background: #eff6ff;
-      color: #1d4ed8;
-    }
-
-    &:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-  }
-
-  .recent-switch-caret {
-    opacity: 0.85;
-  }
+  padding-top: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ebeff5;
 }
 
-:deep(.keyword-option) {
+.project-bar {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-:deep(.keyword-option__name) {
-  font-size: 13px;
-  color: #0f172a;
-  line-height: 1.3;
-}
-
-:deep(.keyword-option__meta) {
-  font-size: 11px;
-  color: #64748b;
-  line-height: 1.2;
-}
-
-// 2. 工具栏
-.sidebar-toolbar {
-  padding: 10px 12px;
-  display: flex;
+  align-items: center;
   gap: 8px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-  background: transparent;
-
-  .search-input {
-    flex: 1;
-    min-width: 0;
-  }
 }
 
-// 图谱模式：顶部全局图谱入口
-.graph-mode-header {
-  padding: 8px 12px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-  background: transparent;
-}
-
-.graph-entry {
-  display: flex;
-  align-items: center;
-  padding: 10px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid #e2e8f0;
-
-  &:hover {
-    background: #f5f7fa;
-    border-color: #93c5fd;
-  }
-
-  &.active {
-    background: #eff6ff;
-    border-color: #60a5fa;
-    border-left: 3px solid #2563eb;
-  }
-
-  .graph-entry-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #ffffff;
-    margin-right: 10px;
-    flex-shrink: 0;
-  }
-
-  .graph-entry-name {
-    flex: 1;
-    font-size: 14px;
-    font-weight: 500;
-    color: #0f172a;
-  }
-}
-
-.sidebar-toolbar :deep(.el-input__wrapper) {
+.project-title {
+  flex: 1;
   min-width: 0;
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-}
-
-.sidebar-toolbar :deep(.el-input__prefix) {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-}
-
-.sidebar-toolbar :deep(.el-input__prefix-inner) {
-  display: inline-flex;
-  align-items: center;
-  white-space: nowrap;
-}
-
-.sidebar-toolbar :deep(.el-input__inner) {
-  min-width: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-// 3. 目录树
-.explorer-header {
+.recent-switch-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 6px;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    color: #111827;
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+}
+
+.sidebar-search {
+  padding-top: 12px;
+  padding-bottom: 10px;
+}
+
+.search-input {
+  width: 100%;
+  min-width: 0;
+}
+
+.sidebar-search :deep(.el-input__wrapper) {
+  height: 30px;
+  border-radius: 4px;
+  border: 1px solid #d9dee6;
+  background: #f8fafc;
+  box-shadow: none;
+}
+
+.sidebar-search :deep(.el-input__wrapper.is-focus) {
+  border-color: #cbd5e1;
+}
+
+.sidebar-search :deep(.el-input__inner) {
+  font-size: 13px;
+}
+
+.keyword-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.keyword-option__name {
+  font-size: 13px;
+  color: #111827;
+}
+
+.keyword-option__meta {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.sidebar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+}
+
+.action-icon-btn {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d9dee6;
+  border-radius: 4px;
+  background: #fff;
+  color: #4b5563;
+  cursor: pointer;
+  transition:
+    background-color 0.14s ease,
+    border-color 0.14s ease,
+    color 0.14s ease;
+
+  &:hover {
+    background: #f8fafc;
+    color: #111827;
+  }
+
+  &--primary {
+    background: #2f6feb;
+    border-color: #2f6feb;
+    color: #fff;
+
+    &:hover {
+      background: #255fd1;
+      border-color: #255fd1;
+      color: #fff;
+    }
+  }
+}
+
+.sidebar-tools {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 10px;
-  border-top: 1px solid rgba(0, 0, 0, 0.04);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  gap: 8px;
+  padding-bottom: 10px;
+}
+
+.sidebar-tools__hint {
+  min-width: 0;
+  color: #9ca3af;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tool-icon-btn {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
   background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+
+  &:hover {
+    background: #f3f4f6;
+    color: #111827;
+  }
+
+  &.is-active {
+    background: #eaf2ff;
+    color: #1d4ed8;
+  }
+}
+
+.tool-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.explorer-header {
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid #ebeff5;
+  border-bottom: 1px solid #ebeff5;
+  color: #4b5563;
 }
 
 .explorer-title {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   font-size: 12px;
-  font-weight: 700;
-  color: #334155;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  font-weight: 600;
+}
+
+.section-count,
+.explorer-caption {
+  color: #9ca3af;
+  font-size: 11px;
 }
 
 .tree-chevron {
@@ -782,251 +892,196 @@ onBeforeUnmount(() => {
   }
 }
 
-.explorer-actions {
-  display: inline-flex;
-  gap: 6px;
-}
-
-.explorer-action-btn {
-  height: 24px;
-  padding: 0 8px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  background: #f8fafc;
-  color: #334155;
-  font-size: 11px;
-  cursor: pointer;
-
-  &:hover {
-    border-color: #94a3b8;
-    background: #f1f5f9;
-  }
-}
-
-.explorer-action-btn--primary {
-  border-color: #93c5fd;
-  background: #eff6ff;
-  color: #1d4ed8;
-
-  &:hover {
-    border-color: #60a5fa;
-    background: #dbeafe;
-  }
-}
-
 .sidebar-list {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 8px 10px;
-  background: transparent;
+  padding: 6px;
+  background: #fff;
 
   &::-webkit-scrollbar {
     width: 6px;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.08);
+    background: rgba(148, 163, 184, 0.35);
     border-radius: 999px;
   }
+}
 
-  .chapter-item {
-    position: relative;
-    padding: 4px;
-    margin-bottom: 6px;
-    transition: all 0.16s ease;
-    border: 1px solid #e2e8f0;
-    border-left: 2px solid #cbd5e1;
-    border-radius: 10px;
-    background: #ffffff;
-    display: flex;
-    justify-content: space-between;
-    align-items: stretch;
-    box-shadow: none;
-    margin-left: calc(var(--tree-depth, 0) * 16px);
+.chapter-item {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  margin-bottom: 1px;
+  border-left: 2px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  transition: background-color 0.14s ease;
+  margin-left: calc(var(--tree-depth, 0) * 14px);
 
-    &:hover {
-      border-color: #93c5fd;
-      border-left-color: #60a5fa;
-      background: #f8fbff;
+  &:hover {
+    background: #f5f7fb;
+    border-left-color: #d1d5db;
 
-      .item-actions {
-        opacity: 1;
-      }
+    .item-actions {
+      opacity: 1;
     }
+  }
 
-    &.is-active {
-      background: #eff6ff;
-      border-color: #93c5fd;
-      border-left-color: #2563eb;
-      box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.08);
+  &.is-active {
+    background: #eaf2ff;
+    border-left-color: #2563eb;
 
-      .item-title {
-        color: #1d4ed8;
-        font-weight: 600;
-      }
+    .item-title {
+      color: #1d4ed8;
+      font-weight: 700;
     }
+  }
 
-    .chapter-main-zone {
-      border: none;
-      background: transparent;
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      align-items: flex-start;
-      text-align: left;
-      border-radius: 8px;
-      padding: 6px 8px;
-      color: inherit;
-      cursor: pointer;
-      transition: background-color 0.16s ease;
-      min-height: 36px;
+  &.is-directory {
+    background: #fff8e8;
+    border-left-color: #d4a72c;
 
-      &:hover {
-        background: rgba(148, 163, 184, 0.12);
-      }
+    .item-title {
+      color: #8a5a00;
+      font-weight: 700;
     }
 
     .item-file-icon {
-      margin-right: 8px;
-      margin-top: 2px;
-      color: #64748b;
-      flex-shrink: 0;
-    }
-
-    .item-content {
-      flex: 1;
-      overflow: hidden;
-      min-width: 0;
-    }
-
-    .item-title {
-      font-size: 13px;
-      color: #0f172a;
-      margin-bottom: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-
-      .chapter-index {
-        margin-right: 4px;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        color: #64748b;
-      }
-    }
-
-    .item-meta {
-      font-size: 11px;
-      color: #64748b;
-      display: flex;
-      align-items: center;
-      min-width: 0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-
-      .dot {
-        margin: 0 4px;
-        flex-shrink: 0;
-      }
-
-      span {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      &.item-meta--directory {
-        color: #b45309;
-      }
-    }
-
-    .item-actions {
-      opacity: 0.45;
-      transition: opacity 0.2s;
-      margin-left: 6px;
-      align-self: center;
-
-      .action-btn {
-        padding: 4px;
-        border-radius: 8px;
-        color: #64748b;
-
-        &:hover {
-          background-color: #dbeafe;
-          color: #1d4ed8;
-        }
-      }
-    }
-
-    &:hover .item-actions,
-    &.is-active .item-actions {
-      opacity: 1;
-    }
-
-    &.is-directory {
-      border-left-color: #f59e0b;
-      background: #fffaf0;
-
-      .item-title {
-        color: #92400e;
-        font-weight: 700;
-      }
-
-      .item-file-icon {
-        color: #d97706;
-      }
-    }
-
-    &.is-child {
-      border-left-color: #bfdbfe;
-      background: #fbfdff;
-      margin-left: 14px;
+      color: #c0841a;
     }
   }
 }
 
-.directory-collapse-zone {
-  width: 44px;
-  min-width: 44px;
-  height: auto;
-  margin-left: 6px;
-  align-self: stretch;
+.chapter-main-zone {
+  min-width: 0;
+  flex: 1;
+  min-height: 32px;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 5px 6px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.item-file-icon {
+  margin-top: 2px;
+  color: #6b7280;
   flex-shrink: 0;
-  border-radius: 8px;
+}
+
+.item-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.item-title {
+  margin-bottom: 2px;
+  color: #111827;
+  font-size: 13px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chapter-index,
+.item-meta {
+  color: #9ca3af;
+}
+
+.item-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.item-meta--directory {
+  color: #8a5a00;
+}
+
+.dot {
+  opacity: 0.7;
+}
+
+.directory-collapse-zone {
+  align-self: center;
+  margin-left: 2px;
 }
 
 .directory-triangle {
-  width: 12px;
-  height: 12px;
-  color: #64748b;
-  transform: rotate(90deg);
   transition: transform 0.16s ease;
-  flex-shrink: 0;
+
+  &.is-collapsed {
+    transform: rotate(0deg);
+  }
 }
 
-.directory-triangle.is-collapsed {
-  transform: rotate(0deg);
+.item-actions {
+  opacity: 0.15;
+  align-self: center;
+  margin-left: 2px;
+  transition: opacity 0.14s ease;
 }
 
-.section-count {
-  min-width: 20px;
-  height: 18px;
-  padding: 0 6px;
-  border-radius: 999px;
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
-  color: #64748b;
-  font-size: 11px;
-  font-weight: 600;
+.action-menu-btn {
+  width: 22px;
+  height: 22px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  border-radius: 4px;
+  color: #4b5563;
 }
 
-// 搜索高亮样式 (通过 v-html 插入)
+.list-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 12px;
+  color: #6b7280;
+  font-size: 12px;
+
+  strong {
+    color: #111827;
+    font-size: 13px;
+  }
+
+  span {
+    line-height: 1.5;
+  }
+}
+
+.list-empty__actions {
+  display: inline-flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.list-empty__btn {
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid #d9dee6;
+  border-radius: 4px;
+  background: #fff;
+  color: #374151;
+  font-size: 12px;
+  cursor: pointer;
+
+  &--primary {
+    color: #2f6feb;
+    border-color: #bfdbfe;
+    background: #eff6ff;
+  }
+}
+
 :deep(.text-highlight) {
-  color: #1d4ed8;
-  font-weight: bold;
-  background-color: #fef3c7;
+  color: #2563eb;
+  font-weight: 700;
 }
 </style>

@@ -8,6 +8,7 @@
  */
 
 import { readonly, ref } from 'vue'
+import type { EncyclopediaCategory, GraphFocusTarget } from './types'
 
 const LAST_TOOL_KEY = 'qingyu_last_tool'
 const TOOL_IDS = ['structure', 'assets', 'relations', 'timeline', 'branches'] as const
@@ -15,9 +16,16 @@ const DEFAULT_TOOL = 'structure'
 
 export type ToolType = 'structure' | 'assets' | 'relations' | 'timeline' | 'branches'
 
+export interface ToolOverlayContext {
+  assetsCategory?: EncyclopediaCategory
+  assetId?: string
+  focusedAsset?: GraphFocusTarget
+}
+
 // 单例状态
 const visible = ref(false)
 const activeTool = ref<ToolType>(getLastTool())
+const context = ref<ToolOverlayContext | null>(null)
 
 function getLastTool(): ToolType {
   const saved = localStorage.getItem(LAST_TOOL_KEY)
@@ -32,11 +40,15 @@ function setLastTool(toolId: string) {
 }
 
 export function useToolOverlay() {
+  const applyContext = (nextContext?: ToolOverlayContext | null) => {
+    context.value = nextContext ? { ...nextContext } : null
+  }
+
   /**
    * 打开工具面板
    * @param tool 可选，指定打开的工具类型，默认为上次使用的工具
    */
-  function open(tool?: ToolType) {
+  function open(tool?: ToolType, nextContext?: ToolOverlayContext | null) {
     if (tool) {
       activeTool.value = tool
       setLastTool(tool)
@@ -44,6 +56,7 @@ export function useToolOverlay() {
       // 确保 activeTool 是有效的
       activeTool.value = getLastTool()
     }
+    applyContext(nextContext)
     visible.value = true
   }
 
@@ -69,12 +82,17 @@ export function useToolOverlay() {
    * 切换到指定工具
    * 如果面板未打开，会自动打开
    */
-  function switchTool(toolId: ToolType) {
+  function switchTool(toolId: ToolType, nextContext?: ToolOverlayContext | null) {
     activeTool.value = toolId
     setLastTool(toolId)
+    applyContext(nextContext)
     if (!visible.value) {
       visible.value = true
     }
+  }
+
+  function openFromRightPanel(toolId: ToolType, nextContext?: ToolOverlayContext | null) {
+    open(toolId, nextContext)
   }
 
   /**
@@ -111,11 +129,13 @@ export function useToolOverlay() {
     // 只读状态
     visible: readonly(visible),
     activeTool: readonly(activeTool),
+    context: readonly(context),
     // 方法
     open,
     close,
     toggle,
     switchTool,
+    openFromRightPanel,
     // 工具信息
     getToolName,
     getToolIcon,

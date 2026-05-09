@@ -90,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, markRaw, ref } from 'vue'
+import { computed, markRaw, ref, watch } from 'vue'
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
 import QyGhostButton from '@/design-system/components/basic/QyGhostButton/QyGhostButton.vue'
 import ToolSidebar from './tool-overlay/ToolSidebar.vue'
@@ -156,7 +156,7 @@ const emit = defineEmits<{
 // =======================
 // 工具信息
 // =======================
-const { getToolName, getToolIcon } = useToolOverlay()
+const { getToolName, getToolIcon, context: overlayContext } = useToolOverlay()
 
 const currentToolName = computed(() => getToolName(props.activeTool))
 const currentToolIcon = computed(() => getToolIcon(props.activeTool))
@@ -178,6 +178,7 @@ const currentToolExtraProps = computed(() =>
     ? {
         embedded: true,
         activeCategory: assetsActiveCategory.value,
+        selectedAssetId: overlayContext.value?.assetId,
       }
     : props.activeTool === 'relations'
       ? {
@@ -222,6 +223,19 @@ const handleGraphAssetFocus = (target: GraphFocusTarget) => {
 const handleGraphFocusConsumed = () => {
   relationsFocusedAsset.value = null
 }
+
+watch(
+  () => [props.activeTool, overlayContext.value?.assetsCategory, overlayContext.value?.focusedAsset] as const,
+  ([toolId, assetsCategory, focusedAsset]) => {
+    if (toolId === 'assets' && assetsCategory) {
+      assetsActiveCategory.value = assetsCategory
+    }
+    if (toolId === 'relations') {
+      relationsFocusedAsset.value = focusedAsset || null
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <style scoped lang="scss">

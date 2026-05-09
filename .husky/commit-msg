@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+
+# 提交信息验证：拦截 AI 协作者标识
+"$(git rev-parse --show-toplevel)/scripts/validate-commit-msg.sh" "$1"
