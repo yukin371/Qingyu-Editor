@@ -1,7 +1,7 @@
 # Qingyu-Editor 架构重整设计
 
 **日期**: 2026-05-09
-**状态**: 设计中
+**状态**: 实施中
 **范围**: Qingyu-Editor 全栈（Go 后端 + Vue 前端）
 **目标**: 从"前端搬运 + 后端空壳"重整为"仅保留 writer 的独立桌面应用"
 
@@ -62,11 +62,28 @@
 
 #### P1：Go 后端空壳
 
-当前 Wails 绑定只有：
+原始迁移时只有极少量 Wails 绑定；到 `2026-05-10`，当前实际已补到：
 
 ```go
 func (a *App) InitDatabase() error
 func (a *App) AICall(cfg ai.Config, prompt string, context string) (string, error)
+func (a *App) CreateProject(input database.CreateProjectInput) (database.Project, error)
+func (a *App) GetProject(id string) (database.Project, error)
+func (a *App) ListProjects() ([]database.Project, error)
+func (a *App) UpdateProject(id string, update database.ProjectUpdate) (database.Project, error)
+func (a *App) DeleteProject(id string) error
+func (a *App) CreateVolume(input database.CreateVolumeInput) (database.Volume, error)
+func (a *App) ListVolumes(projectID string) ([]database.Volume, error)
+func (a *App) UpdateVolume(id string, update database.VolumeUpdate) error
+func (a *App) DeleteVolume(id string) error
+func (a *App) ReorderVolumes(input database.ReorderVolumesInput) error
+func (a *App) CreateChapter(input database.CreateChapterInput) (database.Chapter, error)
+func (a *App) GetChapter(id string) (database.Chapter, error)
+func (a *App) ListChapters(projectID string) ([]database.Chapter, error)
+func (a *App) UpdateChapter(id string, update database.ChapterUpdate) (database.Chapter, error)
+func (a *App) DeleteChapter(id string) error
+func (a *App) ReorderChapters(input database.ReorderChaptersInput) error
+func (a *App) MoveChapter(input database.MoveChapterInput) error
 ```
 
 缺失的核心绑定：
@@ -361,7 +378,7 @@ Data Bridge 是前端与 Wails 后端之间的适配层：
 
 - **接口抽象**：composable 不直接调用 Wails，而是调用 data-bridge 提供的接口
 - **类型安全**：所有 Go struct 在 TypeScript 端有对应的类型定义
-- **可切换**：未来可切换为 HTTP 后端（平台回流时），只需替换 data-bridge 实现
+- **桌面优先**：默认以 Wails 为唯一真实后端；HTTP 只作为 `?test=true` 或尚未迁完链路的显式兼容 fallback，不再把“平台回流”作为架构前提
 
 ### 4.4 前端清理优先级（修正版）
 
@@ -418,6 +435,16 @@ Data Bridge 是前端与 Wails 后端之间的适配层：
 - 根入口与 writer 主链不再依赖这些模块
 - 物理目录完成归档或删除，并有可恢复基线
 
+当前进展（2026-05-10）：
+
+- 已完成第一批物理清理，恢复基线为 commit `be4d59e` / tag `backup/editor-desktop-predelete-20260510`
+- 已从 `frontend/src` 物理移除非 writer 运行时模块：`achievement / admin / announcements / booklist / bookstore / community / discovery / finance / notification / reader / reading-stats / recommendation / review / reward / shared / social / system / user / vip / workflow`
+- 已同步移除根级非 writer store、旧 `MainLayout/AdminLayout`、demo 页面、旧测试模式拦截器，以及不再服务桌面写作宿主的零散公共壳
+- `main.ts` 不再初始化冗余的全局测试模式拦截器；`?test=true` 兼容继续由 writer mock 路径和 `http.service` 内的 `mock-data-manager` 承接
+- 当前 `npm run type-check` 与 writer 定向测试已通过，说明桌面主链已能脱离这些历史平台模块继续运行
+- 已完成第二批 writer 内部孤岛清理：移除了旧 `components/ai/*`、模板工作流组件、废弃 `OutlineView*`、旧 `WorkspaceFullscreenOverlay` 与一批不再接入主链的 legacy editor 组件
+- 当前桌面主链仍稳定落在 `ProjectWorkspace -> WorkspaceShell -> EditorLayout / WorkspaceToolOverlay / WorkspaceRightPanel / StoryHarness`，后续收口应继续围绕这条链，而不是恢复历史平台页
+
 #### Phase D：writer 内核继续瘦身
 
 目标：
@@ -429,6 +456,26 @@ Data Bridge 是前端与 Wails 后端之间的适配层：
 
 - writer 内部只保留清晰的桌面产品语义
 - 组件与 store 结构能支撑后续长期维护
+
+#### Phase E：数据桥现状校正（2026-05-10）
+
+现状复核后，原文档里的 `Phase 0 / Phase 1` 需要校正：
+
+- `app.go`、`services/project_service.go`、`services/volume_service.go`、`services/chapter_service.go` 已经不是“空壳”，项目/卷/章节的本地 CRUD 与排序绑定已存在
+- `frontend/src/modules/writer/data-bridge/wails.ts` 已落地，且 `api/project.ts`、`api/document.ts`、`api/editor.ts` 已经是 **Wails 优先、HTTP fallback** 模式
+- `frontend/src/modules/writer/api/outline.ts` 已开始并入本地主链：桌面端默认从本地文档树派生大纲树，卷/章节型节点的增删改也优先委托 Wails 文档桥
+- `frontend/src/modules/writer/api/entities.ts` 与 `api/concept.ts` 已改为 **桌面显式降级**：本地运行时不再默认请求在线统一实体/概念接口；列表读取降级为空集，写操作显式报“待本地化”
+- `frontend/src/modules/writer/api/timeline.ts` 已改为 **桌面显式降级**：本地运行时不再默认请求在线时间线接口；读取降级为空列表，写操作显式提示“待本地化”
+- `frontend/src/modules/writer/api/character.ts` 与 `api/location.ts` 已完成 **Wails-first 本地化**：当前桌面端角色/地点 CRUD 与关系读写默认走 `data-bridge/wails.ts -> App bindings -> Go services -> SQLite`，不再把在线接口当成默认真相源
+- Go 侧已补第一批资产 owner：`Character / CharacterRelation / Location / LocationRelation` 的 schema、service 与 Wails 绑定均已存在；当前位置可以继续在此基础上补 `entities / concept / timeline`
+- 真正未完成的不是“从零建立 data bridge”，而是 **把仍然直连在线 REST 的 writer 能力继续收口，直到桌面主链不再依赖远端接口**
+
+修正后的实施优先级应为：
+
+1. **保住已跑通的本地主链**：`project / document / editor` 继续以 Wails-first 为准，不再重做一层泛化“可切换多后端”抽象
+2. **只迁当前运行态需要的 API**：优先 `outline / entities / character / concept / location / timeline`，因为它们仍被 `ProjectWorkspace`、overlay 与右栏资产速查直接使用
+3. **把 HTTP writer API 视为兼容债务，而不是长期架构**：`story-harness / export / template / batch-operation / generated writer wrapper` 若不服务当前桌面主链，应继续裁撤；若服务主链，则迁到本地 owner
+4. **mock 只做显式兼容层**：`?test=true` 与 `mock-data-manager` 继续保留，但不允许再次成为默认数据源
 
 ### 4.2 目录结构
 
@@ -549,21 +596,21 @@ export function useChapterManager() {
 
 ### 5.2 重写清单
 
-以下 API 文件需要重写，数据源从 axios → Wails bindings：
+以下 API 文件仍需继续收口；其中前 3 项已进入 **Wails 优先 + HTTP fallback** 状态，其余仍主要是 axios/在线接口：
 
 | 文件 | 改造方式 |
 |------|---------|
-| `api/project.ts` | → 重写为 data-bridge 调用 |
-| `api/editor.ts` | → 重写，移除 axios 依赖 |
-| `api/document.ts` | → 重写为 data-bridge 调用 |
+| `api/project.ts` | → 已接 Wails 优先桥，后续移除剩余 HTTP fallback |
+| `api/editor.ts` | → 已接 Wails 优先桥，后续收口快捷键/字数统计等 HTTP 分支 |
+| `api/document.ts` | → 已接 Wails 优先桥，后续移除剩余 HTTP fallback |
 | `api/outline.ts` | → 重写为 data-bridge 调用 |
 | `api/entities.ts` | → 重写为 data-bridge 调用 |
 | `api/character.ts` | → 重写为 data-bridge 调用 |
 | `api/concept.ts` | → 重写为 data-bridge 调用 |
 | `api/location.ts` | → 重写为 data-bridge 调用 |
 | `api/timeline.ts` | → 重写为 data-bridge 调用 |
-| `api/export.ts` | → 重写为 Wails 导出调用 |
-| `api/template.ts` | → 移除远程模板，改为本地模板 |
+| `api/export.ts` | → 评估是否保留；若保留则改为本地导出 owner |
+| `api/template.ts` | → 移除远程模板，改为本地模板或直接删除 |
 
 ### 5.3 巨型组件分解
 
@@ -664,14 +711,14 @@ SQLite（持久化）
 
 ## 七、实施阶段
 
-### Phase 0：Go Service Layer（阻塞后续所有前端工作）
+### Phase 0：Go Service Layer（已部分完成，继续补齐）
 
-**目标**：补齐 Wails 后端 CRUD
+**目标**：在现有 `project / volume / chapter` 基础上继续补齐 Wails 后端 CRUD
 
 **任务**：
-1. 创建 `services/` 目录和 6 个 service 文件
-2. 为每个 service 实现 CRUD 方法
-3. 在 `app.go` 中暴露所有 Wails 绑定
+1. 保留已落地的 `project_service / volume_service / chapter_service`
+2. 继续补 `snapshot / export / settings / stats` 等缺失 service
+3. 在 `app.go` 中继续补齐对应 Wails 绑定
 4. 补充 `database/models.go` 类型定义
 5. 补充 `database/migrations.go` schema 管理
 6. 实现 Anthropic provider
@@ -683,19 +730,19 @@ SQLite（持久化）
 
 ### Phase 1：Data Bridge + 前端 API 重写
 
-**目标**：建立数据桥，前端切换到 Wails 调用
+**目标**：扩展现有数据桥，继续减少 writer 主链对 HTTP/在线 REST 的依赖
 
 **任务**：
-1. 创建 `data-bridge/` 目录和类型定义
-2. 实现所有 data-bridge 模块（project/chapter/volume/snapshot/export/settings/stats/ai）
-3. 重写现有 composables 使用 data-bridge 替代 axios
-4. 移除 `api/` 目录中指向云端的所有文件
+1. 在现有 `data-bridge/wails.ts` 基础上补 `outline / entities / export / settings / stats`
+2. 将当前桌面运行链仍会触发的 writer API 切到 Wails-first
+3. 把只服务在线平台的 API 直接删除，而不是继续为其补桌面兼容层
+4. 等 `api/wrapper.ts` / `generated/writer.ts` 的唯一调用者迁完后，再删除这层在线契约残留
 
 **验收标准**：
 - [ ] 编辑器可正常打开项目、切换章节、编辑正文、自动保存
 - [ ] 快照功能正常工作
 - [ ] 导出功能正常工作
-- [ ] 所有操作通过 Wails bindings 完成，无 axios 调用
+- [ ] 当前桌面默认工作区的所有核心操作通过 Wails bindings 完成
 
 ### Phase 2：前端清理 + 组件分解
 

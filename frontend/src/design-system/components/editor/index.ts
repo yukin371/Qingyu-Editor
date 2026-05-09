@@ -5,7 +5,6 @@ export { default as QyKeywordPopover } from './QySmartKeyword/QyKeywordPopover.v
 export { default as QyCompletionPopover } from './QySmartKeyword/QyCompletionPopover.vue'
 export { default as QyEntityScanPanel } from './QySmartKeyword/QyEntityScanPanel.vue'
 export { default as QyEntityCreateDialog } from './QySmartKeyword/QyEntityCreateDialog.vue'
-export { default as QyGraphOverlay } from './QySmartKeyword/QyGraphOverlay.vue'
 export { SmartKeyword } from './QySmartKeyword/extensions/SmartKeyword'
 export { ParagraphWithId } from './QySmartKeyword/extensions/ParagraphWithId'
 export type { KeywordInfo, KeywordType } from './QySmartKeyword/extensions/SmartKeyword'

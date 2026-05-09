@@ -3,7 +3,6 @@ export * from './writer'
 
 // 导出手动定义的API（兼容旧代码）
 export * from './timeline'
-export * from './publish'
 
 // 导出文档/大纲管理API
 export {
@@ -48,6 +47,7 @@ export {
 
 // 导出export相关的类型和常量
 export { exportFormatOptions, exportScopeOptions } from '../types/export'
+export type { ExportTask } from '../types/export'
 
 // 🔁 需要回滚时，改成：
 // export * from './generated/writer'

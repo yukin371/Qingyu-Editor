@@ -1,10 +1,8 @@
 /**
  * 写作统计 Composable
- * 处理写作统计相关的本地计算和API调用
+ * 处理写作统计相关的本地计算
  */
 import { ref, computed } from 'vue'
-import { getTodayWordsStats } from '../api/dashboard'
-import { getDailyStats, type DailyStats } from '../api/statistics'
 import { detailedWordCount } from '../utils/wordCount'
 
 // =======================
@@ -45,6 +43,11 @@ export interface ProjectWritingStats {
   todayWords: number
   /** 最后更新时间 */
   lastUpdated: Date
+}
+
+export interface DailyStats {
+  date: string
+  words: number
 }
 
 // =======================
@@ -201,70 +204,41 @@ export function useWritingStats(_projectId?: string) {
     }
   }
 
-  // =======================
-  // API 调用方法
-  // =======================
+function buildLocalTrendStats(days: number): DailyStats[] {
+  const entries = getLocalWritingStats()
+  const today = new Date()
 
-  /**
-   * 从后端获取今日码字
-   */
-  async function fetchTodayWordsFromAPI(): Promise<number> {
-    try {
-      const data = await getTodayWordsStats()
-      return data.todayWords || 0
-    } catch (err) {
-      console.warn('[WritingStats] 获取后端今日码字失败:', err)
-      return 0
+  return Array.from({ length: days }, (_, index) => {
+    const date = new Date(today)
+    date.setDate(today.getDate() - (days - index - 1))
+    const key = date.toISOString().split('T')[0]
+    return {
+      date: key,
+      words: entries[key]?.words || 0,
     }
-  }
+  })
+}
 
-  /**
-   * 从后端获取趋势统计
-   * @param projectId 项目ID（可选）
-   * @param days 天数
-   */
-  async function fetchTrendStatsFromAPI(projectId?: string, days: number = 30): Promise<DailyStats[]> {
-    try {
-      if (projectId) {
-        return await getDailyStats(projectId, days)
-      }
-      return []
-    } catch (err) {
-      console.warn('[WritingStats] 获取趋势统计失败:', err)
-      return []
-    }
-  }
-
-  /**
-   * 初始化今日统计
-   * 优先从后端获取，如果失败则使用本地数据
-   */
+/**
+ * 初始化今日统计
+ * 桌面宿主只依赖本地统计数据
+ */
   async function initTodayStats(): Promise<void> {
     loading.value = true
     error.value = null
 
     try {
-      // 尝试从后端获取
-      const apiWords = await fetchTodayWordsFromAPI()
+      const today = getTodayDateStr()
+      const localData = getDateStats(today)
+      todayStats.value.todayWords = localData.words
+      todayStats.value.todayChars = localData.chars
+      todayStats.value.lastUpdated = new Date()
 
-      if (apiWords > 0) {
-        // 后端有数据，使用后端数据
-        todayStats.value.todayWords = apiWords
-        todayStats.value.lastUpdated = new Date()
-      } else {
-        // 后端无数据，使用本地数据
-        const today = getTodayDateStr()
-        const localData = getDateStats(today)
-        todayStats.value.todayWords = localData.words
-        todayStats.value.todayChars = localData.chars
-
-        // 同时检查昨天的数据
-        const yesterday = new Date()
-        yesterday.setDate(yesterday.getDate() - 1)
-        const yesterdayStr = yesterday.toISOString().split('T')[0]
-        const yesterdayData = getDateStats(yesterdayStr)
-        todayStats.value.yesterdayWords = yesterdayData.words
-      }
+      const yesterday = new Date()
+      yesterday.setDate(yesterday.getDate() - 1)
+      const yesterdayStr = yesterday.toISOString().split('T')[0]
+      const yesterdayData = getDateStats(yesterdayStr)
+      todayStats.value.yesterdayWords = yesterdayData.words
     } catch (err: any) {
       error.value = err.message || '获取今日统计失败'
       console.error('[WritingStats] 初始化今日统计失败:', err)
@@ -280,7 +254,8 @@ export function useWritingStats(_projectId?: string) {
     loading.value = true
 
     try {
-      trendStats.value = await fetchTrendStatsFromAPI(pid, days)
+      void pid
+      trendStats.value = buildLocalTrendStats(days)
     } catch (err: any) {
       error.value = err.message || '获取趋势统计失败'
       console.error('[WritingStats] 加载趋势统计失败:', err)
@@ -336,8 +311,6 @@ export function useWritingStats(_projectId?: string) {
     getDateStats,
     initTodayStats,
     loadTrendStats,
-    fetchTodayWordsFromAPI,
-    fetchTrendStatsFromAPI,
   }
 }
 

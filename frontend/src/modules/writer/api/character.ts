@@ -1,4 +1,5 @@
 import httpService from '@/core/services/http.service'
+import { isWailsWriterAvailable, wailsWriterBridge } from '../data-bridge/wails'
 import type {
   Character,
   CharacterRelation,
@@ -29,6 +30,12 @@ export const characterApi = {
    * @security BearerAuth
    */
   create(projectId: string, data: CreateCharacterRequest) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.character.create(
+        projectId,
+        data as unknown as Record<string, unknown>,
+      ) as Promise<Character>
+    }
     return httpService.post<Character>(`${BASE_PROJECT_URL}/${projectId}/characters`, data)
   },
 
@@ -44,6 +51,9 @@ export const characterApi = {
    * @security BearerAuth
    */
   getDetail(characterId: string, projectId: string) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.character.get(characterId) as Promise<Character>
+    }
     return httpService.get<Character>(
       `${BASE_CHAR_URL}/${characterId}`,
       { params: { projectId } } as any
@@ -61,6 +71,9 @@ export const characterApi = {
    * @security BearerAuth
    */
   list(projectId: string) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.character.list(projectId) as Promise<Character[]>
+    }
     return httpService.get<Character[]>(`${BASE_PROJECT_URL}/${projectId}/characters`)
   },
 
@@ -77,6 +90,12 @@ export const characterApi = {
    * @security BearerAuth
    */
   update(characterId: string, projectId: string, data: UpdateCharacterRequest) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.character.update(
+        characterId,
+        data as unknown as Record<string, unknown>,
+      ) as Promise<Character>
+    }
     return httpService.put<Character>(
       `${BASE_CHAR_URL}/${characterId}`,
       data,
@@ -96,6 +115,9 @@ export const characterApi = {
    * @security BearerAuth
    */
   delete(characterId: string, projectId: string) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.character.delete(characterId) as Promise<void>
+    }
     return httpService.delete<void>(
       `${BASE_CHAR_URL}/${characterId}`,
       { params: { projectId } } as any
@@ -118,6 +140,12 @@ export const characterApi = {
    * @security BearerAuth
    */
   createRelation(projectId: string, data: SaveRelationRequest) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.character.createRelation(
+        projectId,
+        data as unknown as Record<string, unknown>,
+      ) as Promise<CharacterRelation>
+    }
     return httpService.post<CharacterRelation>(
       `${BASE_CHAR_URL}/relations`,
       data,
@@ -137,6 +165,12 @@ export const characterApi = {
    * @security BearerAuth
    */
   listRelations(projectId: string, characterId?: string) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.character.listRelations(
+        projectId,
+        characterId,
+      ) as Promise<CharacterRelation[]>
+    }
     const params: any = {}
     if (characterId) params.characterId = characterId
 
@@ -158,6 +192,9 @@ export const characterApi = {
    * @security BearerAuth
    */
   deleteRelation(relationId: string, projectId: string) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.character.deleteRelation(relationId) as Promise<void>
+    }
     return httpService.delete<void>(`${BASE_CHAR_URL}/relations/${relationId}`, { params: { projectId } } as any)
   },
 
@@ -172,6 +209,9 @@ export const characterApi = {
    * @security BearerAuth
    */
   getGraph(projectId: string) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.character.getGraph(projectId) as Promise<CharacterGraph>
+    }
     return httpService.get<CharacterGraph>(`${BASE_PROJECT_URL}/${projectId}/characters/graph`)
   },
 }

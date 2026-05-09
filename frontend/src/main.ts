@@ -10,10 +10,6 @@ import { message, messageBox, notification } from '@/design-system/services'
 import { initTheme } from '@/design-system/tokens/theme'
 initTheme() // 自动从 localStorage 读取保存的主题，如果没有则使用默认的青羽主题
 
-// 测试模式 API 拦截器
-import { initTestModeApiInterceptor } from '@/utils/test-mode-api-interceptor'
-initTestModeApiInterceptor() // 初始化测试模式 API 拦截器
-
 // 全局样式
 import './style.css' // Tailwind CSS - MUST be imported first
 import '@/styles/variables.scss'

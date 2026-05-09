@@ -1,6 +1,6 @@
 # Writer Module
 
-> 最后更新：2026-04-30
+> 最后更新：2026-05-10
 
 ## 职责
 
@@ -24,10 +24,17 @@
 
 - **工具唯一入口**：`relations / timeline / branches / structure` 只允许通过 `WorkspaceToolOverlay` 承载；不要再让 `WorkspaceEditorContent` 主内容区直接切成工具页。
 - **编辑器是默认首页**：独立编辑器的 `/` 与 `/writer` 都应优先落到 `ProjectWorkspace`，不要再让 `WriterDashboard`、`ProjectListView` 或平台式头部导航充当默认宿主。
-- **历史入口页只保留 redirect shell**：`WriterDashboard`、`EditorView` 这类 legacy 入口若仍需留文件，应仅做轻量重定向或占位，不再承载真实 dashboard、认证态或平台式卡片布局。
+- **历史入口直接收敛到路由兼容层**：旧 `dashboard / editor / publish` 页面不再保留独立运行时壳；兼容只允许留在 `routes.ts` 的重定向层，不再保留会继续腐化的空页面文件。
 - **桌面启动链保持最小化**：`frontend/src/main.ts` 与 `router/*` 不应再强制注入 auth session、websocket 或全局 mock 状态；mock/test-mode 只允许通过显式 `?test=true` 进入，避免桌面宿主继续背在线平台启动逻辑。
+- **非 writer 平台模块已物理退场**：`frontend/src` 下的书城/社区/阅读/财务/用户/通知/后台等历史平台模块已从桌面宿主移除；新增能力若不属于写作闭环，不应再放回这个仓库的运行时主链。
+- **writer 内部历史孤岛也已开始物理退场**：旧 `components/ai/*`、模板工作流组件、废弃 `OutlineView*`、旧 `WorkspaceFullscreenOverlay` 与一批 legacy editor 组件已经删除；不要再从这些历史目录恢复入口，而应继续收敛到 `ProjectWorkspace / WorkspaceToolOverlay / WorkspaceRightPanel` 主链。
 - **布局壳 owner 单一**：`WorkspaceShell` 负责上/中/下区域的视口壳，`EditorLayout` 负责左/主/右分栏；`ProjectWorkspace` 只做数据编排、事件桥接和 slot 装配。
 - **资产总览也走 overlay owner**：`assets` 与 `structure / relations / timeline / branches` 一样，只允许通过 `WorkspaceToolOverlay` 承载；分类状态 owner 在 overlay，自身视图只负责展示与发事件，避免路由、宿主、视图三处各维护一套资产分类状态。
+- **桌面数据路径以 Wails-first 为准**：当前 `project / document / editor` 已有 Wails 优先桥接；其余仍残留的 HTTP writer API 只视为迁移中的兼容债务，不能继续当成长期 canonical owner。
+- **大纲树已开始回收到文档 owner**：`api/outline.ts` 在桌面端默认从本地文档树派生大纲树，卷/章节型节点的增删改优先委托 `wailsWriterBridge.document`；只有还无法本地表达的 planning-only 大纲节点才允许保留显式兼容 fallback，不要再把 outline 当成独立在线真相源扩写。
+- **统一实体与概念当前只允许显式降级**：`api/entities.ts`、`api/concept.ts` 在桌面运行时不再默认请求在线接口；列表读取可降级为空集，但写操作必须明确提示“待本地化”，不要偷偷继续依赖云端真相源。
+- **时间线当前也只允许显式降级**：`api/timeline.ts` 在桌面运行时不再默认请求在线时间线接口；读路径可降级为空列表，写路径必须明确提示“待本地化”，不要把远端时间线接口继续伪装成本地能力。
+- **角色与地点已切到本地 owner**：`api/character.ts`、`api/location.ts` 当前默认走 `wailsWriterBridge.character/location`，后端 owner 为 `Go service + SQLite`；新增资产、关系维护、图谱读取都应优先补在这条链上，不要再把云端 REST 当成隐式 fallback。
 - **结构舞台跳资产总览也只走 overlay 切换**：`StructureInspectorPanel` 里的“查看全局资产”只允许发 `switch-tool('assets')`，再由 `StructureStageView -> WorkspaceToolOverlay` 透传；不要在结构舞台内部内嵌资产列表、复制分类状态，或新增第二套资产宿主。
 - **主区优先写作**：即使从旧 `tool=encyclopedia&encyclopediaView=*` 链接进入，也应自动转成 overlay 打开，并让主工作区保持写作态。
 - **快捷键 owner 已收口**：`useToolOverlay` 只做状态管理；快捷键动作定义在 `workspaceShortcutActions.ts`，配置由 `useShortcutConfig` 承接，行为绑定由 `useWorkspaceShortcuts` 承接。

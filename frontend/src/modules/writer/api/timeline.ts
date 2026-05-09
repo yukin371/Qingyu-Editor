@@ -1,4 +1,5 @@
 import httpService from '@/core/services/http.service'
+import { isWailsWriterAvailable } from '../data-bridge/wails'
 import type {
   Timeline,
   TimelineEvent,
@@ -22,6 +23,10 @@ const BASE_PROJECT_URL = '/writer/projects'
 const BASE_TIMELINE_URL = '/writer/timelines'
 const BASE_EVENT_URL = '/writer/timeline-events'
 
+function throwDesktopTimelineUnsupported(): never {
+  throw new Error('桌面端暂未接入时间线本地持久化，请先保留为空白视图/TODO')
+}
+
 export const timelineApi = {
   // ==========================================
   // 时间线管理 (Timeline CRUD)
@@ -32,6 +37,9 @@ export const timelineApi = {
    * POST /api/v1/projects/{projectId}/timelines
    */
   create(projectId: string, data: SaveTimelineRequest) {
+    if (isWailsWriterAvailable()) {
+      throwDesktopTimelineUnsupported()
+    }
     return httpService.post<Timeline>(`${BASE_PROJECT_URL}/${projectId}/timelines`, data)
   },
 
@@ -40,6 +48,9 @@ export const timelineApi = {
    * GET /api/v1/projects/{projectId}/timelines
    */
   list(projectId: string) {
+    if (isWailsWriterAvailable()) {
+      return Promise.resolve([] as Timeline[])
+    }
     return httpService.get<Timeline[]>(`${BASE_PROJECT_URL}/${projectId}/timelines`)
   },
 
@@ -48,6 +59,9 @@ export const timelineApi = {
    * GET /api/v1/writer/timelines/{timelineId}
    */
   getDetail(timelineId: string, projectId: string) {
+    if (isWailsWriterAvailable()) {
+      throwDesktopTimelineUnsupported()
+    }
     return httpService.get<Timeline>(
       `${BASE_TIMELINE_URL}/${timelineId}`,
       { params: { projectId } } as any
@@ -59,6 +73,9 @@ export const timelineApi = {
    * DELETE /api/v1/writer/timelines/{timelineId}
    */
   delete(timelineId: string, projectId: string) {
+    if (isWailsWriterAvailable()) {
+      throwDesktopTimelineUnsupported()
+    }
     return httpService.delete<void>(
       `${BASE_TIMELINE_URL}/${timelineId}`,
       { params: { projectId } } as any
@@ -71,6 +88,9 @@ export const timelineApi = {
    * 返回类型可能是复杂的图表数据，暂时用 any 或定义专门的 Visualization 类型
    */
   getVisualization(timelineId: string) {
+    if (isWailsWriterAvailable()) {
+      return Promise.resolve({ events: [], links: [] })
+    }
     return httpService.get<any>(`${BASE_TIMELINE_URL}/${timelineId}/visualization`)
   },
 
@@ -84,6 +104,9 @@ export const timelineApi = {
    * 注意：后端要求 query 中带 projectId
    */
   createEvent(timelineId: string, projectId: string, data: SaveTimelineEventRequest) {
+    if (isWailsWriterAvailable()) {
+      throwDesktopTimelineUnsupported()
+    }
     return httpService.post<TimelineEvent>(
       `${BASE_TIMELINE_URL}/${timelineId}/events`,
       data,
@@ -96,6 +119,9 @@ export const timelineApi = {
    * GET /api/v1/writer/timelines/{timelineId}/events
    */
   listEvents(timelineId: string) {
+    if (isWailsWriterAvailable()) {
+      return Promise.resolve([] as TimelineEvent[])
+    }
     return httpService.get<TimelineEvent[]>(`${BASE_TIMELINE_URL}/${timelineId}/events`)
   },
 
@@ -104,6 +130,9 @@ export const timelineApi = {
    * GET /api/v1/writer/timeline-events/{eventId}
    */
   getEvent(eventId: string, projectId: string) {
+    if (isWailsWriterAvailable()) {
+      throwDesktopTimelineUnsupported()
+    }
     return httpService.get<TimelineEvent>(`${BASE_EVENT_URL}/${eventId}`, { params: { projectId } })
   },
 
@@ -112,6 +141,9 @@ export const timelineApi = {
    * PUT /api/v1/writer/timeline-events/{eventId}
    */
   updateEvent(eventId: string, projectId: string, data: SaveTimelineEventRequest) {
+    if (isWailsWriterAvailable()) {
+      throwDesktopTimelineUnsupported()
+    }
     return httpService.put<TimelineEvent>(`${BASE_EVENT_URL}/${eventId}`, data, {
       params: { projectId },
     })
@@ -122,6 +154,9 @@ export const timelineApi = {
    * DELETE /api/v1/writer/timeline-events/{eventId}
    */
   deleteEvent(eventId: string, projectId: string) {
+    if (isWailsWriterAvailable()) {
+      throwDesktopTimelineUnsupported()
+    }
     return httpService.delete<void>(`${BASE_EVENT_URL}/${eventId}`, { params: { projectId } })
   },
 }

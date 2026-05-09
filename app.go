@@ -185,6 +185,134 @@ func (a *App) MoveChapter(input database.MoveChapterInput) error {
 	return chapterService.Move(input)
 }
 
+func (a *App) CreateCharacter(input database.CreateCharacterInput) (database.Character, error) {
+	characterService, err := a.characterService()
+	if err != nil {
+		return database.Character{}, err
+	}
+	return characterService.Create(input)
+}
+
+func (a *App) GetCharacter(id string) (database.Character, error) {
+	characterService, err := a.characterService()
+	if err != nil {
+		return database.Character{}, err
+	}
+	return characterService.Get(id)
+}
+
+func (a *App) ListCharacters(projectID string) ([]database.Character, error) {
+	characterService, err := a.characterService()
+	if err != nil {
+		return nil, err
+	}
+	return characterService.List(projectID)
+}
+
+func (a *App) UpdateCharacter(id string, update database.CharacterUpdate) (database.Character, error) {
+	characterService, err := a.characterService()
+	if err != nil {
+		return database.Character{}, err
+	}
+	return characterService.Update(id, update)
+}
+
+func (a *App) DeleteCharacter(id string) error {
+	characterService, err := a.characterService()
+	if err != nil {
+		return err
+	}
+	return characterService.Delete(id)
+}
+
+func (a *App) CreateCharacterRelation(input database.CreateCharacterRelationInput) (database.CharacterRelation, error) {
+	characterService, err := a.characterService()
+	if err != nil {
+		return database.CharacterRelation{}, err
+	}
+	return characterService.CreateRelation(input)
+}
+
+func (a *App) ListCharacterRelations(projectID string, characterID string) ([]database.CharacterRelation, error) {
+	characterService, err := a.characterService()
+	if err != nil {
+		return nil, err
+	}
+	return characterService.ListRelations(projectID, characterID)
+}
+
+func (a *App) DeleteCharacterRelation(id string) error {
+	characterService, err := a.characterService()
+	if err != nil {
+		return err
+	}
+	return characterService.DeleteRelation(id)
+}
+
+func (a *App) CreateLocation(input database.CreateLocationInput) (database.Location, error) {
+	locationService, err := a.locationService()
+	if err != nil {
+		return database.Location{}, err
+	}
+	return locationService.Create(input)
+}
+
+func (a *App) GetLocation(id string) (database.Location, error) {
+	locationService, err := a.locationService()
+	if err != nil {
+		return database.Location{}, err
+	}
+	return locationService.Get(id)
+}
+
+func (a *App) ListLocations(projectID string) ([]database.Location, error) {
+	locationService, err := a.locationService()
+	if err != nil {
+		return nil, err
+	}
+	return locationService.List(projectID)
+}
+
+func (a *App) UpdateLocation(id string, update database.LocationUpdate) (database.Location, error) {
+	locationService, err := a.locationService()
+	if err != nil {
+		return database.Location{}, err
+	}
+	return locationService.Update(id, update)
+}
+
+func (a *App) DeleteLocation(id string) error {
+	locationService, err := a.locationService()
+	if err != nil {
+		return err
+	}
+	return locationService.Delete(id)
+}
+
+func (a *App) CreateLocationRelation(input database.CreateLocationRelationInput) (database.LocationRelation, error) {
+	locationService, err := a.locationService()
+	if err != nil {
+		return database.LocationRelation{}, err
+	}
+	return locationService.CreateRelation(input)
+}
+
+func (a *App) ListLocationRelations(projectID string, locationID string) ([]database.LocationRelation, error) {
+	locationService, err := a.locationService()
+	if err != nil {
+		return nil, err
+	}
+	return locationService.ListRelations(projectID, locationID)
+}
+
+func (a *App) DeleteLocationRelation(id string) error {
+	locationService, err := a.locationService()
+	if err != nil {
+		return err
+	}
+	return locationService.DeleteRelation(id)
+}
+
 func (a *App) ensureDatabase() error {
 	return database.Ensure(a.appName)
 }
@@ -211,6 +339,22 @@ func (a *App) chapterService() (*services.ChapterService, error) {
 		return nil, err
 	}
 	return services.NewChapterService(db), nil
+}
+
+func (a *App) characterService() (*services.CharacterService, error) {
+	db, err := a.serviceDB()
+	if err != nil {
+		return nil, err
+	}
+	return services.NewCharacterService(db), nil
+}
+
+func (a *App) locationService() (*services.LocationService, error) {
+	db, err := a.serviceDB()
+	if err != nil {
+		return nil, err
+	}
+	return services.NewLocationService(db), nil
 }
 
 func (a *App) serviceDB() (*sql.DB, error) {

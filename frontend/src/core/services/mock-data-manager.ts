@@ -9,7 +9,10 @@
  */
 
 import { getWorkspaceMockProject } from '@/modules/writer/mock/workspaceMock'
-import { getBookCoverUrl } from '@/views/demo/mock-images'
+
+function getBookCoverUrl(seed: string, category = 'writer'): string {
+  return `https://picsum.photos/seed/${encodeURIComponent(`${category}-${seed}`)}/320/440`
+}
 
 // ==================== 类型定义 ====================
 

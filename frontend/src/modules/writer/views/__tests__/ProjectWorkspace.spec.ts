@@ -49,6 +49,13 @@ vi.mock('@/modules/writer/mock/workspaceMock', () => ({
 
 vi.mock('@/modules/writer/api/document', () => ({
   createDocument: (...args: unknown[]) => createDocumentMock(...args),
+  duplicateDocument: vi.fn(),
+  moveDocument: vi.fn(),
+  getDocuments: vi.fn(),
+  getDocumentById: vi.fn(),
+  getDocumentTree: vi.fn(),
+  updateDocument: vi.fn(),
+  deleteDocument: vi.fn(),
 }))
 
 vi.mock('@/design-system/components', () => {

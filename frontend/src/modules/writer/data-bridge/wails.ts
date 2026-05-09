@@ -1,18 +1,34 @@
 import {
   CreateChapter,
+  CreateCharacter,
+  CreateCharacterRelation,
+  CreateLocation,
+  CreateLocationRelation,
   CreateProject,
   CreateVolume,
   DeleteChapter,
+  DeleteCharacter,
+  DeleteCharacterRelation,
+  DeleteLocation,
+  DeleteLocationRelation,
   DeleteProject,
   DeleteVolume,
   GetChapter,
+  GetCharacter,
+  GetLocation,
   GetProject,
   ListChapters,
+  ListCharacterRelations,
+  ListCharacters,
+  ListLocationRelations,
+  ListLocations,
   ListProjects,
   ListVolumes,
   MoveChapter,
   ReorderVolumes,
   UpdateChapter,
+  UpdateCharacter,
+  UpdateLocation,
   UpdateProject,
   UpdateVolume,
 } from '../../../../wailsjs/go/main/App'
@@ -48,6 +64,65 @@ type BridgeChapter = {
   wordCount?: number
   sortOrder: number
   status?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+type BridgeCharacter = {
+  id: string
+  projectId: string
+  name: string
+  alias?: string[]
+  summary?: string
+  traits?: string[]
+  background?: string
+  avatarUrl?: string
+  personalityPrompt?: string
+  speechPattern?: string
+  currentState?: string
+  customStatus?: Record<string, unknown>
+  createdAt?: string
+  updatedAt?: string
+}
+
+type BridgeCharacterRelation = {
+  id: string
+  projectId: string
+  fromId: string
+  toId: string
+  type: string
+  strength?: number
+  notes?: string
+  validFromChapterId?: string
+  validUntilChapterId?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+type BridgeLocation = {
+  id: string
+  projectId: string
+  name: string
+  description?: string
+  climate?: string
+  culture?: string
+  geography?: string
+  atmosphere?: string
+  parentId?: string
+  imageUrl?: string
+  createdAt?: string
+  updatedAt?: string
+  children?: BridgeLocation[]
+}
+
+type BridgeLocationRelation = {
+  id: string
+  projectId: string
+  fromId: string
+  toId: string
+  type: string
+  distance?: string
+  notes?: string
   createdAt?: string
   updatedAt?: string
 }
@@ -150,6 +225,103 @@ function mapChapterNode(chapter: BridgeChapter): BridgeDocumentNode {
     createdAt: chapter.createdAt || '',
     updatedAt: chapter.updatedAt || chapter.createdAt || '',
   }
+}
+
+function normalizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+  return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+}
+
+function normalizeRecord(value: unknown): Record<string, unknown> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined
+  }
+  return value as Record<string, unknown>
+}
+
+function mapCharacter(character: BridgeCharacter) {
+  return {
+    id: character.id,
+    projectId: character.projectId,
+    name: character.name,
+    alias: normalizeStringArray(character.alias),
+    summary: character.summary || '',
+    traits: normalizeStringArray(character.traits),
+    background: character.background || '',
+    avatarUrl: character.avatarUrl || '',
+    personalityPrompt: character.personalityPrompt || '',
+    speechPattern: character.speechPattern || '',
+    currentState: character.currentState || '',
+    customStatus: normalizeRecord(character.customStatus),
+    createdAt: character.createdAt || '',
+    updatedAt: character.updatedAt || character.createdAt || '',
+  }
+}
+
+function mapCharacterRelation(relation: BridgeCharacterRelation) {
+  return {
+    id: relation.id,
+    projectId: relation.projectId,
+    fromId: relation.fromId,
+    toId: relation.toId,
+    type: relation.type || '其他',
+    strength: Number(relation.strength || 0),
+    notes: relation.notes || '',
+    validFromChapterId: relation.validFromChapterId || '',
+    validUntilChapterId: relation.validUntilChapterId || '',
+    createdAt: relation.createdAt || '',
+    updatedAt: relation.updatedAt || relation.createdAt || '',
+  }
+}
+
+function mapLocation(location: BridgeLocation) {
+  return {
+    id: location.id,
+    projectId: location.projectId,
+    name: location.name,
+    description: location.description || '',
+    climate: location.climate || '',
+    culture: location.culture || '',
+    geography: location.geography || '',
+    atmosphere: location.atmosphere || '',
+    parentId: location.parentId || '',
+    imageUrl: location.imageUrl || '',
+    createdAt: location.createdAt || '',
+    updatedAt: location.updatedAt || location.createdAt || '',
+  }
+}
+
+function mapLocationRelation(relation: BridgeLocationRelation) {
+  return {
+    id: relation.id,
+    projectId: relation.projectId,
+    fromId: relation.fromId,
+    toId: relation.toId,
+    type: relation.type,
+    distance: relation.distance || '',
+    notes: relation.notes || '',
+    createdAt: relation.createdAt || '',
+    updatedAt: relation.updatedAt || relation.createdAt || '',
+  }
+}
+
+function buildLocationTree(locations: BridgeLocation[]) {
+  const mapped = locations.map((item) => ({ ...mapLocation(item), children: [] as Array<any> }))
+  const byID = new Map(mapped.map((item) => [item.id, item]))
+  const roots: typeof mapped = []
+
+  for (const item of mapped) {
+    const parentID = item.parentId || ''
+    if (parentID && byID.has(parentID)) {
+      byID.get(parentID)!.children.push(item)
+      continue
+    }
+    roots.push(item)
+  }
+
+  return roots
 }
 
 async function buildDocumentTree(projectId: string): Promise<BridgeDocumentNode[]> {
@@ -259,6 +431,87 @@ function toParagraphPayload(content: string, updatedAt: string, wordCount: numbe
 }
 
 export const wailsWriterBridge = {
+  character: {
+    async create(projectId: string, payload: Record<string, unknown>) {
+      const created = (await CreateCharacter({
+        projectId,
+        name: String(payload.name || ''),
+        alias: Array.isArray(payload.alias) ? payload.alias : [],
+        summary: typeof payload.summary === 'string' ? payload.summary : '',
+        traits: Array.isArray(payload.traits) ? payload.traits : [],
+        background: typeof payload.background === 'string' ? payload.background : '',
+        avatarUrl: typeof payload.avatarUrl === 'string' ? payload.avatarUrl : '',
+        personalityPrompt:
+          typeof payload.personalityPrompt === 'string' ? payload.personalityPrompt : '',
+        speechPattern: typeof payload.speechPattern === 'string' ? payload.speechPattern : '',
+        currentState: typeof payload.currentState === 'string' ? payload.currentState : '',
+        customStatus: normalizeRecord(payload.customStatus) || {},
+      })) as BridgeCharacter
+      return mapCharacter(created)
+    },
+    async get(id: string) {
+      const item = (await GetCharacter(id)) as BridgeCharacter
+      return mapCharacter(item)
+    },
+    async list(projectId: string) {
+      const items = (await ListCharacters(projectId)) as BridgeCharacter[]
+      return (items || []).map(mapCharacter)
+    },
+    async update(id: string, payload: Record<string, unknown>) {
+      const updated = (await UpdateCharacter(id, {
+        name: typeof payload.name === 'string' ? payload.name : undefined,
+        alias: Array.isArray(payload.alias) ? payload.alias : undefined,
+        summary: typeof payload.summary === 'string' ? payload.summary : undefined,
+        traits: Array.isArray(payload.traits) ? payload.traits : undefined,
+        background: typeof payload.background === 'string' ? payload.background : undefined,
+        avatarUrl: typeof payload.avatarUrl === 'string' ? payload.avatarUrl : undefined,
+        personalityPrompt:
+          typeof payload.personalityPrompt === 'string' ? payload.personalityPrompt : undefined,
+        speechPattern: typeof payload.speechPattern === 'string' ? payload.speechPattern : undefined,
+        currentState: typeof payload.currentState === 'string' ? payload.currentState : undefined,
+        customStatus: normalizeRecord(payload.customStatus),
+      })) as BridgeCharacter
+      return mapCharacter(updated)
+    },
+    async delete(id: string) {
+      await DeleteCharacter(id)
+    },
+    async createRelation(projectId: string, payload: Record<string, unknown>) {
+      const created = (await CreateCharacterRelation({
+        projectId,
+        fromId: String(payload.fromId || ''),
+        toId: String(payload.toId || ''),
+        type: String(payload.type || ''),
+        strength:
+          typeof payload.strength === 'number' && Number.isFinite(payload.strength)
+            ? payload.strength
+            : undefined,
+        notes: typeof payload.notes === 'string' ? payload.notes : '',
+        validFromChapterId:
+          typeof payload.validFromChapterId === 'string' ? payload.validFromChapterId : '',
+        validUntilChapterId:
+          typeof payload.validUntilChapterId === 'string' ? payload.validUntilChapterId : '',
+      })) as BridgeCharacterRelation
+      return mapCharacterRelation(created)
+    },
+    async listRelations(projectId: string, characterId?: string) {
+      const items = (await ListCharacterRelations(
+        projectId,
+        characterId || '',
+      )) as BridgeCharacterRelation[]
+      return (items || []).map(mapCharacterRelation)
+    },
+    async deleteRelation(id: string) {
+      await DeleteCharacterRelation(id)
+    },
+    async getGraph(projectId: string) {
+      const [characters, relations] = await Promise.all([
+        wailsWriterBridge.character.list(projectId),
+        wailsWriterBridge.character.listRelations(projectId),
+      ])
+      return { characters, relations }
+    },
+  },
   project: {
     async list(params?: { page?: number; pageSize?: number }) {
       const items = ((await ListProjects()) as BridgeProject[]).map(mapProjectSummary)
@@ -349,6 +602,71 @@ export const wailsWriterBridge = {
     },
     async delete(id: string) {
       await DeleteProject(id)
+    },
+  },
+  location: {
+    async create(projectId: string, payload: Record<string, unknown>) {
+      const created = (await CreateLocation({
+        projectId,
+        name: String(payload.name || ''),
+        description: typeof payload.description === 'string' ? payload.description : '',
+        climate: typeof payload.climate === 'string' ? payload.climate : '',
+        culture: typeof payload.culture === 'string' ? payload.culture : '',
+        geography: typeof payload.geography === 'string' ? payload.geography : '',
+        atmosphere: typeof payload.atmosphere === 'string' ? payload.atmosphere : '',
+        parentId: typeof payload.parentId === 'string' ? payload.parentId : '',
+        imageUrl: typeof payload.imageUrl === 'string' ? payload.imageUrl : '',
+      })) as BridgeLocation
+      return mapLocation(created)
+    },
+    async get(id: string) {
+      const item = (await GetLocation(id)) as BridgeLocation
+      return mapLocation(item)
+    },
+    async list(projectId: string) {
+      const items = (await ListLocations(projectId)) as BridgeLocation[]
+      return (items || []).map(mapLocation)
+    },
+    async getTree(projectId: string) {
+      const items = (await ListLocations(projectId)) as BridgeLocation[]
+      return buildLocationTree(items || [])
+    },
+    async update(id: string, payload: Record<string, unknown>) {
+      const updated = (await UpdateLocation(id, {
+        name: typeof payload.name === 'string' ? payload.name : undefined,
+        description: typeof payload.description === 'string' ? payload.description : undefined,
+        climate: typeof payload.climate === 'string' ? payload.climate : undefined,
+        culture: typeof payload.culture === 'string' ? payload.culture : undefined,
+        geography: typeof payload.geography === 'string' ? payload.geography : undefined,
+        atmosphere: typeof payload.atmosphere === 'string' ? payload.atmosphere : undefined,
+        parentId: typeof payload.parentId === 'string' ? payload.parentId : undefined,
+        imageUrl: typeof payload.imageUrl === 'string' ? payload.imageUrl : undefined,
+      })) as BridgeLocation
+      return mapLocation(updated)
+    },
+    async delete(id: string) {
+      await DeleteLocation(id)
+    },
+    async createRelation(projectId: string, payload: Record<string, unknown>) {
+      const created = (await CreateLocationRelation({
+        projectId,
+        fromId: String(payload.fromId || ''),
+        toId: String(payload.toId || ''),
+        type: String(payload.type || ''),
+        distance: typeof payload.distance === 'string' ? payload.distance : '',
+        notes: typeof payload.notes === 'string' ? payload.notes : '',
+      })) as BridgeLocationRelation
+      return mapLocationRelation(created)
+    },
+    async listRelations(projectId: string, locationId?: string) {
+      const items = (await ListLocationRelations(
+        projectId,
+        locationId || '',
+      )) as BridgeLocationRelation[]
+      return (items || []).map(mapLocationRelation)
+    },
+    async deleteRelation(id: string) {
+      await DeleteLocationRelation(id)
     },
   },
   document: {

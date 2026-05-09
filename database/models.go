@@ -34,6 +34,64 @@ type Chapter struct {
 	UpdatedAt string `json:"updatedAt"`
 }
 
+type Character struct {
+	ID                string                 `json:"id"`
+	ProjectID         string                 `json:"projectId"`
+	Name              string                 `json:"name"`
+	Alias             []string               `json:"alias"`
+	Summary           string                 `json:"summary"`
+	Traits            []string               `json:"traits"`
+	Background        string                 `json:"background"`
+	AvatarURL         string                 `json:"avatarUrl"`
+	PersonalityPrompt string                 `json:"personalityPrompt"`
+	SpeechPattern     string                 `json:"speechPattern"`
+	CurrentState      string                 `json:"currentState"`
+	CustomStatus      map[string]interface{} `json:"customStatus"`
+	CreatedAt         string                 `json:"createdAt"`
+	UpdatedAt         string                 `json:"updatedAt"`
+}
+
+type CharacterRelation struct {
+	ID                  string `json:"id"`
+	ProjectID           string `json:"projectId"`
+	FromID              string `json:"fromId"`
+	ToID                string `json:"toId"`
+	Type                string `json:"type"`
+	Strength            int    `json:"strength"`
+	Notes               string `json:"notes"`
+	ValidFromChapterID  string `json:"validFromChapterId"`
+	ValidUntilChapterID string `json:"validUntilChapterId"`
+	CreatedAt           string `json:"createdAt"`
+	UpdatedAt           string `json:"updatedAt"`
+}
+
+type Location struct {
+	ID          string `json:"id"`
+	ProjectID   string `json:"projectId"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Climate     string `json:"climate"`
+	Culture     string `json:"culture"`
+	Geography   string `json:"geography"`
+	Atmosphere  string `json:"atmosphere"`
+	ParentID    string `json:"parentId"`
+	ImageURL    string `json:"imageUrl"`
+	CreatedAt   string `json:"createdAt"`
+	UpdatedAt   string `json:"updatedAt"`
+}
+
+type LocationRelation struct {
+	ID        string `json:"id"`
+	ProjectID string `json:"projectId"`
+	FromID    string `json:"fromId"`
+	ToID      string `json:"toId"`
+	Type      string `json:"type"`
+	Distance  string `json:"distance"`
+	Notes     string `json:"notes"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
+}
+
 type CreateProjectInput struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
@@ -95,4 +153,74 @@ type MoveChapterInput struct {
 	ChapterID      string  `json:"chapterId"`
 	TargetVolumeID *string `json:"targetVolumeId,omitempty"`
 	TargetIndex    int     `json:"targetIndex"`
+}
+
+type CreateCharacterInput struct {
+	ProjectID         string                 `json:"projectId"`
+	Name              string                 `json:"name"`
+	Alias             []string               `json:"alias"`
+	Summary           string                 `json:"summary"`
+	Traits            []string               `json:"traits"`
+	Background        string                 `json:"background"`
+	AvatarURL         string                 `json:"avatarUrl"`
+	PersonalityPrompt string                 `json:"personalityPrompt"`
+	SpeechPattern     string                 `json:"speechPattern"`
+	CurrentState      string                 `json:"currentState"`
+	CustomStatus      map[string]interface{} `json:"customStatus"`
+}
+
+type CharacterUpdate struct {
+	Name              *string                `json:"name,omitempty"`
+	Alias             []string               `json:"alias,omitempty"`
+	Summary           *string                `json:"summary,omitempty"`
+	Traits            []string               `json:"traits,omitempty"`
+	Background        *string                `json:"background,omitempty"`
+	AvatarURL         *string                `json:"avatarUrl,omitempty"`
+	PersonalityPrompt *string                `json:"personalityPrompt,omitempty"`
+	SpeechPattern     *string                `json:"speechPattern,omitempty"`
+	CurrentState      *string                `json:"currentState,omitempty"`
+	CustomStatus      map[string]interface{} `json:"customStatus,omitempty"`
+}
+
+type CreateCharacterRelationInput struct {
+	ProjectID           string `json:"projectId"`
+	FromID              string `json:"fromId"`
+	ToID                string `json:"toId"`
+	Type                string `json:"type"`
+	Strength            *int   `json:"strength,omitempty"`
+	Notes               string `json:"notes"`
+	ValidFromChapterID  string `json:"validFromChapterId"`
+	ValidUntilChapterID string `json:"validUntilChapterId"`
+}
+
+type CreateLocationInput struct {
+	ProjectID   string `json:"projectId"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Climate     string `json:"climate"`
+	Culture     string `json:"culture"`
+	Geography   string `json:"geography"`
+	Atmosphere  string `json:"atmosphere"`
+	ParentID    string `json:"parentId"`
+	ImageURL    string `json:"imageUrl"`
+}
+
+type LocationUpdate struct {
+	Name        *string `json:"name,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Climate     *string `json:"climate,omitempty"`
+	Culture     *string `json:"culture,omitempty"`
+	Geography   *string `json:"geography,omitempty"`
+	Atmosphere  *string `json:"atmosphere,omitempty"`
+	ParentID    *string `json:"parentId,omitempty"`
+	ImageURL    *string `json:"imageUrl,omitempty"`
+}
+
+type CreateLocationRelationInput struct {
+	ProjectID string `json:"projectId"`
+	FromID    string `json:"fromId"`
+	ToID      string `json:"toId"`
+	Type      string `json:"type"`
+	Distance  string `json:"distance"`
+	Notes     string `json:"notes"`
 }

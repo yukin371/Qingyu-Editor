@@ -325,7 +325,7 @@ const handleSubmit = async () => {
       emit('refresh')
 
     } catch (error: any) {
-      // httpService 已处理错误弹窗
+      message.error(error?.message || (isEditMode.value ? '更新时间线事件失败' : '创建时间线事件失败'))
     } finally {
       submitting.value = false
     }
@@ -368,8 +368,10 @@ const handleDeleteEvent = async (event: TimelineEvent) => {
       await writerStore.loadTimelineEvents(timelineId)
     }
     emit('refresh')
-  } catch {
-    // 用户取消
+  } catch (error: any) {
+    if (error !== 'cancel' && error !== 'close') {
+      message.error(error?.message || '删除时间线事件失败')
+    }
   }
 }
 

@@ -4,6 +4,7 @@
  * 对接后端 /api/v1/writer/projects/:id/entities 系列接口
  */
 import { request } from '@/utils/request-adapter'
+import { isWailsWriterAvailable } from '../data-bridge/wails'
 
 /**
  * 实体类型
@@ -53,6 +54,15 @@ export interface EntityGraph {
   edges: RelationEdge[]
 }
 
+const EMPTY_ENTITY_GRAPH: EntityGraph = {
+  nodes: [],
+  edges: [],
+}
+
+function throwDesktopEntityWriteUnsupported(): never {
+  throw new Error('桌面端暂未接入统一实体写入，本地 owner 待实现')
+}
+
 /**
  * 获取项目下的实体列表
  * @param projectId 项目ID
@@ -62,6 +72,10 @@ export async function listEntities(
   projectId: string,
   entityType?: EntityType,
 ): Promise<EntitySummary[]> {
+  if (isWailsWriterAvailable()) {
+    return []
+  }
+
   const params: Record<string, string> = {}
   if (entityType) {
     params.type = entityType
@@ -81,6 +95,10 @@ export async function listEntities(
  * @param projectId 项目ID
  */
 export async function getEntityGraph(projectId: string): Promise<EntityGraph> {
+  if (isWailsWriterAvailable()) {
+    return EMPTY_ENTITY_GRAPH
+  }
+
   const response = await request<EntityGraph>({
     url: `/api/v1/writer/projects/${projectId}/entities/graph`,
     method: 'get',
@@ -98,6 +116,10 @@ export async function updateEntityStateFields(
   entityId: string,
   stateFields: Record<string, StateValue>,
 ): Promise<void> {
+  if (isWailsWriterAvailable()) {
+    throwDesktopEntityWriteUnsupported()
+  }
+
   await request({
     url: `/api/v1/writer/entities/${entityId}/state-fields`,
     method: 'put',

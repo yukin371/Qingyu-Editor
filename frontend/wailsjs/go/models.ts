@@ -79,6 +79,106 @@ export namespace database {
 	        this.volumeId = source["volumeId"];
 	    }
 	}
+	export class Character {
+	    id: string;
+	    projectId: string;
+	    name: string;
+	    alias: string[];
+	    summary: string;
+	    traits: string[];
+	    background: string;
+	    avatarUrl: string;
+	    personalityPrompt: string;
+	    speechPattern: string;
+	    currentState: string;
+	    customStatus: Record<string, any>;
+	    createdAt: string;
+	    updatedAt: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Character(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.projectId = source["projectId"];
+	        this.name = source["name"];
+	        this.alias = source["alias"];
+	        this.summary = source["summary"];
+	        this.traits = source["traits"];
+	        this.background = source["background"];
+	        this.avatarUrl = source["avatarUrl"];
+	        this.personalityPrompt = source["personalityPrompt"];
+	        this.speechPattern = source["speechPattern"];
+	        this.currentState = source["currentState"];
+	        this.customStatus = source["customStatus"];
+	        this.createdAt = source["createdAt"];
+	        this.updatedAt = source["updatedAt"];
+	    }
+	}
+	export class CharacterRelation {
+	    id: string;
+	    projectId: string;
+	    fromId: string;
+	    toId: string;
+	    type: string;
+	    strength: number;
+	    notes: string;
+	    validFromChapterId: string;
+	    validUntilChapterId: string;
+	    createdAt: string;
+	    updatedAt: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new CharacterRelation(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.projectId = source["projectId"];
+	        this.fromId = source["fromId"];
+	        this.toId = source["toId"];
+	        this.type = source["type"];
+	        this.strength = source["strength"];
+	        this.notes = source["notes"];
+	        this.validFromChapterId = source["validFromChapterId"];
+	        this.validUntilChapterId = source["validUntilChapterId"];
+	        this.createdAt = source["createdAt"];
+	        this.updatedAt = source["updatedAt"];
+	    }
+	}
+	export class CharacterUpdate {
+	    name?: string;
+	    alias?: string[];
+	    summary?: string;
+	    traits?: string[];
+	    background?: string;
+	    avatarUrl?: string;
+	    personalityPrompt?: string;
+	    speechPattern?: string;
+	    currentState?: string;
+	    customStatus?: Record<string, any>;
+	
+	    static createFrom(source: any = {}) {
+	        return new CharacterUpdate(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.alias = source["alias"];
+	        this.summary = source["summary"];
+	        this.traits = source["traits"];
+	        this.background = source["background"];
+	        this.avatarUrl = source["avatarUrl"];
+	        this.personalityPrompt = source["personalityPrompt"];
+	        this.speechPattern = source["speechPattern"];
+	        this.currentState = source["currentState"];
+	        this.customStatus = source["customStatus"];
+	    }
+	}
 	export class CreateChapterInput {
 	    projectId: string;
 	    volumeId: string;
@@ -103,6 +203,114 @@ export namespace database {
 	        this.wordCount = source["wordCount"];
 	        this.sortOrder = source["sortOrder"];
 	        this.status = source["status"];
+	    }
+	}
+	export class CreateCharacterInput {
+	    projectId: string;
+	    name: string;
+	    alias: string[];
+	    summary: string;
+	    traits: string[];
+	    background: string;
+	    avatarUrl: string;
+	    personalityPrompt: string;
+	    speechPattern: string;
+	    currentState: string;
+	    customStatus: Record<string, any>;
+	
+	    static createFrom(source: any = {}) {
+	        return new CreateCharacterInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.projectId = source["projectId"];
+	        this.name = source["name"];
+	        this.alias = source["alias"];
+	        this.summary = source["summary"];
+	        this.traits = source["traits"];
+	        this.background = source["background"];
+	        this.avatarUrl = source["avatarUrl"];
+	        this.personalityPrompt = source["personalityPrompt"];
+	        this.speechPattern = source["speechPattern"];
+	        this.currentState = source["currentState"];
+	        this.customStatus = source["customStatus"];
+	    }
+	}
+	export class CreateCharacterRelationInput {
+	    projectId: string;
+	    fromId: string;
+	    toId: string;
+	    type: string;
+	    strength?: number;
+	    notes: string;
+	    validFromChapterId: string;
+	    validUntilChapterId: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new CreateCharacterRelationInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.projectId = source["projectId"];
+	        this.fromId = source["fromId"];
+	        this.toId = source["toId"];
+	        this.type = source["type"];
+	        this.strength = source["strength"];
+	        this.notes = source["notes"];
+	        this.validFromChapterId = source["validFromChapterId"];
+	        this.validUntilChapterId = source["validUntilChapterId"];
+	    }
+	}
+	export class CreateLocationInput {
+	    projectId: string;
+	    name: string;
+	    description: string;
+	    climate: string;
+	    culture: string;
+	    geography: string;
+	    atmosphere: string;
+	    parentId: string;
+	    imageUrl: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new CreateLocationInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.projectId = source["projectId"];
+	        this.name = source["name"];
+	        this.description = source["description"];
+	        this.climate = source["climate"];
+	        this.culture = source["culture"];
+	        this.geography = source["geography"];
+	        this.atmosphere = source["atmosphere"];
+	        this.parentId = source["parentId"];
+	        this.imageUrl = source["imageUrl"];
+	    }
+	}
+	export class CreateLocationRelationInput {
+	    projectId: string;
+	    fromId: string;
+	    toId: string;
+	    type: string;
+	    distance: string;
+	    notes: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new CreateLocationRelationInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.projectId = source["projectId"];
+	        this.fromId = source["fromId"];
+	        this.toId = source["toId"];
+	        this.type = source["type"];
+	        this.distance = source["distance"];
+	        this.notes = source["notes"];
 	    }
 	}
 	export class CreateProjectInput {
@@ -137,6 +345,94 @@ export namespace database {
 	        this.projectId = source["projectId"];
 	        this.title = source["title"];
 	        this.sortOrder = source["sortOrder"];
+	    }
+	}
+	export class Location {
+	    id: string;
+	    projectId: string;
+	    name: string;
+	    description: string;
+	    climate: string;
+	    culture: string;
+	    geography: string;
+	    atmosphere: string;
+	    parentId: string;
+	    imageUrl: string;
+	    createdAt: string;
+	    updatedAt: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Location(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.projectId = source["projectId"];
+	        this.name = source["name"];
+	        this.description = source["description"];
+	        this.climate = source["climate"];
+	        this.culture = source["culture"];
+	        this.geography = source["geography"];
+	        this.atmosphere = source["atmosphere"];
+	        this.parentId = source["parentId"];
+	        this.imageUrl = source["imageUrl"];
+	        this.createdAt = source["createdAt"];
+	        this.updatedAt = source["updatedAt"];
+	    }
+	}
+	export class LocationRelation {
+	    id: string;
+	    projectId: string;
+	    fromId: string;
+	    toId: string;
+	    type: string;
+	    distance: string;
+	    notes: string;
+	    createdAt: string;
+	    updatedAt: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new LocationRelation(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.projectId = source["projectId"];
+	        this.fromId = source["fromId"];
+	        this.toId = source["toId"];
+	        this.type = source["type"];
+	        this.distance = source["distance"];
+	        this.notes = source["notes"];
+	        this.createdAt = source["createdAt"];
+	        this.updatedAt = source["updatedAt"];
+	    }
+	}
+	export class LocationUpdate {
+	    name?: string;
+	    description?: string;
+	    climate?: string;
+	    culture?: string;
+	    geography?: string;
+	    atmosphere?: string;
+	    parentId?: string;
+	    imageUrl?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new LocationUpdate(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.description = source["description"];
+	        this.climate = source["climate"];
+	        this.culture = source["culture"];
+	        this.geography = source["geography"];
+	        this.atmosphere = source["atmosphere"];
+	        this.parentId = source["parentId"];
+	        this.imageUrl = source["imageUrl"];
 	    }
 	}
 	export class MoveChapterInput {

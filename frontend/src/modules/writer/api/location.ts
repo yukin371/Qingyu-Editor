@@ -1,4 +1,5 @@
 import httpService from '@/core/services/http.service'
+import { isWailsWriterAvailable, wailsWriterBridge } from '../data-bridge/wails'
 import type {
   Location,
   LocationRelation,
@@ -19,6 +20,12 @@ export const locationApi = {
    * POST /api/v1/projects/{projectId}/locations
    */
   create(projectId: string, data: SaveLocationRequest) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.location.create(
+        projectId,
+        data as unknown as Record<string, unknown>,
+      ) as Promise<Location>
+    }
     return httpService.post<Location>(`${BASE_PROJECT_URL}/${projectId}/locations`, data)
   },
 
@@ -27,6 +34,9 @@ export const locationApi = {
    * GET /api/v1/projects/{projectId}/locations
    */
   list(projectId: string) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.location.list(projectId) as Promise<Location[]>
+    }
     return httpService.get<Location[]>(`${BASE_PROJECT_URL}/${projectId}/locations`)
   },
 
@@ -36,6 +46,9 @@ export const locationApi = {
    * 后端已经组装好了 children，前端可直接渲染
    */
   getTree(projectId: string) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.location.getTree(projectId) as Promise<Location[]>
+    }
     return httpService.get<Location[]>(`${BASE_PROJECT_URL}/${projectId}/locations/tree`)
   },
 
@@ -44,6 +57,9 @@ export const locationApi = {
    * GET /api/v1/locations/{locationId}?projectId=...
    */
   getDetail(locationId: string, projectId: string) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.location.get(locationId) as Promise<Location>
+    }
     return httpService.get<Location>(
       `${BASE_LOCATION_URL}/${locationId}`,
       { params: { projectId } } as any
@@ -55,6 +71,12 @@ export const locationApi = {
    * PUT /api/v1/locations/{locationId}?projectId=...
    */
   update(locationId: string, projectId: string, data: SaveLocationRequest) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.location.update(
+        locationId,
+        data as unknown as Record<string, unknown>,
+      ) as Promise<Location>
+    }
     // 注意：PUT 请求的第三个参数才是 config (包含 params)
     return httpService.put<Location>(`${BASE_LOCATION_URL}/${locationId}`, data, {
       params: { projectId },
@@ -66,6 +88,9 @@ export const locationApi = {
    * DELETE /api/v1/locations/{locationId}?projectId=...
    */
   delete(locationId: string, projectId: string) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.location.delete(locationId) as Promise<void>
+    }
     return httpService.delete<void>(
       `${BASE_LOCATION_URL}/${locationId}`,
       { params: { projectId } } as any
@@ -81,6 +106,12 @@ export const locationApi = {
    * POST /api/v1/locations/relations?projectId=...
    */
   createRelation(projectId: string, data: SaveLocationRelationRequest) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.location.createRelation(
+        projectId,
+        data as unknown as Record<string, unknown>,
+      ) as Promise<LocationRelation>
+    }
     return httpService.post<LocationRelation>(`${BASE_LOCATION_URL}/relations`, data, {
       params: { projectId },
     })
@@ -92,6 +123,12 @@ export const locationApi = {
    * 可选参数: locationId (筛选特定地点的关系)
    */
   listRelations(projectId: string, locationId?: string) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.location.listRelations(
+        projectId,
+        locationId,
+      ) as Promise<LocationRelation[]>
+    }
     const params: any = {}
     if (locationId) params.locationId = locationId
 
@@ -106,6 +143,9 @@ export const locationApi = {
    * DELETE /api/v1/locations/relations/{relationId}?projectId=...
    */
   deleteRelation(relationId: string, projectId: string) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.location.deleteRelation(relationId) as Promise<void>
+    }
     return httpService.delete<void>(`${BASE_LOCATION_URL}/relations/${relationId}`, { params: { projectId } } as any)
   },
 }

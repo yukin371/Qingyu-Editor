@@ -7,11 +7,27 @@ export function AICall(arg1:ai.Config,arg2:string,arg3:string):Promise<string>;
 
 export function CreateChapter(arg1:database.CreateChapterInput):Promise<database.Chapter>;
 
+export function CreateCharacter(arg1:database.CreateCharacterInput):Promise<database.Character>;
+
+export function CreateCharacterRelation(arg1:database.CreateCharacterRelationInput):Promise<database.CharacterRelation>;
+
+export function CreateLocation(arg1:database.CreateLocationInput):Promise<database.Location>;
+
+export function CreateLocationRelation(arg1:database.CreateLocationRelationInput):Promise<database.LocationRelation>;
+
 export function CreateProject(arg1:database.CreateProjectInput):Promise<database.Project>;
 
 export function CreateVolume(arg1:database.CreateVolumeInput):Promise<database.Volume>;
 
 export function DeleteChapter(arg1:string):Promise<void>;
+
+export function DeleteCharacter(arg1:string):Promise<void>;
+
+export function DeleteCharacterRelation(arg1:string):Promise<void>;
+
+export function DeleteLocation(arg1:string):Promise<void>;
+
+export function DeleteLocationRelation(arg1:string):Promise<void>;
 
 export function DeleteProject(arg1:string):Promise<void>;
 
@@ -19,11 +35,23 @@ export function DeleteVolume(arg1:string):Promise<void>;
 
 export function GetChapter(arg1:string):Promise<database.Chapter>;
 
+export function GetCharacter(arg1:string):Promise<database.Character>;
+
+export function GetLocation(arg1:string):Promise<database.Location>;
+
 export function GetProject(arg1:string):Promise<database.Project>;
 
 export function InitDatabase():Promise<void>;
 
 export function ListChapters(arg1:string):Promise<Array<database.Chapter>>;
+
+export function ListCharacterRelations(arg1:string,arg2:string):Promise<Array<database.CharacterRelation>>;
+
+export function ListCharacters(arg1:string):Promise<Array<database.Character>>;
+
+export function ListLocationRelations(arg1:string,arg2:string):Promise<Array<database.LocationRelation>>;
+
+export function ListLocations(arg1:string):Promise<Array<database.Location>>;
 
 export function ListProjects():Promise<Array<database.Project>>;
 
@@ -36,6 +64,10 @@ export function ReorderChapters(arg1:database.ReorderChaptersInput):Promise<void
 export function ReorderVolumes(arg1:database.ReorderVolumesInput):Promise<void>;
 
 export function UpdateChapter(arg1:string,arg2:database.ChapterUpdate):Promise<database.Chapter>;
+
+export function UpdateCharacter(arg1:string,arg2:database.CharacterUpdate):Promise<database.Character>;
+
+export function UpdateLocation(arg1:string,arg2:database.LocationUpdate):Promise<database.Location>;
 
 export function UpdateProject(arg1:string,arg2:database.ProjectUpdate):Promise<database.Project>;
 

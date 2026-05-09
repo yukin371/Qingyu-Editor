@@ -1,4 +1,5 @@
 import httpService from '@/core/services/http.service'
+import { isWailsWriterAvailable } from '../data-bridge/wails'
 import type {
   Concept,
   CreateConceptRequest,
@@ -7,6 +8,10 @@ import type {
 
 const BASE_PROJECT_URL = '/writer/projects'
 const BASE_CONCEPT_URL = '/concepts'
+
+function throwDesktopConceptUnsupported(): never {
+  throw new Error('桌面端暂未接入概念资产本地持久化，请先保留为前端占位/TODO')
+}
 
 export const conceptApi = {
   // ==========================================
@@ -24,6 +29,9 @@ export const conceptApi = {
    * @response {Concept} 201 - 成功返回创建的概念信息
    */
   create(projectId: string, data: CreateConceptRequest) {
+    if (isWailsWriterAvailable()) {
+      throwDesktopConceptUnsupported()
+    }
     return httpService.post<Concept>(`${BASE_PROJECT_URL}/${projectId}/concepts`, data)
   },
 
@@ -38,6 +46,9 @@ export const conceptApi = {
    * @response {Concept} 200 - 成功返回概念详情
    */
   getDetail(conceptId: string, projectId: string) {
+    if (isWailsWriterAvailable()) {
+      throwDesktopConceptUnsupported()
+    }
     return httpService.get<Concept>(
       `${BASE_CONCEPT_URL}/${conceptId}`,
       { params: { projectId } } as any,
@@ -54,6 +65,9 @@ export const conceptApi = {
    * @response {Concept[]} 200 - 成功返回概念列表
    */
   list(projectId: string) {
+    if (isWailsWriterAvailable()) {
+      return Promise.resolve([] as Concept[])
+    }
     return httpService.get<Concept[]>(`${BASE_PROJECT_URL}/${projectId}/concepts`)
   },
 
@@ -69,6 +83,9 @@ export const conceptApi = {
    * @response {Concept} 200 - 成功返回更新后的概念信息
    */
   update(conceptId: string, projectId: string, data: UpdateConceptRequest) {
+    if (isWailsWriterAvailable()) {
+      throwDesktopConceptUnsupported()
+    }
     return httpService.put<Concept>(
       `${BASE_CONCEPT_URL}/${conceptId}`,
       data,
@@ -87,6 +104,9 @@ export const conceptApi = {
    * @response {void} 204 - 成功删除概念
    */
   delete(conceptId: string, projectId: string) {
+    if (isWailsWriterAvailable()) {
+      throwDesktopConceptUnsupported()
+    }
     return httpService.delete<void>(
       `${BASE_CONCEPT_URL}/${conceptId}`,
       { params: { projectId } } as any

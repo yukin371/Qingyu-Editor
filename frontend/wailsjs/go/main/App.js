@@ -10,6 +10,22 @@ export function CreateChapter(arg1) {
   return window['go']['main']['App']['CreateChapter'](arg1);
 }
 
+export function CreateCharacter(arg1) {
+  return window['go']['main']['App']['CreateCharacter'](arg1);
+}
+
+export function CreateCharacterRelation(arg1) {
+  return window['go']['main']['App']['CreateCharacterRelation'](arg1);
+}
+
+export function CreateLocation(arg1) {
+  return window['go']['main']['App']['CreateLocation'](arg1);
+}
+
+export function CreateLocationRelation(arg1) {
+  return window['go']['main']['App']['CreateLocationRelation'](arg1);
+}
+
 export function CreateProject(arg1) {
   return window['go']['main']['App']['CreateProject'](arg1);
 }
@@ -20,6 +36,22 @@ export function CreateVolume(arg1) {
 
 export function DeleteChapter(arg1) {
   return window['go']['main']['App']['DeleteChapter'](arg1);
+}
+
+export function DeleteCharacter(arg1) {
+  return window['go']['main']['App']['DeleteCharacter'](arg1);
+}
+
+export function DeleteCharacterRelation(arg1) {
+  return window['go']['main']['App']['DeleteCharacterRelation'](arg1);
+}
+
+export function DeleteLocation(arg1) {
+  return window['go']['main']['App']['DeleteLocation'](arg1);
+}
+
+export function DeleteLocationRelation(arg1) {
+  return window['go']['main']['App']['DeleteLocationRelation'](arg1);
 }
 
 export function DeleteProject(arg1) {
@@ -34,6 +66,14 @@ export function GetChapter(arg1) {
   return window['go']['main']['App']['GetChapter'](arg1);
 }
 
+export function GetCharacter(arg1) {
+  return window['go']['main']['App']['GetCharacter'](arg1);
+}
+
+export function GetLocation(arg1) {
+  return window['go']['main']['App']['GetLocation'](arg1);
+}
+
 export function GetProject(arg1) {
   return window['go']['main']['App']['GetProject'](arg1);
 }
@@ -44,6 +84,22 @@ export function InitDatabase() {
 
 export function ListChapters(arg1) {
   return window['go']['main']['App']['ListChapters'](arg1);
+}
+
+export function ListCharacterRelations(arg1, arg2) {
+  return window['go']['main']['App']['ListCharacterRelations'](arg1, arg2);
+}
+
+export function ListCharacters(arg1) {
+  return window['go']['main']['App']['ListCharacters'](arg1);
+}
+
+export function ListLocationRelations(arg1, arg2) {
+  return window['go']['main']['App']['ListLocationRelations'](arg1, arg2);
+}
+
+export function ListLocations(arg1) {
+  return window['go']['main']['App']['ListLocations'](arg1);
 }
 
 export function ListProjects() {
@@ -68,6 +124,14 @@ export function ReorderVolumes(arg1) {
 
 export function UpdateChapter(arg1, arg2) {
   return window['go']['main']['App']['UpdateChapter'](arg1, arg2);
+}
+
+export function UpdateCharacter(arg1, arg2) {
+  return window['go']['main']['App']['UpdateCharacter'](arg1, arg2);
+}
+
+export function UpdateLocation(arg1, arg2) {
+  return window['go']['main']['App']['UpdateLocation'](arg1, arg2);
 }
 
 export function UpdateProject(arg1, arg2) {
