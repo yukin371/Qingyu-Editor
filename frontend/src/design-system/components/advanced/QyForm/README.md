@@ -234,7 +234,7 @@ const checkUsername = async () => {
 
 const checkUsernameExists = async (username: string) => {
   // Your validation logic
-  return username === 'admin'
+  return username === 'owner-demo'
 }
 </script>
 ```

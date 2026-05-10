@@ -19,22 +19,6 @@ function getBookCoverUrl(seed: string, category = 'writer'): string {
 // ==================== 内存状态管理（用于数据联动） ====================
 
 /**
- * 待审核项
- */
-interface PendingReviewItem {
-  reviewId: string
-  contentId: string
-  contentType: 'chapter' | 'book' | 'comment'
-  title: string
-  submittedBy: string
-  submittedAt: string
-  content: string
-  projectId?: string
-  projectName?: string
-  status: 'pending' | 'approved' | 'rejected'
-}
-
-/**
  * 已发布章节
  */
 interface PublishedChapter {
@@ -50,10 +34,9 @@ interface PublishedChapter {
 
 /**
  * Mock 内存状态
- * 用于实现"作者发布 → 管理员审核 → 读者阅读"的业务闭环
+ * 当前只服务 writer 工作区与读者侧演示数据的基础联动
  */
 interface MockState {
-  pendingReviews: PendingReviewItem[]
   bookChapters: Map<string, PublishedChapter[]>
   writerCharacters: Map<string, Array<Record<string, any>>>
   writerCharacterRelations: Map<string, Array<Record<string, any>>>
@@ -64,7 +47,6 @@ interface MockState {
   >
   storyHarnessBatches: Map<string, Record<string, any>>
   storyHarnessChangeRequests: Map<string, Array<Record<string, any>>>
-  reviewCounter: number
 }
 
 const buildWriterDocumentContentKey = (projectId: string, documentId: string) =>
@@ -434,35 +416,6 @@ function parseMockBody(data: unknown) {
 
 // 初始化内存状态
 const mockState: MockState = {
-  pendingReviews: [
-    // 预设"云岚纪事"的待审章节
-    {
-      reviewId: 'review-yljs-4',
-      contentId: 'chapter-yljs-4',
-      contentType: 'chapter',
-      title: '第四章：剑气纵横',
-      submittedBy: '云岚作者',
-      submittedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      content:
-        '晨曦微露，云岚峰顶云雾缭绕。林逸盘膝坐于悬崖之上，体内真气流转不息。自上次突破以来，他的修为已臻至筑基后期，距离结丹仅一步之遥...',
-      projectId: 'project-yljs-1',
-      projectName: '云岚纪事',
-      status: 'pending',
-    },
-    {
-      reviewId: 'review-yljs-5',
-      contentId: 'chapter-yljs-5',
-      contentType: 'chapter',
-      title: '第五章：秘境开启',
-      submittedBy: '云岚作者',
-      submittedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-      content:
-        '掌门召集众弟子于大殿，宣布了一个震惊所有人的消息——青云秘境即将开启！这是每百年才开放一次的上古遗迹...',
-      projectId: 'project-yljs-1',
-      projectName: '云岚纪事',
-      status: 'pending',
-    },
-  ],
   bookChapters: new Map([
     // 云岚纪事的初始章节（读者端可见）
     [
@@ -509,27 +462,12 @@ const mockState: MockState = {
   writerDocumentContents: new Map(),
   storyHarnessBatches: new Map(),
   storyHarnessChangeRequests: new Map(),
-  reviewCounter: 6,
 }
 
 /**
  * 重置 Mock 状态（用于测试）
  */
 export function resetMockState(): void {
-  mockState.pendingReviews = [
-    {
-      reviewId: 'review-yljs-4',
-      contentId: 'chapter-yljs-4',
-      contentType: 'chapter',
-      title: '第四章：剑气纵横',
-      submittedBy: '云岚作者',
-      submittedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      content: '晨曦微露，云岚峰顶云雾缭绕...',
-      projectId: 'project-yljs-1',
-      projectName: '云岚纪事',
-      status: 'pending',
-    },
-  ]
   mockState.bookChapters = new Map([
     [
       'project-yljs-1',
@@ -579,7 +517,6 @@ export function resetMockState(): void {
   mockState.writerDocumentContents = new Map()
   mockState.storyHarnessBatches = new Map()
   mockState.storyHarnessChangeRequests = new Map()
-  mockState.reviewCounter = 4
 }
 
 /**
@@ -1915,207 +1852,10 @@ export async function getMockDataForRequest(
           method: 'wechat',
           createdAt: '2024-01-25T09:15:00Z',
           processedAt: null,
-          remark: '待审核',
+          remark: '处理中',
         },
       ],
       total: 2,
-    })
-  }
-
-  // ==================== Admin 管理员模块 ====================
-
-  // 用户状态统计
-  if (url.includes('/admin/users/count-by-status')) {
-    return createMockResponse({
-      active: 17,
-      inactive: 17,
-      banned: 16,
-    })
-  }
-
-  // 用户管理列表
-  if (url.includes('/admin/users') && !url.includes('/users/')) {
-    const parsedUrl = new URL(url, window.location.origin)
-    const params = options.params || {}
-    const page = Number(params.page || parsedUrl.searchParams.get('page') || 1)
-    const pageSize = Number(params.pageSize || parsedUrl.searchParams.get('pageSize') || 10)
-    const keyword = String(
-      params.keyword || parsedUrl.searchParams.get('keyword') || '',
-    ).toLowerCase()
-    const role = String(params.role || parsedUrl.searchParams.get('role') || '')
-    const status = String(params.status || parsedUrl.searchParams.get('status') || '')
-
-    // 生成用户列表
-    const allUsers = Array.from({ length: 50 }, (_, i) => {
-      const roles = ['user', 'author', 'admin']
-      const statuses = ['active', 'inactive', 'banned']
-      const names = [
-        '张三',
-        '李四',
-        '王五',
-        '赵六',
-        '钱七',
-        '孙八',
-        '周九',
-        '吴十',
-        '云岚作者',
-        '星辰写手',
-      ]
-      return {
-        user_id: `user-${i + 1}`,
-        username: `user_${i + 1}`,
-        email: `user${i + 1}@example.com`,
-        nickname: names[i % names.length],
-        role: roles[i % roles.length],
-        status: statuses[i % 3],
-        email_verified: i % 3 === 0,
-        phone_verified: i % 5 === 0,
-        avatar: `https://picsum.photos/seed/avatar${i + 1}/100/100`,
-        created_at: new Date(Date.now() - (i + 1) * 24 * 60 * 60 * 1000).toISOString(),
-        last_login_at: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-      }
-    })
-
-    // 筛选
-    const filteredUsers = allUsers.filter((user) => {
-      const keywordMatch =
-        !keyword ||
-        user.username.toLowerCase().includes(keyword) ||
-        user.nickname.toLowerCase().includes(keyword) ||
-        user.email.toLowerCase().includes(keyword)
-      const roleMatch = !role || user.role === role
-      const statusMatch = !status || user.status === status
-      return keywordMatch && roleMatch && statusMatch
-    })
-
-    const start = Math.max(0, (page - 1) * pageSize)
-    const list = filteredUsers.slice(start, start + pageSize)
-
-    return createMockResponse({
-      items: list,
-      total: filteredUsers.length,
-      page,
-      pageSize,
-    })
-  }
-
-  // 待审核内容列表（使用内存状态）
-  if (url.includes('/admin/audit/pending')) {
-    const parsedUrl = new URL(url, window.location.origin)
-    const params = options.params || {}
-    const page = Number(params.page || parsedUrl.searchParams.get('page') || 1)
-    const pageSize = Number(params.pageSize || parsedUrl.searchParams.get('pageSize') || 20)
-    const contentType = String(
-      params.contentType || parsedUrl.searchParams.get('contentType') || '',
-    )
-
-    // 从内存状态获取待审核列表
-    let filteredReviews = mockState.pendingReviews.filter((r) => r.status === 'pending')
-    if (contentType) {
-      filteredReviews = filteredReviews.filter((r) => r.contentType === contentType)
-    }
-
-    const start = Math.max(0, (page - 1) * pageSize)
-    const list = filteredReviews.slice(start, start + pageSize)
-
-    return createMockResponse({
-      items: list,
-      total: filteredReviews.length,
-      page,
-      pageSize,
-    })
-  }
-
-  // 审核统计数据
-  if (url.includes('/admin/audit/statistics')) {
-    const pending = mockState.pendingReviews.filter((r) => r.status === 'pending').length
-    return createMockResponse({
-      pending,
-      approved: 5,
-      rejected: 2,
-      highRisk: 0,
-    })
-  }
-
-  // 审核内容（批准/拒绝）- 联动核心逻辑
-  if (url.includes('/admin/audit/') && url.includes('/review')) {
-    const auditId = url.match(/\/admin\/audit\/([^/]+)\/review/)?.[1]
-    const body = options.params as { approved?: boolean; reason?: string } | undefined
-
-    if (auditId && body) {
-      const reviewIndex = mockState.pendingReviews.findIndex((r) => r.reviewId === auditId)
-
-      if (reviewIndex !== -1) {
-        const review = mockState.pendingReviews[reviewIndex]
-
-        if (body.approved) {
-          // 审核通过：从待审核队列移除，添加到书籍章节列表
-          review.status = 'approved'
-
-          if (review.projectId && review.contentType === 'chapter') {
-            const chapters = mockState.bookChapters.get(review.projectId) || []
-            const newChapterNumber = chapters.length + 1
-
-            chapters.push({
-              _id: review.contentId,
-              chapterNumber: newChapterNumber,
-              title: review.title,
-              wordCount: Math.floor(Math.random() * 2000) + 2000,
-              isFree: newChapterNumber <= 5,
-              price: newChapterNumber > 5 ? 5 : 0,
-              publishTime: new Date().toISOString(),
-              stats: { views: 0 },
-            })
-
-            mockState.bookChapters.set(review.projectId, chapters)
-            console.log(
-              `[Mock联动] 审核通过: "${review.title}" 已发布到读者端，章节号: ${newChapterNumber}`,
-            )
-          }
-
-          // 从待审核队列移除
-          mockState.pendingReviews.splice(reviewIndex, 1)
-        } else {
-          // 审核拒绝：从待审核队列移除
-          review.status = 'rejected'
-          mockState.pendingReviews.splice(reviewIndex, 1)
-          console.log(`[Mock联动] 审核拒绝: "${review.title}"`)
-        }
-      }
-    }
-
-    return createMockResponse({ success: true })
-  }
-
-  // ==================== 创作中心联动（发布章节到审核队列） ====================
-
-  // 发布章节 - 写入待审核队列
-  if (url.includes('/writer/project/') && url.includes('/publish')) {
-    const projectId = url.match(/\/writer\/project\/([^/]+)\/publish/)?.[1]
-    const body = options.params as { title?: string; content?: string } | undefined
-
-    if (projectId && body?.title) {
-      mockState.reviewCounter++
-      const newReview: PendingReviewItem = {
-        reviewId: `review-new-${mockState.reviewCounter}`,
-        contentId: `chapter-new-${mockState.reviewCounter}`,
-        contentType: 'chapter',
-        title: body.title,
-        submittedBy: '当前作者',
-        submittedAt: new Date().toISOString(),
-        content: body.content || '章节内容...',
-        projectId,
-        projectName: '云岚纪事',
-        status: 'pending',
-      }
-
-      mockState.pendingReviews.unshift(newReview)
-      console.log(`[Mock联动] 新章节已提交审核: "${body.title}"`)
-    }
-
-    return createMockResponse({
-      success: true,
-      message: '章节已提交审核，请等待管理员审批',
     })
   }
 

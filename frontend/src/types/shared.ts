@@ -188,89 +188,10 @@ export interface FileListParams {
   page_size?: number
 }
 
-// ==================== 管理员审核相关 ====================
-
-/**
- * 审核状态
- */
-export type ReviewStatus = 'pending' | 'approved' | 'rejected'
-
-/**
- * 审核项类型
- */
-export type ReviewItemType = 'book' | 'chapter' | 'comment' | 'withdraw'
-
-/**
- * 审核项
- */
-export interface ReviewItem {
-  id: string
-  type: ReviewItemType
-  targetId: string
-  targetTitle?: string
-  content?: string
-  submitterId: string
-  submitterName?: string
-  status: ReviewStatus
-  reviewerId?: string
-  reviewerName?: string
-  reason?: string
-  createdAt: string
-  reviewedAt?: string
-
-  // 别名属性，兼容不同API版本
-  // title = targetTitle
-  title?: string
-  // contentId = targetId
-  contentId?: string
-  // submittedAt = createdAt
-  submittedAt?: string
-  // submittedBy/submitterId = submitterId
-  submittedBy?: string
-  // contentType = type
-  contentType?: ReviewItemType
-}
-
-/**
- * 待审核项（别名）
- */
-export type PendingReview = ReviewItem
-
 /**
  * 提现记录（别名）
  */
 export type WithdrawRecord = WithdrawRequest
-
-/**
- * 操作日志
- */
-export interface OperationLog {
-  id: string
-  operatorId: string
-  operatorName?: string
-  action: string
-  target?: string
-  targetId?: string
-  details?: Record<string, any>
-  ip?: string
-  userAgent?: string
-  createdAt: string
-
-  // 别名属性，兼容不同API版本
-  logId?: string // = id
-  adminName?: string // = operatorName
-  adminId?: string // = operatorId
-  operation?: string // = action
-  targetType?: string // = target
-}
-
-/**
- * 审核参数
- */
-export interface ReviewParams {
-  status: 'approved' | 'rejected'
-  reason?: string
-}
 
 // ==================== 系统设置相关 ====================
 
@@ -298,5 +219,4 @@ export interface Notification {
   relatedId?: string
   createdAt: string
 }
-
 

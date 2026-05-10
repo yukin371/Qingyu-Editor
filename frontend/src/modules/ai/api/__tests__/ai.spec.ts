@@ -3,13 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const {
   aiDirectApi,
   isDirectModeEnabled,
-  getAIRequest,
   postAIRequest,
   putAIRequest,
-  httpGet,
-  httpPost,
-  httpPut,
-  httpDelete,
 } = vi.hoisted(() => ({
   aiDirectApi: {
     chat: vi.fn(),
@@ -23,13 +18,8 @@ const {
     },
   },
   isDirectModeEnabled: vi.fn(() => false),
-  getAIRequest: vi.fn(),
   postAIRequest: vi.fn(),
   putAIRequest: vi.fn(),
-  httpGet: vi.fn(),
-  httpPost: vi.fn(),
-  httpPut: vi.fn(),
-  httpDelete: vi.fn(),
 }))
 
 vi.mock('../ai-direct', () => ({
@@ -39,24 +29,13 @@ vi.mock('../ai-direct', () => ({
 
 vi.mock('../request', () => ({
   AI_REQUEST_TIMEOUT_MS: 65_000,
-  getAIRequest: (...args: unknown[]) => getAIRequest(...args),
   postAIRequest: (...args: unknown[]) => postAIRequest(...args),
   putAIRequest: (...args: unknown[]) => putAIRequest(...args),
-}))
-
-vi.mock('@/core/services/http.service', () => ({
-  httpService: {
-    get: (...args: unknown[]) => httpGet(...args),
-    post: (...args: unknown[]) => httpPost(...args),
-    put: (...args: unknown[]) => httpPut(...args),
-    delete: (...args: unknown[]) => httpDelete(...args),
-  },
 }))
 
 import {
   chatWithAI,
   continueWriting,
-  getAIHealth,
   storyGenerate,
   updateSceneState,
 } from '../ai'
@@ -65,13 +44,8 @@ describe('ai api facade', () => {
   beforeEach(() => {
     isDirectModeEnabled.mockReset()
     isDirectModeEnabled.mockReturnValue(false)
-    getAIRequest.mockReset()
     postAIRequest.mockReset()
     putAIRequest.mockReset()
-    httpGet.mockReset()
-    httpPost.mockReset()
-    httpPut.mockReset()
-    httpDelete.mockReset()
     aiDirectApi.chat.mockReset()
     aiDirectApi.writing.continue.mockReset()
   })
@@ -111,7 +85,6 @@ describe('ai api facade', () => {
   it('keeps story generation and scene updates on the shared ai request helper', async () => {
     postAIRequest.mockResolvedValue({ ok: true })
     putAIRequest.mockResolvedValue({ ok: true })
-    getAIRequest.mockResolvedValue({ status: 'ok' })
 
     await storyGenerate({
       projectId: 'project-1',
@@ -122,7 +95,6 @@ describe('ai api facade', () => {
     await updateSceneState('doc-1', {
       sceneGoal: '推进冲突',
     })
-    const health = await getAIHealth()
 
     expect(postAIRequest).toHaveBeenCalledWith('/ai/story/generate', {
       projectId: 'project-1',
@@ -133,7 +105,5 @@ describe('ai api facade', () => {
     expect(putAIRequest).toHaveBeenCalledWith('/ai/story/documents/doc-1/scene-state', {
       sceneGoal: '推进冲突',
     })
-    expect(getAIRequest).toHaveBeenCalledWith('/api/v1/ai/health')
-    expect(health).toEqual({ status: 'ok' })
   })
 })

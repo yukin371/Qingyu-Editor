@@ -160,7 +160,7 @@ export const RealWorldUsage: Story = {
         <div>
           <h3 class="text-lg font-semibold mb-3">用户角色</h3>
           <div class="flex flex-wrap gap-2">
-            <Tag variant="primary" icon="user">管理员</Tag>
+            <Tag variant="primary" icon="user">Owner</Tag>
             <Tag variant="default" icon="user">编辑</Tag>
             <Tag variant="default" icon="user">作者</Tag>
             <Tag variant="default" icon="user">订阅者</Tag>

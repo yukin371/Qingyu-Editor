@@ -177,7 +177,7 @@ export const ComplexContent: Story = {
     components: { List, ListItem },
     setup() {
       const users = [
-        { name: '张三', email: 'zhangsan@example.com', role: '管理员' },
+        { name: '张三', email: 'zhangsan@example.com', role: 'Owner' },
         { name: '李四', email: 'lisi@example.com', role: '用户' },
         { name: '王五', email: 'wangwu@example.com', role: '用户' },
       ]

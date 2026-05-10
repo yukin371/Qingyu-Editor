@@ -608,7 +608,7 @@ export const ComplexExample: Story = {
       ]
 
       const roleOptions = [
-        { label: '管理员', value: 'admin' },
+        { label: 'Owner', value: 'owner' },
         { label: '编辑', value: 'editor' },
         { label: '访客', value: 'guest' },
       ]

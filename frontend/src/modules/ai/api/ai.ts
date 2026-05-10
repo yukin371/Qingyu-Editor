@@ -3,10 +3,8 @@
  * 提供对话、续写、润色、扩写、改写等AI功能
  */
 
-import { httpService } from '@/core/services/http.service'
-import type { APIResponse, PaginatedResponse } from '@/types/api'
 import { aiDirectApi, isDirectModeEnabled } from './ai-direct'
-import { getAIRequest, postAIRequest, putAIRequest } from './request'
+import { postAIRequest, putAIRequest } from './request'
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
@@ -80,63 +78,6 @@ export interface AIExpandRequest {
   originalText: string
   instructions?: string
   targetLength?: number
-}
-
-/**
- * AI配额信息
- */
-export interface QuotaInfo {
-  userId: string
-  quotaId: string
-  quotaType: 'free' | 'paid' | 'trial'
-  totalQuota: number
-  usedQuota: number
-  remainingQuota: number
-  resetDate: string
-  isActive: boolean
-}
-
-/**
- * 配额统计
- */
-export interface QuotaStatistics {
-  totalUsers: number
-  activeUsers: number
-  totalQuotaAllocated: number
-  totalQuotaUsed: number
-  averageQuotaPerUser: number
-  topUsers: Array<{
-    userId: string
-    username: string
-    quotaUsed: number
-  }>
-}
-
-/**
- * 配额交易记录
- */
-export interface QuotaTransaction {
-  id: string
-  userId: string
-  type: 'allocate' | 'consume' | 'expire'
-  amount: number
-  balanceBefore: number
-  balanceAfter: number
-  reason?: string
-  createdAt: string
-}
-
-/**
- * AI聊天会话
- */
-export interface ChatSession {
-  id: string
-  userId: string
-  title?: string
-  messageCount: number
-  createdAt: string
-  updatedAt: string
-  lastMessageAt?: string
 }
 
 /**
@@ -448,202 +389,6 @@ export const proofreadText = async (
   }
 }
 
-/**
- * 获取AI服务健康状态
- * @description 获取AI服务的健康检查状态
- * @endpoint GET /api/v1/ai/health
- * @category ai
- * @tags AI系统
- * @response {Object} 200 - 成功返回健康状态
- */
-export const getAIHealth = async (): Promise<any> => {
-  const response = await getAIRequest('/api/v1/ai/health')
-  return response || {}
-}
-
-/**
- * 获取AI提供商列表
- * @description 获取可用的AI服务提供商列表
- * @endpoint GET /api/v1/ai/providers
- * @category ai
- * @tags AI系统
- * @response {Object} 200 - 成功返回提供商列表
- */
-export const getAIProviders = async (): Promise<any> => {
-  const response = await getAIRequest('/api/v1/ai/providers')
-  return response || {}
-}
-
-/**
- * 获取AI模型列表
- * @description 获取可用的AI模型列表
- * @endpoint GET /api/v1/ai/models
- * @category ai
- * @tags AI系统
- * @response {Object} 200 - 成功返回模型列表
- */
-export const getAIModels = async (): Promise<any> => {
-  const response = await getAIRequest('/api/v1/ai/models')
-  return response || {}
-}
-
-/**
- * ==================== AI配额管理 ====================
- * 对接后端: /api/v1/ai/quota/*
- */
-
-/**
- * 获取配额信息
- * @description 获取当前用户的AI配额信息
- * @endpoint GET /ai/quota
- * @category ai
- * @tags AI配额
- * @response {QuotaInfo} 200 - 成功返回配额信息
- * @security BearerAuth
- */
-export const getQuotaInfo = async (): Promise<APIResponse<QuotaInfo>> => {
-  const response = await httpService.get<APIResponse<QuotaInfo>>('/ai/quota')
-  return response as unknown as APIResponse<QuotaInfo>
-}
-
-/**
- * 获取所有配额（管理员）
- * @description 获取所有用户的AI配额信息
- * @endpoint GET /ai/quota/all
- * @category ai
- * @tags AI配额
- * @response {QuotaInfo[]} 200 - 成功返回所有配额信息
- * @security BearerAuth
- */
-export const getAllQuotas = async (): Promise<APIResponse<QuotaInfo[]>> => {
-  const response = await httpService.get<APIResponse<QuotaInfo[]>>('/ai/quota/all')
-  return response as unknown as APIResponse<QuotaInfo[]>
-}
-
-/**
- * 获取配额统计（管理员）
- * @description 获取AI配额的统计数据
- * @endpoint GET /ai/quota/statistics
- * @category ai
- * @tags AI配额
- * @response {QuotaStatistics} 200 - 成功返回配额统计
- * @security BearerAuth
- */
-export const getQuotaStatistics = async (): Promise<APIResponse<QuotaStatistics>> => {
-  const response = await httpService.get<APIResponse<QuotaStatistics>>('/ai/quota/statistics')
-  return response as unknown as APIResponse<QuotaStatistics>
-}
-
-/**
- * 获取交易历史
- * @description 获取AI配额的交易历史记录
- * @endpoint GET /ai/quota/transactions
- * @category ai
- * @tags AI配额
- * @param {number} page - 页码
- * @param {number} pageSize - 每页数量
- * @response {PaginatedResponse} 200 - 成功返回交易历史
- * @security BearerAuth
- */
-export const getTransactionHistory = async (params?: {
-  page?: number
-  pageSize?: number
-}): Promise<PaginatedResponse<QuotaTransaction>> => {
-  const response = await httpService.get<PaginatedResponse<QuotaTransaction>>(
-    '/ai/quota/transactions',
-    { params },
-  )
-  return response as unknown as PaginatedResponse<QuotaTransaction>
-}
-
-/**
- * ==================== AI会话管理 ====================
- * 对接后端: /api/v1/ai/chat/sessions/*
- */
-
-/**
- * 获取会话列表
- * @description 获取AI聊天会话列表
- * @endpoint GET /ai/chat/sessions
- * @category ai
- * @tags AI会话
- * @response {ChatSession[]} 200 - 成功返回会话列表
- * @security BearerAuth
- */
-export const getChatSessions = async (): Promise<APIResponse<ChatSession[]>> => {
-  const response = await httpService.get<APIResponse<ChatSession[]>>('/ai/chat/sessions')
-  return response as unknown as APIResponse<ChatSession[]>
-}
-
-/**
- * 获取会话历史
- * @description 获取指定会话的聊天历史
- * @endpoint GET /ai/chat/sessions/:sessionId
- * @category ai
- * @tags AI会话
- * @param {string} sessionId - 会话ID
- * @response {ChatMessage[]} 200 - 成功返回会话历史
- * @security BearerAuth
- */
-export const getSessionHistory = async (sessionId: string): Promise<APIResponse<ChatMessage[]>> => {
-  const response = await httpService.get<APIResponse<ChatMessage[]>>(
-    `/ai/chat/sessions/${sessionId}`,
-  )
-  return response as unknown as APIResponse<ChatMessage[]>
-}
-
-/**
- * 删除会话
- * @description 删除指定的AI聊天会话
- * @endpoint DELETE /ai/chat/sessions/:sessionId
- * @category ai
- * @tags AI会话
- * @param {string} sessionId - 会话ID
- * @response {void} 200 - 删除成功
- * @security BearerAuth
- */
-export const deleteSession = async (sessionId: string): Promise<APIResponse<void>> => {
-  const response = await httpService.delete<APIResponse<void>>(`/ai/chat/sessions/${sessionId}`)
-  return response as unknown as APIResponse<void>
-}
-
-/**
- * 创建新会话
- * @description 创建新的AI聊天会话
- * @endpoint POST /ai/chat/sessions
- * @category ai
- * @tags AI会话
- * @param {string} title - 会话标题（可选）
- * @response {ChatSession} 201 - 成功返回创建的会话
- * @security BearerAuth
- */
-export const createSession = async (title?: string): Promise<APIResponse<ChatSession>> => {
-  const response = await httpService.post<APIResponse<ChatSession>>('/ai/chat/sessions', { title })
-  return response as unknown as APIResponse<ChatSession>
-}
-
-/**
- * 更新会话标题
- * @description 更新AI聊天会话的标题
- * @endpoint PUT /ai/chat/sessions/:sessionId
- * @category ai
- * @tags AI会话
- * @param {string} sessionId - 会话ID
- * @param {string} title - 新标题
- * @response {ChatSession} 200 - 成功返回更新的会话
- * @security BearerAuth
- */
-export const updateSession = async (
-  sessionId: string,
-  title: string,
-): Promise<APIResponse<ChatSession>> => {
-  const response = await httpService.put<APIResponse<ChatSession>>(
-    `/ai/chat/sessions/${sessionId}`,
-    { title },
-  )
-  return response as unknown as APIResponse<ChatSession>
-}
-
 // ============ 故事上下文写作 ============
 
 /** 故事上下文生成 */
@@ -655,13 +400,6 @@ export function storyGenerate(data: {
   selectedText?: string
 }) {
   return postAIRequest('/ai/story/generate', data)
-}
-
-/** 上下文预览（调试用） */
-export function contextPreview(projectId: string, documentId: string) {
-  return getAIRequest('/ai/story/context-preview', {
-    params: { projectId, documentId },
-  })
 }
 
 /** 更新场景状态 */
@@ -684,23 +422,7 @@ export default {
   rewriteText,
   summarizeText,
   proofreadText,
-  // 系统信息
-  getAIHealth,
-  getAIProviders,
-  getAIModels,
-  // 配额管理
-  getQuotaInfo,
-  getAllQuotas,
-  getQuotaStatistics,
-  getTransactionHistory,
-  // 会话管理
-  getChatSessions,
-  getSessionHistory,
-  deleteSession,
-  createSession,
-  updateSession,
   // 故事上下文写作
   storyGenerate,
-  contextPreview,
   updateSceneState,
 }

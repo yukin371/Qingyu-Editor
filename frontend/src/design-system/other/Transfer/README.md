@@ -278,7 +278,7 @@ const permissions = [
   { key: 'read', label: '读取权限', description: '允许查看数据' },
   { key: 'write', label: '写入权限', description: '允许修改数据' },
   { key: 'delete', label: '删除权限', description: '允许删除数据' },
-  { key: 'admin', label: '管理权限', description: '允许管理用户' },
+  { key: 'owner', label: 'Owner 权限', description: '允许管理工作区成员' },
 ]
 
 const userPermissions = ref(['read'])

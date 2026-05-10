@@ -496,7 +496,7 @@ export const FormDrawer: Story = {
                 class="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-neutral-700 dark:text-neutral-100"
               >
                 <option value="">请选择角色</option>
-                <option value="admin">管理员</option>
+                <option value="owner">Owner</option>
                 <option value="user">普通用户</option>
                 <option value="guest">访客</option>
               </select>

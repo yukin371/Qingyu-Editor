@@ -313,7 +313,7 @@ const resetForm = () => {
           class="w-full px-3 py-2 border rounded-md"
         >
           <option value="">请选择角色</option>
-          <option value="admin">管理员</option>
+          <option value="owner">Owner</option>
           <option value="user">普通用户</option>
         </select>
       </div>

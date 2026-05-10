@@ -509,7 +509,7 @@ export const zhCNMessages: Record<FrontendErrorCode, ErrorMessage> = {
     code: FrontendErrorCode.FORBIDDEN,
     title: '权限不足',
     message: '您没有权限执行此操作',
-    action: '请联系管理员获取权限'
+    action: '请切换有权限的账号或联系支持'
   },
   [FrontendErrorCode.TOKEN_EXPIRED]: {
     code: FrontendErrorCode.TOKEN_EXPIRED,
@@ -569,7 +569,7 @@ export const zhCNMessages: Record<FrontendErrorCode, ErrorMessage> = {
     code: FrontendErrorCode.RESOURCE_GONE,
     title: '资源已删除',
     message: '该资源已被永久删除',
-    action: '请联系管理员'
+    action: '请返回工作区刷新内容'
   },
   [FrontendErrorCode.INSUFFICIENT_BALANCE]: {
     code: FrontendErrorCode.INSUFFICIENT_BALANCE,
@@ -677,7 +677,7 @@ export const enUSMessages: Record<FrontendErrorCode, ErrorMessage> = {
     code: FrontendErrorCode.FORBIDDEN,
     title: 'Access Denied',
     message: 'You do not have permission to perform this action.',
-    action: 'Please contact your administrator'
+    action: 'Please switch accounts or contact support'
   },
   [FrontendErrorCode.TOKEN_EXPIRED]: {
     code: FrontendErrorCode.TOKEN_EXPIRED,
@@ -737,7 +737,7 @@ export const enUSMessages: Record<FrontendErrorCode, ErrorMessage> = {
     code: FrontendErrorCode.RESOURCE_GONE,
     title: 'Resource Gone',
     message: 'This resource has been permanently deleted.',
-    action: 'Please contact your administrator'
+    action: 'Please return to the workspace and refresh'
   },
   [FrontendErrorCode.INSUFFICIENT_BALANCE]: {
     code: FrontendErrorCode.INSUFFICIENT_BALANCE,

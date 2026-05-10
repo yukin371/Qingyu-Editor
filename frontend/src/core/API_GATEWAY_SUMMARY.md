@@ -1,5 +1,7 @@
 # 🎉 API 网关层级实现完成总结
 
+> 说明：本文是历史平台 API 网关改造记录。当前独立编辑器真实运行态已收口到 `src/modules/writer` 与 `src/modules/ai`，其中 admin 相关内容仅具备存档参考价值。
+
 **完成时间**: 2025-10-31  
 **项目**: 青羽前端 (Qingyu Frontend)  
 **主要任务**: 统一 API 导入层级、创建 API 网关、清理重复代码
@@ -24,8 +26,8 @@
 - bookstore    (书城系统)
 - reading      (阅读系统)
 - user         (用户中心)
-- shared       (共享服务：认证、钱包、管理员、存储)
-- writing      (写作系统：AI、统计、收入)
+- shared       (共享服务：认证、钱包、存储)
+- writing      (历史写作 API 网关记录；当前运行态以 `src/modules/writer` / `src/modules/ai` 为准)
 - recommendation (推荐系统)
 ```
 
@@ -55,13 +57,10 @@
 #### 共享服务 (shared) - 4 个文件
 - ✅ `src/api/shared/auth.ts`
 - ✅ `src/api/shared/wallet.ts`
-- ✅ `src/api/shared/admin.ts`
 - ✅ `src/api/shared/storage.ts`
 
 #### 写作系统 (writing) - 3 个文件
-- ✅ `src/api/writing/ai.ts`
-- ✅ `src/api/writing/statistics.ts`
-- ✅ `src/api/writing/revenue.ts`
+- ✅ 历史写作 API 网关迁移记录（当前独立编辑器以模块 facade 为准）
 
 #### 推荐系统 (recommendation) - 1 个文件
 - ✅ `src/api/recommendation/recommendation.ts`
@@ -137,7 +136,7 @@ src/
 │   ├── reader/                # 同样结构
 │   ├── user/                  # 同样结构
 │   ├── writer/                # 同样结构
-│   └── admin/                 # 同样结构
+│   └── admin/                 # 历史平台目录，当前独立编辑器已退场
 │
 └── utils/
     └── request.ts            # ⚠️ 已废弃（可删除）
@@ -190,7 +189,7 @@ import { httpService } from '@/core/services/http.service'
 // ❌ 不要混合导入方式
 import { bookstore } from '@/api'
 import * as readingAPI from '@/api/reading'
-import { getAIModels } from '@/api/writing/ai'
+import { storyGenerate } from '@/modules/ai/api'
 ```
 
 ---
@@ -309,8 +308,9 @@ describe('APIGateway', () => {
 **User 模块** (2 个文件)
 - profile.ts, security.ts
 
-**Shared 模块** (4 个文件)
+**Shared 模块** (历史记录为 4 个文件)
 - auth.ts, wallet.ts, admin.ts, storage.ts
+  当前独立编辑器运行态不再以 `admin.ts` 为 owner。
 
 **Writing 模块** (3 个文件)
 - ai.ts, statistics.ts, revenue.ts

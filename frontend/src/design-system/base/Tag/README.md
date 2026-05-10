@@ -178,7 +178,7 @@ const handleClose = () => {
 ### 用户角色
 
 ```vue
-<Tag variant="primary" icon="user">管理员</Tag>
+<Tag variant="primary" icon="user">Owner</Tag>
 <Tag variant="default" icon="user">编辑</Tag>
 <Tag variant="default" icon="user">作者</Tag>
 ```

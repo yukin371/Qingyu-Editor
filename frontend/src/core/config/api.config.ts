@@ -54,15 +54,6 @@ export const endpoints = {
     settings: '/user/settings',
   },
 
-  // Admin endpoints
-  admin: {
-    dashboard: '/admin/dashboard',
-    users: '/admin/users',
-    reviews: '/admin/reviews',
-    withdrawals: '/admin/withdrawals',
-    logs: '/admin/logs',
-  },
-
   // Writer endpoints
   writer: {
     projects: '/writer/projects',

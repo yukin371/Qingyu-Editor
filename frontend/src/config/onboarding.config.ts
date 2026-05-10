@@ -203,7 +203,7 @@ export const writerTourConfig: TourConfig = {
     {
       target: '.publish-btn',
       title: '发布章节',
-      content: '写完章节后点击发布，作品将进入审核流程。',
+      content: '写完章节后点击发布，当前章节内容会进入你的发布流程或导出链路。',
       placement: 'bottom'
     }
   ]

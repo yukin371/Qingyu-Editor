@@ -1,5 +1,7 @@
 # API 导入规范指南
 
+> 说明：本文主要保留历史平台 API 网关迁移经验。当前独立编辑器运行态以 `src/modules/writer` 与 `src/modules/ai` 的 facade 为主，不再把 admin 作为默认前端 owner。
+
 ## 📋 概述
 
 本文档定义了青羽前端项目中 API 导入的统一规范，确保代码清晰、可维护和高效。
@@ -222,7 +224,7 @@ export const bookstoreAPI = ...  // 集中导入
 // ❌ 不推荐
 import { bookstore } from '@/api'
 import * as readingAPI from '@/api/reading'  // ❌ 混合不同的导入方式
-import { getAIModels } from '@/api/writing/ai'
+import { storyGenerate } from '@/modules/ai/api'
 
 // 应该保持一致的风格
 ```
@@ -317,8 +319,8 @@ import * as readingAPI from '@/api/reading'        // 别名导入
 | 书城系统 | `/api/bookstore/` | 书籍、分类、排行榜、Banner |
 | 阅读系统 | `/api/reading/` | 章节、进度、评论、书签 |
 | 用户中心 | `/api/user/` | 个人资料、安全设置 |
-| 共享服务 | `/api/shared/` | 认证、钱包、管理员、存储 |
-| 写作系统 | `/api/writing/` | AI、统计、收入 |
+| 共享服务 | `/api/shared/` | 认证、钱包、存储 |
+| 写作系统 | `src/modules/writer` / `src/modules/ai` | writer 工作区、AI facade、工作流工具 |
 | 推荐系统 | `/api/recommendation/` | 个性化推荐、行为记录 |
 
 ---
