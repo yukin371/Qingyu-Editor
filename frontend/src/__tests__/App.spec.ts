@@ -4,19 +4,6 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import App from '../App.vue'
 
-// Mock the auth store
-vi.mock('@/stores/auth', () => ({
-  useAuthStore: () => ({
-    isLoggedIn: false,
-    token: null,
-    user: null,
-    roles: [],
-    permissions: [],
-    initAuth: vi.fn().mockResolvedValue(undefined),
-    clearAuth: vi.fn(),
-  }),
-}))
-
 // Mock onboarding composable
 vi.mock('@/composables/useOnboarding', () => ({
   useOnboarding: () => ({

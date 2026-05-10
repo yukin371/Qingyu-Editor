@@ -78,15 +78,15 @@ npm run dev
 VITE_ENABLE_VUE_DEVTOOLS=true npm run dev
 ```
 
-### 完整服务（前端+后端）
+### 联调模式（独立编辑器前端 + 可选平台后端）
 
 ```bash
 # 终端1: 启动后端
 cd Qingyu_backend
 go run cmd/server/main.go
 
-# 终端2: 启动前端
-cd Qingyu_fronted
+# 终端2: 启动独立编辑器前端
+cd Qingyu-Editor/frontend
 npm run dev
 ```
 
@@ -287,17 +287,7 @@ npm run type-check
 - 聊天、续写、润色、扩写、改写
 - 结构规划与工作台工具
 - 与 writer 主链路协同的辅助能力
-- 阅读历史
-- 会员中心
-- 钱包充值
-
-### 管理模块 (Admin)
-
-- 用户管理
-- 内容审核
-- 数据统计
-- 系统配置
-- 操作日志
+- 仅作为写作工作区的配角能力，不独立长出平台后台
 
 ## 常见问题
 

@@ -1,4 +1,4 @@
-// Qingyu_fronted/src/core/services/unified-websocket.service.ts
+// Qingyu-Editor/frontend/src/core/services/unified-websocket.service.ts
 
 import {
   WebSocketConfig,

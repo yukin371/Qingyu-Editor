@@ -1,4 +1,4 @@
-// Qingyu_fronted/src/core/types/websocket.types.ts
+// Qingyu-Editor/frontend/src/core/types/websocket.types.ts
 
 /**
  * WebSocket消息类型
