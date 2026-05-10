@@ -220,7 +220,7 @@ import { storyGenerate } from '@/modules/ai/api'
 | writer | `src/modules/writer/api/*` | 项目、章节、结构、正文、桌面回退 |
 | ai | `src/modules/ai/api/*` | 聊天、续写、润色、结构规划、工作台工具 |
 | shared infra | `src/core/services/*` / `src/utils/request-adapter.ts` | HTTP 客户端、桌面桥接、请求基础设施 |
-| generated models | `src/api/generated/model.ts` | 历史共享模型产物，默认不作为业务 facade |
+| generated models | 已退场 | 不再作为当前独立编辑器工程链路的一部分 |
 
 ---
 

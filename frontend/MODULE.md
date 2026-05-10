@@ -24,7 +24,7 @@
 ## 当前边界
 
 - `src/modules` 仍然保留，原因是 writer 与 ai 仍是独立编辑器的真实业务 owner。
-- `src/modules/*/api` 的定位是业务 facade；`src/api/generated` 只是历史生成产物共享模型层，暂未完全退场。
+- `src/modules/*/api` 的定位是业务 facade；历史 `src/api/generated` 共享模型层已退场，不再作为当前工程链路的一部分。
 - 当前路由只注册 writer 入口；未接入路由的历史模块视为待清理残留，不应继续扩张。
 
 ## 不变量
@@ -37,4 +37,4 @@
 
 - writer/ai owner 边界变化。
 - 路由入口或默认宿主链路变化。
-- `src/modules/*/api` 与 `src/api/generated` 的职责再次调整。
+- 模块 facade 与工程脚本边界再次调整。
