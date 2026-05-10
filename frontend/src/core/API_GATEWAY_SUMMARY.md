@@ -1,16 +1,16 @@
-# 🎉 API 网关层级实现完成总结
+# API 分层收口记录
 
-> 说明：本文是历史平台 API 网关改造记录。当前独立编辑器真实运行态已收口到 `src/modules/writer` 与 `src/modules/ai`，其中 admin 相关内容仅具备存档参考价值。
+> 说明：本文保留 API 网关改造的历史背景，但当前独立编辑器真实运行态只以 `src/modules/writer` 与 `src/modules/ai` 为 owner。
 
 **完成时间**: 2025-10-31  
-**项目**: 青羽前端 (Qingyu Frontend)  
-**主要任务**: 统一 API 导入层级、创建 API 网关、清理重复代码
+**项目**: Qingyu Editor Frontend  
+**主要任务**: 记录历史 API 网关改造，并明确独立编辑器当前应以 writer / ai 模块 facade 为准
 
 ---
 
 ## ✅ 已完成的工作
 
-### 1️⃣ 创建 API 网关服务
+### 1️⃣ 历史背景：曾创建 API 网关服务
 **文件**: `src/core/services/api-gateway.service.ts` ✨ 新增
 
 ```typescript
@@ -22,48 +22,16 @@
 ✓ 支持请求取消功能
 ✓ 便于添加日志、监控、性能分析
 
-// 导出 6 个业务模块 API：
-- bookstore    (书城系统)
-- reading      (阅读系统)
-- user         (用户中心)
-- shared       (共享服务：认证、钱包、存储)
-- writing      (历史写作 API 网关记录；当前运行态以 `src/modules/writer` / `src/modules/ai` 为准)
-- recommendation (推荐系统)
+// 这属于历史平台阶段的统一入口。
+// 当前独立编辑器不应再把它当作默认业务 owner。
 ```
 
-### 2️⃣ 更新所有 API 文件导入方式
-**影响范围**: 26 个 API 文件更新
+### 2️⃣ 当前口径：独立编辑器只关注两类默认入口
 
-#### 书城系统 (bookstore) - 5 个文件
-- ✅ `src/api/bookstore/books.ts`
-- ✅ `src/api/bookstore/categories.ts`
-- ✅ `src/api/bookstore/banners.ts`
-- ✅ `src/api/bookstore/rankings.ts`
-- ✅ `src/api/bookstore/homepage.ts`
-
-#### 阅读系统 (reading) - 7 个文件
-- ✅ `src/api/reading/books.ts`
-- ✅ `src/api/reading/bookshelf.ts`
-- ✅ `src/api/reading/bookmarks.ts`
-- ✅ `src/api/reading/comments.ts`
-- ✅ `src/api/reading/history.ts`
-- ✅ `src/api/reading/rating.ts`
-- ✅ `src/api/reading/reader.ts`
-
-#### 用户中心 (user) - 2 个文件
-- ✅ `src/api/user/profile.ts`
-- ✅ `src/api/user/security.ts`
-
-#### 共享服务 (shared) - 4 个文件
-- ✅ `src/api/shared/auth.ts`
-- ✅ `src/api/shared/wallet.ts`
-- ✅ `src/api/shared/storage.ts`
-
-#### 写作系统 (writing) - 3 个文件
-- ✅ 历史写作 API 网关迁移记录（当前独立编辑器以模块 facade 为准）
-
-#### 推荐系统 (recommendation) - 1 个文件
-- ✅ `src/api/recommendation/recommendation.ts`
+- `src/modules/writer/api/*`
+- `src/modules/ai/api/*`
+- `src/core/services/http.service.ts`
+- `src/utils/request-adapter.ts`
 
 **变更**:
 ```diff
@@ -71,18 +39,13 @@
 + import { httpService } from '@/core/services/http.service'
 ```
 
-### 3️⃣ 创建 API 导入规范指南
+### 3️⃣ 配套规范文档
 **文件**: `src/core/API_IMPORT_GUIDE.md` ✨ 新增
 
 包含内容：
-- 📋 架构层级图解
-- ✅ DO - 正确的导入方式 (4 种示例)
-- ❌ DON'T - 错误的导入方式 (5 种反例)
-- 📦 统一导入方式说明
-- 🔄 导入检查清单
-- 🎯 API 模块对应关系表
-- 🚀 Service 层最佳实践
-- 📝 常见问题解答 (4 个 Q&A)
+- 当前独立编辑器 API 分层
+- writer / ai 的正确导入方式
+- 旧平台入口不再作为默认 owner 的说明
 
 ---
 
@@ -130,16 +93,17 @@ src/
 ├── modules/
 │   ├── bookstore/
 │   │   ├── services/
-│   │   │   └── bookstore.service.ts   # 使用 API
-│   │   ├── components/
-│   │   └── views/
-│   ├── reader/                # 同样结构
-│   ├── user/                  # 同样结构
-│   ├── writer/                # 同样结构
-│   └── admin/                 # 历史平台目录，当前独立编辑器已退场
+│   │   ├── writer/                # 当前主链路 owner
+│   │   │   ├── api/
+│   │   │   ├── stores/
+│   │   │   ├── composables/
+│   │   │   └── views/
+│   │   └── ai/                    # 当前 AI owner
+│   │       ├── api/
+│   │       └── utils/
 │
 └── utils/
-    └── request.ts            # ⚠️ 已废弃（可删除）
+    └── request.ts.disabled   # 历史请求工具占位
 ```
 
 ---
@@ -149,12 +113,12 @@ src/
 ### 方式 1️⃣：在 Service 中直接导入 API（推荐）
 
 ```typescript
-// src/modules/bookstore/services/bookstore.service.ts
-import { bookstore } from '@/api'
+// src/modules/writer/stores/projectStore.ts
+import { getProjects } from '@/modules/writer/api/wrapper'
 
-class BookstoreService {
-  async getHomepage() {
-    return await bookstore.getHomepage()  // ✅ 正确
+class ProjectStoreAdapter {
+  async loadProjects() {
+    return await getProjects()  // ✅ 当前独立编辑器主入口
   }
 }
 ```
@@ -162,33 +126,20 @@ class BookstoreService {
 ### 方式 2️⃣：使用 API Gateway（需要监控时）
 
 ```typescript
-// src/modules/bookstore/services/bookstore.service.ts
-import { apiGateway } from '@/core/services/api-gateway.service'
-
-class BookstoreService {
-  async getHomepage() {
-    return await apiGateway.bookstore.getHomepage()  // ✅ 正确
-  }
-
-  // 动态调用
-  async call(moduleName: string, methodName: string, ...args: any[]) {
-    return await apiGateway.call(moduleName, methodName, ...args)
-  }
-}
+// 当前独立编辑器不再建议新增平台级 API Gateway
+// writer / ai 通过各自模块 facade 对外暴露能力即可
 ```
 
 ### ❌ 错误做法（不要这样）
 
 ```typescript
-// ❌ 不要直接在 Component 导入 API
-import { getHomepage } from '@/api/bookstore'
+// ❌ 不要直接在组件里跳过模块 facade
+import httpService from '@/core/services/http.service'
 
-// ❌ 不要直接在 Component 导入 httpService
-import { httpService } from '@/core/services/http.service'
+// ❌ 不要把历史平台 API 当作独立编辑器主入口
+import { bookstore } from '@/api'
 
 // ❌ 不要混合导入方式
-import { bookstore } from '@/api'
-import * as readingAPI from '@/api/reading'
 import { storyGenerate } from '@/modules/ai/api'
 ```
 
@@ -219,9 +170,9 @@ rm src/utils/request.ts
 
 ### 2. 删除重复的 API 目录（如存在）
 
-检查并删除可能存在的 `modules/*/api/` 目录：
+独立编辑器当前的 `modules/*/api/` 就是默认业务 facade，不应删除。应清理的是旧平台残留配置和未接入运行态的历史入口。
 ```bash
-find src/modules -type d -name "api" -exec rm -rf {} \;
+rg -n "modules/bookstore|modules/reader|modules/social|modules/finance|modules/notification" .
 ```
 
 ### 3. 添加 API 调用监控（高级）
@@ -249,8 +200,8 @@ if (error) {
 ```typescript
 // src/core/services/__tests__/api-gateway.service.test.ts
 describe('APIGateway', () => {
-  it('should call bookstore.getHomepage', async () => {
-    const result = await apiGateway.bookstore.getHomepage()
+  it('should delegate writer project loading to the expected facade', async () => {
+    const result = await apiGateway.call('writer', 'getProjects')
     expect(result).toBeDefined()
   })
 })
@@ -272,67 +223,47 @@ describe('APIGateway', () => {
 
 ## 💡 核心优势
 
-✨ **统一管理**: 所有 API 导入从一个清晰的 `/api` 目录  
-✨ **易于维护**: 三层清晰的架构（Component → Service → API）  
-✨ **便于扩展**: API Gateway 支持添加日志、监控、权限检查  
-✨ **高效开发**: 减少代码重复，复用业务逻辑  
-✨ **易于测试**: Service 层可轻松 Mock，便于单元测试  
-✨ **清晰规范**: 详细的指南文档确保团队一致性  
+✨ **边界清晰**: 默认业务 owner 收口到 `writer` / `ai`  
+✨ **易于维护**: 组件 → store/composable → facade → HTTP/bridge 分层明确  
+✨ **便于扩展**: 新增能力优先接入模块 facade，而不是恢复旧平台层级  
+✨ **高效开发**: 避免重复实现和影子 API 入口  
+✨ **易于测试**: facade 和 store 层都可独立验证  
+✨ **清晰规范**: 文档已按独立编辑器当前架构收口  
 
 ---
 
 ## 🎓 学到的最佳实践
 
-1. **分层架构** - Component → Service → API → HTTP
-2. **统一入口** - API Gateway 集中管理所有请求
-3. **文档先行** - 规范指南确保团队执行一致
-4. **向后兼容** - Service 可直接导入 API，无需强制使用 Gateway
-5. **清晰命名** - httpService 明确表示用途，避免通用的 "request"
+1. **分层架构** - Component → Store/Composable → Facade → HTTP/Bridge
+2. **真实 owner 优先** - 独立编辑器只默认承认 writer / ai
+3. **文档先行** - 规范必须反映当前运行态，而不是历史平台想象
+4. **兼容层收口** - 旧平台入口可保留背景说明，但不能继续做主入口
+5. **清晰命名** - `httpService`、`request-adapter`、模块 facade 各司其职
 
 ---
 
 ## 📝 文件修改总结
 
-### ✨ 新增文件 (2)
-1. `src/core/services/api-gateway.service.ts` - API 网关服务
-2. `src/core/API_IMPORT_GUIDE.md` - API 导入规范指南
+### 当前应关注的模块
 
-### 📝 更新文件 (26)
+- `src/modules/writer/api/*`
+- `src/modules/ai/api/*`
+- `src/core/services/http.service.ts`
+- `src/utils/request-adapter.ts`
 
-**Bookstore 模块** (5 个文件)
-- books.ts, categories.ts, banners.ts, rankings.ts, homepage.ts
-
-**Reading 模块** (7 个文件)
-- books.ts, bookshelf.ts, bookmarks.ts, comments.ts, history.ts, rating.ts, reader.ts
-
-**User 模块** (2 个文件)
-- profile.ts, security.ts
-
-**Shared 模块** (历史记录为 4 个文件)
-- auth.ts, wallet.ts, admin.ts, storage.ts
-  当前独立编辑器运行态不再以 `admin.ts` 为 owner。
-
-**Writing 模块** (3 个文件)
-- ai.ts, statistics.ts, revenue.ts
-
-**Recommendation 模块** (1 个文件)
-- recommendation.ts
-
-所有更新从 `import request from '@/utils/request'` 改为 `import { httpService } from '@/core/services/http.service'`
+关键口径：新增前端能力时，先判断是否应落在上述 owner；如果不是，先补边界说明。
 
 ---
 
 ## 🎉 总结
 
-✅ **API 网关层级实现完成！**
+✅ **当前独立编辑器 API 分层口径已明确**
 
-- 创建了统一的 API 网关服务
-- 更新了 26 个 API 文件
-- 创建了详细的规范指南
-- 确保了架构的清晰和可维护性
-- 为未来的扩展和优化奠定了基础
+- writer / ai 是当前唯一默认业务入口
+- 历史平台 API 网关记录仅保留为迁移背景
+- 新增能力应优先接入模块 facade，而不是恢复旧平台层级
 
-**准备就绪，可以开始开发了！** 🚀
+**后续清理应继续围绕真实 owner，而不是回灌旧模块。**
 
 ---
 

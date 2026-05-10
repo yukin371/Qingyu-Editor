@@ -1,6 +1,6 @@
 # API 导入规范指南
 
-> 说明：本文主要保留历史平台 API 网关迁移经验。当前独立编辑器运行态以 `src/modules/writer` 与 `src/modules/ai` 的 facade 为主，不再把 admin 作为默认前端 owner。
+> 说明：本文已按独立编辑器当前运行态收口。默认前端 owner 只有 `src/modules/writer` 与 `src/modules/ai`。
 
 ## 📋 概述
 
@@ -17,23 +17,21 @@
              │ 导入 Service
              ▼
 ┌─────────────────────────────────────┐
-│    Service Layer                    │ 业务逻辑、数据处理、缓存
-│  (src/modules/*/services/)          │
+│    Store / Composable Layer         │ 业务状态、交互编排
+│  (src/modules/*/stores|composables) │
 └────────────┬────────────────────────┘
-             │ 使用 API Gateway
+             │ 调用模块 facade
              ▼
 ┌─────────────────────────────────────┐
-│    API Gateway (Optional)           │ 统一入口、日志、监控
-│  (src/core/services/              │
-│   api-gateway.service.ts)          │
+│    Module API Facade                │ writer / ai 能力入口
+│  (src/modules/*/api/)               │
 └────────────┬────────────────────────┘
-             │ 或直接导入
+             │ 使用
              ▼
 ┌─────────────────────────────────────┐
-│    API Layer                        │ API 函数、请求/响应处理
-│  (src/api/bookstore/               │
-│   src/api/reading/                 │
-│   src/api/user/, ...)              │
+│    Shared HTTP / Bridge Layer       │ HTTP、Wails、本地回退
+│  (src/core/services/,               │
+│   src/utils/request-adapter.ts)     │
 └────────────┬────────────────────────┘
              │ 使用
              ▼
@@ -54,82 +52,67 @@
 
 ## ✅ DO - 正确做法
 
-### 1️⃣ 方式一：在 Service 层直接导入 API
+### 1️⃣ 方式一：在 Store / Composable 中直接导入模块 facade
 
 **最推荐** - 直接、高效、易于维护
 
 ```typescript
-// src/modules/bookstore/services/bookstore.service.ts
-import { bookstore } from '@/api'  // 命名空间导入（推荐）
-// 或
-import * as bookstoreAPI from '@/api/bookstore'  // 别名导入（也推荐）
+// src/modules/writer/stores/projectStore.ts
+import { getProjects, createProject } from '@/modules/writer/api/wrapper'
 
-class BookstoreService {
-  async getHomepage() {
-    return await bookstore.getHomepage()
+class ProjectStoreAdapter {
+  async loadProjects() {
+    return await getProjects()
   }
 
-  async searchBooks(params) {
-    return await bookstoreAPI.searchBooks(params)
-  }
-}
-
-export const bookstoreService = new BookstoreService()
-```
-
-### 2️⃣ 方式二：通过 API Gateway 导入（可选）
-
-**当需要集中管理、日志记录、性能监控时使用**
-
-```typescript
-// src/modules/bookstore/services/bookstore.service.ts
-import { apiGateway } from '@/core/services/api-gateway.service'
-
-class BookstoreService {
-  async getHomepage() {
-    return await apiGateway.bookstore.getHomepage()
-  }
-
-  async searchBooks(params) {
-    return await apiGateway.bookstore.searchBooks(params)
-  }
-
-  // 动态调用 API
-  async call(moduleName: string, methodName: string, ...args: any[]) {
-    return await apiGateway.call(moduleName, methodName, ...args)
+  async create(payload) {
+    return await createProject(payload)
   }
 }
 ```
 
-### 3️⃣ Component 中的导入
+### 2️⃣ 方式二：在 writer 内部继续细分 API 文件（可选）
 
-**始终从 Service 层导入，不直接导入 API**
+**当模块内需要保持职责拆分时使用**
 
 ```typescript
-// src/modules/bookstore/views/HomeView.vue
-import { bookstoreService } from '../services/bookstore.service'
+// src/modules/writer/api/wrapper.ts
+import * as projectAPI from './project'
+import * as documentAPI from './document'
 
-export default {
-  setup() {
-    const getHomepage = async () => {
-      const data = await bookstoreService.getHomepage()
-      return data
-    }
+export async function getProjects() {
+  return projectAPI.getProjects()
+}
 
-    return { getHomepage }
-  }
+export async function createDocument(projectId: string, payload: unknown) {
+  return documentAPI.createDocument(projectId, payload)
 }
 ```
 
-### 4️⃣ API 层的导入方式
+### 3️⃣ AI 能力统一从 `src/modules/ai/api` 暴露
 
 ```typescript
-// src/api/bookstore/homepage.ts
-// ✅ 正确：导入 HTTP Service
-import { httpService } from '@/core/services/http.service'
+// src/modules/writer/composables/useAIContext.ts
+import { summarizeText, proofreadText } from '@/modules/ai/api'
 
-export function getHomepage() {
-  return httpService.get<HomepageData>('/bookstore/homepage')
+async function reviewSelection(text: string) {
+  const [summary, proofread] = await Promise.all([
+    summarizeText(text),
+    proofreadText(text),
+  ])
+
+  return { summary, proofread }
+}
+```
+
+### 4️⃣ API 文件内部只面向基础请求层
+
+```typescript
+// src/modules/writer/api/project.ts
+import httpService from '@/core/services/http.service'
+
+export function getProjects() {
+  return httpService.get('/api/v1/projects')
 }
 ```
 
@@ -137,143 +120,61 @@ export function getHomepage() {
 
 ## ❌ DON'T - 不要这样做
 
-### ❌ 1. 在 Component 中直接导入 API
+### ❌ 1. 在组件中直接拼请求
 
 ```typescript
 // ❌ 不推荐
-import { getHomepage } from '@/api/bookstore'
+import httpService from '@/core/services/http.service'
 
 export default {
-  setup() {
-    const data = ref(null)
-    const load = async () => {
-      data.value = await getHomepage()  // ❌ 违反分层规则
-    }
+  async setup() {
+    const projects = await httpService.get('/api/v1/projects')
+    return { projects }
   }
 }
 ```
 
 **为什么？**
-- 破坏分层架构
-- 无法复用业务逻辑
-- 测试困难
-- 难以维护
+- 绕过模块 facade
+- 难以复用桌面回退和错误处理
+- 组件会吞掉业务边界
 
-### ❌ 2. 在 Component 中导入 httpService
+### ❌ 2. 把 AI 调用散落到 writer 页面各处
 
 ```typescript
 // ❌ 不推荐
-import { httpService } from '@/core/services/http.service'
-
-export default {
-  setup() {
-    const getBooks = () => {
-      return httpService.get('/bookstore/books')  // ❌ 绕过 Service 层
-    }
-  }
-}
+import { continueWriting } from '@/modules/ai/api/ai'
+import { polishText } from '@/modules/ai/api/ai'
 ```
 
 **为什么？**
-- 绕过业务逻辑层
-- 无法进行缓存、验证等处理
-- 代码重复
-- 难以统一管理
+- 容易形成多套入口
+- writer 无法统一接入 AI 能力
 
-### ❌ 3. 在 API 层导入 utils/request
+### ❌ 3. 在 API 层导入旧请求工具
 
 ```typescript
 // ❌ 不推荐（已废弃）
 import request from '@/utils/request'
 
-export function getHomepage() {
-  return request.get('/bookstore/homepage')  // ❌ 使用旧的请求工具
+export function getProjects() {
+  return request.get('/api/v1/projects')
 }
 ```
 
 **为什么？**
-- utils/request 已被 httpService 取代
-- 缺少现代化特性
-- 不支持新的错误处理机制
+- `utils/request` 已退场
+- 会绕过当前 HTTP 与桌面适配层
 
-### ❌ 4. 在多个 Service 中重复导入同一 API
-
-```typescript
-// ❌ 不推荐
-// bookstore.service.ts
-import * as bookstoreAPI from '@/api/bookstore'
-
-// another-service.ts  
-import * as bookstoreAPI from '@/api/bookstore'  // ❌ 重复导入
-```
-
-**为什么？**
-- 导入逻辑分散
-- 难以维护
-- 可能不一致
-
-**更好的做法：**
-```typescript
-// 创建一个统一的 api 文件或 gateway
-export const bookstoreAPI = ...  // 集中导入
-```
-
-### ❌ 5. 混合导入方式
+### ❌ 4. 混合不一致的模块入口
 
 ```typescript
 // ❌ 不推荐
-import { bookstore } from '@/api'
-import * as readingAPI from '@/api/reading'  // ❌ 混合不同的导入方式
+import { getProjects } from '@/modules/writer/api/wrapper'
+import { httpService } from '@/core/services/http.service'
 import { storyGenerate } from '@/modules/ai/api'
 
-// 应该保持一致的风格
-```
-
----
-
-## 📦 统一导入方式
-
-### 推荐使用：命名空间导入
-
-```typescript
-// src/modules/bookstore/services/bookstore.service.ts
-import { bookstore, reading, user, shared, writing, recommendation } from '@/api'
-
-class BookstoreService {
-  async getHomepage() {
-    return await bookstore.getHomepage()
-  }
-
-  async getBooks(params) {
-    return await bookstore.getBooks(params)
-  }
-}
-```
-
-### 也可以：别名导入
-
-```typescript
-import * as bookstoreAPI from '@/api/bookstore'
-import * as readingAPI from '@/api/reading'
-
-class BookstoreService {
-  async getHomepage() {
-    return await bookstoreAPI.getHomepage()
-  }
-
-  async getChapters(bookId) {
-    return await readingAPI.getChapters(bookId)
-  }
-}
-```
-
-### 避免：混合导入
-
-```typescript
-// ❌ 不推荐混合
-import { getHomepage } from '@/api/bookstore'      // 直接导入函数
-import { bookstore } from '@/api'                   // 命名空间导入
-import * as readingAPI from '@/api/reading'        // 别名导入
+// 同一条业务链不要混用三套入口
 ```
 
 ---
@@ -283,32 +184,32 @@ import * as readingAPI from '@/api/reading'        // 别名导入
 在代码审查时检查以下项：
 
 - [ ] **API 导入位置**
-  - API 导入仅在 `/api` 目录中
-  - 所有 Service 从 `@/api` 导入
-  - 所有 Component 从 Service 导入
+  - writer 业务链优先从 `src/modules/writer/api` 导入
+  - AI 能力优先从 `src/modules/ai/api/index.ts` 导入
+  - 组件不直接发请求
 
 - [ ] **没有循环依赖**
-  - Service 不导入 Component
-  - API 不导入 Service
-  - HTTP Service 不导入 API
+  - writer store/composable 不反向被 API 层依赖
+  - API 不导入视图组件
+  - HTTP Service / bridge 不导入业务页面
 
 - [ ] **统一的导入风格**
-  - 全项目使用相同的命名约定
-  - 如选择命名空间导入，则全项目使用
-  - 如选择别名导入，则全项目使用
+  - 同一条业务链只保留一个主入口
+  - writer 侧优先走 `wrapper` 或模块导出面
+  - ai 侧优先走 `api/index.ts`
 
 - [ ] **没有旧的请求工具**
   - 没有 `import request from '@/utils/request'`
-  - 所有请求使用 `httpService`
+  - 所有请求使用 `httpService` 或当前 bridge 适配层
 
-- [ ] **没有重复的 API 目录**
-  - 不存在 `modules/*/api/` 目录
-  - 所有 API 在 `src/api/` 中
+- [ ] **没有重复的 owner**
+  - 不在 `src/api/`、`src/stores/`、`src/shared/` 再造 writer/ai 影子 facade
+  - 不把 admin/bookstore/reader 旧平台入口重新接回独立编辑器主链
 
 - [ ] **正确的导入使用**
-  - Component 仅从 Service 导入
-  - Service 仅从 API/Gateway 导入
-  - API 仅从 httpService 导入
+  - 组件仅从 store/composable/facade 导入
+  - facade 仅从 HTTP/bridge 层导入
+  - API 文件仅处理请求与响应适配
 
 ---
 
@@ -316,62 +217,36 @@ import * as readingAPI from '@/api/reading'        // 别名导入
 
 | 前端模块 | API 路径 | 使用场景 |
 |---------|---------|---------|
-| 书城系统 | `/api/bookstore/` | 书籍、分类、排行榜、Banner |
-| 阅读系统 | `/api/reading/` | 章节、进度、评论、书签 |
-| 用户中心 | `/api/user/` | 个人资料、安全设置 |
-| 共享服务 | `/api/shared/` | 认证、钱包、存储 |
-| 写作系统 | `src/modules/writer` / `src/modules/ai` | writer 工作区、AI facade、工作流工具 |
-| 推荐系统 | `/api/recommendation/` | 个性化推荐、行为记录 |
+| writer | `src/modules/writer/api/*` | 项目、章节、结构、正文、桌面回退 |
+| ai | `src/modules/ai/api/*` | 聊天、续写、润色、结构规划、工作台工具 |
+| shared infra | `src/core/services/*` / `src/utils/request-adapter.ts` | HTTP 客户端、桌面桥接、请求基础设施 |
+| generated models | `src/api/generated/model.ts` | 历史共享模型产物，默认不作为业务 facade |
 
 ---
 
 ## 🚀 Service 层最佳实践
 
 ```typescript
-// src/modules/bookstore/services/bookstore.service.ts
-import { bookstore } from '@/api'
-import type { Book, HomepageData } from '@/types/bookstore'
+// src/modules/writer/stores/projectStore.ts
+import { defineStore } from 'pinia'
+import { getProjects } from '@/modules/writer/api/wrapper'
 
-/**
- * 书城服务 - 处理书城相关业务逻辑
- */
-class BookstoreService {
-  /**
-   * 获取首页数据（可添加缓存）
-   */
-  async getHomepageData(): Promise<HomepageData> {
-    // TODO: 添加缓存逻辑
-    return await bookstore.getHomepage()
-  }
-
-  /**
-   * 获取书籍详情
-   */
-  async getBookDetail(bookId: string): Promise<Book> {
-    const book = await bookstore.getBookById(bookId)
-    
-    // 在后台增加浏览量（不阻塞）
-    this.incrementBookView(bookId).catch(err => 
-      console.error('Failed to increment view:', err)
-    )
-    
-    return book
-  }
-
-  /**
-   * 私有方法：增加书籍浏览量
-   */
-  private async incrementBookView(bookId: string): Promise<void> {
-    try {
-      await bookstore.incrementBookView(bookId)
-    } catch (error) {
-      console.error('Failed to increment book view:', error)
+export const useProjectStore = defineStore('writer-project', {
+  state: () => ({
+    projects: [],
+    isLoading: false,
+  }),
+  actions: {
+    async loadProjects() {
+      this.isLoading = true
+      try {
+        this.projects = await getProjects()
+      } finally {
+        this.isLoading = false
+      }
     }
-  }
-}
-
-export const bookstoreService = new BookstoreService()
-export default bookstoreService
+  },
+})
 ```
 
 ---
@@ -433,9 +308,9 @@ class BookstoreService {
 ## 🔗 相关文件
 
 - `src/core/services/http.service.ts` - HTTP 客户端
-- `src/core/services/api-gateway.service.ts` - API 网关（可选）
-- `src/api/index.ts` - API 统一导出
-- `src/api/*/index.ts` - 各模块 API 导出
+- `src/modules/writer/api/wrapper.ts` - writer 默认 facade 入口
+- `src/modules/ai/api/index.ts` - AI 默认 facade 入口
+- `src/utils/request-adapter.ts` - 桌面/请求适配层
 
 ---
 
