@@ -172,7 +172,7 @@ rm src/utils/request.ts
 
 独立编辑器当前的 `modules/*/api/` 就是默认业务 facade，不应删除。应清理的是旧平台残留配置和未接入运行态的历史入口。
 ```bash
-rg -n "modules/bookstore|modules/reader|modules/social|modules/finance|modules/notification" .
+rg -n "历史平台入口|旧模块入口|未接入运行态" .
 ```
 
 ### 3. 添加 API 调用监控（高级）

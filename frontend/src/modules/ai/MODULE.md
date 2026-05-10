@@ -19,7 +19,7 @@
 
 ## Must not own
 
-- 不再承载 `/admin/ai/*` 管理后台页面、路由、store、types
+- 不再承载历史平台 AI 管理后台页面、路由、store、types
 - 不再把 Orval generated API 作为默认导出层
 - 不直接拥有 writer 状态或页面布局，只提供能力接口
 

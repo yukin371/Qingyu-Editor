@@ -15,7 +15,7 @@
 
 ## Must not own
 
-- 不拥有 admin、writer、reader、finance 等业务域的字段语义、默认文案、接口流程、权限规则和模块状态真相。
+- 不拥有任何业务域的字段语义、默认文案、接口流程、权限规则和模块状态真相。
 - 不直接承担某个业务模块的页面编排；复杂业务流程应在 `src/modules/*/components` 中基于 design-system 组合实现。
 - 不把 Storybook 组件演示写成脱离真实使用场景的“展示壳”；story 必须服务于复用和验收，而不是生成第二套说明体系。
 

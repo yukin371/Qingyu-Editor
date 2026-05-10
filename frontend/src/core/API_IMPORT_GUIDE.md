@@ -204,7 +204,7 @@ import { storyGenerate } from '@/modules/ai/api'
 
 - [ ] **没有重复的 owner**
   - 不在 `src/api/`、`src/stores/`、`src/shared/` 再造 writer/ai 影子 facade
-  - 不把 admin/bookstore/reader 旧平台入口重新接回独立编辑器主链
+  - 不把旧平台入口重新接回独立编辑器主链
 
 - [ ] **正确的导入使用**
   - 组件仅从 store/composable/facade 导入

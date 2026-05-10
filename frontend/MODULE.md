@@ -17,7 +17,7 @@
 
 ## Must not own
 
-- 不再承载旧平台的 admin、reader、bookstore、finance 等页面级运行态。
+- 不再承载旧平台页面级运行态。
 - 不再把历史 generated API 或平台 demo 当作默认 facade。
 - 不直接承担服务端持久化、鉴权真相或 AI runtime owner。
 
