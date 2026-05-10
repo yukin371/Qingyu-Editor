@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -8,19 +9,25 @@ import (
 	"strings"
 
 	"Qingyu-Editor/database"
+	"Qingyu-Editor/database/sqlc"
 
 	"github.com/google/uuid"
 )
 
 type CharacterService struct {
-	db *sql.DB
+	db      *sql.DB
+	queries *sqlc.Queries
 }
 
 func NewCharacterService(db *sql.DB) *CharacterService {
-	return &CharacterService{db: db}
+	return &CharacterService{
+		db:      db,
+		queries: sqlc.New(db),
+	}
 }
 
 func (s *CharacterService) Create(input database.CreateCharacterInput) (database.Character, error) {
+	ctx := context.Background()
 	projectID := strings.TrimSpace(input.ProjectID)
 	name := strings.TrimSpace(input.Name)
 	if projectID == "" {
@@ -29,7 +36,7 @@ func (s *CharacterService) Create(input database.CreateCharacterInput) (database
 	if name == "" {
 		return database.Character{}, errors.New("角色名称不能为空")
 	}
-	if err := ensureProjectExists(s.db, projectID); err != nil {
+	if err := ensureProjectExists(ctx, s.queries, projectID); err != nil {
 		return database.Character{}, err
 	}
 
@@ -47,21 +54,20 @@ func (s *CharacterService) Create(input database.CreateCharacterInput) (database
 		return database.Character{}, err
 	}
 
-	_, err = s.db.Exec(
-		`INSERT INTO characters (id, project_id, name, alias_json, summary, traits_json, background, avatar_url, personality_prompt, speech_pattern, current_state, custom_status_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		characterID,
-		projectID,
-		name,
-		aliasJSON,
-		strings.TrimSpace(input.Summary),
-		traitsJSON,
-		strings.TrimSpace(input.Background),
-		strings.TrimSpace(input.AvatarURL),
-		strings.TrimSpace(input.PersonalityPrompt),
-		strings.TrimSpace(input.SpeechPattern),
-		strings.TrimSpace(input.CurrentState),
-		customStatusJSON,
-	)
+	err = s.queries.CreateCharacter(ctx, sqlc.CreateCharacterParams{
+		ID:                characterID,
+		ProjectID:         projectID,
+		Name:              name,
+		AliasJson:         aliasJSON,
+		Summary:           toNullString(input.Summary),
+		TraitsJson:        traitsJSON,
+		Background:        toNullString(input.Background),
+		AvatarUrl:         toNullString(input.AvatarURL),
+		PersonalityPrompt: toNullString(input.PersonalityPrompt),
+		SpeechPattern:     toNullString(input.SpeechPattern),
+		CurrentState:      toNullString(input.CurrentState),
+		CustomStatusJson:  customStatusJSON,
+	})
 	if err != nil {
 		return database.Character{}, fmt.Errorf("创建角色失败: %w", err)
 	}
@@ -70,134 +76,112 @@ func (s *CharacterService) Create(input database.CreateCharacterInput) (database
 }
 
 func (s *CharacterService) Get(id string) (database.Character, error) {
-	row := s.db.QueryRow(
-		`SELECT id, project_id, name, alias_json, COALESCE(summary, ''), traits_json, COALESCE(background, ''), COALESCE(avatar_url, ''), COALESCE(personality_prompt, ''), COALESCE(speech_pattern, ''), COALESCE(current_state, ''), custom_status_json, COALESCE(created_at, ''), COALESCE(updated_at, '') FROM characters WHERE id = ?`,
-		id,
-	)
-	return scanCharacter(row)
+	row, err := s.queries.GetCharacterByID(context.Background(), id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return database.Character{}, errors.New("角色不存在")
+	}
+	if err != nil {
+		return database.Character{}, fmt.Errorf("查询角色失败: %w", err)
+	}
+	return mapCharacter(row), nil
 }
 
 func (s *CharacterService) List(projectID string) ([]database.Character, error) {
-	rows, err := s.db.Query(
-		`SELECT id, project_id, name, alias_json, COALESCE(summary, ''), traits_json, COALESCE(background, ''), COALESCE(avatar_url, ''), COALESCE(personality_prompt, ''), COALESCE(speech_pattern, ''), COALESCE(current_state, ''), custom_status_json, COALESCE(created_at, ''), COALESCE(updated_at, '') FROM characters WHERE project_id = ? ORDER BY updated_at DESC, created_at DESC`,
-		projectID,
-	)
+	rows, err := s.queries.ListCharactersByProject(context.Background(), projectID)
 	if err != nil {
 		return nil, fmt.Errorf("查询角色列表失败: %w", err)
 	}
-	defer rows.Close()
 
-	items := make([]database.Character, 0)
-	for rows.Next() {
-		character, err := scanCharacter(rows)
-		if err != nil {
-			return nil, err
-		}
-		items = append(items, character)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("读取角色列表失败: %w", err)
+	items := make([]database.Character, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, mapCharacterList(row))
 	}
 	return items, nil
 }
 
 func (s *CharacterService) Update(id string, update database.CharacterUpdate) (database.Character, error) {
+	ctx := context.Background()
 	current, err := s.Get(id)
 	if err != nil {
 		return database.Character{}, err
 	}
 
-	sets := make([]string, 0, 10)
-	args := make([]any, 0, 11)
-
+	next := current
 	if update.Name != nil {
 		name := strings.TrimSpace(*update.Name)
 		if name == "" {
 			return database.Character{}, errors.New("角色名称不能为空")
 		}
-		sets = append(sets, "name = ?")
-		args = append(args, name)
+		next.Name = name
 	}
 	if update.Alias != nil {
-		payload, err := marshalStringSlice(update.Alias)
-		if err != nil {
-			return database.Character{}, err
-		}
-		sets = append(sets, "alias_json = ?")
-		args = append(args, payload)
+		next.Alias = update.Alias
 	}
 	if update.Summary != nil {
-		sets = append(sets, "summary = ?")
-		args = append(args, strings.TrimSpace(*update.Summary))
+		next.Summary = strings.TrimSpace(*update.Summary)
 	}
 	if update.Traits != nil {
-		payload, err := marshalStringSlice(update.Traits)
-		if err != nil {
-			return database.Character{}, err
-		}
-		sets = append(sets, "traits_json = ?")
-		args = append(args, payload)
+		next.Traits = update.Traits
 	}
 	if update.Background != nil {
-		sets = append(sets, "background = ?")
-		args = append(args, strings.TrimSpace(*update.Background))
+		next.Background = strings.TrimSpace(*update.Background)
 	}
 	if update.AvatarURL != nil {
-		sets = append(sets, "avatar_url = ?")
-		args = append(args, strings.TrimSpace(*update.AvatarURL))
+		next.AvatarURL = strings.TrimSpace(*update.AvatarURL)
 	}
 	if update.PersonalityPrompt != nil {
-		sets = append(sets, "personality_prompt = ?")
-		args = append(args, strings.TrimSpace(*update.PersonalityPrompt))
+		next.PersonalityPrompt = strings.TrimSpace(*update.PersonalityPrompt)
 	}
 	if update.SpeechPattern != nil {
-		sets = append(sets, "speech_pattern = ?")
-		args = append(args, strings.TrimSpace(*update.SpeechPattern))
+		next.SpeechPattern = strings.TrimSpace(*update.SpeechPattern)
 	}
 	if update.CurrentState != nil {
-		sets = append(sets, "current_state = ?")
-		args = append(args, strings.TrimSpace(*update.CurrentState))
+		next.CurrentState = strings.TrimSpace(*update.CurrentState)
 	}
 	if update.CustomStatus != nil {
-		payload, err := marshalJSONObject(update.CustomStatus)
-		if err != nil {
-			return database.Character{}, err
-		}
-		sets = append(sets, "custom_status_json = ?")
-		args = append(args, payload)
+		next.CustomStatus = update.CustomStatus
 	}
 
-	if len(sets) == 0 {
-		return current, nil
+	aliasJSON, err := marshalStringSlice(next.Alias)
+	if err != nil {
+		return database.Character{}, err
+	}
+	traitsJSON, err := marshalStringSlice(next.Traits)
+	if err != nil {
+		return database.Character{}, err
+	}
+	customStatusJSON, err := marshalJSONObject(next.CustomStatus)
+	if err != nil {
+		return database.Character{}, err
 	}
 
-	sets = append(sets, "updated_at = CURRENT_TIMESTAMP")
-	args = append(args, id)
-	result, err := s.db.Exec(
-		fmt.Sprintf("UPDATE characters SET %s WHERE id = ?", strings.Join(sets, ", ")),
-		args...,
-	)
+	rowsAffected, err := s.queries.UpdateCharacterByID(ctx, sqlc.UpdateCharacterByIDParams{
+		Name:              next.Name,
+		AliasJson:         aliasJSON,
+		Summary:           toNullString(next.Summary),
+		TraitsJson:        traitsJSON,
+		Background:        toNullString(next.Background),
+		AvatarUrl:         toNullString(next.AvatarURL),
+		PersonalityPrompt: toNullString(next.PersonalityPrompt),
+		SpeechPattern:     toNullString(next.SpeechPattern),
+		CurrentState:      toNullString(next.CurrentState),
+		CustomStatusJson:  customStatusJSON,
+		ID:                id,
+	})
 	if err != nil {
 		return database.Character{}, fmt.Errorf("更新角色失败: %w", err)
-	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return database.Character{}, fmt.Errorf("确认角色更新结果失败: %w", err)
 	}
 	if rowsAffected == 0 {
 		return database.Character{}, errors.New("角色不存在")
 	}
+
 	return s.Get(id)
 }
 
 func (s *CharacterService) Delete(id string) error {
-	result, err := s.db.Exec(`DELETE FROM characters WHERE id = ?`, id)
+	rowsAffected, err := s.queries.DeleteCharacterByID(context.Background(), id)
 	if err != nil {
 		return fmt.Errorf("删除角色失败: %w", err)
-	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("确认角色删除结果失败: %w", err)
 	}
 	if rowsAffected == 0 {
 		return errors.New("角色不存在")
@@ -206,6 +190,7 @@ func (s *CharacterService) Delete(id string) error {
 }
 
 func (s *CharacterService) CreateRelation(input database.CreateCharacterRelationInput) (database.CharacterRelation, error) {
+	ctx := context.Background()
 	projectID := strings.TrimSpace(input.ProjectID)
 	fromID := strings.TrimSpace(input.FromID)
 	toID := strings.TrimSpace(input.ToID)
@@ -222,10 +207,10 @@ func (s *CharacterService) CreateRelation(input database.CreateCharacterRelation
 	if relationType == "" {
 		relationType = "其他"
 	}
-	if err := s.ensureCharacterBelongsToProject(projectID, fromID); err != nil {
+	if err := s.ensureCharacterBelongsToProject(ctx, projectID, fromID); err != nil {
 		return database.CharacterRelation{}, err
 	}
-	if err := s.ensureCharacterBelongsToProject(projectID, toID); err != nil {
+	if err := s.ensureCharacterBelongsToProject(ctx, projectID, toID); err != nil {
 		return database.CharacterRelation{}, err
 	}
 
@@ -235,18 +220,17 @@ func (s *CharacterService) CreateRelation(input database.CreateCharacterRelation
 	}
 
 	relationID := uuid.NewString()
-	_, err := s.db.Exec(
-		`INSERT INTO character_relations (id, project_id, from_id, to_id, type, strength, notes, valid_from_chapter_id, valid_until_chapter_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		relationID,
-		projectID,
-		fromID,
-		toID,
-		relationType,
-		strength,
-		strings.TrimSpace(input.Notes),
-		nullStringValue(input.ValidFromChapterID),
-		nullStringValue(input.ValidUntilChapterID),
-	)
+	err := s.queries.CreateCharacterRelation(ctx, sqlc.CreateCharacterRelationParams{
+		ID:                  relationID,
+		ProjectID:           projectID,
+		FromID:              fromID,
+		ToID:                toID,
+		Type:                relationType,
+		Strength:            int64(strength),
+		Notes:               toNullString(input.Notes),
+		ValidFromChapterID:  toOptionalNullString(input.ValidFromChapterID),
+		ValidUntilChapterID: toOptionalNullString(input.ValidUntilChapterID),
+	})
 	if err != nil {
 		return database.CharacterRelation{}, fmt.Errorf("创建角色关系失败: %w", err)
 	}
@@ -254,42 +238,38 @@ func (s *CharacterService) CreateRelation(input database.CreateCharacterRelation
 }
 
 func (s *CharacterService) ListRelations(projectID string, characterID string) ([]database.CharacterRelation, error) {
-	baseQuery := `SELECT id, project_id, from_id, to_id, type, COALESCE(strength, 50), COALESCE(notes, ''), COALESCE(valid_from_chapter_id, ''), COALESCE(valid_until_chapter_id, ''), COALESCE(created_at, ''), COALESCE(updated_at, '') FROM character_relations WHERE project_id = ?`
-	args := []any{projectID}
+	ctx := context.Background()
 	if strings.TrimSpace(characterID) != "" {
-		baseQuery += ` AND (from_id = ? OR to_id = ?)`
-		args = append(args, characterID, characterID)
+		rows, err := s.queries.ListCharacterRelationsByCharacter(ctx, sqlc.ListCharacterRelationsByCharacterParams{
+			ProjectID: projectID,
+			FromID:    characterID,
+			ToID:      characterID,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("查询角色关系列表失败: %w", err)
+		}
+		items := make([]database.CharacterRelation, 0, len(rows))
+		for _, row := range rows {
+			items = append(items, mapCharacterRelationListByCharacter(row))
+		}
+		return items, nil
 	}
-	baseQuery += ` ORDER BY updated_at DESC, created_at DESC`
 
-	rows, err := s.db.Query(baseQuery, args...)
+	rows, err := s.queries.ListCharacterRelationsByProject(ctx, projectID)
 	if err != nil {
 		return nil, fmt.Errorf("查询角色关系列表失败: %w", err)
 	}
-	defer rows.Close()
-
-	items := make([]database.CharacterRelation, 0)
-	for rows.Next() {
-		relation, err := scanCharacterRelation(rows)
-		if err != nil {
-			return nil, err
-		}
-		items = append(items, relation)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("读取角色关系列表失败: %w", err)
+	items := make([]database.CharacterRelation, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, mapCharacterRelationList(row))
 	}
 	return items, nil
 }
 
 func (s *CharacterService) DeleteRelation(id string) error {
-	result, err := s.db.Exec(`DELETE FROM character_relations WHERE id = ?`, id)
+	rowsAffected, err := s.queries.DeleteCharacterRelationByID(context.Background(), id)
 	if err != nil {
 		return fmt.Errorf("删除角色关系失败: %w", err)
-	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("确认角色关系删除结果失败: %w", err)
 	}
 	if rowsAffected == 0 {
 		return errors.New("角色关系不存在")
@@ -298,89 +278,114 @@ func (s *CharacterService) DeleteRelation(id string) error {
 }
 
 func (s *CharacterService) getRelation(id string) (database.CharacterRelation, error) {
-	row := s.db.QueryRow(
-		`SELECT id, project_id, from_id, to_id, type, COALESCE(strength, 50), COALESCE(notes, ''), COALESCE(valid_from_chapter_id, ''), COALESCE(valid_until_chapter_id, ''), COALESCE(created_at, ''), COALESCE(updated_at, '') FROM character_relations WHERE id = ?`,
-		id,
-	)
-	return scanCharacterRelation(row)
-}
-
-func (s *CharacterService) ensureCharacterBelongsToProject(projectID string, characterID string) error {
-	var exists int
-	err := s.db.QueryRow(
-		`SELECT 1 FROM characters WHERE id = ? AND project_id = ? LIMIT 1`,
-		characterID,
-		projectID,
-	).Scan(&exists)
-	if errors.Is(err, sql.ErrNoRows) {
-		return errors.New("角色不存在")
-	}
-	if err != nil {
-		return fmt.Errorf("查询角色失败: %w", err)
-	}
-	return nil
-}
-
-type characterScanner interface {
-	Scan(dest ...any) error
-}
-
-func scanCharacter(scanner characterScanner) (database.Character, error) {
-	var item database.Character
-	var aliasJSON string
-	var traitsJSON string
-	var customStatusJSON string
-	err := scanner.Scan(
-		&item.ID,
-		&item.ProjectID,
-		&item.Name,
-		&aliasJSON,
-		&item.Summary,
-		&traitsJSON,
-		&item.Background,
-		&item.AvatarURL,
-		&item.PersonalityPrompt,
-		&item.SpeechPattern,
-		&item.CurrentState,
-		&customStatusJSON,
-		&item.CreatedAt,
-		&item.UpdatedAt,
-	)
-	if errors.Is(err, sql.ErrNoRows) {
-		return database.Character{}, errors.New("角色不存在")
-	}
-	if err != nil {
-		return database.Character{}, fmt.Errorf("读取角色失败: %w", err)
-	}
-
-	item.Alias = unmarshalStringSlice(aliasJSON)
-	item.Traits = unmarshalStringSlice(traitsJSON)
-	item.CustomStatus = unmarshalJSONObject(customStatusJSON)
-	return item, nil
-}
-
-func scanCharacterRelation(scanner characterScanner) (database.CharacterRelation, error) {
-	var item database.CharacterRelation
-	err := scanner.Scan(
-		&item.ID,
-		&item.ProjectID,
-		&item.FromID,
-		&item.ToID,
-		&item.Type,
-		&item.Strength,
-		&item.Notes,
-		&item.ValidFromChapterID,
-		&item.ValidUntilChapterID,
-		&item.CreatedAt,
-		&item.UpdatedAt,
-	)
+	row, err := s.queries.GetCharacterRelationByID(context.Background(), id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return database.CharacterRelation{}, errors.New("角色关系不存在")
 	}
 	if err != nil {
-		return database.CharacterRelation{}, fmt.Errorf("读取角色关系失败: %w", err)
+		return database.CharacterRelation{}, fmt.Errorf("查询角色关系失败: %w", err)
 	}
-	return item, nil
+	return mapCharacterRelation(row), nil
+}
+
+func (s *CharacterService) ensureCharacterBelongsToProject(ctx context.Context, projectID string, characterID string) error {
+	exists, err := s.queries.CharacterExistsInProject(ctx, sqlc.CharacterExistsInProjectParams{
+		ID:        characterID,
+		ProjectID: projectID,
+	})
+	if err != nil {
+		return fmt.Errorf("查询角色失败: %w", err)
+	}
+	if exists == 0 {
+		return errors.New("角色不存在")
+	}
+	return nil
+}
+
+func mapCharacter(row sqlc.GetCharacterByIDRow) database.Character {
+	return database.Character{
+		ID:                row.ID,
+		ProjectID:         row.ProjectID,
+		Name:              row.Name,
+		Alias:             unmarshalStringSlice(row.AliasJson),
+		Summary:           row.Summary,
+		Traits:            unmarshalStringSlice(row.TraitsJson),
+		Background:        row.Background,
+		AvatarURL:         row.AvatarUrl,
+		PersonalityPrompt: row.PersonalityPrompt,
+		SpeechPattern:     row.SpeechPattern,
+		CurrentState:      row.CurrentState,
+		CustomStatus:      unmarshalJSONObject(row.CustomStatusJson),
+		CreatedAt:         formatSQLiteTime(row.CreatedAt),
+		UpdatedAt:         formatSQLiteTime(row.UpdatedAt),
+	}
+}
+
+func mapCharacterList(row sqlc.ListCharactersByProjectRow) database.Character {
+	return database.Character{
+		ID:                row.ID,
+		ProjectID:         row.ProjectID,
+		Name:              row.Name,
+		Alias:             unmarshalStringSlice(row.AliasJson),
+		Summary:           row.Summary,
+		Traits:            unmarshalStringSlice(row.TraitsJson),
+		Background:        row.Background,
+		AvatarURL:         row.AvatarUrl,
+		PersonalityPrompt: row.PersonalityPrompt,
+		SpeechPattern:     row.SpeechPattern,
+		CurrentState:      row.CurrentState,
+		CustomStatus:      unmarshalJSONObject(row.CustomStatusJson),
+		CreatedAt:         formatSQLiteTime(row.CreatedAt),
+		UpdatedAt:         formatSQLiteTime(row.UpdatedAt),
+	}
+}
+
+func mapCharacterRelation(row sqlc.GetCharacterRelationByIDRow) database.CharacterRelation {
+	return database.CharacterRelation{
+		ID:                  row.ID,
+		ProjectID:           row.ProjectID,
+		FromID:              row.FromID,
+		ToID:                row.ToID,
+		Type:                row.Type,
+		Strength:            int(row.Strength),
+		Notes:               row.Notes,
+		ValidFromChapterID:  row.ValidFromChapterID,
+		ValidUntilChapterID: row.ValidUntilChapterID,
+		CreatedAt:           formatSQLiteTime(row.CreatedAt),
+		UpdatedAt:           formatSQLiteTime(row.UpdatedAt),
+	}
+}
+
+func mapCharacterRelationList(row sqlc.ListCharacterRelationsByProjectRow) database.CharacterRelation {
+	return database.CharacterRelation{
+		ID:                  row.ID,
+		ProjectID:           row.ProjectID,
+		FromID:              row.FromID,
+		ToID:                row.ToID,
+		Type:                row.Type,
+		Strength:            int(row.Strength),
+		Notes:               row.Notes,
+		ValidFromChapterID:  row.ValidFromChapterID,
+		ValidUntilChapterID: row.ValidUntilChapterID,
+		CreatedAt:           formatSQLiteTime(row.CreatedAt),
+		UpdatedAt:           formatSQLiteTime(row.UpdatedAt),
+	}
+}
+
+func mapCharacterRelationListByCharacter(row sqlc.ListCharacterRelationsByCharacterRow) database.CharacterRelation {
+	return database.CharacterRelation{
+		ID:                  row.ID,
+		ProjectID:           row.ProjectID,
+		FromID:              row.FromID,
+		ToID:                row.ToID,
+		Type:                row.Type,
+		Strength:            int(row.Strength),
+		Notes:               row.Notes,
+		ValidFromChapterID:  row.ValidFromChapterID,
+		ValidUntilChapterID: row.ValidUntilChapterID,
+		CreatedAt:           formatSQLiteTime(row.CreatedAt),
+		UpdatedAt:           formatSQLiteTime(row.UpdatedAt),
+	}
 }
 
 func marshalStringSlice(items []string) (string, error) {

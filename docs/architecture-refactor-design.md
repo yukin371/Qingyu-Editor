@@ -238,9 +238,12 @@ Qingyu-Editor/
 │   ├── settings_service.go    # 应用设置读写
 │   └── stats_service.go       # 写作统计查询
 ├── database/                  # 数据访问层
-│   ├── db.go                  # 数据库连接管理
-│   ├── models.go              # 数据模型定义
-│   └── migrations.go          # Schema 迁移管理
+│   ├── db.go                  # 数据库连接管理（嵌入 schema.sql 执行迁移）
+│   ├── models.go              # Wails/前端消费的数据模型定义
+│   ├── schema.sql             # SQLite schema 真相源
+│   ├── queries/               # sqlc 查询定义
+│   └── sqlc/                  # sqlc 生成查询代码
+├── sqlc.yaml                  # sqlc 生成配置
 ├── ai/                        # AI 提供商
 │   ├── provider.go            # 接口定义
 │   ├── openai.go              # OpenAI 实现
@@ -720,7 +723,7 @@ SQLite（持久化）
 2. 继续补 `snapshot / export / settings / stats` 等缺失 service
 3. 在 `app.go` 中继续补齐对应 Wails 绑定
 4. 补充 `database/models.go` 类型定义
-5. 补充 `database/migrations.go` schema 管理
+5. 当前已改为 `database/schema.sql + sqlc.yaml + database/queries/*.sql` 管理 schema 与查询；`db.go` 通过 embed 执行迁移
 6. 实现 Anthropic provider
 
 **验收标准**：

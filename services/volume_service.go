@@ -1,25 +1,32 @@
 package services
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
 
 	"Qingyu-Editor/database"
+	"Qingyu-Editor/database/sqlc"
 
 	"github.com/google/uuid"
 )
 
 type VolumeService struct {
-	db *sql.DB
+	db      *sql.DB
+	queries *sqlc.Queries
 }
 
 func NewVolumeService(db *sql.DB) *VolumeService {
-	return &VolumeService{db: db}
+	return &VolumeService{
+		db:      db,
+		queries: sqlc.New(db),
+	}
 }
 
 func (s *VolumeService) Create(input database.CreateVolumeInput) (database.Volume, error) {
+	ctx := context.Background()
 	projectID := strings.TrimSpace(input.ProjectID)
 	title := strings.TrimSpace(input.Title)
 	if projectID == "" {
@@ -28,119 +35,87 @@ func (s *VolumeService) Create(input database.CreateVolumeInput) (database.Volum
 	if title == "" {
 		return database.Volume{}, errors.New("卷标题不能为空")
 	}
-	if err := ensureProjectExists(s.db, projectID); err != nil {
+	if err := ensureProjectExists(ctx, s.queries, projectID); err != nil {
 		return database.Volume{}, err
 	}
 
-	sortOrder, err := s.resolveNextSortOrder(projectID, input.SortOrder)
+	sortOrder, err := s.resolveNextSortOrder(ctx, projectID, input.SortOrder)
 	if err != nil {
 		return database.Volume{}, err
 	}
 
 	volumeID := uuid.NewString()
-	_, err = s.db.Exec(
-		`INSERT INTO volumes (id, project_id, title, sort_order) VALUES (?, ?, ?, ?)`,
-		volumeID,
-		projectID,
-		title,
-		sortOrder,
-	)
+	err = s.queries.CreateVolume(ctx, sqlc.CreateVolumeParams{
+		ID:        volumeID,
+		ProjectID: projectID,
+		Title:     title,
+		SortOrder: int64(sortOrder),
+	})
 	if err != nil {
 		return database.Volume{}, fmt.Errorf("创建卷失败: %w", err)
 	}
 
-	volumes, err := s.List(projectID)
-	if err != nil {
-		return database.Volume{}, err
-	}
-	for _, volume := range volumes {
-		if volume.ID == volumeID {
-			return volume, nil
-		}
-	}
-
-	return database.Volume{}, errors.New("卷创建后读取失败")
+	return s.get(volumeID)
 }
 
 func (s *VolumeService) List(projectID string) ([]database.Volume, error) {
-	rows, err := s.db.Query(
-		`SELECT id, project_id, title, sort_order, COALESCE(created_at, '') FROM volumes WHERE project_id = ? ORDER BY sort_order ASC, created_at ASC`,
-		projectID,
-	)
+	rows, err := s.queries.ListVolumesByProject(context.Background(), projectID)
 	if err != nil {
 		return nil, fmt.Errorf("查询卷列表失败: %w", err)
 	}
-	defer rows.Close()
 
-	volumes := make([]database.Volume, 0)
-	for rows.Next() {
-		var volume database.Volume
-		if err := rows.Scan(&volume.ID, &volume.ProjectID, &volume.Title, &volume.SortOrder, &volume.CreatedAt); err != nil {
-			return nil, fmt.Errorf("扫描卷失败: %w", err)
-		}
-		volumes = append(volumes, volume)
+	volumes := make([]database.Volume, 0, len(rows))
+	for _, row := range rows {
+		volumes = append(volumes, mapVolumeList(row))
 	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("读取卷列表失败: %w", err)
-	}
-
 	return volumes, nil
 }
 
 func (s *VolumeService) Update(id string, update database.VolumeUpdate) error {
-	sets := make([]string, 0, 2)
-	args := make([]any, 0, 3)
-
-	if update.Title != nil {
-		title := strings.TrimSpace(*update.Title)
-		if title == "" {
-			return errors.New("卷标题不能为空")
-		}
-		sets = append(sets, "title = ?")
-		args = append(args, title)
-	}
-	if update.SortOrder != nil {
-		sets = append(sets, "sort_order = ?")
-		args = append(args, *update.SortOrder)
-	}
-
-	if len(sets) == 0 {
+	if update.Title == nil && update.SortOrder == nil {
 		return nil
 	}
 
-	args = append(args, id)
-	query := fmt.Sprintf("UPDATE volumes SET %s WHERE id = ?", strings.Join(sets, ", "))
-	result, err := s.db.Exec(query, args...)
+	current, err := s.get(id)
 	if err != nil {
-		return fmt.Errorf("更新卷失败: %w", err)
+		return err
 	}
 
-	rowsAffected, err := result.RowsAffected()
+	title := current.Title
+	if update.Title != nil {
+		title = strings.TrimSpace(*update.Title)
+		if title == "" {
+			return errors.New("卷标题不能为空")
+		}
+	}
+
+	sortOrder := current.SortOrder
+	if update.SortOrder != nil {
+		sortOrder = *update.SortOrder
+	}
+
+	rowsAffected, err := s.queries.UpdateVolumeByID(context.Background(), sqlc.UpdateVolumeByIDParams{
+		Title:     title,
+		SortOrder: int64(sortOrder),
+		ID:        id,
+	})
 	if err != nil {
-		return fmt.Errorf("确认卷更新结果失败: %w", err)
+		return fmt.Errorf("更新卷失败: %w", err)
 	}
 	if rowsAffected == 0 {
 		return errors.New("卷不存在")
 	}
-
 	return nil
 }
 
 func (s *VolumeService) Delete(id string) error {
-	result, err := s.db.Exec(`DELETE FROM volumes WHERE id = ?`, id)
+	rowsAffected, err := s.queries.DeleteVolumeByID(context.Background(), id)
 	if err != nil {
 		return fmt.Errorf("删除卷失败: %w", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("确认卷删除结果失败: %w", err)
 	}
 	if rowsAffected == 0 {
 		return errors.New("卷不存在")
 	}
-
 	return nil
 }
 
@@ -158,13 +133,14 @@ func (s *VolumeService) Reorder(input database.ReorderVolumesInput) error {
 	}
 	defer tx.Rollback()
 
+	queries := s.queries.WithTx(tx)
+	ctx := context.Background()
 	for index, id := range input.OrderedIDs {
-		if _, err := tx.Exec(
-			`UPDATE volumes SET sort_order = ? WHERE id = ? AND project_id = ?`,
-			index,
-			id,
-			input.ProjectID,
-		); err != nil {
+		if err := queries.ReorderVolumeByID(ctx, sqlc.ReorderVolumeByIDParams{
+			SortOrder: int64(index),
+			ID:        id,
+			ProjectID: input.ProjectID,
+		}); err != nil {
 			return fmt.Errorf("更新卷排序失败: %w", err)
 		}
 	}
@@ -172,35 +148,48 @@ func (s *VolumeService) Reorder(input database.ReorderVolumesInput) error {
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("提交卷排序事务失败: %w", err)
 	}
-
 	return nil
 }
 
-func (s *VolumeService) resolveNextSortOrder(projectID string, candidate *int) (int, error) {
+func (s *VolumeService) resolveNextSortOrder(ctx context.Context, projectID string, candidate *int) (int, error) {
 	if candidate != nil {
 		return *candidate, nil
 	}
 
-	var next int
-	err := s.db.QueryRow(
-		`SELECT COALESCE(MAX(sort_order), -1) + 1 FROM volumes WHERE project_id = ?`,
-		projectID,
-	).Scan(&next)
+	next, err := s.queries.NextVolumeSortOrder(ctx, projectID)
 	if err != nil {
 		return 0, fmt.Errorf("计算卷排序失败: %w", err)
 	}
-
-	return next, nil
+	return int(next), nil
 }
 
-func ensureProjectExists(db *sql.DB, projectID string) error {
-	var exists int
-	err := db.QueryRow(`SELECT 1 FROM projects WHERE id = ? LIMIT 1`, projectID).Scan(&exists)
+func (s *VolumeService) get(id string) (database.Volume, error) {
+	row, err := s.queries.GetVolumeByID(context.Background(), id)
 	if errors.Is(err, sql.ErrNoRows) {
-		return errors.New("项目不存在")
+		return database.Volume{}, errors.New("卷不存在")
 	}
 	if err != nil {
-		return fmt.Errorf("查询项目失败: %w", err)
+		return database.Volume{}, fmt.Errorf("查询卷失败: %w", err)
 	}
-	return nil
+	return mapVolume(row), nil
+}
+
+func mapVolume(row sqlc.GetVolumeByIDRow) database.Volume {
+	return database.Volume{
+		ID:        row.ID,
+		ProjectID: row.ProjectID,
+		Title:     row.Title,
+		SortOrder: int(row.SortOrder),
+		CreatedAt: formatSQLiteTime(row.CreatedAt),
+	}
+}
+
+func mapVolumeList(row sqlc.ListVolumesByProjectRow) database.Volume {
+	return database.Volume{
+		ID:        row.ID,
+		ProjectID: row.ProjectID,
+		Title:     row.Title,
+		SortOrder: int(row.SortOrder),
+		CreatedAt: formatSQLiteTime(row.CreatedAt),
+	}
 }

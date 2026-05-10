@@ -1,25 +1,32 @@
 package services
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
 
 	"Qingyu-Editor/database"
+	"Qingyu-Editor/database/sqlc"
 
 	"github.com/google/uuid"
 )
 
 type LocationService struct {
-	db *sql.DB
+	db      *sql.DB
+	queries *sqlc.Queries
 }
 
 func NewLocationService(db *sql.DB) *LocationService {
-	return &LocationService{db: db}
+	return &LocationService{
+		db:      db,
+		queries: sqlc.New(db),
+	}
 }
 
 func (s *LocationService) Create(input database.CreateLocationInput) (database.Location, error) {
+	ctx := context.Background()
 	projectID := strings.TrimSpace(input.ProjectID)
 	name := strings.TrimSpace(input.Name)
 	if projectID == "" {
@@ -28,31 +35,30 @@ func (s *LocationService) Create(input database.CreateLocationInput) (database.L
 	if name == "" {
 		return database.Location{}, errors.New("地点名称不能为空")
 	}
-	if err := ensureProjectExists(s.db, projectID); err != nil {
+	if err := ensureProjectExists(ctx, s.queries, projectID); err != nil {
 		return database.Location{}, err
 	}
 
 	parentID := normalizeOptionalString(input.ParentID)
 	if parentID != "" {
-		if err := s.ensureLocationBelongsToProject(projectID, parentID); err != nil {
+		if err := s.ensureLocationBelongsToProject(ctx, projectID, parentID); err != nil {
 			return database.Location{}, err
 		}
 	}
 
 	locationID := uuid.NewString()
-	_, err := s.db.Exec(
-		`INSERT INTO locations (id, project_id, name, description, climate, culture, geography, atmosphere, parent_id, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		locationID,
-		projectID,
-		name,
-		strings.TrimSpace(input.Description),
-		strings.TrimSpace(input.Climate),
-		strings.TrimSpace(input.Culture),
-		strings.TrimSpace(input.Geography),
-		strings.TrimSpace(input.Atmosphere),
-		nullStringValue(parentID),
-		strings.TrimSpace(input.ImageURL),
-	)
+	err := s.queries.CreateLocation(ctx, sqlc.CreateLocationParams{
+		ID:          locationID,
+		ProjectID:   projectID,
+		Name:        name,
+		Description: toNullString(input.Description),
+		Climate:     toNullString(input.Climate),
+		Culture:     toNullString(input.Culture),
+		Geography:   toNullString(input.Geography),
+		Atmosphere:  toNullString(input.Atmosphere),
+		ParentID:    toOptionalNullString(parentID),
+		ImageUrl:    toNullString(input.ImageURL),
+	})
 	if err != nil {
 		return database.Location{}, fmt.Errorf("创建地点失败: %w", err)
 	}
@@ -60,108 +66,87 @@ func (s *LocationService) Create(input database.CreateLocationInput) (database.L
 }
 
 func (s *LocationService) Get(id string) (database.Location, error) {
-	row := s.db.QueryRow(
-		`SELECT id, project_id, name, COALESCE(description, ''), COALESCE(climate, ''), COALESCE(culture, ''), COALESCE(geography, ''), COALESCE(atmosphere, ''), COALESCE(parent_id, ''), COALESCE(image_url, ''), COALESCE(created_at, ''), COALESCE(updated_at, '') FROM locations WHERE id = ?`,
-		id,
-	)
-	return scanLocation(row)
+	row, err := s.queries.GetLocationByID(context.Background(), id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return database.Location{}, errors.New("地点不存在")
+	}
+	if err != nil {
+		return database.Location{}, fmt.Errorf("查询地点失败: %w", err)
+	}
+	return mapLocation(row), nil
 }
 
 func (s *LocationService) List(projectID string) ([]database.Location, error) {
-	rows, err := s.db.Query(
-		`SELECT id, project_id, name, COALESCE(description, ''), COALESCE(climate, ''), COALESCE(culture, ''), COALESCE(geography, ''), COALESCE(atmosphere, ''), COALESCE(parent_id, ''), COALESCE(image_url, ''), COALESCE(created_at, ''), COALESCE(updated_at, '') FROM locations WHERE project_id = ? ORDER BY CASE WHEN parent_id IS NULL THEN 0 ELSE 1 END ASC, parent_id ASC, updated_at DESC, created_at DESC`,
-		projectID,
-	)
+	rows, err := s.queries.ListLocationsByProject(context.Background(), projectID)
 	if err != nil {
 		return nil, fmt.Errorf("查询地点列表失败: %w", err)
 	}
-	defer rows.Close()
 
-	items := make([]database.Location, 0)
-	for rows.Next() {
-		location, err := scanLocation(rows)
-		if err != nil {
-			return nil, err
-		}
-		items = append(items, location)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("读取地点列表失败: %w", err)
+	items := make([]database.Location, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, mapLocationList(row))
 	}
 	return items, nil
 }
 
 func (s *LocationService) Update(id string, update database.LocationUpdate) (database.Location, error) {
+	ctx := context.Background()
 	current, err := s.Get(id)
 	if err != nil {
 		return database.Location{}, err
 	}
 
-	sets := make([]string, 0, 8)
-	args := make([]any, 0, 9)
-
+	next := current
 	if update.Name != nil {
 		name := strings.TrimSpace(*update.Name)
 		if name == "" {
 			return database.Location{}, errors.New("地点名称不能为空")
 		}
-		sets = append(sets, "name = ?")
-		args = append(args, name)
+		next.Name = name
 	}
 	if update.Description != nil {
-		sets = append(sets, "description = ?")
-		args = append(args, strings.TrimSpace(*update.Description))
+		next.Description = strings.TrimSpace(*update.Description)
 	}
 	if update.Climate != nil {
-		sets = append(sets, "climate = ?")
-		args = append(args, strings.TrimSpace(*update.Climate))
+		next.Climate = strings.TrimSpace(*update.Climate)
 	}
 	if update.Culture != nil {
-		sets = append(sets, "culture = ?")
-		args = append(args, strings.TrimSpace(*update.Culture))
+		next.Culture = strings.TrimSpace(*update.Culture)
 	}
 	if update.Geography != nil {
-		sets = append(sets, "geography = ?")
-		args = append(args, strings.TrimSpace(*update.Geography))
+		next.Geography = strings.TrimSpace(*update.Geography)
 	}
 	if update.Atmosphere != nil {
-		sets = append(sets, "atmosphere = ?")
-		args = append(args, strings.TrimSpace(*update.Atmosphere))
+		next.Atmosphere = strings.TrimSpace(*update.Atmosphere)
 	}
 	if update.ParentID != nil {
-		parentID := normalizeOptionalString(*update.ParentID)
-		if parentID != "" {
-			if parentID == id {
+		next.ParentID = normalizeOptionalString(*update.ParentID)
+		if next.ParentID != "" {
+			if next.ParentID == id {
 				return database.Location{}, errors.New("地点不能挂到自身之下")
 			}
-			if err := s.ensureLocationBelongsToProject(current.ProjectID, parentID); err != nil {
+			if err := s.ensureLocationBelongsToProject(ctx, current.ProjectID, next.ParentID); err != nil {
 				return database.Location{}, err
 			}
 		}
-		sets = append(sets, "parent_id = ?")
-		args = append(args, nullStringValue(parentID))
 	}
 	if update.ImageURL != nil {
-		sets = append(sets, "image_url = ?")
-		args = append(args, strings.TrimSpace(*update.ImageURL))
+		next.ImageURL = strings.TrimSpace(*update.ImageURL)
 	}
 
-	if len(sets) == 0 {
-		return current, nil
-	}
-
-	sets = append(sets, "updated_at = CURRENT_TIMESTAMP")
-	args = append(args, id)
-	result, err := s.db.Exec(
-		fmt.Sprintf("UPDATE locations SET %s WHERE id = ?", strings.Join(sets, ", ")),
-		args...,
-	)
+	rowsAffected, err := s.queries.UpdateLocationByID(ctx, sqlc.UpdateLocationByIDParams{
+		Name:        next.Name,
+		Description: toNullString(next.Description),
+		Climate:     toNullString(next.Climate),
+		Culture:     toNullString(next.Culture),
+		Geography:   toNullString(next.Geography),
+		Atmosphere:  toNullString(next.Atmosphere),
+		ParentID:    toOptionalNullString(next.ParentID),
+		ImageUrl:    toNullString(next.ImageURL),
+		ID:          id,
+	})
 	if err != nil {
 		return database.Location{}, fmt.Errorf("更新地点失败: %w", err)
-	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return database.Location{}, fmt.Errorf("确认地点更新结果失败: %w", err)
 	}
 	if rowsAffected == 0 {
 		return database.Location{}, errors.New("地点不存在")
@@ -170,13 +155,9 @@ func (s *LocationService) Update(id string, update database.LocationUpdate) (dat
 }
 
 func (s *LocationService) Delete(id string) error {
-	result, err := s.db.Exec(`DELETE FROM locations WHERE id = ?`, id)
+	rowsAffected, err := s.queries.DeleteLocationByID(context.Background(), id)
 	if err != nil {
 		return fmt.Errorf("删除地点失败: %w", err)
-	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("确认地点删除结果失败: %w", err)
 	}
 	if rowsAffected == 0 {
 		return errors.New("地点不存在")
@@ -185,6 +166,7 @@ func (s *LocationService) Delete(id string) error {
 }
 
 func (s *LocationService) CreateRelation(input database.CreateLocationRelationInput) (database.LocationRelation, error) {
+	ctx := context.Background()
 	projectID := strings.TrimSpace(input.ProjectID)
 	fromID := strings.TrimSpace(input.FromID)
 	toID := strings.TrimSpace(input.ToID)
@@ -201,24 +183,23 @@ func (s *LocationService) CreateRelation(input database.CreateLocationRelationIn
 	if relationType == "" {
 		return database.LocationRelation{}, errors.New("地点关系类型不能为空")
 	}
-	if err := s.ensureLocationBelongsToProject(projectID, fromID); err != nil {
+	if err := s.ensureLocationBelongsToProject(ctx, projectID, fromID); err != nil {
 		return database.LocationRelation{}, err
 	}
-	if err := s.ensureLocationBelongsToProject(projectID, toID); err != nil {
+	if err := s.ensureLocationBelongsToProject(ctx, projectID, toID); err != nil {
 		return database.LocationRelation{}, err
 	}
 
 	relationID := uuid.NewString()
-	_, err := s.db.Exec(
-		`INSERT INTO location_relations (id, project_id, from_id, to_id, type, distance, notes) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		relationID,
-		projectID,
-		fromID,
-		toID,
-		relationType,
-		strings.TrimSpace(input.Distance),
-		strings.TrimSpace(input.Notes),
-	)
+	err := s.queries.CreateLocationRelation(ctx, sqlc.CreateLocationRelationParams{
+		ID:        relationID,
+		ProjectID: projectID,
+		FromID:    fromID,
+		ToID:      toID,
+		Type:      relationType,
+		Distance:  toNullString(input.Distance),
+		Notes:     toNullString(input.Notes),
+	})
 	if err != nil {
 		return database.LocationRelation{}, fmt.Errorf("创建地点关系失败: %w", err)
 	}
@@ -226,42 +207,38 @@ func (s *LocationService) CreateRelation(input database.CreateLocationRelationIn
 }
 
 func (s *LocationService) ListRelations(projectID string, locationID string) ([]database.LocationRelation, error) {
-	baseQuery := `SELECT id, project_id, from_id, to_id, type, COALESCE(distance, ''), COALESCE(notes, ''), COALESCE(created_at, ''), COALESCE(updated_at, '') FROM location_relations WHERE project_id = ?`
-	args := []any{projectID}
+	ctx := context.Background()
 	if strings.TrimSpace(locationID) != "" {
-		baseQuery += ` AND (from_id = ? OR to_id = ?)`
-		args = append(args, locationID, locationID)
+		rows, err := s.queries.ListLocationRelationsByLocation(ctx, sqlc.ListLocationRelationsByLocationParams{
+			ProjectID: projectID,
+			FromID:    locationID,
+			ToID:      locationID,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("查询地点关系列表失败: %w", err)
+		}
+		items := make([]database.LocationRelation, 0, len(rows))
+		for _, row := range rows {
+			items = append(items, mapLocationRelationListByLocation(row))
+		}
+		return items, nil
 	}
-	baseQuery += ` ORDER BY updated_at DESC, created_at DESC`
 
-	rows, err := s.db.Query(baseQuery, args...)
+	rows, err := s.queries.ListLocationRelationsByProject(ctx, projectID)
 	if err != nil {
 		return nil, fmt.Errorf("查询地点关系列表失败: %w", err)
 	}
-	defer rows.Close()
-
-	items := make([]database.LocationRelation, 0)
-	for rows.Next() {
-		relation, err := scanLocationRelation(rows)
-		if err != nil {
-			return nil, err
-		}
-		items = append(items, relation)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("读取地点关系列表失败: %w", err)
+	items := make([]database.LocationRelation, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, mapLocationRelationList(row))
 	}
 	return items, nil
 }
 
 func (s *LocationService) DeleteRelation(id string) error {
-	result, err := s.db.Exec(`DELETE FROM location_relations WHERE id = ?`, id)
+	rowsAffected, err := s.queries.DeleteLocationRelationByID(context.Background(), id)
 	if err != nil {
 		return fmt.Errorf("删除地点关系失败: %w", err)
-	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("确认地点关系删除结果失败: %w", err)
 	}
 	if rowsAffected == 0 {
 		return errors.New("地点关系不存在")
@@ -270,76 +247,102 @@ func (s *LocationService) DeleteRelation(id string) error {
 }
 
 func (s *LocationService) getRelation(id string) (database.LocationRelation, error) {
-	row := s.db.QueryRow(
-		`SELECT id, project_id, from_id, to_id, type, COALESCE(distance, ''), COALESCE(notes, ''), COALESCE(created_at, ''), COALESCE(updated_at, '') FROM location_relations WHERE id = ?`,
-		id,
-	)
-	return scanLocationRelation(row)
-}
-
-func (s *LocationService) ensureLocationBelongsToProject(projectID string, locationID string) error {
-	var exists int
-	err := s.db.QueryRow(
-		`SELECT 1 FROM locations WHERE id = ? AND project_id = ? LIMIT 1`,
-		locationID,
-		projectID,
-	).Scan(&exists)
-	if errors.Is(err, sql.ErrNoRows) {
-		return errors.New("地点不存在")
-	}
-	if err != nil {
-		return fmt.Errorf("查询地点失败: %w", err)
-	}
-	return nil
-}
-
-type locationScanner interface {
-	Scan(dest ...any) error
-}
-
-func scanLocation(scanner locationScanner) (database.Location, error) {
-	var item database.Location
-	err := scanner.Scan(
-		&item.ID,
-		&item.ProjectID,
-		&item.Name,
-		&item.Description,
-		&item.Climate,
-		&item.Culture,
-		&item.Geography,
-		&item.Atmosphere,
-		&item.ParentID,
-		&item.ImageURL,
-		&item.CreatedAt,
-		&item.UpdatedAt,
-	)
-	if errors.Is(err, sql.ErrNoRows) {
-		return database.Location{}, errors.New("地点不存在")
-	}
-	if err != nil {
-		return database.Location{}, fmt.Errorf("读取地点失败: %w", err)
-	}
-	return item, nil
-}
-
-func scanLocationRelation(scanner locationScanner) (database.LocationRelation, error) {
-	var item database.LocationRelation
-	err := scanner.Scan(
-		&item.ID,
-		&item.ProjectID,
-		&item.FromID,
-		&item.ToID,
-		&item.Type,
-		&item.Distance,
-		&item.Notes,
-		&item.CreatedAt,
-		&item.UpdatedAt,
-	)
+	row, err := s.queries.GetLocationRelationByID(context.Background(), id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return database.LocationRelation{}, errors.New("地点关系不存在")
 	}
 	if err != nil {
-		return database.LocationRelation{}, fmt.Errorf("读取地点关系失败: %w", err)
+		return database.LocationRelation{}, fmt.Errorf("查询地点关系失败: %w", err)
 	}
-	return item, nil
+	return mapLocationRelation(row), nil
+}
+
+func (s *LocationService) ensureLocationBelongsToProject(ctx context.Context, projectID string, locationID string) error {
+	exists, err := s.queries.LocationExistsInProject(ctx, sqlc.LocationExistsInProjectParams{
+		ID:        locationID,
+		ProjectID: projectID,
+	})
+	if err != nil {
+		return fmt.Errorf("查询地点失败: %w", err)
+	}
+	if exists == 0 {
+		return errors.New("地点不存在")
+	}
+	return nil
+}
+
+func mapLocation(row sqlc.GetLocationByIDRow) database.Location {
+	return database.Location{
+		ID:          row.ID,
+		ProjectID:   row.ProjectID,
+		Name:        row.Name,
+		Description: row.Description,
+		Climate:     row.Climate,
+		Culture:     row.Culture,
+		Geography:   row.Geography,
+		Atmosphere:  row.Atmosphere,
+		ParentID:    row.ParentID,
+		ImageURL:    row.ImageUrl,
+		CreatedAt:   formatSQLiteTime(row.CreatedAt),
+		UpdatedAt:   formatSQLiteTime(row.UpdatedAt),
+	}
+}
+
+func mapLocationList(row sqlc.ListLocationsByProjectRow) database.Location {
+	return database.Location{
+		ID:          row.ID,
+		ProjectID:   row.ProjectID,
+		Name:        row.Name,
+		Description: row.Description,
+		Climate:     row.Climate,
+		Culture:     row.Culture,
+		Geography:   row.Geography,
+		Atmosphere:  row.Atmosphere,
+		ParentID:    row.ParentID,
+		ImageURL:    row.ImageUrl,
+		CreatedAt:   formatSQLiteTime(row.CreatedAt),
+		UpdatedAt:   formatSQLiteTime(row.UpdatedAt),
+	}
+}
+
+func mapLocationRelation(row sqlc.GetLocationRelationByIDRow) database.LocationRelation {
+	return database.LocationRelation{
+		ID:        row.ID,
+		ProjectID: row.ProjectID,
+		FromID:    row.FromID,
+		ToID:      row.ToID,
+		Type:      row.Type,
+		Distance:  row.Distance,
+		Notes:     row.Notes,
+		CreatedAt: formatSQLiteTime(row.CreatedAt),
+		UpdatedAt: formatSQLiteTime(row.UpdatedAt),
+	}
+}
+
+func mapLocationRelationList(row sqlc.ListLocationRelationsByProjectRow) database.LocationRelation {
+	return database.LocationRelation{
+		ID:        row.ID,
+		ProjectID: row.ProjectID,
+		FromID:    row.FromID,
+		ToID:      row.ToID,
+		Type:      row.Type,
+		Distance:  row.Distance,
+		Notes:     row.Notes,
+		CreatedAt: formatSQLiteTime(row.CreatedAt),
+		UpdatedAt: formatSQLiteTime(row.UpdatedAt),
+	}
+}
+
+func mapLocationRelationListByLocation(row sqlc.ListLocationRelationsByLocationRow) database.LocationRelation {
+	return database.LocationRelation{
+		ID:        row.ID,
+		ProjectID: row.ProjectID,
+		FromID:    row.FromID,
+		ToID:      row.ToID,
+		Type:      row.Type,
+		Distance:  row.Distance,
+		Notes:     row.Notes,
+		CreatedAt: formatSQLiteTime(row.CreatedAt),
+		UpdatedAt: formatSQLiteTime(row.UpdatedAt),
+	}
 }

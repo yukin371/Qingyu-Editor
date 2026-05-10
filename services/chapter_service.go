@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -8,19 +9,25 @@ import (
 	"strings"
 
 	"Qingyu-Editor/database"
+	"Qingyu-Editor/database/sqlc"
 
 	"github.com/google/uuid"
 )
 
 type ChapterService struct {
-	db *sql.DB
+	db      *sql.DB
+	queries *sqlc.Queries
 }
 
 func NewChapterService(db *sql.DB) *ChapterService {
-	return &ChapterService{db: db}
+	return &ChapterService{
+		db:      db,
+		queries: sqlc.New(db),
+	}
 }
 
 func (s *ChapterService) Create(input database.CreateChapterInput) (database.Chapter, error) {
+	ctx := context.Background()
 	projectID := strings.TrimSpace(input.ProjectID)
 	title := strings.TrimSpace(input.Title)
 	if projectID == "" {
@@ -29,18 +36,18 @@ func (s *ChapterService) Create(input database.CreateChapterInput) (database.Cha
 	if title == "" {
 		return database.Chapter{}, errors.New("章节标题不能为空")
 	}
-	if err := ensureProjectExists(s.db, projectID); err != nil {
+	if err := ensureProjectExists(ctx, s.queries, projectID); err != nil {
 		return database.Chapter{}, err
 	}
 
 	volumeID := normalizeOptionalString(input.VolumeID)
 	if volumeID != "" {
-		if err := s.ensureVolumeBelongsToProject(projectID, volumeID); err != nil {
+		if err := s.ensureVolumeBelongsToProject(ctx, projectID, volumeID); err != nil {
 			return database.Chapter{}, err
 		}
 	}
 
-	sortOrder, err := s.resolveNextSortOrder(projectID, volumeID, input.SortOrder)
+	sortOrder, err := s.resolveNextSortOrder(ctx, projectID, volumeID, input.SortOrder)
 	if err != nil {
 		return database.Chapter{}, err
 	}
@@ -66,23 +73,22 @@ func (s *ChapterService) Create(input database.CreateChapterInput) (database.Cha
 	}
 
 	chapterID := uuid.NewString()
-	_, err = s.db.Exec(
-		`INSERT INTO chapters (id, project_id, volume_id, title, content, plain_text, word_count, sort_order, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		chapterID,
-		projectID,
-		nullStringValue(volumeID),
-		title,
-		content,
-		plainText,
-		wordCount,
-		sortOrder,
-		status,
-	)
+	err = s.queries.CreateChapter(ctx, sqlc.CreateChapterParams{
+		ID:        chapterID,
+		ProjectID: projectID,
+		VolumeID:  toOptionalNullString(volumeID),
+		Title:     title,
+		Content:   content,
+		PlainText: toOptionalNullString(plainText),
+		WordCount: toNullInt64(wordCount),
+		SortOrder: int64(sortOrder),
+		Status:    toNullString(status),
+	})
 	if err != nil {
 		return database.Chapter{}, fmt.Errorf("创建章节失败: %w", err)
 	}
 
-	if err := s.refreshProjectWordCount(projectID); err != nil {
+	if err := s.refreshProjectWordCount(ctx, projectID); err != nil {
 		return database.Chapter{}, err
 	}
 
@@ -90,148 +96,71 @@ func (s *ChapterService) Create(input database.CreateChapterInput) (database.Cha
 }
 
 func (s *ChapterService) Get(id string) (database.Chapter, error) {
-	const query = `
-	SELECT
-		id,
-		project_id,
-		COALESCE(volume_id, ''),
-		title,
-		COALESCE(content, ''),
-		COALESCE(plain_text, ''),
-		COALESCE(word_count, 0),
-		COALESCE(sort_order, 0),
-		COALESCE(status, 'draft'),
-		COALESCE(created_at, ''),
-		COALESCE(updated_at, '')
-	FROM chapters
-	WHERE id = ?
-	`
-
-	var chapter database.Chapter
-	err := s.db.QueryRow(query, id).Scan(
-		&chapter.ID,
-		&chapter.ProjectID,
-		&chapter.VolumeID,
-		&chapter.Title,
-		&chapter.Content,
-		&chapter.PlainText,
-		&chapter.WordCount,
-		&chapter.SortOrder,
-		&chapter.Status,
-		&chapter.CreatedAt,
-		&chapter.UpdatedAt,
-	)
+	row, err := s.queries.GetChapterByID(context.Background(), id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return database.Chapter{}, errors.New("章节不存在")
 	}
 	if err != nil {
 		return database.Chapter{}, fmt.Errorf("查询章节失败: %w", err)
 	}
-
-	return chapter, nil
+	return mapChapter(row), nil
 }
 
 func (s *ChapterService) List(projectID string) ([]database.Chapter, error) {
-	rows, err := s.db.Query(
-		`SELECT id, project_id, COALESCE(volume_id, ''), title, COALESCE(content, ''), COALESCE(plain_text, ''), COALESCE(word_count, 0), COALESCE(sort_order, 0), COALESCE(status, 'draft'), COALESCE(created_at, ''), COALESCE(updated_at, '') FROM chapters WHERE project_id = ? ORDER BY CASE WHEN volume_id IS NULL THEN 0 ELSE 1 END ASC, volume_id ASC, sort_order ASC, created_at ASC`,
-		projectID,
-	)
+	rows, err := s.queries.ListChaptersByProject(context.Background(), projectID)
 	if err != nil {
 		return nil, fmt.Errorf("查询章节列表失败: %w", err)
 	}
-	defer rows.Close()
 
-	chapters := make([]database.Chapter, 0)
-	for rows.Next() {
-		var chapter database.Chapter
-		if err := rows.Scan(
-			&chapter.ID,
-			&chapter.ProjectID,
-			&chapter.VolumeID,
-			&chapter.Title,
-			&chapter.Content,
-			&chapter.PlainText,
-			&chapter.WordCount,
-			&chapter.SortOrder,
-			&chapter.Status,
-			&chapter.CreatedAt,
-			&chapter.UpdatedAt,
-		); err != nil {
-			return nil, fmt.Errorf("扫描章节失败: %w", err)
-		}
-		chapters = append(chapters, chapter)
+	chapters := make([]database.Chapter, 0, len(rows))
+	for _, row := range rows {
+		chapters = append(chapters, mapChapterList(row))
 	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("读取章节列表失败: %w", err)
-	}
-
 	return chapters, nil
 }
 
 func (s *ChapterService) Update(id string, update database.ChapterUpdate) (database.Chapter, error) {
+	ctx := context.Background()
 	current, err := s.Get(id)
 	if err != nil {
 		return database.Chapter{}, err
 	}
 
-	sets := make([]string, 0, 7)
-	args := make([]any, 0, 8)
-
-	nextContent := current.Content
-	nextPlainText := current.PlainText
-	nextWordCount := current.WordCount
-
+	next := current
 	if update.Title != nil {
 		title := strings.TrimSpace(*update.Title)
 		if title == "" {
 			return database.Chapter{}, errors.New("章节标题不能为空")
 		}
-		sets = append(sets, "title = ?")
-		args = append(args, title)
+		next.Title = title
 	}
 
 	if update.VolumeID != nil {
-		volumeID := normalizeOptionalString(*update.VolumeID)
-		if volumeID != "" {
-			if err := s.ensureVolumeBelongsToProject(current.ProjectID, volumeID); err != nil {
+		next.VolumeID = normalizeOptionalString(*update.VolumeID)
+		if next.VolumeID != "" {
+			if err := s.ensureVolumeBelongsToProject(ctx, current.ProjectID, next.VolumeID); err != nil {
 				return database.Chapter{}, err
 			}
 		}
-		sets = append(sets, "volume_id = ?")
-		args = append(args, nullStringValue(volumeID))
 	}
 
 	if update.Content != nil {
-		nextContent = *update.Content
-		sets = append(sets, "content = ?")
-		args = append(args, nextContent)
+		next.Content = *update.Content
 	}
-
 	if update.PlainText != nil {
-		nextPlainText = *update.PlainText
-	}
-	if update.Content != nil && update.PlainText == nil {
-		nextPlainText = extractPlainText(nextContent)
-	}
-	if update.PlainText != nil || update.Content != nil {
-		sets = append(sets, "plain_text = ?")
-		args = append(args, nextPlainText)
+		next.PlainText = *update.PlainText
+	} else if update.Content != nil {
+		next.PlainText = extractPlainText(next.Content)
 	}
 
 	if update.WordCount != nil {
-		nextWordCount = *update.WordCount
+		next.WordCount = *update.WordCount
 	} else if update.Content != nil || update.PlainText != nil {
-		nextWordCount = countWords(nextPlainText)
-	}
-	if update.WordCount != nil || update.Content != nil || update.PlainText != nil {
-		sets = append(sets, "word_count = ?")
-		args = append(args, nextWordCount)
+		next.WordCount = countWords(next.PlainText)
 	}
 
 	if update.SortOrder != nil {
-		sets = append(sets, "sort_order = ?")
-		args = append(args, *update.SortOrder)
+		next.SortOrder = *update.SortOrder
 	}
 
 	if update.Status != nil {
@@ -239,32 +168,27 @@ func (s *ChapterService) Update(id string, update database.ChapterUpdate) (datab
 		if status == "" {
 			status = "draft"
 		}
-		sets = append(sets, "status = ?")
-		args = append(args, status)
+		next.Status = status
 	}
 
-	if len(sets) == 0 {
-		return current, nil
-	}
-
-	sets = append(sets, "updated_at = CURRENT_TIMESTAMP")
-	args = append(args, id)
-
-	query := fmt.Sprintf("UPDATE chapters SET %s WHERE id = ?", strings.Join(sets, ", "))
-	result, err := s.db.Exec(query, args...)
+	rowsAffected, err := s.queries.UpdateChapterByID(ctx, sqlc.UpdateChapterByIDParams{
+		VolumeID:  toOptionalNullString(next.VolumeID),
+		Title:     next.Title,
+		Content:   next.Content,
+		PlainText: toOptionalNullString(next.PlainText),
+		WordCount: toNullInt64(next.WordCount),
+		SortOrder: int64(next.SortOrder),
+		Status:    toNullString(next.Status),
+		ID:        id,
+	})
 	if err != nil {
 		return database.Chapter{}, fmt.Errorf("更新章节失败: %w", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return database.Chapter{}, fmt.Errorf("确认章节更新结果失败: %w", err)
 	}
 	if rowsAffected == 0 {
 		return database.Chapter{}, errors.New("章节不存在")
 	}
 
-	if err := s.refreshProjectWordCount(current.ProjectID); err != nil {
+	if err := s.refreshProjectWordCount(ctx, current.ProjectID); err != nil {
 		return database.Chapter{}, err
 	}
 
@@ -272,28 +196,23 @@ func (s *ChapterService) Update(id string, update database.ChapterUpdate) (datab
 }
 
 func (s *ChapterService) Delete(id string) error {
+	ctx := context.Background()
 	chapter, err := s.Get(id)
 	if err != nil {
 		return err
 	}
 
-	result, err := s.db.Exec(`DELETE FROM chapters WHERE id = ?`, id)
+	rowsAffected, err := s.queries.DeleteChapterByID(ctx, id)
 	if err != nil {
 		return fmt.Errorf("删除章节失败: %w", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("确认章节删除结果失败: %w", err)
 	}
 	if rowsAffected == 0 {
 		return errors.New("章节不存在")
 	}
 
-	if err := s.refreshProjectWordCount(chapter.ProjectID); err != nil {
+	if err := s.refreshProjectWordCount(ctx, chapter.ProjectID); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -311,13 +230,14 @@ func (s *ChapterService) Reorder(input database.ReorderChaptersInput) error {
 	}
 	defer tx.Rollback()
 
+	queries := s.queries.WithTx(tx)
+	ctx := context.Background()
 	for index, id := range input.OrderedIDs {
-		if _, err := tx.Exec(
-			`UPDATE chapters SET sort_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND project_id = ?`,
-			index,
-			id,
-			input.ProjectID,
-		); err != nil {
+		if err := queries.ReorderChapterByProject(ctx, sqlc.ReorderChapterByProjectParams{
+			SortOrder: int64(index),
+			ID:        id,
+			ProjectID: input.ProjectID,
+		}); err != nil {
 			return fmt.Errorf("更新章节排序失败: %w", err)
 		}
 	}
@@ -325,11 +245,11 @@ func (s *ChapterService) Reorder(input database.ReorderChaptersInput) error {
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("提交章节排序事务失败: %w", err)
 	}
-
 	return nil
 }
 
 func (s *ChapterService) Move(input database.MoveChapterInput) error {
+	ctx := context.Background()
 	chapter, err := s.Get(input.ChapterID)
 	if err != nil {
 		return err
@@ -340,14 +260,14 @@ func (s *ChapterService) Move(input database.MoveChapterInput) error {
 		targetVolumeID = normalizeOptionalString(*input.TargetVolumeID)
 	}
 	if targetVolumeID != "" {
-		if err := s.ensureVolumeBelongsToProject(chapter.ProjectID, targetVolumeID); err != nil {
+		if err := s.ensureVolumeBelongsToProject(ctx, chapter.ProjectID, targetVolumeID); err != nil {
 			return err
 		}
 	}
 
 	oldVolumeID := normalizeOptionalString(chapter.VolumeID)
 	if targetVolumeID == oldVolumeID {
-		siblings, err := s.listChapterIDsByScope(chapter.ProjectID, oldVolumeID, chapter.ID)
+		siblings, err := s.listChapterIDsByScope(ctx, s.queries, chapter.ProjectID, oldVolumeID, chapter.ID)
 		if err != nil {
 			return err
 		}
@@ -365,166 +285,149 @@ func (s *ChapterService) Move(input database.MoveChapterInput) error {
 	}
 	defer tx.Rollback()
 
-	oldScope, err := s.listChapterIDsByScopeTx(tx, chapter.ProjectID, oldVolumeID, chapter.ID)
+	queries := s.queries.WithTx(tx)
+	oldScope, err := s.listChapterIDsByScope(ctx, queries, chapter.ProjectID, oldVolumeID, chapter.ID)
 	if err != nil {
 		return err
 	}
-	targetScope, err := s.listChapterIDsByScopeTx(tx, chapter.ProjectID, targetVolumeID, chapter.ID)
+	targetScope, err := s.listChapterIDsByScope(ctx, queries, chapter.ProjectID, targetVolumeID, chapter.ID)
 	if err != nil {
 		return err
 	}
 
-	if _, err := tx.Exec(
-		`UPDATE chapters SET volume_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-		nullStringValue(targetVolumeID),
-		chapter.ID,
-	); err != nil {
+	if err := queries.UpdateChapterVolumeByID(ctx, sqlc.UpdateChapterVolumeByIDParams{
+		VolumeID: toOptionalNullString(targetVolumeID),
+		ID:       chapter.ID,
+	}); err != nil {
 		return fmt.Errorf("更新章节所属卷失败: %w", err)
 	}
 
-	if err := s.rewriteChapterScopeOrderTx(tx, oldScope); err != nil {
+	if err := s.rewriteChapterScopeOrder(ctx, queries, oldScope); err != nil {
 		return err
 	}
-	if err := s.rewriteChapterScopeOrderTx(tx, insertAt(targetScope, chapter.ID, input.TargetIndex)); err != nil {
+	if err := s.rewriteChapterScopeOrder(ctx, queries, insertAt(targetScope, chapter.ID, input.TargetIndex)); err != nil {
 		return err
 	}
 
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("提交章节移动事务失败: %w", err)
 	}
-
 	return nil
 }
 
-func (s *ChapterService) resolveNextSortOrder(projectID string, volumeID string, candidate *int) (int, error) {
+func (s *ChapterService) resolveNextSortOrder(ctx context.Context, projectID string, volumeID string, candidate *int) (int, error) {
 	if candidate != nil {
 		return *candidate, nil
 	}
 
-	var next int
-	var err error
 	if volumeID == "" {
-		err = s.db.QueryRow(
-			`SELECT COALESCE(MAX(sort_order), -1) + 1 FROM chapters WHERE project_id = ? AND volume_id IS NULL`,
-			projectID,
-		).Scan(&next)
-	} else {
-		err = s.db.QueryRow(
-			`SELECT COALESCE(MAX(sort_order), -1) + 1 FROM chapters WHERE project_id = ? AND volume_id = ?`,
-			projectID,
-			volumeID,
-		).Scan(&next)
+		next, err := s.queries.NextRootChapterSortOrder(ctx, projectID)
+		if err != nil {
+			return 0, fmt.Errorf("计算章节排序失败: %w", err)
+		}
+		return int(next), nil
 	}
+
+	next, err := s.queries.NextVolumeChapterSortOrder(ctx, sqlc.NextVolumeChapterSortOrderParams{
+		ProjectID: projectID,
+		VolumeID:  toOptionalNullString(volumeID),
+	})
 	if err != nil {
 		return 0, fmt.Errorf("计算章节排序失败: %w", err)
 	}
-
-	return next, nil
+	return int(next), nil
 }
 
-func (s *ChapterService) ensureVolumeBelongsToProject(projectID string, volumeID string) error {
-	var exists int
-	err := s.db.QueryRow(
-		`SELECT 1 FROM volumes WHERE id = ? AND project_id = ? LIMIT 1`,
-		volumeID,
-		projectID,
-	).Scan(&exists)
-	if errors.Is(err, sql.ErrNoRows) {
-		return errors.New("卷不存在")
-	}
+func (s *ChapterService) ensureVolumeBelongsToProject(ctx context.Context, projectID string, volumeID string) error {
+	exists, err := s.queries.VolumeExistsInProject(ctx, sqlc.VolumeExistsInProjectParams{
+		ID:        volumeID,
+		ProjectID: projectID,
+	})
 	if err != nil {
 		return fmt.Errorf("查询卷失败: %w", err)
+	}
+	if exists == 0 {
+		return errors.New("卷不存在")
 	}
 	return nil
 }
 
-func (s *ChapterService) refreshProjectWordCount(projectID string) error {
-	_, err := s.db.Exec(
-		`UPDATE projects SET word_count = COALESCE((SELECT SUM(word_count) FROM chapters WHERE project_id = ?), 0), updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-		projectID,
-		projectID,
-	)
+func (s *ChapterService) refreshProjectWordCount(ctx context.Context, projectID string) error {
+	err := s.queries.RefreshProjectWordCount(ctx, sqlc.RefreshProjectWordCountParams{
+		ProjectID: projectID,
+		ID:        projectID,
+	})
 	if err != nil {
 		return fmt.Errorf("刷新项目字数失败: %w", err)
 	}
 	return nil
 }
 
-func (s *ChapterService) listChapterIDsByScope(projectID string, volumeID string, excludeID string) ([]string, error) {
-	rows, err := s.queryScopeRows(s.db, projectID, volumeID, excludeID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	return readChapterIDs(rows)
-}
-
-func (s *ChapterService) listChapterIDsByScopeTx(tx *sql.Tx, projectID string, volumeID string, excludeID string) ([]string, error) {
-	rows, err := s.queryScopeRows(tx, projectID, volumeID, excludeID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	return readChapterIDs(rows)
-}
-
-type chapterRowQuerier interface {
-	Query(query string, args ...any) (*sql.Rows, error)
-}
-
-func (s *ChapterService) queryScopeRows(querier chapterRowQuerier, projectID string, volumeID string, excludeID string) (*sql.Rows, error) {
+func (s *ChapterService) listChapterIDsByScope(ctx context.Context, queries *sqlc.Queries, projectID string, volumeID string, excludeID string) ([]string, error) {
 	if volumeID == "" {
-		rows, err := querier.Query(
-			`SELECT id FROM chapters WHERE project_id = ? AND volume_id IS NULL AND id <> ? ORDER BY sort_order ASC, created_at ASC`,
-			projectID,
-			excludeID,
-		)
+		ids, err := queries.ListRootChapterIDsByScope(ctx, sqlc.ListRootChapterIDsByScopeParams{
+			ProjectID: projectID,
+			ID:        excludeID,
+		})
 		if err != nil {
 			return nil, fmt.Errorf("查询根章节失败: %w", err)
 		}
-		return rows, nil
+		return ids, nil
 	}
 
-	rows, err := querier.Query(
-		`SELECT id FROM chapters WHERE project_id = ? AND volume_id = ? AND id <> ? ORDER BY sort_order ASC, created_at ASC`,
-		projectID,
-		volumeID,
-		excludeID,
-	)
+	ids, err := queries.ListVolumeChapterIDsByScope(ctx, sqlc.ListVolumeChapterIDsByScopeParams{
+		ProjectID: projectID,
+		VolumeID:  toOptionalNullString(volumeID),
+		ID:        excludeID,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("查询卷内章节失败: %w", err)
 	}
-	return rows, nil
+	return ids, nil
 }
 
-func (s *ChapterService) rewriteChapterScopeOrderTx(tx *sql.Tx, orderedIDs []string) error {
+func (s *ChapterService) rewriteChapterScopeOrder(ctx context.Context, queries *sqlc.Queries, orderedIDs []string) error {
 	for index, id := range orderedIDs {
-		if _, err := tx.Exec(
-			`UPDATE chapters SET sort_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-			index,
-			id,
-		); err != nil {
+		if err := queries.ReorderChapterByID(ctx, sqlc.ReorderChapterByIDParams{
+			SortOrder: int64(index),
+			ID:        id,
+		}); err != nil {
 			return fmt.Errorf("重写章节排序失败: %w", err)
 		}
 	}
 	return nil
 }
 
-func readChapterIDs(rows *sql.Rows) ([]string, error) {
-	ids := make([]string, 0)
-	for rows.Next() {
-		var id string
-		if err := rows.Scan(&id); err != nil {
-			return nil, fmt.Errorf("扫描章节 ID 失败: %w", err)
-		}
-		ids = append(ids, id)
+func mapChapter(row sqlc.GetChapterByIDRow) database.Chapter {
+	return database.Chapter{
+		ID:        row.ID,
+		ProjectID: row.ProjectID,
+		VolumeID:  row.VolumeID,
+		Title:     row.Title,
+		Content:   row.Content,
+		PlainText: row.PlainText,
+		WordCount: int(row.WordCount),
+		SortOrder: int(row.SortOrder),
+		Status:    row.Status,
+		CreatedAt: formatSQLiteTime(row.CreatedAt),
+		UpdatedAt: formatSQLiteTime(row.UpdatedAt),
 	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("读取章节 ID 失败: %w", err)
+}
+
+func mapChapterList(row sqlc.ListChaptersByProjectRow) database.Chapter {
+	return database.Chapter{
+		ID:        row.ID,
+		ProjectID: row.ProjectID,
+		VolumeID:  row.VolumeID,
+		Title:     row.Title,
+		Content:   row.Content,
+		PlainText: row.PlainText,
+		WordCount: int(row.WordCount),
+		SortOrder: int(row.SortOrder),
+		Status:    row.Status,
+		CreatedAt: formatSQLiteTime(row.CreatedAt),
+		UpdatedAt: formatSQLiteTime(row.UpdatedAt),
 	}
-	return ids, nil
 }
 
 func defaultChapterContent() string {
@@ -587,13 +490,6 @@ func countWords(text string) int {
 
 func normalizeOptionalString(value string) string {
 	return strings.TrimSpace(value)
-}
-
-func nullStringValue(value string) any {
-	if strings.TrimSpace(value) == "" {
-		return nil
-	}
-	return value
 }
 
 func nullableStringPointer(value string) *string {
