@@ -3,7 +3,7 @@
  * QySelect 下拉选择器
  *
  * Apple + Material 3 风格基础选择器，保持 API 兼容，
- * 用于逐步替代 Element Plus Select 的常见交互场景。
+ * 用于承接历史选择器的常见交互场景。
  */
 
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'

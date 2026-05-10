@@ -1,19 +1,20 @@
 <template>
-  <div class="document-tree-container">
-    <!-- 顶部工具栏：标题 + 搜索 + 添加 -->
-    <div class="tree-toolbar">
-      <div class="header-row">
-        <span class="title">目录</span>
-        <div class="actions">
-          <!-- 多选模式切换按钮 -->
+  <div class="flex h-full min-h-0 flex-col bg-[var(--editor-bg-surface)] text-[var(--editor-text-primary)]">
+    <div class="border-b border-[var(--editor-border)] px-3 pb-2 pt-3">
+      <div class="mb-2 flex items-center justify-between gap-3">
+        <span class="text-sm font-semibold tracking-[0.01em] text-[var(--editor-text-primary)]">
+          目录
+        </span>
+
+        <div class="flex items-center gap-1.5">
           <button
             v-if="!isMultiSelectMode"
             type="button"
-            class="icon-button"
             title="多选模式"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
             @click="toggleMultiSelectMode"
           >
-            <svg class="toolbar-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -25,11 +26,11 @@
           <button
             v-else
             type="button"
-            class="icon-button icon-button--active"
             title="退出多选"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-blue-600 transition hover:border-blue-300 hover:bg-blue-100"
             @click="toggleMultiSelectMode"
           >
-            <svg class="toolbar-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -39,103 +40,176 @@
             </svg>
           </button>
 
-          <el-tooltip content="展开/折叠全部">
-            <el-button link size="small" @click="toggleExpand">
-              <QyIcon name="Sort" />
-            </el-button>
-          </el-tooltip>
-          <el-tooltip content="新建文档">
-            <el-button link type="primary" size="small" @click="emit('add')">
-              <QyIcon name="Plus" />
-            </el-button>
-          </el-tooltip>
+          <button
+            type="button"
+            title="展开/折叠全部"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+            @click="toggleExpand"
+          >
+            <QyIcon name="Sort" />
+          </button>
+
+          <button
+            type="button"
+            title="新建文档"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-600 transition hover:border-amber-300 hover:bg-amber-100"
+            @click="emit('add')"
+          >
+            <QyIcon name="Plus" />
+          </button>
         </div>
       </div>
-      <div class="search-row">
-        <el-input v-model="filterText" placeholder="搜索文档..." size="small" clearable />
-      </div>
+
+      <QyInput v-model="filterText" placeholder="搜索文档..." size="sm" clearable />
     </div>
 
-    <!-- 多选模式提示栏 -->
-    <div v-if="isMultiSelectMode" class="multi-select-hint">
-      <div class="hint-left">
-        <span class="hint-text">已选择</span>
-        <span class="hint-count">{{ selectionCount }}</span>
-        <span class="hint-text">个文档</span>
+    <div
+      v-if="isMultiSelectMode"
+      class="flex items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-3 py-2"
+    >
+      <div class="flex items-center gap-1.5 text-xs text-slate-500">
+        <span>已选择</span>
+        <span
+          class="inline-flex min-w-5 items-center justify-center rounded-full bg-blue-100 px-1.5 py-0.5 text-[11px] font-semibold text-blue-700"
+        >
+          {{ selectionCount }}
+        </span>
+        <span>个文档</span>
       </div>
-      <div class="hint-actions">
+
+      <div class="flex items-center gap-2">
         <button
           v-if="hasSelection"
           type="button"
-          class="hint-btn hint-btn--danger"
+          class="rounded-lg bg-rose-500 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-rose-600"
           @click="handleBatchDelete"
         >
           批量删除
         </button>
-        <button v-if="hasSelection" type="button" class="hint-btn" @click="clearSelection">
+        <button
+          v-if="hasSelection"
+          type="button"
+          class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+          @click="clearSelection"
+        >
           取消选择
         </button>
       </div>
     </div>
 
-    <!-- 树形控件 -->
-    <div class="tree-content" @click.right.prevent @click="handleTreeClick">
-      <el-tree
-        ref="treeRef"
-        :data="treeData"
-        node-key="id"
-        :props="treeProps"
-        :highlight-current="!isMultiSelectMode"
-        :expand-on-click-node="false"
-        :default-expanded-keys="defaultExpandedKeys"
-        :filter-node-method="filterNode"
-        :allow-drop="allowDrop"
-        :allow-drag="allowDrag"
-        draggable
-        empty-text="暂无文档，点击右上角新建"
-        @node-click="handleNodeClick"
-        @node-drop="handleNodeDrop"
-        @node-drag-start="handleDragStart"
-        @node-contextmenu="handleContextMenu"
-      >
-        <template #default="{ data }">
+    <div
+      class="flex-1 overflow-y-auto px-2 py-2"
+      role="tree"
+      aria-label="文档目录"
+      @click.right.prevent
+      @click="handleTreeClick"
+    >
+      <template v-if="visibleTreeNodes.length > 0">
+        <div
+          v-for="node in visibleTreeNodes"
+          :key="node.doc.id"
+          class="py-0.5"
+          :data-node-id="node.doc.id"
+        >
           <div
-            class="custom-tree-node"
-            :class="{
-              'is-selected': isSelected(data.id),
-              'is-multi-select-mode': isMultiSelectMode,
-            }"
+            class="tree-node-row group relative flex min-h-9 items-center gap-2 rounded-xl px-2 py-1.5 text-sm transition"
+            :class="getTreeNodeClasses(node)"
+            :style="{ paddingLeft: `${12 + node.depth * 18}px` }"
+            :draggable="true"
+            role="treeitem"
+            :aria-expanded="node.hasChildren ? node.expanded : undefined"
+            :aria-selected="isTreeNodeSelected(node.doc.id)"
+            @click="handleNodeClick(node.doc, $event)"
+            @contextmenu.prevent="handleContextMenu($event, node.doc)"
+            @dragstart="handleDragStart(node.doc, $event)"
+            @dragend="handleDragEnd"
+            @dragover="handleDragOver(node.doc, $event)"
+            @drop="handleDrop(node.doc, $event)"
           >
-            <!-- 多选复选框 -->
+            <button
+              v-if="node.hasChildren"
+              type="button"
+              class="inline-flex h-5 w-5 flex-none items-center justify-center rounded-md text-slate-400 transition hover:bg-white/80 hover:text-slate-600"
+              :aria-label="node.expanded ? '折叠节点' : '展开节点'"
+              @click.stop="toggleNodeExpand(node.doc.id)"
+            >
+              <svg
+                class="h-3.5 w-3.5 transition-transform"
+                :class="node.expanded ? 'rotate-90' : ''"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M7.21 14.77a.75.75 0 0 1 .02-1.06L10.94 10 7.23 6.29a.75.75 0 1 1 1.06-1.06l4.24 4.24a.75.75 0 0 1 0 1.06l-4.24 4.24a.75.75 0 0 1-1.08 0Z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </button>
+            <span v-else class="inline-flex h-5 w-5 flex-none"></span>
+
             <input
               v-if="isMultiSelectMode"
+              :checked="isSelected(node.doc.id)"
               type="checkbox"
-              class="multi-select-checkbox"
-              :checked="isSelected(data.id)"
-              @click.stop="toggleSelection(data.id, $event)"
+              class="h-4 w-4 flex-none rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              @click.stop="toggleSelection(node.doc.id, $event)"
             />
 
-            <!-- 图标区分：卷用文件夹，章用文档 -->
-            <el-icon class="node-icon" :class="data.type">
-              <QyIcon name="Folder" v-if="data.type === 'volume'" />
-              <DocumentIcon v-else />
-            </el-icon>
-
-            <span class="node-title" :title="data.title">
-              {{ data.title }}
-              <span v-if="isModified(data)" class="dirty-dot">*</span>
+            <span class="tree-node-icon flex h-5 w-5 flex-none items-center justify-center">
+              <svg
+                v-if="node.doc.type === 'volume'"
+                class="h-4 w-4 text-amber-500"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
+              </svg>
+              <svg
+                v-else
+                class="h-4 w-4 text-slate-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
+              </svg>
             </span>
 
-            <!-- 右侧信息：字数或状态 -->
-            <span class="node-meta" v-if="data.wordCount">
-              {{ formatCount(data.wordCount) }}
+            <span class="min-w-0 flex-1 truncate text-[13px]" :title="node.doc.title">
+              {{ node.doc.title }}
+              <span v-if="isModified(node.doc)" class="ml-1 font-semibold text-rose-500">*</span>
+            </span>
+
+            <span
+              v-if="node.doc.wordCount"
+              class="ml-2 flex-none text-[11px] font-medium text-slate-400"
+            >
+              {{ formatCount(node.doc.wordCount) }}
             </span>
           </div>
-        </template>
-      </el-tree>
+        </div>
+      </template>
+
+      <div
+        v-else
+        class="flex min-h-32 items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-4 text-center text-sm text-slate-400"
+      >
+        {{ filterText.trim() ? '没有匹配的文档' : '暂无文档，点击右上角新建' }}
+      </div>
     </div>
 
-    <!-- 批量操作确认对话框 -->
     <BatchOperationConfirmDialog
       v-model="showConfirmDialog"
       :operation-type="pendingOperationType"
@@ -143,38 +217,50 @@
       @confirm="executeBatchOperation"
     />
 
-    <!-- 批量操作进度对话框 -->
     <BatchOperationProgressDialog
       v-model:visible="showProgressDialog"
       :operation-id="activeOperationId"
       @complete="handleOperationComplete"
     />
 
-    <!-- 自定义右键菜单 (Teleport 到 body 防止被遮挡) -->
     <teleport to="body">
       <div
         v-show="contextMenu.visible"
-        class="custom-context-menu"
-        :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
+        class="fixed z-[9999] min-w-36 rounded-xl border border-slate-200 bg-white/95 py-1.5 shadow-xl shadow-slate-900/10 backdrop-blur"
+        :style="{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }"
         @click.stop
       >
-        <div class="menu-item" @click="handleMenuAction('add')">
-          <QyIcon name="Plus" /> 新建子文档
-        </div>
-        <div class="menu-item" @click="handleMenuAction('rename')">
-          <QyIcon name="Edit" /> 重命名
-        </div>
-        <div class="menu-divider"></div>
-        <div class="menu-item danger" @click="handleMenuAction('delete')">
-          <QyIcon name="Delete" /> 删除
-        </div>
+        <button
+          type="button"
+          class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+          @click="handleMenuAction('add')"
+        >
+          <QyIcon name="Plus" />
+          <span>新建子文档</span>
+        </button>
+        <button
+          type="button"
+          class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+          @click="handleMenuAction('rename')"
+        >
+          <QyIcon name="Edit" />
+          <span>重命名</span>
+        </button>
+        <div class="my-1 h-px bg-slate-100"></div>
+        <button
+          type="button"
+          class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-rose-500 transition hover:bg-rose-50"
+          @click="handleMenuAction('delete')"
+        >
+          <QyIcon name="Delete" />
+          <span>删除</span>
+        </button>
       </div>
     </teleport>
 
-    <!-- 用于点击外部关闭右键菜单的透明遮罩 -->
     <div
       v-if="contextMenu.visible"
-      class="context-menu-mask"
+      class="fixed inset-0 z-[9998]"
       @click="closeContextMenu"
       @contextmenu.prevent="closeContextMenu"
     ></div>
@@ -182,10 +268,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, reactive, computed } from 'vue'
-import { ElTree } from 'element-plus'
+import { computed, reactive, ref, watch } from 'vue'
 import { messageBox, message } from '@/design-system/services'
-import { QyIcon } from '@/design-system/components'
+import { QyIcon, QyInput } from '@/design-system/components'
 import type { Document } from '@/modules/writer/types/document'
 import { useDocumentSelection } from '../composables/useDocumentSelection'
 import { useBatchOperationStore } from '../stores/batchOperationStore'
@@ -194,12 +279,8 @@ import { duplicateDocument, moveDocument } from '../api/document'
 import BatchOperationConfirmDialog from './BatchOperationConfirmDialog.vue'
 import BatchOperationProgressDialog from './BatchOperationProgressDialog.vue'
 
-// DocumentIcon 组件定义
-const DocumentIcon = {
-  template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`,
-}
+type DropType = 'inner' | 'before' | 'after' | ''
 
-// 拖拽数据类型定义
 interface DragData {
   kind: 'documents'
   sourceProjectId: string
@@ -207,11 +288,23 @@ interface DragData {
   mode: 'copy' | 'move'
 }
 
-// 使用标准的 Document 类型
+interface DragState {
+  isCopy: boolean
+  draggedNodeId: string
+  sourceProjectId: string
+}
+
+interface VisibleTreeNode {
+  doc: Document
+  depth: number
+  hasChildren: boolean
+  expanded: boolean
+}
+
 interface Props {
   treeData: Document[]
   currentDocumentId?: string
-  projectId?: string // 添加 projectId 以支持拖拽复制
+  projectId?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -220,15 +313,12 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   select: [doc: Document]
-  drop: [dragId: string, dropId: string, type: 'inner' | 'before' | 'after' | '']
+  drop: [dragId: string, dropId: string, type: DropType]
   add: [parent?: Document]
   rename: [doc: Document]
   delete: [doc: Document]
 }>()
 
-// =======================
-// 选择状态管理
-// =======================
 const {
   selectedIds,
   isSelected,
@@ -239,7 +329,6 @@ const {
   clearSelection,
 } = useDocumentSelection()
 
-// 扁平化文档列表（用于范围选择）
 const flatDocs = computed(() => {
   const flatten = (docs: Document[]): Document[] => {
     const result: Document[] = []
@@ -251,11 +340,34 @@ const flatDocs = computed(() => {
     }
     return result
   }
+
   return flatten(props.treeData)
 })
 
-// 多选模式
 const isMultiSelectMode = ref(false)
+const filterText = ref('')
+const expandedIds = ref<Set<string>>(new Set())
+const dragState = ref<DragState | null>(null)
+const dropIndicator = ref<{ targetId: string; type: Exclude<DropType, ''> } | null>(null)
+
+watch(
+  () => props.treeData,
+  (nodes) => {
+    const validIds = new Set(collectAllNodeIds(nodes))
+    const nextExpandedIds = new Set(
+      [...expandedIds.value].filter((nodeId) => validIds.has(nodeId)),
+    )
+
+    if (nextExpandedIds.size === 0) {
+      for (const nodeId of collectExpandableIds(nodes, true)) {
+        nextExpandedIds.add(nodeId)
+      }
+    }
+
+    expandedIds.value = nextExpandedIds
+  },
+  { immediate: true, deep: true },
+)
 
 function toggleMultiSelectMode(): void {
   isMultiSelectMode.value = !isMultiSelectMode.value
@@ -264,82 +376,179 @@ function toggleMultiSelectMode(): void {
   }
 }
 
-// 树引用
-const treeRef = ref<InstanceType<typeof ElTree>>()
-const filterText = ref('')
+const normalizedFilterText = computed(() => filterText.value.trim().toLowerCase())
 
-// 树配置
-const treeProps = {
-  children: 'children',
-  label: 'title',
-}
+const filteredTreeData = computed(() => {
+  if (!normalizedFilterText.value) {
+    return props.treeData
+  }
 
-// 默认展开
-const defaultExpandedKeys = ref<string[]>([])
-
-// 监听搜索
-watch(filterText, (val) => {
-  treeRef.value?.filter(val)
+  return filterDocuments(props.treeData, normalizedFilterText.value)
 })
 
-// 过滤节点逻辑
-const filterNode = (value: string, data: any): boolean => {
-  if (!value) return true
-  return (
-    'title' in data &&
-    typeof data.title === 'string' &&
-    data.title.toLowerCase().includes(value.toLowerCase())
-  )
-}
+const visibleTreeNodes = computed<VisibleTreeNode[]>(() => {
+  const collector: VisibleTreeNode[] = []
+  const expandAllForSearch = Boolean(normalizedFilterText.value)
+  flattenVisibleNodes(filteredTreeData.value, collector, 0, expandAllForSearch)
+  return collector
+})
 
-// =======================
-// 拖拽逻辑控制
-// =======================
+const allExpandableIds = computed(() => collectExpandableIds(props.treeData))
 
-// 允许拖拽：所有节点都可拖拽
-const allowDrag = (_node: any) => true
-
-// 允许放置：
-// 1. 'inner': 只能放入 'volume' (卷/文件夹) 类型，不能放入 'chapter' (章)
-// 2. 'prev'/'next': 同级排序始终允许
-const allowDrop = (_draggingNode: any, dropNode: any, type: string) => {
-  const dropData = dropNode.data as Document
-  if (type === 'inner') {
-    return dropData.type === 'volume'
+function collectAllNodeIds(nodes: Document[], collector: string[] = []): string[] {
+  for (const node of nodes) {
+    collector.push(node.id)
+    if (node.children?.length) {
+      collectAllNodeIds(node.children, collector)
+    }
   }
-  return true
+
+  return collector
 }
 
-// =======================
-// 拖拽复制功能
-// =======================
+function collectExpandableIds(
+  nodes: Document[],
+  rootOnly = false,
+  depth = 0,
+  collector: string[] = [],
+): string[] {
+  for (const node of nodes) {
+    if (node.children?.length) {
+      if (!rootOnly || depth === 0) {
+        collector.push(node.id)
+      }
+      collectExpandableIds(node.children, rootOnly, depth + 1, collector)
+    }
+  }
 
-/**
- * 拖拽状态接口
- */
-interface DragState {
-  isCopy: boolean
-  draggedNodeId: string
-  sourceProjectId: string
+  return collector
 }
 
-// 组件级拖拽状态（可靠的数据源）
-const dragState = ref<DragState | null>(null)
+function filterDocuments(nodes: Document[], keyword: string): Document[] {
+  return nodes.reduce<Document[]>((result, node) => {
+    const childMatches = node.children?.length ? filterDocuments(node.children, keyword) : []
+    const selfMatches = node.title.toLowerCase().includes(keyword)
 
-/**
- * 检测复制模式
- * Mac: Option键, Windows: Ctrl键
- */
+    if (selfMatches || childMatches.length > 0) {
+      result.push({
+        ...node,
+        children: childMatches.length > 0 ? childMatches : undefined,
+      })
+    }
+
+    return result
+  }, [])
+}
+
+function flattenVisibleNodes(
+  nodes: Document[],
+  collector: VisibleTreeNode[],
+  depth: number,
+  expandAllForSearch: boolean,
+): void {
+  for (const doc of nodes) {
+    const hasChildren = Boolean(doc.children?.length)
+    const expanded = hasChildren && (expandAllForSearch || expandedIds.value.has(doc.id))
+
+    collector.push({
+      doc,
+      depth,
+      hasChildren,
+      expanded,
+    })
+
+    if (hasChildren && expanded) {
+      flattenVisibleNodes(doc.children ?? [], collector, depth + 1, expandAllForSearch)
+    }
+  }
+}
+
+function toggleNodeExpand(nodeId: string): void {
+  const nextExpandedIds = new Set(expandedIds.value)
+
+  if (nextExpandedIds.has(nodeId)) {
+    nextExpandedIds.delete(nodeId)
+  } else {
+    nextExpandedIds.add(nodeId)
+  }
+
+  expandedIds.value = nextExpandedIds
+}
+
+function toggleExpand(): void {
+  if (allExpandableIds.value.length === 0) {
+    return
+  }
+
+  const shouldCollapse = allExpandableIds.value.every((nodeId) => expandedIds.value.has(nodeId))
+  const nextExpandedIds = new Set(expandedIds.value)
+
+  for (const nodeId of allExpandableIds.value) {
+    if (shouldCollapse) {
+      nextExpandedIds.delete(nodeId)
+    } else {
+      nextExpandedIds.add(nodeId)
+    }
+  }
+
+  expandedIds.value = nextExpandedIds
+}
+
+function isTreeNodeSelected(nodeId: string): boolean {
+  if (isMultiSelectMode.value) {
+    return isSelected(nodeId)
+  }
+
+  return props.currentDocumentId === nodeId
+}
+
+function getTreeNodeClasses(node: VisibleTreeNode): Record<string, boolean> {
+  const indicator = dropIndicator.value
+
+  return {
+    'bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900':
+      !isTreeNodeSelected(node.doc.id) && props.currentDocumentId !== node.doc.id,
+    'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-100':
+      props.currentDocumentId === node.doc.id && !isMultiSelectMode.value,
+    'bg-blue-50/80 text-blue-700 ring-1 ring-inset ring-blue-100':
+      isMultiSelectMode.value && isSelected(node.doc.id),
+    'tree-node-row--drop-before':
+      indicator?.targetId === node.doc.id && indicator.type === 'before',
+    'tree-node-row--drop-after':
+      indicator?.targetId === node.doc.id && indicator.type === 'after',
+    'tree-node-row--drop-inner':
+      indicator?.targetId === node.doc.id && indicator.type === 'inner',
+  }
+}
+
+function handleNodeClick(data: Document, event: MouseEvent): void {
+  closeContextMenu()
+
+  if (isMultiSelectMode.value) {
+    if (event.shiftKey) {
+      selectRange(data.id, flatDocs.value)
+    } else {
+      toggleSelection(data.id, event)
+    }
+    return
+  }
+
+  emit('select', data)
+}
+
+function handleTreeClick(event: MouseEvent): void {
+  closeContextMenu()
+
+  if (isMultiSelectMode.value && event.target === event.currentTarget) {
+    clearSelection()
+  }
+}
+
 function detectCopyMode(event: DragEvent): boolean {
-  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+  const isMac = navigator.platform.toUpperCase().includes('MAC')
   return isMac ? event.altKey : event.ctrlKey
 }
 
-/**
- * 获取有效的项目ID
- * 优先使用props.projectId,其次使用data.projectId
- * 如果都不存在,抛出错误
- */
 function getValidProjectId(data: Document): string {
   const projectId = props.projectId || data.projectId
 
@@ -350,19 +559,12 @@ function getValidProjectId(data: Document): string {
   return projectId
 }
 
-/**
- * 处理拖拽开始事件
- * 设置拖拽数据和效果
- */
-// el-tree node-drag-start 事件签名: (node, evt)
-const handleDragStart = (node: any, evt: DragEvent) => {
-  const isCopy = detectCopyMode(evt)
-  const data = node.data as Document
+function handleDragStart(data: Document, event: DragEvent): void {
+  closeContextMenu()
 
-  // 获取有效的projectId
+  const isCopy = detectCopyMode(event)
   const sourceProjectId = getValidProjectId(data)
 
-  // 保存到组件状态（可靠）
   dragState.value = {
     isCopy,
     draggedNodeId: data.id,
@@ -371,116 +573,162 @@ const handleDragStart = (node: any, evt: DragEvent) => {
 
   const payload: DragData = {
     kind: 'documents',
-    sourceProjectId: sourceProjectId,
+    sourceProjectId,
     ids: [data.id],
     mode: isCopy ? 'copy' : 'move',
   }
 
-  // 设置拖拽效果
-  evt.dataTransfer!.effectAllowed = isCopy ? 'copy' : 'move'
-
-  // 设置拖拽数据（用于跨组件/跨窗口拖拽）
-  const jsonData = JSON.stringify(payload)
-  evt.dataTransfer!.setData('application/x-documents+json', jsonData)
-  evt.dataTransfer!.setData('text/plain', jsonData) // 兼容性
+  if (event.dataTransfer) {
+    const jsonData = JSON.stringify(payload)
+    event.dataTransfer.effectAllowed = isCopy ? 'copy' : 'move'
+    event.dataTransfer.setData('application/x-documents+json', jsonData)
+    event.dataTransfer.setData('text/plain', jsonData)
+  }
 }
 
-// =======================
-// 事件处理
-// =======================
+function handleDragEnd(): void {
+  dragState.value = null
+  dropIndicator.value = null
+}
 
-// el-tree node-click 事件签名: (data, node, nodeInstance, evt)
-const handleNodeClick = (data: Document, _node: any, _nodeInstance: any, evt: MouseEvent) => {
-  if (isMultiSelectMode.value) {
-    // 多选模式
-    if (evt && evt.shiftKey) {
-      // Shift+点击：范围选择
-      selectRange(data.id, flatDocs.value)
-    } else {
-      // Ctrl/Cmd+点击或普通点击：切换选择
-      toggleSelection(data.id, evt || null)
+function resolveDropType(target: Document, event: DragEvent): Exclude<DropType, ''> {
+  const currentTarget = event.currentTarget as HTMLElement | null
+
+  if (!currentTarget) {
+    return target.type === 'volume' ? 'inner' : 'after'
+  }
+
+  const { top, height } = currentTarget.getBoundingClientRect()
+  const offsetY = event.clientY - top
+  const ratio = height > 0 ? offsetY / height : 0.5
+
+  if (ratio < 0.25) {
+    return 'before'
+  }
+
+  if (ratio > 0.75) {
+    return 'after'
+  }
+
+  if (target.type === 'volume') {
+    return 'inner'
+  }
+
+  return ratio < 0.5 ? 'before' : 'after'
+}
+
+function findDocumentById(nodes: Document[], id: string): Document | null {
+  for (const node of nodes) {
+    if (node.id === id) {
+      return node
     }
-  } else {
-    // 普通模式：选中并打开文档
-    emit('select', data)
-  }
-}
 
-// 树点击空白处取消选择
-function handleTreeClick(event: MouseEvent): void {
-  if (isMultiSelectMode.value && event.target === event.currentTarget) {
-    clearSelection()
-  }
-}
-
-// el-tree node-drop 事件签名: (dragNode, dropNode, type, evt)
-const handleNodeDrop = async (
-  dragNode: any,
-  dropNode: any,
-  type: 'inner' | 'before' | 'after',
-  evt?: DragEvent,
-) => {
-  const dragData = dragNode.data as Document
-  const dropData = dropNode.data as Document
-
-  // 优先使用组件状态（可靠）
-  let dragMode: 'copy' | 'move' = 'move'
-
-  if (dragState.value) {
-    // 使用组件状态
-    dragMode = dragState.value.isCopy ? 'copy' : 'move'
-  } else if (evt?.dataTransfer) {
-    // 如果没有状态，尝试从 dataTransfer 获取（跨组件拖拽）
-    try {
-      const dragDataJson = evt.dataTransfer.getData('application/x-documents+json')
-      if (dragDataJson) {
-        const dragPayload: DragData = JSON.parse(dragDataJson)
-        dragMode = dragPayload.mode
+    if (node.children?.length) {
+      const childResult = findDocumentById(node.children, id)
+      if (childResult) {
+        return childResult
       }
-    } catch (e) {
-      console.warn('Failed to parse drag data from dataTransfer:', e)
     }
   }
 
-  // 清除拖拽状态
+  return null
+}
+
+function containsDescendant(node: Document, targetId: string): boolean {
+  if (!node.children?.length) {
+    return false
+  }
+
+  for (const child of node.children) {
+    if (child.id === targetId || containsDescendant(child, targetId)) {
+      return true
+    }
+  }
+
+  return false
+}
+
+function handleDragOver(target: Document, event: DragEvent): void {
+  const activeDragState = dragState.value
+  if (!activeDragState) {
+    return
+  }
+
+  const draggedDocument = findDocumentById(props.treeData, activeDragState.draggedNodeId)
+  if (!draggedDocument) {
+    return
+  }
+
+  if (draggedDocument.id === target.id || containsDescendant(draggedDocument, target.id)) {
+    dropIndicator.value = null
+    return
+  }
+
+  event.preventDefault()
+
+  const type = resolveDropType(target, event)
+  dropIndicator.value = { targetId: target.id, type }
+
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = activeDragState.isCopy ? 'copy' : 'move'
+  }
+}
+
+async function handleDrop(target: Document, event: DragEvent): Promise<void> {
+  const activeDragState = dragState.value
+  if (!activeDragState) {
+    return
+  }
+
+  event.preventDefault()
+
+  const draggedDocument = findDocumentById(props.treeData, activeDragState.draggedNodeId)
+  const type = dropIndicator.value?.targetId === target.id
+    ? dropIndicator.value.type
+    : resolveDropType(target, event)
+
+  dropIndicator.value = null
   dragState.value = null
 
-  // 执行拖拽操作
-  await executeDragOperation(dragData, dropData, type, dragMode)
+  if (!draggedDocument) {
+    return
+  }
+
+  if (draggedDocument.id === target.id || containsDescendant(draggedDocument, target.id)) {
+    return
+  }
+
+  await executeDragOperation(
+    draggedDocument,
+    target,
+    type,
+    activeDragState.isCopy ? 'copy' : 'move',
+  )
 }
 
-/**
- * 执行拖拽操作（复制或移动）
- * 处理API调用和错误恢复
- */
 async function executeDragOperation(
   dragData: Document,
   dropData: Document,
-  type: 'inner' | 'before' | 'after',
+  type: Exclude<DropType, ''>,
   dragMode: 'copy' | 'move',
 ): Promise<void> {
   try {
     if (dragMode === 'copy') {
-      // 复制模式：调用 duplicate API
       await duplicateDocument(dragData.id, {
-        targetParentId: dropData.id,
+        targetParentId: type === 'inner' ? dropData.id : dropData.parentId,
         position: type,
         copyContent: true,
       })
 
       message.success(`已复制 "${dragData.title}" 到 "${dropData.title}"`, { duration: 2000 })
     } else {
-      // 移动模式：调用 move API
-      const newParentId = type === 'inner' ? dropData.id : dropData.parentId
-
       await moveDocument(dragData.id, {
-        parentId: newParentId,
+        parentId: type === 'inner' ? dropData.id : dropData.parentId,
       })
 
       message.success(`已移动 "${dragData.title}" 到 "${dropData.title}"`, { duration: 2000 })
     }
 
-    // API调用成功后，触发刷新事件
     emit('drop', dragData.id, dropData.id, type)
   } catch (error) {
     console.error(`${dragMode === 'copy' ? 'Duplicate' : 'Move'} failed:`, error)
@@ -489,28 +737,17 @@ async function executeDragOperation(
       duration: 3000,
     })
 
-    // API失败后，刷新树节点以同步后端状态
-    // 这会撤销ElTree的默认UI更新
-    await refreshTreeState()
+    await refreshTreeState(dragData.id)
   }
 }
 
-/**
- * 刷新树状态以同步后端状态
- * 用于API失败后的状态恢复
- */
-async function refreshTreeState(): Promise<void> {
+async function refreshTreeState(draggedNodeId = ''): Promise<void> {
   try {
-    // 触发drop事件但不传递参数，让父组件重新加载整个树
-    emit('drop', dragState.value?.draggedNodeId || '', '', '')
+    emit('drop', draggedNodeId, '', '')
   } catch (error) {
     console.error('Failed to refresh tree state:', error)
   }
 }
-
-// =======================
-// 右键菜单逻辑
-// =======================
 
 const contextMenu = reactive({
   visible: false,
@@ -519,21 +756,22 @@ const contextMenu = reactive({
   target: null as Document | null,
 })
 
-// el-tree node-contextmenu 事件签名: (evt, data, node, nodeInstance)
-const handleContextMenu = (evt: Event, data: Document, _node: any, _nodeInstance: any) => {
+function handleContextMenu(event: MouseEvent, data: Document): void {
   contextMenu.visible = true
-  const mouseEvent = evt as MouseEvent
-  contextMenu.x = mouseEvent.clientX
-  contextMenu.y = mouseEvent.clientY
+  contextMenu.x = event.clientX
+  contextMenu.y = event.clientY
   contextMenu.target = data
 }
 
-const closeContextMenu = () => {
+function closeContextMenu(): void {
   contextMenu.visible = false
 }
 
-const handleMenuAction = (action: 'add' | 'rename' | 'delete') => {
-  if (!contextMenu.target) return
+function handleMenuAction(action: 'add' | 'rename' | 'delete'): void {
+  if (!contextMenu.target) {
+    return
+  }
+
   if (action === 'add') {
     emit('add', contextMenu.target)
   } else if (action === 'rename') {
@@ -541,12 +779,10 @@ const handleMenuAction = (action: 'add' | 'rename' | 'delete') => {
   } else if (action === 'delete') {
     emit('delete', contextMenu.target)
   }
+
   closeContextMenu()
 }
 
-// =======================
-// 批量操作
-// =======================
 const batchOpStore = useBatchOperationStore()
 const documentStore = useDocumentStore()
 const showConfirmDialog = ref(false)
@@ -574,7 +810,6 @@ async function executeBatchOperation(): Promise<void> {
     activeOperationId.value = operation.batchId
     showProgressDialog.value = true
 
-    // 清除选择
     clearSelection()
     isMultiSelectMode.value = false
   } catch (error) {
@@ -585,326 +820,66 @@ async function executeBatchOperation(): Promise<void> {
 function handleOperationComplete(): void {
   showProgressDialog.value = false
   activeOperationId.value = null
-  // 刷新文档树
+
   if (props.projectId) {
     documentStore.loadTree(props.projectId)
   }
 }
 
-// =======================
-// 辅助功能
-// =======================
-
-// 展开/折叠全部
-const toggleExpand = () => {
-  const nodes = treeRef.value?.store.nodesMap
-  if (!nodes) return
-
-  // 取当前第一个节点的状态来反转
-  const firstKey = Object.keys(nodes)[0]
-  const isExpanded = nodes[firstKey]?.expanded
-
-  for (const key in nodes) {
-    nodes[key].expanded = !isExpanded
-  }
-}
-
-// 判断是否有未保存修改 (需配合 Store 状态，这里仅作演示)
-const isModified = (_data: Document) => {
-  // return data.id === currentEditingId && isDirty
+function isModified(_data: Document): boolean {
   return false
 }
 
-const formatCount = (count: number) => {
-  if (count >= 10000) return (count / 10000).toFixed(1) + 'w'
+function formatCount(count: number): string | number {
+  if (count >= 10000) {
+    return `${(count / 10000).toFixed(1)}w`
+  }
+
   return count > 0 ? count : ''
 }
 </script>
 
 <style scoped lang="scss">
-.document-tree-container {
+.tree-node-row {
+  user-select: none;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0.5rem;
+    right: 0.5rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+  }
+
+  &::before {
+    top: 0;
+    border-top: 2px solid rgb(59 130 246 / 0.95);
+  }
+
+  &::after {
+    bottom: 0;
+    border-bottom: 2px solid rgb(59 130 246 / 0.95);
+  }
+}
+
+.tree-node-row--drop-before::before {
+  opacity: 1;
+}
+
+.tree-node-row--drop-after::after {
+  opacity: 1;
+}
+
+.tree-node-row--drop-inner {
+  background: rgb(239 246 255 / 0.95) !important;
+  box-shadow: inset 0 0 0 1px rgb(147 197 253 / 0.9);
+}
+
+.tree-node-icon :deep(svg) {
+  width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  background-color: var(--el-bg-color);
-
-  .tree-toolbar {
-    padding: 12px 12px 8px;
-    border-bottom: 1px solid var(--el-border-color-lighter);
-
-    .header-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-
-      .title {
-        font-weight: 600;
-        font-size: 14px;
-        color: var(--el-text-color-primary);
-      }
-    }
-  }
-
-  .tree-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px 0;
-
-    // 隐藏横向滚动条
-    &::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: var(--el-border-color);
-      border-radius: 3px;
-    }
-  }
-}
-
-.actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.icon-button {
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--el-border-color);
-  border-radius: 8px;
-  background: #fff;
-  color: #64748b;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.icon-button--active {
-  background: #eff6ff;
-  color: #2563eb;
-  border-color: #bfdbfe;
-}
-
-.toolbar-icon-svg {
-  width: 14px;
-  height: 14px;
-}
-
-.multi-select-hint {
-  padding: 8px 12px;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.hint-left {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.hint-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.hint-text {
-  font-size: 12px;
-  color: #64748b;
-}
-
-.hint-count {
-  min-width: 20px;
-  height: 20px;
-  border-radius: 999px;
-  background: #dbeafe;
-  color: #1d4ed8;
-  font-size: 12px;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 6px;
-}
-
-.hint-btn {
-  height: 28px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  background: #fff;
-  color: #475569;
-  padding: 0 10px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.hint-btn--danger {
-  color: #fff;
-  background: #ef4444;
-  border-color: #ef4444;
-}
-
-.multi-select-checkbox {
-  width: 14px;
-  height: 14px;
-  margin-right: 6px;
-  cursor: pointer;
-}
-
-.custom-tree-node {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  font-size: 14px;
-  padding-right: 8px;
-  overflow: hidden;
-  transition: background-color 0.2s;
-
-  &.is-selected {
-    background-color: var(--el-color-primary-light-9);
-    border-radius: 4px;
-
-    .node-title {
-      color: var(--el-color-primary);
-    }
-
-    .node-icon {
-      color: var(--el-color-primary);
-    }
-  }
-
-  &.is-multi-select-mode {
-    cursor: pointer;
-  }
-
-  .node-icon {
-    margin-right: 6px;
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-
-    :deep(svg) {
-      width: 14px;
-      height: 14px;
-    }
-
-    &.volume {
-      color: #e6a23c; // 文件夹颜色
-    }
-
-    &.chapter,
-    &.scene {
-      color: var(--el-text-color-secondary);
-    }
-  }
-
-  .node-title {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--el-text-color-regular);
-
-    .dirty-dot {
-      color: var(--el-color-danger);
-      font-weight: bold;
-      margin-left: 2px;
-    }
-  }
-
-  .node-meta {
-    font-size: 12px;
-    color: var(--el-text-color-placeholder);
-    margin-left: 8px;
-  }
-}
-
-// 覆盖 Element Tree 样式
-:deep(.el-tree-node__content) {
-  height: 32px;
-  border-radius: 4px;
-  margin: 0 4px;
-
-  &:hover {
-    background-color: var(--el-fill-color-light);
-  }
-}
-
-:deep(.el-tree--highlight-current .el-tree-node.is-current > .el-tree-node__content) {
-  background-color: var(--el-color-primary-light-9);
-  color: var(--el-color-primary);
-
-  .node-title {
-    color: var(--el-color-primary);
-    font-weight: 500;
-  }
-
-  .node-icon {
-    color: var(--el-color-primary);
-  }
-}
-</style>
-
-<!-- 全局样式：右键菜单 -->
-<style lang="scss">
-.custom-context-menu {
-  position: fixed;
-  z-index: 9999;
-  background: var(--el-bg-color-overlay);
-  border: 1px solid var(--el-border-color-light);
-  box-shadow: var(--el-box-shadow-light);
-  border-radius: 4px;
-  padding: 4px 0;
-  min-width: 140px;
-
-  .menu-item {
-    display: flex;
-    align-items: center;
-    padding: 8px 16px;
-    font-size: 13px;
-    color: var(--el-text-color-regular);
-    cursor: pointer;
-    transition: background 0.2s;
-    gap: 8px;
-
-    &:hover {
-      background: var(--el-fill-color-light);
-      color: var(--el-color-primary);
-    }
-
-    &.danger {
-      color: var(--el-color-danger);
-
-      &:hover {
-        background: var(--el-color-danger-light-9);
-      }
-    }
-  }
-
-  .menu-divider {
-    height: 1px;
-    background: var(--el-border-color-lighter);
-    margin: 4px 0;
-  }
-}
-
-.context-menu-mask {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 9998;
-  background: transparent;
 }
 </style>

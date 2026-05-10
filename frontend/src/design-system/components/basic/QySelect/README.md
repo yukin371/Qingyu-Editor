@@ -1,6 +1,6 @@
 # QySelect 选择器组件
 
-Qingyu 风格的下拉选择器组件，与 Element Plus Select API 兼容。
+Qingyu 风格的下拉选择器组件，面向当前 `Qy* + Tailwind` 表单体系提供统一的选择与筛选交互。
 
 ## 功能特性
 
@@ -262,16 +262,24 @@ interface QySelectOption {
 | ↑ | 向上移动高亮 |
 | ↓ | 向下移动高亮 |
 
-## 与 Element Plus 兼容性
+## 迁移参考
 
-QySelect 组件与 Element Plus Select 组件 API 完全兼容，可以直接替换：
+旧表单若仍在使用原生 `select` 或历史封装，建议统一收口到 `QySelect`：
 
 ```vue
-<!-- Element Plus -->
-<el-select v-model="value" :options="options" />
+<!-- 旧写法 -->
+<select v-model="value">
+  <option
+    v-for="option in options"
+    :key="option.value"
+    :value="option.value"
+  >
+    {{ option.label }}
+  </option>
+</select>
 
 <!-- QySelect -->
-<qy-select v-model="value" :options="options" />
+<QySelect v-model="value" :options="options" />
 ```
 
 ## 注意事项

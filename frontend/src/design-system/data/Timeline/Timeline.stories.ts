@@ -169,7 +169,7 @@ export const HorizontalRail: Story = {
         </TimelineItem>
         <TimelineItem type="warning" timestamp="Q3 2026" title="DemoHub Rollout" description="把基础组件完整接入 DemoHub，并开始收口 Storybook 展示与交互说明。">
         </TimelineItem>
-        <TimelineItem type="danger" timestamp="Q4 2026" title="Migration Ready" description="为平台逐步替换 Element Plus 提供可落地的 UI 基建和对照页。">
+        <TimelineItem type="danger" timestamp="Q4 2026" title="Migration Ready" description="为平台逐步替换 legacy UI 提供可落地的组件基建和对照页。">
         </TimelineItem>
       </Timeline>
     `,

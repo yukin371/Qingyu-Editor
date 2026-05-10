@@ -1,7 +1,7 @@
 /**
  * QyImage component type definitions
  *
- * 与 Element Plus El-Image API 兼容
+ * 与历史图片 API 保持兼容
  */
 
 import type { ImageVariants } from './variants'

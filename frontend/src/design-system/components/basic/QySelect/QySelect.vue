@@ -3,7 +3,7 @@
  * QySelect 选择器组件
  *
  * Qingyu 风格的下拉选择组件，支持单选、多选、可搜索、可清空等特性
- * 与 Element Plus Select API 兼容
+ * 与历史选择器 API 保持兼容
  */
 
 import { computed, ref, nextTick, onMounted, onUnmounted } from 'vue'

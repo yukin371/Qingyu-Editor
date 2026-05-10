@@ -9,7 +9,7 @@
  * QyForm 表单容器组件
  *
  * Qingyu 风格的表单容器组件，提供完整的表单数据管理和验证功能
- * 与 Element Plus Form API 兼容
+ * 与历史表单 API 保持兼容
  */
 
 import { computed, provide, reactive, ref, watch } from 'vue'

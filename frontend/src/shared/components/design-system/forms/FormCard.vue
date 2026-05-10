@@ -1,31 +1,41 @@
 <template>
-  <el-card :class="cardClasses" :shadow="shadow">
-    <template #header v-if="$slots.header || title">
-      <div class="qy-form-card__header">
+  <QyCard
+    :shadow="shadow"
+    :class="cardClasses"
+    variant="default"
+    padding="md"
+  >
+    <template v-if="$slots.header || title" #header>
+      <div class="flex flex-col gap-2">
         <slot name="header">
-          <h3 class="qy-form-card__title">{{ title }}</h3>
-          <p v-if="description" class="qy-form-card__description">{{ description }}</p>
+          <h3 class="m-0 text-lg font-semibold text-slate-800">{{ title }}</h3>
+          <p v-if="description" class="m-0 text-sm text-slate-500">{{ description }}</p>
         </slot>
       </div>
     </template>
 
-    <div class="qy-form-card__content">
+    <div class="py-2">
       <slot />
     </div>
 
-    <template #footer v-if="$slots.footer || showFooter">
-      <div class="qy-form-card__footer">
+    <template v-if="$slots.footer || showFooter" #footer>
+      <div class="flex justify-end gap-3">
         <slot name="footer">
-          <el-button @click="handleCancel" v-if="showCancel">{{ cancelText }}</el-button>
-          <el-button type="primary" @click="handleSubmit" :loading="loading">{{ submitText }}</el-button>
+          <QyButton v-if="showCancel" variant="secondary" @click="handleCancel">
+            {{ cancelText }}
+          </QyButton>
+          <QyButton variant="primary" :loading="loading" @click="handleSubmit">
+            {{ submitText }}
+          </QyButton>
         </slot>
       </div>
     </template>
-  </el-card>
+  </QyCard>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { QyButton, QyCard } from '@/design-system/components'
 
 interface Props {
   title?: string
@@ -46,7 +56,7 @@ const props = withDefaults(defineProps<Props>(), {
   submitText: '提交',
   cancelText: '取消',
   loading: false,
-  bordered: false
+  bordered: false,
 })
 
 const emit = defineEmits<{
@@ -54,14 +64,9 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
-const cardClasses = computed(() => {
-  return [
-    'qy-form-card',
-    {
-      'qy-form-card--bordered': props.bordered
-    }
-  ]
-})
+const cardClasses = computed(() =>
+  ['mb-6', props.bordered ? 'border border-slate-200' : ''].filter(Boolean).join(' '),
+)
 
 const handleSubmit = () => {
   emit('submit')
@@ -71,59 +76,3 @@ const handleCancel = () => {
   emit('cancel')
 }
 </script>
-
-<style scoped lang="scss">
-.qy-form-card {
-  margin-bottom: 1.5rem;
-}
-
-.qy-form-card--bordered {
-  border: 1px solid #E0E0E0;
-}
-
-.qy-form-card__header {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.qy-form-card__title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #212121;
-  margin: 0;
-}
-
-.qy-form-card__description {
-  font-size: 0.875rem;
-  color: #757575;
-  margin: 0;
-}
-
-.qy-form-card__content {
-  padding: 0.5rem 0;
-}
-
-.qy-form-card__footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-}
-
-:deep(.el-card__header) {
-  padding: 1.25rem 1.5rem;
-  background-color: #FAFAFA;
-  border-bottom: 1px solid #E0E0E0;
-}
-
-:deep(.el-card__body) {
-  padding: 1.5rem;
-}
-
-:deep(.el-card__footer) {
-  padding: 1rem 1.5rem;
-  background-color: #FAFAFA;
-  border-top: 1px solid #E0E0E0;
-}
-</style>
-

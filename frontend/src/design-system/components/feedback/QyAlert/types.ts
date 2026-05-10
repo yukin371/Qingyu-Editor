@@ -1,7 +1,7 @@
 /**
  * QyAlert component type definitions
  *
- * 与 Element Plus El-Alert API 兼容
+ * 与历史告警 API 保持兼容
  */
 
 import type { AlertVariants } from './variants'

@@ -1,98 +1,116 @@
 <template>
-  <div class="draw-canvas-container" ref="_containerRef">
-    <!-- 工具栏 -->
-    <div class="draw-toolbar">
-      <div class="toolbar-left">
-        <el-button-group>
-          <el-button
-            size="small"
-            :icon="CirclePlus"
-            @click="handleAddNode"
-            title="添加节点"
-          >
-            添加节点
-          </el-button>
-          <el-button
-            size="small"
-            :icon="Connection"
+  <div ref="_containerRef" class="flex h-full flex-col bg-white">
+    <div
+      class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3"
+    >
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex items-center gap-2">
+          <QyButton size="sm" variant="secondary" @click="handleAddNode">
+            <span class="inline-flex items-center gap-1.5">
+              <QyIcon name="Plus" :size="14" />
+              添加节点
+            </span>
+          </QyButton>
+          <QyButton
+            size="sm"
+            :variant="connectingMode ? 'primary' : 'secondary'"
             @click="connectingMode = !connectingMode"
-            :type="connectingMode ? 'primary' : ''"
-            title="连接模式"
           >
-            {{ connectingMode ? '已激活' : '连接' }}
-          </el-button>
-        </el-button-group>
+            <span class="inline-flex items-center gap-1.5">
+              <QyIcon name="Connection" :size="14" />
+              {{ connectingMode ? '已激活' : '连接' }}
+            </span>
+          </QyButton>
+        </div>
 
-        <el-divider direction="vertical" />
+        <span class="h-5 w-px bg-slate-200" />
 
-        <el-button-group>
-          <el-button
-            size="small"
-            :icon="ZoomIn"
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="draw-toolbar-icon"
+            title="放大"
+            :disabled="!drawEngine"
             @click="handleZoomIn"
+          >
+            <QyIcon name="Plus" :size="14" />
+          </button>
+          <button
+            type="button"
+            class="draw-toolbar-icon"
+            title="缩小"
             :disabled="!drawEngine"
-          />
-          <el-button
-            size="small"
-            :icon="ZoomOut"
             @click="handleZoomOut"
+          >
+            <QyIcon name="Minus" :size="14" />
+          </button>
+          <button
+            type="button"
+            class="draw-toolbar-icon"
+            title="适配屏幕"
             :disabled="!drawEngine"
-          />
-          <el-button
-            size="small"
-            :icon="Expand"
             @click="fitToScreen"
-            :disabled="!drawEngine"
-          />
-        </el-button-group>
+          >
+            <QyIcon name="Expand" :size="14" />
+          </button>
+        </div>
 
-        <el-divider direction="vertical" />
+        <span class="h-5 w-px bg-slate-200" />
 
-        <el-button-group>
-          <el-button
-            size="small"
-            :icon="Back"
-            @click="undo"
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="draw-toolbar-icon"
+            title="撤销"
             :disabled="!canUndo"
-          />
-          <el-button
-            size="small"
-            :icon="Right"
-            @click="redo"
+            @click="undo"
+          >
+            <QyIcon name="ArrowLeft" :size="14" />
+          </button>
+          <button
+            type="button"
+            class="draw-toolbar-icon"
+            title="重做"
             :disabled="!canRedo"
-          />
-        </el-button-group>
+            @click="redo"
+          >
+            <QyIcon name="ArrowRight" :size="14" />
+          </button>
+        </div>
       </div>
 
-      <div class="toolbar-right">
-        <el-select v-model="currentTheme" size="small" style="width: 120px;" @change="handleThemeChange">
-          <el-option label="浅色" value="light" />
-          <el-option label="深色" value="dark" />
-          <el-option label="默认" value="default" />
-        </el-select>
+      <div class="flex items-center gap-3">
+        <QySelect
+          v-model="currentTheme"
+          class="w-[120px]"
+          size="sm"
+          :options="themeOptions"
+          placeholder="主题"
+          @change="handleThemeChange"
+        />
 
-        <el-divider direction="vertical" />
+        <span class="h-5 w-px bg-slate-200" />
 
-        <el-dropdown @command="handleExport">
-          <el-button size="small">
-            导出 <el-icon class="el-icon--right"><arrow-down /></el-icon>
-          </el-button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="json">JSON</el-dropdown-item>
-              <el-dropdown-item command="markdown">Markdown</el-dropdown-item>
-              <el-dropdown-item command="svg">SVG</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+        <QyDropdown
+          :items="exportItems"
+          placement="bottom-end"
+          trigger="click"
+          @select="handleExport"
+        >
+          <QyButton size="sm" variant="secondary">
+            <span class="inline-flex items-center gap-1.5">
+              导出
+              <QyIcon name="ArrowDown" :size="14" />
+            </span>
+          </QyButton>
+        </QyDropdown>
       </div>
     </div>
 
-    <!-- 画布区域 -->
-    <div class="draw-canvas-wrapper" ref="canvasWrapperRef">
+    <div ref="canvasWrapperRef" class="relative flex-1 overflow-hidden bg-slate-50">
       <canvas
         ref="canvasRef"
-        class="draw-canvas"
+        class="absolute left-0 top-0 cursor-crosshair active:cursor-grabbing"
         @mousedown="handleCanvasMouseDown"
         @mousemove="handleCanvasMouseMove"
         @mouseup="handleCanvasMouseUp"
@@ -100,92 +118,120 @@
         @contextmenu.prevent="handleContextMenu"
       />
 
-      <!-- 节点层 -->
-      <div class="nodes-layer" :style="getLayerStyle()">
+      <div class="absolute left-0 top-0 origin-top-left transition-transform duration-100 ease-out" :style="getLayerStyle()">
         <div
           v-for="node in nodes"
           :key="node.id"
-          class="draw-node"
-          :class="{ 'is-selected': node.id === getSelectedNodeId() }"
+          class="absolute flex cursor-move select-none flex-col items-center justify-center rounded-md border-2 bg-white transition-all"
+          :class="node.id === getSelectedNodeId() ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.45)]' : 'border-blue-500 hover:shadow-[0_2px_12px_rgba(59,130,246,0.3)]'"
           :style="getNodeStyle(node)"
           @mousedown.stop="handleNodeMouseDown(node, $event)"
           @click.stop="handleNodeClick(node)"
           @dblclick.stop="handleEditNode(node)"
         >
-          <div class="node-content">
-            <div class="node-label">{{ node.label }}</div>
-            <div v-if="node.metadata?.subtitle" class="node-subtitle">{{ node.metadata.subtitle }}</div>
+          <div class="flex h-full w-full flex-col items-center justify-center px-2">
+            <div class="break-words px-1 text-center text-sm font-semibold text-slate-800">
+              {{ node.label }}
+            </div>
+            <div v-if="node.metadata?.subtitle" class="text-center text-xs text-slate-400">
+              {{ node.metadata.subtitle }}
+            </div>
           </div>
-          <div class="node-actions" v-if="node.id === getSelectedNodeId()">
-            <el-button text size="small" :icon="Edit" @click.stop="handleEditNode(node)" />
-            <el-button text size="small" :icon="Delete" @click.stop="handleDeleteNode(node)" />
+          <div
+            v-if="node.id === getSelectedNodeId()"
+            class="absolute right-[-60px] top-0 flex gap-1"
+          >
+            <button type="button" class="draw-node-action" title="编辑" @click.stop="handleEditNode(node)">
+              <QyIcon name="Edit" :size="14" />
+            </button>
+            <button type="button" class="draw-node-action text-rose-500" title="删除" @click.stop="handleDeleteNode(node)">
+              <QyIcon name="Delete" :size="14" />
+            </button>
           </div>
         </div>
       </div>
+
+      <Transition name="slide-left">
+        <aside
+          v-if="selectedNode"
+          class="absolute bottom-0 right-0 top-0 z-[100] flex w-80 flex-col border-l border-slate-200 bg-white"
+        >
+          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-4">
+            <h3 class="m-0 text-base font-semibold text-slate-800">节点属性</h3>
+            <button type="button" class="draw-toolbar-icon" @click="selectedNode = null">
+              <QyIcon name="Close" :size="14" />
+            </button>
+          </div>
+
+          <QyScrollbar class="flex-1">
+            <div class="space-y-4 p-4">
+              <div class="space-y-2">
+                <label class="text-sm font-medium text-slate-700">名称</label>
+                <QyInput v-model="nodeForm.label" @input="updateSelectedNode" />
+              </div>
+              <div class="space-y-2">
+                <label class="text-sm font-medium text-slate-700">描述</label>
+                <QyTextarea
+                  v-model="nodeForm.description"
+                  :rows="3"
+                  @input="updateSelectedNode"
+                />
+              </div>
+              <div class="space-y-2">
+                <label class="text-sm font-medium text-slate-700">宽度</label>
+                <QyInputNumber v-model="nodeForm.width" @change="updateSelectedNode" />
+              </div>
+              <div class="space-y-2">
+                <label class="text-sm font-medium text-slate-700">高度</label>
+                <QyInputNumber v-model="nodeForm.height" @change="updateSelectedNode" />
+              </div>
+              <div class="space-y-2">
+                <label class="text-sm font-medium text-slate-700">颜色</label>
+                <label class="flex h-11 cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white px-3">
+                  <input
+                    v-model="nodeForm.color"
+                    type="color"
+                    class="h-7 w-7 cursor-pointer rounded border-0 bg-transparent p-0"
+                    @input="updateSelectedNode"
+                    @change="updateSelectedNode"
+                  />
+                  <span class="text-sm text-slate-500">{{ nodeForm.color }}</span>
+                </label>
+              </div>
+              <QyButton block variant="danger" @click="handleDeleteNode(selectedNode)">
+                删除节点
+              </QyButton>
+            </div>
+          </QyScrollbar>
+        </aside>
+      </Transition>
     </div>
 
-    <!-- 右侧面板 -->
-    <transition name="slide-left">
-      <div v-if="selectedNode" class="property-panel">
-        <div class="panel-header">
-          <h3>节点属性</h3>
-          <el-button text :icon="Close" @click="selectedNode = null" />
-        </div>
-        <el-scrollbar class="panel-content">
-          <el-form :model="nodeForm" label-width="80px" size="small">
-            <el-form-item label="名称">
-              <el-input v-model="nodeForm.label" @input="updateSelectedNode" />
-            </el-form-item>
-            <el-form-item label="描述">
-              <el-input
-                v-model="nodeForm.description"
-                type="textarea"
-                :rows="3"
-                @input="updateSelectedNode"
-              />
-            </el-form-item>
-            <el-form-item label="宽度">
-              <el-input-number v-model="nodeForm.width" @change="updateSelectedNode" />
-            </el-form-item>
-            <el-form-item label="高度">
-              <el-input-number v-model="nodeForm.height" @change="updateSelectedNode" />
-            </el-form-item>
-            <el-form-item label="颜色">
-              <el-color-picker v-model="nodeForm.color" @change="updateSelectedNode" />
-            </el-form-item>
-            <el-button type="primary" @click="handleDeleteNode(selectedNode)" style="width: 100%;">
-              删除节点
-            </el-button>
-          </el-form>
-        </el-scrollbar>
-      </div>
-    </transition>
-
-    <!-- 编辑对话框 -->
-    <el-dialog
-      v-model="editDialogVisible"
+    <QyDialog
+      v-model:visible="editDialogVisible"
       title="编辑节点"
-      width="500px"
+      size="lg"
       :close-on-click-modal="false"
     >
-      <el-form :model="editForm" label-width="100px">
-        <el-form-item label="节点名称">
-          <el-input v-model="editForm.label" placeholder="请输入节点名称" />
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input
+      <div class="space-y-4">
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-slate-700">节点名称</label>
+          <QyInput v-model="editForm.label" placeholder="请输入节点名称" />
+        </div>
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-slate-700">描述</label>
+          <QyTextarea
             v-model="editForm.description"
-            type="textarea"
             :rows="3"
             placeholder="请输入节点描述（可选）"
           />
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
       <template #footer>
-        <el-button @click="editDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="confirmEdit">确定</el-button>
+        <QyButton variant="secondary" @click="editDialogVisible = false">取消</QyButton>
+        <QyButton variant="primary" @click="confirmEdit">确定</QyButton>
       </template>
-    </el-dialog>
+    </QyDialog>
   </div>
 </template>
 
@@ -193,17 +239,17 @@
 import { ref, onMounted } from 'vue'
 import { message, messageBox } from '@/design-system/services'
 import {
-  CirclePlus,
-  Connection,
-  ZoomIn,
-  ZoomOut,
-  Expand,
-  Back,
-  Right,
-  Edit,
-  Delete,
-  Close
-} from '@element-plus/icons-vue'
+  QyButton,
+  QyDialog,
+  QyDropdown,
+  QyIcon,
+  QyInput,
+  QyInputNumber,
+  QyScrollbar,
+  QySelect,
+  QyTextarea,
+  type DropdownItem,
+} from '@/design-system/components'
 import DrawEngine from '@/core/draw-engine/draw-engine'
 import type { DrawEngineConfig, DrawNode } from '@/core/draw-engine/types'
 
@@ -222,7 +268,18 @@ const emit = defineEmits<{
   'export': [data: any]
 }>()
 
-// containerRef 用于模板引用，但这里不直接使用
+const themeOptions = [
+  { label: '浅色', value: 'light' },
+  { label: '深色', value: 'dark' },
+  { label: '默认', value: 'default' },
+]
+
+const exportItems: DropdownItem[] = [
+  { key: 'json', label: 'JSON' },
+  { key: 'markdown', label: 'Markdown' },
+  { key: 'svg', label: 'SVG' },
+]
+
 const canvasWrapperRef = ref<HTMLDivElement>()
 const canvasRef = ref<HTMLCanvasElement>()
 
@@ -247,22 +304,20 @@ const nodeForm = ref({
   description: '',
   width: 120,
   height: 60,
-  color: '#ffffff'
+  color: '#ffffff',
 })
 
 const editForm = ref({
   label: '',
-  description: ''
+  description: '',
 })
 
-// 获取选中的节点ID
 const getSelectedNodeId = (): string | null => {
   if (!drawEngine) return null
   const selected = drawEngine.getSelectedNode()
   return selected?.id || null
 }
 
-// 缩放处理
 const handleZoomIn = () => {
   if (drawEngine) {
     drawEngine.zoom(1.2)
@@ -288,7 +343,6 @@ const setupCanvas = async () => {
   const canvas = canvasRef.value
   if (!canvas) return
 
-  // 设置canvas大小
   const rect = canvasWrapperRef.value.getBoundingClientRect()
   canvas.width = rect.width * window.devicePixelRatio
   canvas.height = rect.height * window.devicePixelRatio
@@ -300,23 +354,21 @@ const setupCanvas = async () => {
 
   ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
 
-  // 初始化绘制引擎
   drawEngine = new DrawEngine({
     ...props.config,
     canvasId: 'main-canvas',
     enableHistory: true,
-    maxHistorySteps: 50
+    maxHistorySteps: 50,
   })
 
-  // 监听引擎事件
   drawEngine.on('nodeCreate', () => {
     nodes.value = drawEngine!.getAllNodes()
     render()
   })
 
-  drawEngine.on('nodeUpdate', (e) => {
+  drawEngine.on('nodeUpdate', (event) => {
     nodes.value = drawEngine!.getAllNodes()
-    emit('node-changed', e.node!)
+    emit('node-changed', event.node!)
     render()
   })
 
@@ -325,9 +377,7 @@ const setupCanvas = async () => {
     render()
   })
 
-  // 更新撤销/重做状态
   updateHistoryState()
-
   render()
 }
 
@@ -339,14 +389,13 @@ const updateHistoryState = () => {
 }
 
 const loadInitialData = () => {
-  if (!drawEngine) return
-  if (!props.initialData) return
+  if (!drawEngine || !props.initialData) return
 
-  props.initialData.nodes.forEach(node => {
+  props.initialData.nodes.forEach((node) => {
     drawEngine!.createNode(node.label, node.x, node.y, node.metadata)
   })
 
-  props.initialData.edges.forEach(edge => {
+  props.initialData.edges.forEach((edge) => {
     drawEngine!.createEdge(edge.fromNodeId, edge.toNodeId, edge.label)
   })
 
@@ -355,63 +404,57 @@ const loadInitialData = () => {
 }
 
 const render = () => {
-  if (!canvasRef.value || !ctx) return
+  if (!canvasRef.value || !ctx || !drawEngine) return
 
   const rect = canvasRef.value.getBoundingClientRect()
   const width = rect.width
   const height = rect.height
 
-  // 清空画布
-  ctx.fillStyle = drawEngine!.getTheme().backgroundColor
+  ctx.fillStyle = drawEngine.getTheme().backgroundColor
   ctx.fillRect(0, 0, width, height)
 
-  // 绘制网格
-  if (drawEngine!.getCanvas().gridEnabled) {
+  if (drawEngine.getCanvas().gridEnabled) {
     drawGrid()
   }
 
-  // 绘制连接线
   drawEdges()
 
-  // 触发下一帧
   if (animationFrameId) cancelAnimationFrame(animationFrameId)
   animationFrameId = requestAnimationFrame(render)
 }
 
 const drawGrid = () => {
-  if (!ctx) return
-  const canvas = canvasRef.value!
-  const gridSize = drawEngine!.getCanvas().gridSize || 20
-  const theme = drawEngine!.getTheme()
+  if (!ctx || !drawEngine || !canvasRef.value) return
+
+  const gridSize = drawEngine.getCanvas().gridSize || 20
+  const theme = drawEngine.getTheme()
+  const rect = canvasRef.value.getBoundingClientRect()
 
   ctx.strokeStyle = theme.gridColor || '#e5e7eb'
   ctx.lineWidth = 0.5
 
-  const rect = canvas.getBoundingClientRect()
-  const width = rect.width
-  const height = rect.height
-
-  for (let i = 0; i < width; i += gridSize) {
+  for (let i = 0; i < rect.width; i += gridSize) {
     ctx.beginPath()
     ctx.moveTo(i, 0)
-    ctx.lineTo(i, height)
+    ctx.lineTo(i, rect.height)
     ctx.stroke()
   }
 
-  for (let i = 0; i < height; i += gridSize) {
+  for (let i = 0; i < rect.height; i += gridSize) {
     ctx.beginPath()
     ctx.moveTo(0, i)
-    ctx.lineTo(width, i)
+    ctx.lineTo(rect.width, i)
     ctx.stroke()
   }
 }
 
 const drawEdges = () => {
-  if (!ctx) return
-  const allEdges = drawEngine!.getAllEdges()
-  const theme = drawEngine!.getTheme()
+  if (!ctx || !drawEngine) return
 
-  allEdges.forEach(edge => {
+  const allEdges = drawEngine.getAllEdges()
+  const theme = drawEngine.getTheme()
+
+  allEdges.forEach((edge) => {
     const fromNode = drawEngine!.getNode(edge.fromNodeId)
     const toNode = drawEngine!.getNode(edge.toNodeId)
     if (!fromNode || !toNode) return
@@ -436,9 +479,9 @@ const drawEdges = () => {
 
 const drawArrow = (toX: number, toY: number, fromX: number, fromY: number, color: string) => {
   if (!ctx) return
+
   const angle = Math.atan2(toY - fromY, toX - fromX)
   const arrowSize = 15
-
   const point1X = toX - arrowSize * Math.cos(angle - Math.PI / 6)
   const point1Y = toY - arrowSize * Math.sin(angle - Math.PI / 6)
   const point2X = toX - arrowSize * Math.cos(angle + Math.PI / 6)
@@ -457,20 +500,18 @@ const getLayerStyle = () => {
   const canvas = drawEngine?.getCanvas()
   if (!canvas) return {}
   return {
-    transform: `translate(${canvas.offsetX}px, ${canvas.offsetY}px) scale(${canvas.zoom})`
+    transform: `translate(${canvas.offsetX}px, ${canvas.offsetY}px) scale(${canvas.zoom})`,
   }
 }
 
-const getNodeStyle = (node: DrawNode) => {
-  return {
-    left: `${node.x}px`,
-    top: `${node.y}px`,
-    width: `${node.width}px`,
-    height: `${node.height}px`,
-    backgroundColor: node.color || '#ffffff',
-    borderColor: node.borderColor || '#409eff'
-  }
-}
+const getNodeStyle = (node: DrawNode) => ({
+  left: `${node.x}px`,
+  top: `${node.y}px`,
+  width: `${node.width}px`,
+  height: `${node.height}px`,
+  backgroundColor: node.color || '#ffffff',
+  borderColor: node.borderColor || '#409eff',
+})
 
 const handleAddNode = () => {
   if (!drawEngine) return
@@ -486,7 +527,7 @@ const handleNodeClick = (node: DrawNode) => {
     description: node.description || '',
     width: node.width,
     height: node.height,
-    color: node.color || '#ffffff'
+    color: node.color || '#ffffff',
   }
   emit('node-selected', node)
 }
@@ -504,10 +545,9 @@ const handleCanvasMouseDown = () => {
 }
 
 const handleCanvasMouseMove = (event: MouseEvent) => {
-  if (!draggedNodeId.value || !drawEngine) return
+  if (!draggedNodeId.value || !drawEngine || !canvasRef.value) return
 
-  const canvas = canvasRef.value!
-  const rect = canvas.getBoundingClientRect()
+  const rect = canvasRef.value.getBoundingClientRect()
   const offsetX = (event.clientX - rect.left) / drawEngine.getCanvas().zoom
   const offsetY = (event.clientY - rect.top) / drawEngine.getCanvas().zoom
 
@@ -515,31 +555,23 @@ const handleCanvasMouseMove = (event: MouseEvent) => {
   if (node) {
     drawEngine.updateNode(draggedNodeId.value, {
       x: offsetX - node.width / 2,
-      y: offsetY - node.height / 2
+      y: offsetY - node.height / 2,
     })
   }
 }
 
-const handleCanvasMouseUp = (_event: MouseEvent) => {
-  if (connectingMode.value && connectFromNodeId.value) {
-    // 尝试连接到目标节点
-    const canvas = canvasRef.value!
-    const rect = canvas.getBoundingClientRect()
-    const x = _event.clientX - rect.left
-    const y = _event.clientY - rect.top
+const handleCanvasMouseUp = (event: MouseEvent) => {
+  if (connectingMode.value && connectFromNodeId.value && canvasRef.value) {
+    const rect = canvasRef.value.getBoundingClientRect()
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
 
     for (const node of nodes.value) {
-      const nodeRect = {
-        x: node.x,
-        y: node.y,
-        width: node.width,
-        height: node.height
-      }
       if (
-        x >= nodeRect.x &&
-        x <= nodeRect.x + nodeRect.width &&
-        y >= nodeRect.y &&
-        y <= nodeRect.y + nodeRect.height
+        x >= node.x &&
+        x <= node.x + node.width &&
+        y >= node.y &&
+        y <= node.y + node.height
       ) {
         if (node.id !== connectFromNodeId.value) {
           drawEngine?.createEdge(connectFromNodeId.value, node.id)
@@ -555,25 +587,20 @@ const handleCanvasMouseUp = (_event: MouseEvent) => {
 
 const handleCanvasWheel = (event: WheelEvent) => {
   event.preventDefault()
-  if (!drawEngine) return
+  if (!drawEngine || !canvasRef.value) return
 
   const factor = event.deltaY > 0 ? 0.9 : 1.1
-  const rect = canvasRef.value!.getBoundingClientRect()
-  const centerX = event.clientX - rect.left
-  const centerY = event.clientY - rect.top
-
-  drawEngine.zoom(factor, centerX, centerY)
+  const rect = canvasRef.value.getBoundingClientRect()
+  drawEngine.zoom(factor, event.clientX - rect.left, event.clientY - rect.top)
 }
 
-const handleContextMenu = (_event: MouseEvent) => {
-  // 实现右键菜单
-}
+const handleContextMenu = (_event: MouseEvent) => {}
 
 const handleEditNode = (node: DrawNode) => {
   editingNode.value = node
   editForm.value = {
     label: node.label,
-    description: node.description || ''
+    description: node.description || '',
   }
   editDialogVisible.value = true
 }
@@ -582,22 +609,25 @@ const confirmEdit = () => {
   if (!editingNode.value || !drawEngine) return
   drawEngine.updateNode(editingNode.value.id, {
     label: editForm.value.label,
-    description: editForm.value.description
+    description: editForm.value.description,
   })
   editDialogVisible.value = false
 }
 
 const handleDeleteNode = (node: DrawNode) => {
-  messageBox.confirm('确定要删除该节点吗？', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消'
-  }).then(() => {
-    if (drawEngine) {
-      drawEngine.deleteNode(node.id)
-      selectedNode.value = null
-      nodes.value = drawEngine.getAllNodes()
-    }
-  }).catch(() => {})
+  messageBox
+    .confirm('确定要删除该节点吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+    })
+    .then(() => {
+      if (drawEngine) {
+        drawEngine.deleteNode(node.id)
+        selectedNode.value = null
+        nodes.value = drawEngine.getAllNodes()
+      }
+    })
+    .catch(() => {})
 }
 
 const updateSelectedNode = () => {
@@ -607,7 +637,7 @@ const updateSelectedNode = () => {
     description: nodeForm.value.description,
     width: nodeForm.value.width,
     height: nodeForm.value.height,
-    color: nodeForm.value.color
+    color: nodeForm.value.color,
   })
 }
 
@@ -644,160 +674,64 @@ const handleExport = (command: string) => {
       emit('export', { type: 'json', data: drawEngine.exportAsJSON() })
       message.success('已复制到剪贴板')
       break
-    case 'markdown':
-      {
-        const md = drawEngine.exportAsMarkdown()
-        emit('export', { type: 'markdown', data: md })
-        message.success('已导出为Markdown')
+    case 'markdown': {
+      const markdown = drawEngine.exportAsMarkdown()
+      emit('export', { type: 'markdown', data: markdown })
+      message.success('已导出为Markdown')
+      break
+    }
+    case 'svg': {
+      const rect = canvasRef.value?.getBoundingClientRect()
+      if (rect) {
+        const svg = drawEngine.exportAsSVG(rect.width, rect.height)
+        emit('export', { type: 'svg', data: svg })
       }
       break
-    case 'svg':
-      {
-        const rect = canvasRef.value?.getBoundingClientRect()
-        if (rect) {
-          const svg = drawEngine.exportAsSVG(rect.width, rect.height)
-          emit('export', { type: 'svg', data: svg })
-        }
-      }
-      break
+    }
   }
 }
 </script>
 
-<style scoped lang="scss">
-.draw-canvas-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background: #ffffff;
-}
-
-.draw-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background: #f5f7fa;
-  border-bottom: 1px solid #e5e7eb;
-
-  .toolbar-left, .toolbar-right {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-}
-
-.draw-canvas-wrapper {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-  background: #f9fafb;
-}
-
-.draw-canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  cursor: crosshair;
-
-  &:active {
-    cursor: grabbing;
-  }
-}
-
-.nodes-layer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  transform-origin: top left;
-  transition: transform 0.1s ease-out;
-}
-
-.draw-node {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
+<style scoped>
+.draw-toolbar-icon {
+  display: inline-flex;
+  height: 2rem;
+  width: 2rem;
   align-items: center;
   justify-content: center;
-  border: 2px solid #409eff;
-  border-radius: 4px;
-  background-color: #ffffff;
-  cursor: move;
-  user-select: none;
-  transition: all 0.2s;
-
-  &:hover {
-    box-shadow: 0 2px 12px rgba(64, 158, 255, 0.3);
-  }
-
-  &.is-selected {
-    box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.5);
-    border-color: #409eff;
-  }
-
-  .node-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-  }
-
-  .node-label {
-    font-size: 14px;
-    font-weight: 600;
-    color: #303133;
-    text-align: center;
-    word-break: break-word;
-    padding: 4px;
-  }
-
-  .node-subtitle {
-    font-size: 12px;
-    color: #909399;
-    text-align: center;
-  }
-
-  .node-actions {
-    display: flex;
-    gap: 4px;
-    position: absolute;
-    right: -60px;
-    top: 0;
-  }
+  border-radius: 0.75rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #64748b;
+  transition: all 0.15s ease;
 }
 
-.property-panel {
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 320px;
-  background: #ffffff;
-  border-left: 1px solid #e5e7eb;
-  display: flex;
-  flex-direction: column;
-  z-index: 100;
+.draw-toolbar-icon:hover:not(:disabled) {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
 
-  .panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px;
-    border-bottom: 1px solid #e5e7eb;
+.draw-toolbar-icon:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
 
-    h3 {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 600;
-    }
-  }
+.draw-node-action {
+  display: inline-flex;
+  height: 1.75rem;
+  width: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  background: white;
+  color: #64748b;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  transition: all 0.15s ease;
+}
 
-  .panel-content {
-    flex: 1;
-    padding: 16px;
-  }
+.draw-node-action:hover {
+  background: #eff6ff;
+  color: #1d4ed8;
 }
 
 .slide-left-enter-active,
@@ -805,12 +739,8 @@ const handleExport = (command: string) => {
   transition: transform 0.3s ease;
 }
 
-.slide-left-enter-from {
-  transform: translateX(100%);
-}
-
+.slide-left-enter-from,
 .slide-left-leave-to {
   transform: translateX(100%);
 }
 </style>
-

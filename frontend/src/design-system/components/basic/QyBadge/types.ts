@@ -1,7 +1,7 @@
 /**
  * QyBadge component type definitions
  *
- * 与 Element Plus El-Badge API 兼容
+ * 与历史徽标 API 保持兼容
  */
 
 import type { BadgeVariants } from './variants'

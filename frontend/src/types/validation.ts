@@ -72,7 +72,7 @@ export interface FormValidationResult {
 }
 
 /**
- * Element Plus 表单规则类型（兼容）
+ * 历史表单规则类型（兼容）
  */
 export interface ElFormRule {
   required?: boolean

@@ -1,7 +1,7 @@
 /**
  * QyCard component type definitions
  *
- * 与 Element Plus El-Card API 兼容
+ * 与历史卡片 API 保持兼容
  */
 
 import type { CardVariants } from './variants'

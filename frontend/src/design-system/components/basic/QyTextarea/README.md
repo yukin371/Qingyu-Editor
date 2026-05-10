@@ -1,6 +1,6 @@
 # QyTextarea 多行文本框组件
 
-Qingyu 风格的多行文本输入组件，与 Element Plus Input[type="textarea"] API 兼容。
+Qingyu 风格的多行文本输入组件，面向当前 `Qy* + Tailwind` 表单体系提供统一的多行文本输入能力。
 
 ## 功能特性
 
@@ -185,16 +185,16 @@ const value = ref('')
 - 警告（剩余 < 10%）：`text-yellow-600`
 - 超出限制：`text-red-500`
 
-## 与 Element Plus 兼容性
+## 迁移参考
 
-QyTextarea 组件与 Element Plus Input[type="textarea"] 组件 API 兼容：
+旧表单若仍在使用原生 `textarea` 或历史封装，建议统一收口到 `QyTextarea`：
 
 ```vue
-<!-- Element Plus -->
-<el-input v-model="value" type="textarea" :rows="3" />
+<!-- 旧写法 -->
+<textarea v-model="value" rows="3" />
 
 <!-- QyTextarea -->
-<qy-textarea v-model="value" :rows="3" />
+<QyTextarea v-model="value" :rows="3" />
 ```
 
 ## 注意事项

@@ -1,7 +1,7 @@
 /**
  * QyInput component type definitions
  *
- * 与 Element Plus El-Input API 兼容
+ * 与历史输入框 API 保持兼容
  */
 
 import type { InputVariants } from './variants'

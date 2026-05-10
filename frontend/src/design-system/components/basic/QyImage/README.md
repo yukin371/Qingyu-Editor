@@ -1,6 +1,6 @@
 # QyImage 图片组件
 
-基于 CVA (Class Variance Authority) 构建的图片组件，与 Element Plus El-Image API 兼容。
+基于 CVA (Class Variance Authority) 构建的图片组件，为当前 `Qy* + Tailwind` 体系提供统一的图片展示与预览能力。
 
 ## 功能特性
 

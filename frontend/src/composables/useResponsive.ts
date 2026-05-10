@@ -14,7 +14,7 @@ export interface Breakpoints {
   xxl: number
 }
 
-// Element Plus 断点配置
+// 历史断点配置
 export const breakpoints: Breakpoints = {
   xs: 0,
   sm: 768,

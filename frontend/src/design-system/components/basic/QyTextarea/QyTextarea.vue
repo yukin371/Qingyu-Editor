@@ -3,7 +3,7 @@
  * QyTextarea 多行文本框组件
  *
  * Qingyu 风格的多行文本输入组件，支持字数统计、各种状态和尺寸
- * 与 Element Plus Input[type="textarea"] API 兼容
+ * 与历史多行输入 API 保持兼容
  */
 
 import { computed, ref } from 'vue'

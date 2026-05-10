@@ -1,36 +1,41 @@
 <template>
-  <el-dialog
-    v-model="dialogVisible"
+  <QyDialog
+    v-model:visible="dialogVisible"
     :title="title"
-    :width="width"
+    size="md"
     :close-on-click-modal="closeOnClickModal"
     :close-on-press-escape="closeOnPressEscape"
-    @close="handleClose"
+    @closed="handleClose"
   >
-    <div class="qy-confirm-dialog__content">
-      <el-icon v-if="showIcon" :class="iconClass" :size="48">
-        <component :is="iconComponent" />
-      </el-icon>
-      <div class="qy-confirm-dialog__message">
-        <p class="qy-confirm-dialog__text">{{ message }}</p>
-        <p v-if="description" class="qy-confirm-dialog__description">{{ description }}</p>
+    <div class="flex gap-4 py-2">
+      <div
+        v-if="showIcon"
+        class="shrink-0"
+      >
+        <QyIcon :name="iconName" :size="40" :class="iconClass" />
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="m-0 mb-2 text-base font-medium text-slate-800">{{ message }}</p>
+        <p v-if="description" class="m-0 text-sm leading-6 text-slate-500">{{ description }}</p>
       </div>
     </div>
 
     <template #footer>
-      <div class="qy-confirm-dialog__footer">
-        <el-button @click="handleCancel" v-if="showCancel">{{ cancelText }}</el-button>
-        <el-button :type="confirmType" @click="handleConfirm" :loading="loading">
+      <div class="flex justify-end gap-3">
+        <QyButton v-if="showCancel" variant="secondary" @click="handleCancel">
+          {{ cancelText }}
+        </QyButton>
+        <QyButton :variant="confirmVariant" :loading="loading" @click="handleConfirm">
           {{ confirmText }}
-        </el-button>
+        </QyButton>
       </div>
     </template>
-  </el-dialog>
+  </QyDialog>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { WarningFilled, InfoFilled, SuccessFilled } from '@element-plus/icons-vue'
+import { computed, ref, watch } from 'vue'
+import { QyButton, QyDialog, QyIcon } from '@/design-system/components'
 
 interface Props {
   visible?: boolean
@@ -61,7 +66,7 @@ const props = withDefaults(defineProps<Props>(), {
   loading: false,
   width: '420px',
   closeOnClickModal: false,
-  closeOnPressEscape: true
+  closeOnPressEscape: true,
 })
 
 const emit = defineEmits<{
@@ -73,29 +78,48 @@ const emit = defineEmits<{
 
 const dialogVisible = ref(props.visible)
 
-watch(() => props.visible, (val) => {
-  dialogVisible.value = val
+watch(
+  () => props.visible,
+  (value) => {
+    dialogVisible.value = value
+  },
+)
+
+watch(dialogVisible, (value) => {
+  emit('update:visible', value)
 })
 
-watch(dialogVisible, (val) => {
-  emit('update:visible', val)
-})
-
-const iconComponent = computed(() => {
-  const icons = {
-    warning: WarningFilled,
-    info: InfoFilled,
-    success: SuccessFilled,
-    danger: WarningFilled
+const iconName = computed(() => {
+  const iconMap: Record<NonNullable<Props['type']>, string> = {
+    warning: 'Warning',
+    info: 'InfoFilled',
+    success: 'CircleCheckFilled',
+    danger: 'WarningFilled',
   }
-  return icons[props.type]
+
+  return iconMap[props.type]
 })
 
 const iconClass = computed(() => {
-  return [
-    'qy-confirm-dialog__icon',
-    `qy-confirm-dialog__icon--${props.type}`
-  ]
+  const colorMap: Record<NonNullable<Props['type']>, string> = {
+    warning: 'text-amber-500',
+    info: 'text-sky-500',
+    success: 'text-emerald-500',
+    danger: 'text-rose-500',
+  }
+
+  return colorMap[props.type]
+})
+
+const confirmVariant = computed(() => {
+  const variantMap: Record<NonNullable<Props['confirmType']>, 'primary' | 'danger'> = {
+    primary: 'primary',
+    success: 'primary',
+    warning: 'primary',
+    danger: 'danger',
+  }
+
+  return variantMap[props.confirmType]
 })
 
 const handleConfirm = () => {
@@ -111,55 +135,3 @@ const handleClose = () => {
   emit('close')
 }
 </script>
-
-<style scoped lang="scss">
-.qy-confirm-dialog__content {
-  display: flex;
-  gap: 1rem;
-  padding: 1rem 0;
-}
-
-.qy-confirm-dialog__icon {
-  flex-shrink: 0;
-}
-
-.qy-confirm-dialog__icon--warning {
-  color: #FF9800;
-}
-
-.qy-confirm-dialog__icon--info {
-  color: #03A9F4;
-}
-
-.qy-confirm-dialog__icon--success {
-  color: #4CAF50;
-}
-
-.qy-confirm-dialog__icon--danger {
-  color: #F44336;
-}
-
-.qy-confirm-dialog__message {
-  flex: 1;
-}
-
-.qy-confirm-dialog__text {
-  font-size: 1rem;
-  font-weight: 500;
-  color: #212121;
-  margin: 0 0 0.5rem 0;
-}
-
-.qy-confirm-dialog__description {
-  font-size: 0.875rem;
-  color: #757575;
-  margin: 0;
-}
-
-.qy-confirm-dialog__footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-}
-</style>
-

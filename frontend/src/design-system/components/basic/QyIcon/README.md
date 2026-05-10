@@ -191,18 +191,15 @@ const handleRefresh = () => {
 </template>
 ```
 
-## Migration from Element Plus Icons
+## Migration Guide
 
 ### Before
 
 ```vue
-<script setup>
-import { Search, Plus } from '@element-plus/icons-vue'
-</script>
-
 <template>
-  <Search :size="16" />
-  <Plus />
+  <svg class="size-4 text-slate-500" viewBox="0 0 24 24">
+    <!-- inline svg -->
+  </svg>
 </template>
 ```
 

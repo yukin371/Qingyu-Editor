@@ -1,10 +1,10 @@
 /**
- * Element Plus 兼容层
+ * 历史 UI 兼容层
  *
- * 提供 Element Plus API 的 Qingyu 实现
+ * 提供历史全局消息 API 的 Qingyu 实现
  */
 
-// 重新导出 Qingyu 服务作为 Element Plus 替代品
+// 重新导出 Qingyu 服务作为历史别名替代品
 export { message as ElMessage, useMessage } from '@/design-system/services'
 export { messageBox as ElMessageBox, useMessageBox } from '@/design-system/services'
 export { notification as ElNotification, useNotification } from '@/design-system/services'

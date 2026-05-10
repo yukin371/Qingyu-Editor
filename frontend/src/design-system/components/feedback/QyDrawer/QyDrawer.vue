@@ -3,7 +3,7 @@
  * QyDrawer 抽屉组件
  *
  * 基于 Tailwind v4 和 CVA 的抽屉组件
- * 支持 Element Plus API 命名规范
+ * 支持历史抽屉 API 命名规范
  */
 
 import { computed, watch, nextTick, ref, onMounted, onUnmounted } from 'vue'

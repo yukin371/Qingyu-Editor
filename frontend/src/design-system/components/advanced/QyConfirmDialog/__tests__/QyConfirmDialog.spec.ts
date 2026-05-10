@@ -22,11 +22,11 @@ const mountDialog = (props: Record<string, unknown> = {}) =>
     global: {
       stubs: {
         QyIcon: true,
-        'el-button': {
-          name: 'ElButton',
-          props: ['type', 'size', 'loading'],
+        QyButton: {
+          name: 'QyButton',
+          props: ['variant', 'size', 'loading'],
           template:
-            '<button class="el-button-stub" :data-type="type" :data-size="size" :data-loading="String(loading)" :disabled="loading" @click="$emit(\'click\')"><slot /></button>',
+            '<button class="qy-button-stub" :data-variant="variant" :data-size="size" :data-loading="String(loading)" :disabled="loading" @click="$emit(\'click\')"><slot /></button>',
         },
       },
     },
@@ -138,8 +138,8 @@ describe('QyConfirmDialog', () => {
       type: 'danger',
     })
 
-    // 验证confirmButtonType计算属性
-    expect((wrapper.vm as any).confirmButtonType).toBe('danger')
+    const confirmButton = wrapper.findAll('.qy-confirm-dialog__footer button')[1]
+    expect(confirmButton.attributes('data-variant')).toBe('danger')
   })
 
   it('警告类型应该使用主色调按钮', () => {
@@ -148,11 +148,17 @@ describe('QyConfirmDialog', () => {
       type: 'warning',
     })
 
-    expect((wrapper.vm as any).confirmButtonType).toBe('primary')
+    const confirmButton = wrapper.findAll('.qy-confirm-dialog__footer button')[1]
+    expect(confirmButton.attributes('data-variant')).toBe('primary')
   })
 
   it('应该支持不同的尺寸', () => {
     const sizes = ['large', 'default', 'small'] as const
+    const expectedSizes = {
+      large: 'lg',
+      default: 'md',
+      small: 'sm',
+    } as const
 
     sizes.forEach((size) => {
       const wrapper = mountDialog({
@@ -162,7 +168,7 @@ describe('QyConfirmDialog', () => {
 
       const buttons = wrapper.findAll('.qy-confirm-dialog__footer button')
       buttons.forEach((button) => {
-        expect(button.attributes('data-size')).toBe(size)
+        expect(button.attributes('data-size')).toBe(expectedSizes[size])
       })
     })
   })

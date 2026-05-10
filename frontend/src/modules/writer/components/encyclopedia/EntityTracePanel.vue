@@ -4,7 +4,7 @@
     <div class="trace-header">
       <span class="trace-header__icon">&#128214;</span>
       <span class="trace-header__title">故事线追溯</span>
-      <el-tag size="small" type="info" class="trace-header__tag">{{ entityLabel }}</el-tag>
+      <QyTag size="sm" type="info" class="trace-header__tag">{{ entityLabel }}</QyTag>
     </div>
 
     <div class="trace-divider"></div>
@@ -20,7 +20,7 @@
       <div class="trace-section">
         <h4 class="trace-section__title">
           登场记录
-          <el-tag size="small" type="primary" round>{{ appearances.length }}</el-tag>
+          <QyTag size="sm" type="primary">{{ appearances.length }}</QyTag>
         </h4>
 
         <div v-if="appearances.length === 0" class="trace-empty">
@@ -37,9 +37,9 @@
             <div class="trace-tree__content">
               <span class="trace-tree__title">{{ item.outlineNodeTitle }}</span>
               <div class="trace-tree__meta">
-                <el-tag v-if="item.isFirst" size="small" type="warning" class="trace-tree__badge">
+                <QyTag v-if="item.isFirst" size="sm" type="warning" class="trace-tree__badge">
                   &#11088; 首次登场
-                </el-tag>
+                </QyTag>
                 <span class="trace-tree__relation-count">{{ item.relationCount }}段关系</span>
               </div>
             </div>
@@ -51,7 +51,7 @@
       <div v-if="relationChanges.length > 0" class="trace-section">
         <h4 class="trace-section__title">
           关系变化
-          <el-tag size="small" type="success" round>{{ relationChanges.length }}</el-tag>
+          <QyTag size="sm" type="success">{{ relationChanges.length }}</QyTag>
         </h4>
 
         <div class="trace-tree">
@@ -86,6 +86,7 @@
  */
 
 import { computed } from 'vue'
+import { QyTag } from '@/design-system/components'
 import type { OutlineNode } from '@/types/writer'
 import type { CharacterRelation } from '@/modules/writer/types/character'
 

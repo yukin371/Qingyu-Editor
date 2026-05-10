@@ -66,7 +66,7 @@ if (isDev) {
 app.use(pinia)
 // 再注册 Router，路由守卫需要访问 store
 app.use(router)
-// 注册 Qingyu 全局服务（兼容 Element Plus API）
+// 注册 Qingyu 全局服务（保留历史全局 API 别名）
 app.config.globalProperties.$message = message
 app.config.globalProperties.$MessageBox = messageBox
 app.config.globalProperties.$notify = notification
@@ -80,11 +80,4 @@ declare module 'vue' {
   }
 }
 
-const bootstrap = async () => {
-  const { default: ElementPlus } = await import('element-plus')
-  app.use(ElementPlus)
-
-  app.mount('#app')
-}
-
-void bootstrap()
+app.mount('#app')

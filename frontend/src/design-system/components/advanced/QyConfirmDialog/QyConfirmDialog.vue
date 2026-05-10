@@ -32,21 +32,21 @@
     <!-- Footer -->
     <template #footer>
       <div class="qy-confirm-dialog__footer">
-        <el-button
-          :type="cancelButtonType"
-          :size="size"
+        <QyButton
+          variant="secondary"
+          :size="buttonSize"
           @click="handleCancel"
         >
           {{ cancelText }}
-        </el-button>
-        <el-button
-          :type="confirmButtonType"
-          :size="size"
+        </QyButton>
+        <QyButton
+          :variant="confirmButtonType"
+          :size="buttonSize"
           :loading="loading"
           @click="handleConfirm"
         >
           {{ confirmText }}
-        </el-button>
+        </QyButton>
       </div>
     </template>
   </QyModal>
@@ -55,6 +55,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import QyModal from '../QyModal/QyModal.vue'
+import QyButton from '../../basic/QyButton/QyButton.vue'
 import QyIcon from '../../basic/QyIcon/QyIcon.vue'
 import type { QyConfirmDialogProps, QyConfirmDialogEmits } from './types'
 
@@ -89,18 +90,23 @@ const iconName = computed(() => {
 
 // Confirm button type based on dialog type
 const confirmButtonType = computed(() => {
-  const typeMap: Record<string, any> = {
+  const typeMap: Record<string, 'primary' | 'danger'> = {
     warning: 'primary',
     danger: 'danger',
     info: 'primary',
-    success: 'success'
+    success: 'primary',
   }
   return typeMap[props.type] || 'primary'
 })
 
-// Cancel button type
-const cancelButtonType = computed(() => {
-  return props.type === 'danger' ? 'default' : 'info'
+const buttonSize = computed(() => {
+  const sizeMap: Record<string, 'sm' | 'md' | 'lg'> = {
+    small: 'sm',
+    default: 'md',
+    large: 'lg',
+  }
+
+  return sizeMap[props.size] || 'md'
 })
 
 // Handle confirm

@@ -134,7 +134,7 @@ typography.body.tiny     // 12px - 次要信息
 <template>
   <Section title="标题" spacing="md" bordered>
     <template #extra>
-      <el-button>操作</el-button>
+      <QyButton variant="ghost">操作</QyButton>
     </template>
     <!-- 内容 -->
   </Section>
@@ -181,9 +181,9 @@ typography.body.tiny     // 12px - 次要信息
     @cancel="handleCancel"
     :loading="submitting"
   >
-    <el-form>
+    <form class="space-y-4">
       <!-- 表单内容 -->
-    </el-form>
+    </form>
   </FormCard>
 </template>
 ```
@@ -211,7 +211,7 @@ typography.body.tiny     // 12px - 次要信息
     hint="只能包含字母、数字和下划线"
     required
   >
-    <el-input v-model="username" />
+    <QyInput v-model="username" />
   </FormSection>
 </template>
 ```
@@ -304,17 +304,17 @@ typography.body.tiny     // 12px - 次要信息
     <!-- 页面头部 -->
     <Section title="我的钱包" spacing="lg">
       <template #extra>
-        <el-button type="primary" @click="showRecharge = true">充值</el-button>
+        <QyButton @click="showRecharge = true">充值</QyButton>
       </template>
       
       <!-- 统计卡片 -->
       <Grid :cols="3" gap="lg">
-        <el-card>
+        <QyCard>
           <div class="stat-card">
             <p class="stat-label">账户余额</p>
             <p class="stat-value">¥{{ balance }}</p>
           </div>
-        </el-card>
+        </QyCard>
         <!-- 更多卡片 -->
       </Grid>
     </Section>
@@ -328,14 +328,14 @@ typography.body.tiny     // 12px - 次要信息
       :loading="recharging"
     >
       <FormSection label="充值金额" required>
-        <el-input-number v-model="amount" :min="1" />
+        <QyInputNumber v-model="amount" :min="1" />
       </FormSection>
       
       <FormSection label="支付方式" required>
-        <el-radio-group v-model="payMethod">
-          <el-radio label="alipay">支付宝</el-radio>
-          <el-radio label="wechat">微信支付</el-radio>
-        </el-radio-group>
+        <QyRadioGroup v-model="payMethod">
+          <QyRadio value="alipay">支付宝</QyRadio>
+          <QyRadio value="wechat">微信支付</QyRadio>
+        </QyRadioGroup>
       </FormSection>
     </FormCard>
     
@@ -347,6 +347,7 @@ typography.body.tiny     // 12px - 次要信息
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Container, Section, Grid, FormCard, FormSection, LoadingOverlay } from '@/shared/components/design-system'
+import { QyButton, QyCard, QyInputNumber, QyRadio, QyRadioGroup } from '@/design-system/components'
 
 const balance = ref(0)
 const loading = ref(false)
@@ -395,19 +396,16 @@ import Container from '@/shared/components/design-system/layouts/Container.vue'
   <Section title="标题">
     <FormCard>
       <FormSection label="字段">
-        <el-input />
+        <QyInput />
       </FormSection>
     </FormCard>
   </Section>
 </Container>
 
-<!-- ❌ 避免：直接使用ElementPlus组件堆砌 -->
-<div class="container">
-  <el-card>
-    <el-form-item label="字段">
-      <el-input />
-    </el-form-item>
-  </el-card>
+<!-- ❌ 避免：重新拼一套临时样式或回退到 legacy 兼容层 -->
+<div class="rounded-xl border border-slate-200 p-4">
+  <label class="mb-2 block text-sm text-slate-600">字段</label>
+  <input class="w-full rounded-lg border border-slate-300 px-3 py-2" />
 </div>
 ```
 
@@ -420,7 +418,6 @@ import Container from '@/shared/components/design-system/layouts/Container.vue'
 
 ## 📚 参考资源
 
-- **ElementPlus**: https://element-plus.org/
 - **Tailwind CSS**: https://tailwindcss.com/
 - **Material Design**: https://material.io/design
 
@@ -439,4 +436,3 @@ import Container from '@/shared/components/design-system/layouts/Container.vue'
 
 **维护者**: 青羽前端团队  
 **最后更新**: 2025-10-29
-

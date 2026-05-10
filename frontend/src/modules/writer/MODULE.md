@@ -26,6 +26,7 @@
 - **编辑器是默认首页**：独立编辑器的 `/` 与 `/writer` 都应优先落到 `ProjectWorkspace`，不要再让 `WriterDashboard`、`ProjectListView` 或平台式头部导航充当默认宿主。
 - **历史入口直接收敛到路由兼容层**：旧 `dashboard / editor / publish` 页面不再保留独立运行时壳；兼容只允许留在 `routes.ts` 的重定向层，不再保留会继续腐化的空页面文件。
 - **桌面启动链保持最小化**：`frontend/src/main.ts` 与 `router/*` 不应再强制注入 auth session、websocket 或全局 mock 状态；mock/test-mode 只允许通过显式 `?test=true` 进入，避免桌面宿主继续背在线平台启动逻辑。
+- **writer 模块组件已完成去全局 UI 插件依赖**：`main.ts` 已移除历史全局组件注册，writer 现有组件链已迁到 Tailwind + `Qy*`。若未来重新接入 legacy 组件或新建编辑器子面板，必须在组件内完成迁移，不能再恢复全局注册兜底。
 - **非 writer 平台模块已物理退场**：`frontend/src` 下的书城/社区/阅读/财务/用户/通知/后台等历史平台模块已从桌面宿主移除；新增能力若不属于写作闭环，不应再放回这个仓库的运行时主链。
 - **writer 内部历史孤岛也已开始物理退场**：旧 `components/ai/*`、模板工作流组件、废弃 `OutlineView*`、旧 `WorkspaceFullscreenOverlay` 与一批 legacy editor 组件已经删除；不要再从这些历史目录恢复入口，而应继续收敛到 `ProjectWorkspace / WorkspaceToolOverlay / WorkspaceRightPanel` 主链。
 - **布局壳 owner 单一**：`WorkspaceShell` 负责上/中/下区域的视口壳，`EditorLayout` 负责左/主/右分栏；`ProjectWorkspace` 只做数据编排、事件桥接和 slot 装配。

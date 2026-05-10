@@ -1,6 +1,6 @@
 /**
  * QyForm 表单组件类型定义
- * 与 Element Plus Form API 兼容
+ * 与历史表单 API 保持兼容
  */
 
 // QyForm 标签位置

@@ -1,11 +1,11 @@
 /**
  * QyDrawer 抽屉组件类型定义
  *
- * 基于 Element Plus Drawer API 设计
+ * 基于历史抽屉 API 设计
  */
 
 /**
- * 抽屉滑出方向类型（Element Plus 命名）
+ * 抽屉滑出方向类型（历史命名）
  * - rtl: right to left - 从右侧滑出
  * - ltr: left to right - 从左侧滑出
  * - ttb: top to bottom - 从顶部滑出
@@ -39,7 +39,7 @@ export interface QyDrawerProps {
   modelValue: boolean
 
   /**
-   * 抽屉滑出方向（Element Plus 命名）
+   * 抽屉滑出方向（历史命名）
    * @default 'rtl'
    */
   direction?: QyDrawerDirection
@@ -180,7 +180,7 @@ export interface QyDrawerSlots {
 export type InternalDirection = 'left' | 'right' | 'top' | 'bottom'
 
 /**
- * 方向映射表：Element Plus 命名 -> 内部方向
+ * 方向映射表：历史命名 -> 内部方向
  */
 export const DIRECTION_MAP: Record<QyDrawerDirection, InternalDirection> = {
   rtl: 'right',

@@ -47,7 +47,7 @@ export interface Location extends BaseEntity {
   parentId?: ID // 父级 ID
   imageUrl?: string // 图片/地图链接
 
-  // 前端辅助字段 (用于树形组件 Element Plus Tree 等)
+  // 前端辅助字段（用于历史树形组件适配等）
   children?: Location[]
 }
 

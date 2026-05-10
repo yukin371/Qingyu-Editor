@@ -1,7 +1,7 @@
 /**
  * QyButton component type definitions
  *
- * 与 Element Plus El-Button API 兼容
+ * 与历史按钮 API 保持兼容
  */
 
 import type { ButtonVariants } from './variants'

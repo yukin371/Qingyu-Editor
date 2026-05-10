@@ -1,7 +1,7 @@
 /**
  * QyAvatar component type definitions
  *
- * 与 Element Plus El-Avatar API 兼容
+ * 与历史头像 API 保持兼容
  */
 
 import type { AvatarVariants, AvatarImageVariants } from './variants'

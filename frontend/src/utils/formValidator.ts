@@ -398,7 +398,7 @@ export class FormValidator {
 }
 
 /**
- * Element Plus 表单规则构建器
+ * 表单规则构建器
  */
 export class ElFormRuleBuilder {
   private rules: ValidationRuleConfig[] = []
@@ -507,7 +507,7 @@ export class ElFormRuleBuilder {
   }
 
   /**
-   * 构建 Element Plus 规则
+   * 构建表单规则
    */
   build(): ElFormRule[] {
     return this.rules.map(rule => ({

@@ -56,7 +56,7 @@ export const ConfirmationFlow: Story = {
     template: `
       <div class="page-aurora rounded-[2rem] p-8">
         <QyButton variant="outline" @click="visible = true">Launch confirmation</QyButton>
-        <Dialog title="Replace Element Plus?" v-model:visible="visible" size="md">
+        <Dialog title="Replace Legacy UI?" v-model:visible="visible" size="md">
           <div class="space-y-3">
             <p class="text-slate-600">The foundation set is ready to take over button, input, card, select and dialog flows.</p>
             <div class="rounded-[1.25rem] bg-slate-50/90 p-4 text-sm text-slate-500">

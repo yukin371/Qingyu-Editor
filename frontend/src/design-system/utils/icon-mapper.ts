@@ -1,7 +1,7 @@
 /**
  * Qingyu Design System - Icon Mapper
  *
- * Maps Element Plus icon names to SVG icon strings
+ * Maps legacy icon names to SVG icon strings
  * Provides case-insensitive icon lookup and type-safe access
  */
 
@@ -9,7 +9,7 @@ import { getIcon, hasIcon } from '../assets/icons'
 
 /**
  * Get icon SVG with case-insensitive lookup
- * Maps Element Plus icon names to SVG icons
+ * Maps legacy icon names to SVG icons
  *
  * @param name - Icon name (case-insensitive)
  * @returns SVG string or undefined if not found
@@ -62,11 +62,11 @@ export function iconExists(name: string): boolean {
 }
 
 /**
- * Icon name mapping from Element Plus to our icons
+ * Icon name mapping from legacy names to our icons
  * Add any custom mappings here if icon names differ
  */
 export const iconMapping: Record<string, string> = {
-  // Element Plus -> Our icons
+  // Legacy names -> our icons
   // Add custom mappings if needed
   // Example: 'ep-search': 'Search'
 }

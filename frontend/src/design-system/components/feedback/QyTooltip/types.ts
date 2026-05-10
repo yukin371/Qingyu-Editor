@@ -1,7 +1,7 @@
 /**
  * QyTooltip component type definitions
  *
- * 与 Element Plus El-Tooltip API 兼容
+ * 与历史 Tooltip API 保持兼容
  */
 
 import type { TooltipVariants } from './variants'

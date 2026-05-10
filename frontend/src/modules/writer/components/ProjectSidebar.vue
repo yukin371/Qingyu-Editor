@@ -18,23 +18,51 @@
       </div>
     </div>
 
-    <div class="sidebar-search">
-      <el-autocomplete
-        v-model="searchKeyword"
-        :fetch-suggestions="fetchKeywordSuggestions"
-        placeholder="全书"
-        clearable
-        class="search-input"
-        @select="handleSuggestionSelect"
-      >
-        <template #prefix><QyIcon name="Search" :size="14" /></template>
-        <template #default="{ item }">
-          <div class="keyword-option">
+    <div ref="searchPanelRef" class="sidebar-search">
+      <div class="search-combobox">
+        <span class="search-input-icon">
+          <QyIcon name="Search" :size="14" />
+        </span>
+        <QyInput
+          v-model="searchKeyword"
+          placeholder="全书"
+          clearable
+          size="sm"
+          class="search-input"
+          @focus="handleSearchFocus"
+          @keydown="handleSearchKeydown"
+        />
+
+        <div
+          v-if="isSuggestionPanelVisible"
+          class="search-suggestion-panel"
+          data-testid="project-sidebar-suggestions"
+        >
+          <button
+            v-for="item in keywordSuggestions"
+            :key="`${item.type}-${item.id || item.value}`"
+            type="button"
+            class="keyword-option"
+            @mousedown.prevent
+            @click="handleSuggestionSelect(item)"
+          >
             <span class="keyword-option__name">{{ item.value }}</span>
-            <span class="keyword-option__meta">{{ item.typeLabel }} · {{ item.matchModeLabel }}</span>
+            <span class="keyword-option__meta"
+              >{{ item.typeLabel }} · {{ item.matchModeLabel }}</span
+            >
+          </button>
+
+          <div v-if="isLoadingSuggestions" class="keyword-option keyword-option--status">
+            正在搜索…
           </div>
-        </template>
-      </el-autocomplete>
+          <div
+            v-else-if="searchKeyword.trim() && keywordSuggestions.length === 0"
+            class="keyword-option keyword-option--status"
+          >
+            没有匹配项
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="sidebar-actions">
@@ -226,8 +254,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { QyGhostButton, QyIcon, QyDropdown } from '@/design-system/components'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { QyGhostButton, QyIcon, QyDropdown, QyInput } from '@/design-system/components'
 import type { DropdownItem } from '@/design-system/components'
 import { messageBox } from '@/design-system/services'
 import { useWriterStore } from '@/modules/writer/stores/writerStore'
@@ -302,6 +330,10 @@ const draftOnly = ref(false)
 const sortMode = ref<'chapter' | 'updated'>('chapter')
 const writerStore = useWriterStore()
 const collapsedDirectoryIds = ref<Set<string>>(new Set())
+const searchPanelRef = ref<HTMLElement | null>(null)
+const keywordSuggestions = ref<KeywordSuggestion[]>([])
+const isSuggestionOpen = ref(false)
+const isLoadingSuggestions = ref(false)
 let suggestionTimer: ReturnType<typeof setTimeout> | null = null
 const chevronClass = computed(() =>
   isTreeExpanded.value ? 'tree-chevron expanded' : 'tree-chevron',
@@ -362,55 +394,68 @@ const getMatchModeLabel = (matchMode?: string): string => {
   return '匹配'
 }
 
-const fetchKeywordSuggestions = async (
-  queryString: string,
-  cb: (items: KeywordSuggestion[]) => void,
-) => {
+const buildKeywordSuggestions = async (queryString: string): Promise<KeywordSuggestion[]> => {
   const query = queryString.trim()
   if (!query) {
-    cb([])
+    return []
+  }
+
+  const remote = await writerStore.searchKeywords(query, 10, internalProjectId.value || undefined)
+  const remoteSuggestions: KeywordSuggestion[] = (remote || []).map((item) => ({
+    value: item.name,
+    id: item.id,
+    type: item.type,
+    typeLabel: getTypeLabel(item.type),
+    matchMode: item.matchMode,
+    matchModeLabel: getMatchModeLabel(item.matchMode),
+  }))
+
+  const localChapters: KeywordSuggestion[] = displayChapters.value
+    .filter((chapter) => getDisplayTitle(chapter).toLowerCase().includes(query.toLowerCase()))
+    .slice(0, 8)
+    .map((chapter) => ({
+      value: getDisplayTitle(chapter),
+      id: chapter.id,
+      type: 'chapter',
+      typeLabel: '章节',
+      matchMode: 'local',
+      matchModeLabel: '本地匹配',
+    }))
+
+  const dedup = new Map<string, KeywordSuggestion>()
+  for (const item of [...remoteSuggestions, ...localChapters]) {
+    if (!dedup.has(item.value)) {
+      dedup.set(item.value, item)
+    }
+  }
+
+  return Array.from(dedup.values()).slice(0, 12)
+}
+
+const isSuggestionPanelVisible = computed(() => {
+  return (
+    isSuggestionOpen.value &&
+    (isLoadingSuggestions.value || keywordSuggestions.value.length > 0 || Boolean(searchKeyword.value.trim()))
+  )
+})
+
+const handleSearchFocus = () => {
+  if (!searchKeyword.value.trim()) {
     return
   }
 
-  if (suggestionTimer) {
-    clearTimeout(suggestionTimer)
+  isSuggestionOpen.value = true
+}
+
+const handleSearchKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Escape') {
+    isSuggestionOpen.value = false
   }
-
-  suggestionTimer = setTimeout(async () => {
-    const remote = await writerStore.searchKeywords(query, 10, internalProjectId.value || undefined)
-    const remoteSuggestions: KeywordSuggestion[] = (remote || []).map((item) => ({
-      value: item.name,
-      id: item.id,
-      type: item.type,
-      typeLabel: getTypeLabel(item.type),
-      matchMode: item.matchMode,
-      matchModeLabel: getMatchModeLabel(item.matchMode),
-    }))
-
-    const localChapters: KeywordSuggestion[] = displayChapters.value
-      .filter((chapter) => getDisplayTitle(chapter).toLowerCase().includes(query.toLowerCase()))
-      .slice(0, 8)
-      .map((chapter) => ({
-        value: getDisplayTitle(chapter),
-        id: chapter.id,
-        type: 'chapter',
-        typeLabel: '章节',
-        matchMode: 'local',
-        matchModeLabel: '本地匹配',
-      }))
-
-    const dedup = new Map<string, KeywordSuggestion>()
-    for (const item of [...remoteSuggestions, ...localChapters]) {
-      if (!dedup.has(item.value)) {
-        dedup.set(item.value, item)
-      }
-    }
-    cb(Array.from(dedup.values()).slice(0, 12))
-  }, 150)
 }
 
 const handleSuggestionSelect = (item: KeywordSuggestion) => {
   searchKeyword.value = item.value
+  isSuggestionOpen.value = false
   if (!item.id) {
     return
   }
@@ -418,6 +463,12 @@ const handleSuggestionSelect = (item: KeywordSuggestion) => {
   const target = displayChapters.value.find((chapter) => chapter.id === item.id)
   if (target) {
     handleSelectChapter(target)
+  }
+}
+
+const handlePointerDownOutside = (event: PointerEvent) => {
+  if (!searchPanelRef.value?.contains(event.target as Node)) {
+    isSuggestionOpen.value = false
   }
 }
 
@@ -644,6 +695,37 @@ watch(
 )
 
 watch(
+  searchKeyword,
+  (value) => {
+    const query = value.trim()
+
+    if (suggestionTimer) {
+      clearTimeout(suggestionTimer)
+      suggestionTimer = null
+    }
+
+    if (!query) {
+      keywordSuggestions.value = []
+      isLoadingSuggestions.value = false
+      isSuggestionOpen.value = false
+      return
+    }
+
+    isSuggestionOpen.value = true
+    isLoadingSuggestions.value = true
+
+    suggestionTimer = setTimeout(async () => {
+      keywordSuggestions.value = await buildKeywordSuggestions(query)
+      isLoadingSuggestions.value = false
+    }, 150)
+  },
+)
+
+onMounted(() => {
+  document.addEventListener('pointerdown', handlePointerDownOutside)
+})
+
+watch(
   () => displayChapters.value,
   (chapters) => {
     const directoryIds = new Set(
@@ -661,6 +743,7 @@ onBeforeUnmount(() => {
   if (suggestionTimer) {
     clearTimeout(suggestionTimer)
   }
+  document.removeEventListener('pointerdown', handlePointerDownOutside)
 })
 </script>
 
@@ -736,31 +819,60 @@ onBeforeUnmount(() => {
   padding-bottom: 10px;
 }
 
+.search-combobox {
+  position: relative;
+}
+
 .search-input {
   width: 100%;
   min-width: 0;
 }
 
-.sidebar-search :deep(.el-input__wrapper) {
-  height: 30px;
-  border-radius: 4px;
-  border: 1px solid #d9dee6;
-  background: #f8fafc;
-  box-shadow: none;
+.search-input-icon {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  transform: translateY(-50%);
 }
 
-.sidebar-search :deep(.el-input__wrapper.is-focus) {
-  border-color: #cbd5e1;
+.sidebar-search :deep(.search-input .qy-input-wrapper) {
+  width: 100%;
 }
 
-.sidebar-search :deep(.el-input__inner) {
+.sidebar-search :deep(.search-input input) {
+  padding-left: 32px;
   font-size: 13px;
+  background: #f8fafc;
 }
 
 .keyword-option {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 8px 10px;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: #f8fafc;
+  }
+}
+
+.keyword-option--status {
+  color: #6b7280;
+  cursor: default;
+
+  &:hover {
+    background: transparent;
+  }
 }
 
 .keyword-option__name {
@@ -771,6 +883,20 @@ onBeforeUnmount(() => {
 .keyword-option__meta {
   font-size: 11px;
   color: #6b7280;
+}
+
+.search-suggestion-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 18px 38px -24px rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(12px);
 }
 
 .sidebar-actions {

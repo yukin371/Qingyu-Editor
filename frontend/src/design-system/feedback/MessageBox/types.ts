@@ -38,7 +38,7 @@ export interface MessageBoxOptions {
   title?: string
   /** 对话框内容 */
   message: string
-  /** 对话框类型或图标类型（向后兼容 Element Plus） */
+  /** 对话框类型或图标类型（向后兼容历史别名） */
   type?: MessageBoxTypeOrIcon
   /** 图标类型（用于显示不同样式的图标） */
   iconType?: MessageBoxIconType
