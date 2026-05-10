@@ -10,7 +10,7 @@ import type {
   ValidatorFunction,
   FormValidationRules,
   FormValidationErrors,
-  ElFormRule
+  FormRule
 } from '@/types/validation'
 
 export type ValidationRule =
@@ -400,7 +400,7 @@ export class FormValidator {
 /**
  * 表单规则构建器
  */
-export class ElFormRuleBuilder {
+export class FormRuleBuilder {
   private rules: ValidationRuleConfig[] = []
 
   /**
@@ -509,10 +509,10 @@ export class ElFormRuleBuilder {
   /**
    * 构建表单规则
    */
-  build(): ElFormRule[] {
+  build(): FormRule[] {
     return this.rules.map(rule => ({
       required: rule.type === 'required',
-      validator: rule.validator ? async (_rule: ElFormRule, value: ValidationValue, callback: (error?: Error) => void) => {
+      validator: rule.validator ? async (_rule: FormRule, value: ValidationValue, callback: (error?: Error) => void) => {
         if (rule.type === 'custom' && rule.validator) {
           const result = await FormValidator.validateCustom(value, rule.validator, rule.message)
           if (!result.valid) {
@@ -599,7 +599,7 @@ export class FormErrorHelper {
 /**
  * 快捷方法
  */
-export const createRuleBuilder = () => new ElFormRuleBuilder()
+export const createRuleBuilder = () => new FormRuleBuilder()
 
 export const validate = {
   required: (message?: string) => createRuleBuilder().required(message),

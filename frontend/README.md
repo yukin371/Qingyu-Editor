@@ -20,7 +20,7 @@
 - **构建工具**: Vite 7.x
 - **状态管理**: Pinia
 - **路由**: Vue Router 4
-- **UI组件**: Element Plus
+- **UI组件**: 自研 design-system + Tailwind CSS
 - **HTTP客户端**: Axios
 - **图表**: ECharts
 - **样式**: SCSS + Tailwind CSS
@@ -185,7 +185,7 @@ export const useEditorStore = defineStore('editor', {
 
 ### 构建优化
 
-- **代码分割** - 手动配置 vendor chunks，分离 Vue、Element Plus、ECharts 等库
+- **代码分割** - 手动配置 vendor chunks，分离 Vue、编辑器、图谱与 ECharts 等库
 - **路由懒加载** - 所有页面组件使用动态 import
 - **Tree Shaking** - 自动移除未使用的代码
 - **CSS 代码分割** - 每个组件的 CSS 独立打包
@@ -341,7 +341,6 @@ A: 复制 `.env.example` 为 `.env.production`，修改其中的配置值
 
 - [Vite 文档](https://vitejs.dev/)
 - [Vue 3 文档](https://vuejs.org/)
-- [Element Plus 文档](https://element-plus.org/)
 - [Pinia 文档](https://pinia.vuejs.org/)
 - [TypeScript 文档](https://www.typescriptlang.org/)
 

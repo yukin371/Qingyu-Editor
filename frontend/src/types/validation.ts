@@ -72,14 +72,14 @@ export interface FormValidationResult {
 }
 
 /**
- * 历史表单规则类型（兼容）
+ * 通用表单规则类型
  */
-export interface ElFormRule {
+export interface FormRule {
   required?: boolean
   message?: string
   trigger?: 'blur' | 'change'
   validator?: (
-    rule: ElFormRule,
+    rule: FormRule,
     value: ValidationValue,
     callback: (error?: Error) => void
   ) => void | Promise<void>
@@ -100,5 +100,5 @@ export interface FormRef {
   scrollToField: (prop: string) => void
   fields: unknown[]
   model: Record<string, ValidationValue>
-  rules?: Record<string, ElFormRule[]>
+  rules?: Record<string, FormRule[]>
 }
