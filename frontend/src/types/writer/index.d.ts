@@ -28,6 +28,7 @@ export interface CharacterRelation {
   toId: string
   type: RelationType
   strength: number // 0-100 强度
+  description?: string
   notes?: string
   createdAt: string
   updatedAt: string
@@ -156,8 +157,8 @@ export interface OutlineNode {
   wordCount?: number
   status?: 'draft' | 'writing' | 'completed' | 'reviewing'
   type?: string // 节点类型：volume, plot, idea, draft, setting, chapter 等
-  createdAt: string
-  updatedAt: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface MindMapNode {
@@ -294,7 +295,6 @@ export interface UpdateOutlineNodeRequest {
   content?: string
   status?: 'draft' | 'writing' | 'completed' | 'reviewing'
 }
-
 
 
 

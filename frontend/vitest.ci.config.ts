@@ -26,10 +26,11 @@ export default mergeConfig(
         reporter: ['text', 'json', 'lcov'],
         include: [
           'src/modules/writer/stores/editorStore.ts',
-          'src/services/rating.ts',
-          'src/modules/writer/api/publish.ts',
+          'src/modules/writer/api/outline.ts',
           'src/modules/writer/api/timeline.ts',
-          'src/modules/bookstore/services/browse.service.ts',
+          'src/modules/writer/api/wrapper.ts',
+          'src/modules/ai/api/ai.ts',
+          'src/modules/ai/api/workbench.ts',
           'src/utils/api-health.ts',
         ],
         exclude: [

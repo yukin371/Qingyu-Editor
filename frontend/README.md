@@ -139,12 +139,12 @@ npm run preview
 路由按模块组织，每个模块有自己的路由配置文件：
 
 ```typescript
-// src/modules/bookstore/routes.ts
+// src/modules/writer/routes.ts
 export default [
   {
-    path: '/bookstore',
-    component: () => import('@/modules/bookstore/views/BooksView.vue'),
-    meta: { requiresAuth: false },
+    path: '/',
+    component: () => import('@/modules/writer/views/ProjectWorkspace.vue'),
+    meta: { requiresAuth: false, layout: 'editor' },
   },
 ]
 ```
@@ -156,12 +156,12 @@ export default [
 ```typescript
 import { httpService } from '@/core/services/http.service'
 
-export const getBookList = (params?: BookListParams) => {
-  return httpService.get<BookListResponse>('/books', { params })
+export const getProjects = () => {
+  return httpService.get('/api/v1/projects')
 }
 
-export const getBookDetail = (bookId: string) => {
-  return httpService.get<BookDetail>(`/books/${bookId}`)
+export const saveDocument = (documentId: string, content: string) => {
+  return httpService.put(`/api/v1/documents/${documentId}/content`, { content })
 }
 ```
 
@@ -169,8 +169,8 @@ export const getBookDetail = (bookId: string) => {
 
 ```typescript
 // 使用模块API
-import { getBookList, getBookDetail } from '@bookstore/api'
-import { addToBookshelf } from '@reader/api'
+import { getProjects, saveDocument } from '@writer/api/wrapper'
+import { polishText, storyGenerate } from '@ai/api'
 ```
 
 ### 状态管理
@@ -178,18 +178,15 @@ import { addToBookshelf } from '@reader/api'
 使用 Pinia 进行状态管理：
 
 ```typescript
-// src/stores/user.ts
+// src/modules/writer/stores/editorStore.ts
 import { defineStore } from 'pinia'
 
-export const useUserStore = defineStore('user', {
+export const useEditorStore = defineStore('editor', {
   state: () => ({
-    userInfo: null,
+    currentProjectId: null as string | null,
+    currentChapterId: null as string | null,
+    content: '',
   }),
-  actions: {
-    async fetchUserInfo() {
-      // ...
-    },
-  },
 })
 ```
 

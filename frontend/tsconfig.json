@@ -31,12 +31,8 @@
       "@/types/*": ["src/types/*"],
       "@/stores/*": ["src/modules/*/stores"],
       "@/design-system/*": ["src/design-system/*"],
-      "@bookstore/*": ["src/modules/bookstore/*"],
-      "@reader/*": ["src/modules/reader/*"],
-      "@user/*": ["src/modules/user/*"],
       "@writer/*": ["src/modules/writer/*"],
-      "@admin/*": ["src/modules/admin/*"],
-      "@shared/*": ["src/modules/shared/*"]
+      "@ai/*": ["src/modules/ai/*"]
     },
 
     /* Types */

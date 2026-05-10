@@ -19,6 +19,7 @@ export interface Book {
   author: string
   authorId?: string
   cover: string
+  coverUrl?: string
   description: string
   categoryId?: string
   categoryIds?: string[]
@@ -34,6 +35,7 @@ export interface Book {
   favoriteCount: number
   isVip?: boolean
   isFree?: boolean
+  isPaid?: boolean
   price?: number
   publishTime?: string
   publishedAt?: string
@@ -55,6 +57,7 @@ export interface BookBrief {
   title: string
   author: string
   cover: string
+  coverUrl?: string
   categoryName: string
   tags?: string[]
   rating: number
@@ -159,6 +162,7 @@ export interface RankingItem {
   bookId: string
   book: BookBrief
   score: number
+  change?: number
   trend?: 'up' | 'down' | 'stable'
   trendValue?: number
 }

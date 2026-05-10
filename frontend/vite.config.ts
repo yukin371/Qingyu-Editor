@@ -30,12 +30,7 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       '@/design-system': fileURLToPath(new URL('./src/design-system', import.meta.url)),
       '@/tests': fileURLToPath(new URL('./tests', import.meta.url)),
-      '@bookstore': fileURLToPath(new URL('./src/modules/bookstore', import.meta.url)),
-      '@reader': fileURLToPath(new URL('./src/modules/reader', import.meta.url)),
-      '@user': fileURLToPath(new URL('./src/modules/user', import.meta.url)),
       '@writer': fileURLToPath(new URL('./src/modules/writer', import.meta.url)),
-      '@admin': fileURLToPath(new URL('./src/modules/admin', import.meta.url)),
-      '@shared': fileURLToPath(new URL('./src/modules/shared', import.meta.url)),
       '@ai': fileURLToPath(new URL('./src/modules/ai', import.meta.url))
     }
   },
