@@ -1,6 +1,8 @@
 # 青羽设计系统 (Qingyu Design System)
 
 > 统一的用户端设计系统，提供一致的视觉体验和交互规范
+>
+> ⚠️ `src/shared/components/design-system` 现仅作为历史兼容层保留。新代码请优先从 `@/design-system`、`@/design-system/components`、`@/design-system/tokens` 导入。
 
 ## 📐 设计原则
 

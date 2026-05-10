@@ -1,6 +1,7 @@
 /**
  * 设计系统统一导出
- * 提供Token、布局、表单和反馈组件
+ *
+ * @deprecated 仅保留给历史导入路径；新的基础 UI / token owner 已收口到 `src/design-system`。
  */
 
 // Tokens
@@ -14,4 +15,3 @@ export * from './forms'
 
 // Feedback
 export * from './feedback'
-
