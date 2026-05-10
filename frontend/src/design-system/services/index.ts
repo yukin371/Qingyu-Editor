@@ -1,7 +1,8 @@
 /**
  * Qingyu 全局服务导出
  *
- * 提供历史别名兼容的全局 API
+ * canonical owner：对外提供 `message / messageBox / notification`。
+ * 历史别名仅保留在 `src/utils/element-plus-compat.ts`。
  */
 
 // Message 服务
@@ -24,6 +25,3 @@ export type { MessageOptions, MessageType, MessageHandler } from '../feedback/Me
 export type { MessageBoxOptions, MessageBoxType, MessageBoxIconType, MessageBoxAction, MessageBoxResult } from '../feedback/MessageBox/types'
 export type { NotificationOptions, NotificationType, NotificationPosition, NotificationHandler } from '../feedback/Notification/types'
 export type { FormInstance, FormRules, FormItemProps as FormItemProp } from '../form/Form/types'
-
-// 兼容历史调用方的别名导出
-export { message as ElMessage, messageBox as ElMessageBox, notification as ElNotification }
