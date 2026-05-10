@@ -2,6 +2,8 @@
 
 一个功能强大、易于集成的通用绘制工具库，支持思维导图、树形图、关系图、时间线等多种图形类型。
 
+> 说明：历史 UI 包装组件 `src/shared/components/draw/DrawCanvas.vue` 已于 2026-05-11 归档退场。本文中的 `<DrawCanvas>` 片段仅作为旧封装示意，当前独立编辑器运行态未接入这层 shared 组件。
+
 ## 功能特性
 
 ### 核心功能
@@ -49,7 +51,7 @@
 npm install nanoid
 ```
 
-### 2. 创建基础使用示例
+### 2. 历史基础使用示例（已归档）
 
 ```vue
 <template>
@@ -69,7 +71,8 @@ npm install nanoid
 </template>
 
 <script setup>
-import DrawCanvas from '@/shared/components/draw/DrawCanvas.vue'
+// 历史包装组件已归档，备份位置：
+// frontend/.cleanup-backups/2026-05-11-shared-draw-canvas/DrawCanvas.vue
 
 const handleNodeSelected = (node) => {
   console.log('节点被选中:', node)
@@ -504,4 +507,3 @@ A: 可以，通过事件系统和导出功能与其他库集成。
 ## 许可证
 
 MIT License
-
