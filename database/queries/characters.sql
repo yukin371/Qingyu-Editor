@@ -28,8 +28,8 @@ SELECT
     COALESCE(speech_pattern, '') AS speech_pattern,
     COALESCE(current_state, '') AS current_state,
     custom_status_json,
-    COALESCE(created_at, '') AS created_at,
-    COALESCE(updated_at, '') AS updated_at
+    created_at,
+    updated_at
 FROM characters
 WHERE id = ?;
 
@@ -47,8 +47,8 @@ SELECT
     COALESCE(speech_pattern, '') AS speech_pattern,
     COALESCE(current_state, '') AS current_state,
     custom_status_json,
-    COALESCE(created_at, '') AS created_at,
-    COALESCE(updated_at, '') AS updated_at
+    created_at,
+    updated_at
 FROM characters
 WHERE project_id = ?
 ORDER BY updated_at DESC, created_at DESC;
@@ -101,8 +101,8 @@ SELECT
     COALESCE(notes, '') AS notes,
     COALESCE(valid_from_chapter_id, '') AS valid_from_chapter_id,
     COALESCE(valid_until_chapter_id, '') AS valid_until_chapter_id,
-    COALESCE(created_at, '') AS created_at,
-    COALESCE(updated_at, '') AS updated_at
+    created_at,
+    updated_at
 FROM character_relations
 WHERE id = ?;
 
@@ -117,8 +117,8 @@ SELECT
     COALESCE(notes, '') AS notes,
     COALESCE(valid_from_chapter_id, '') AS valid_from_chapter_id,
     COALESCE(valid_until_chapter_id, '') AS valid_until_chapter_id,
-    COALESCE(created_at, '') AS created_at,
-    COALESCE(updated_at, '') AS updated_at
+    created_at,
+    updated_at
 FROM character_relations
 WHERE project_id = ?
 ORDER BY updated_at DESC, created_at DESC;
@@ -134,8 +134,8 @@ SELECT
     COALESCE(notes, '') AS notes,
     COALESCE(valid_from_chapter_id, '') AS valid_from_chapter_id,
     COALESCE(valid_until_chapter_id, '') AS valid_until_chapter_id,
-    COALESCE(created_at, '') AS created_at,
-    COALESCE(updated_at, '') AS updated_at
+    created_at,
+    updated_at
 FROM character_relations
 WHERE project_id = ? AND (from_id = ? OR to_id = ?)
 ORDER BY updated_at DESC, created_at DESC;

@@ -10,13 +10,15 @@ SELECT
     COALESCE(p.cover_path, '') AS cover_path,
     COALESCE(p.word_count, 0) AS word_count,
     COALESCE(p.status, 'draft') AS status,
-    CAST(COUNT(c.id) AS INTEGER) AS chapter_count,
-    COALESCE(p.created_at, '') AS created_at,
-    COALESCE(p.updated_at, '') AS updated_at
+    CAST((
+        SELECT COUNT(1)
+        FROM chapters c
+        WHERE c.project_id = p.id
+    ) AS INTEGER) AS chapter_count,
+    p.created_at,
+    p.updated_at
 FROM projects p
-LEFT JOIN chapters c ON c.project_id = p.id
-WHERE p.id = ?
-GROUP BY p.id, p.title, p.description, p.cover_path, p.word_count, p.status, p.created_at, p.updated_at;
+WHERE p.id = ?;
 
 -- name: ListProjects :many
 SELECT
@@ -26,12 +28,14 @@ SELECT
     COALESCE(p.cover_path, '') AS cover_path,
     COALESCE(p.word_count, 0) AS word_count,
     COALESCE(p.status, 'draft') AS status,
-    CAST(COUNT(c.id) AS INTEGER) AS chapter_count,
-    COALESCE(p.created_at, '') AS created_at,
-    COALESCE(p.updated_at, '') AS updated_at
+    CAST((
+        SELECT COUNT(1)
+        FROM chapters c
+        WHERE c.project_id = p.id
+    ) AS INTEGER) AS chapter_count,
+    p.created_at,
+    p.updated_at
 FROM projects p
-LEFT JOIN chapters c ON c.project_id = p.id
-GROUP BY p.id, p.title, p.description, p.cover_path, p.word_count, p.status, p.created_at, p.updated_at
 ORDER BY p.updated_at DESC, p.created_at DESC;
 
 -- name: UpdateProjectByID :execrows

@@ -8,7 +8,6 @@ package sqlc
 import (
 	"context"
 	"database/sql"
-	"time"
 )
 
 const createLocation = `-- name: CreateLocation :exec
@@ -128,8 +127,8 @@ SELECT
     COALESCE(atmosphere, '') AS atmosphere,
     COALESCE(parent_id, '') AS parent_id,
     COALESCE(image_url, '') AS image_url,
-    COALESCE(created_at, '') AS created_at,
-    COALESCE(updated_at, '') AS updated_at
+    created_at,
+    updated_at
 FROM locations
 WHERE id = ?
 `
@@ -145,8 +144,8 @@ type GetLocationByIDRow struct {
 	Atmosphere  string
 	ParentID    string
 	ImageUrl    string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	CreatedAt   sql.NullTime
+	UpdatedAt   sql.NullTime
 }
 
 func (q *Queries) GetLocationByID(ctx context.Context, id string) (GetLocationByIDRow, error) {
@@ -178,8 +177,8 @@ SELECT
     type,
     COALESCE(distance, '') AS distance,
     COALESCE(notes, '') AS notes,
-    COALESCE(created_at, '') AS created_at,
-    COALESCE(updated_at, '') AS updated_at
+    created_at,
+    updated_at
 FROM location_relations
 WHERE id = ?
 `
@@ -192,8 +191,8 @@ type GetLocationRelationByIDRow struct {
 	Type      string
 	Distance  string
 	Notes     string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
 }
 
 func (q *Queries) GetLocationRelationByID(ctx context.Context, id string) (GetLocationRelationByIDRow, error) {
@@ -222,8 +221,8 @@ SELECT
     type,
     COALESCE(distance, '') AS distance,
     COALESCE(notes, '') AS notes,
-    COALESCE(created_at, '') AS created_at,
-    COALESCE(updated_at, '') AS updated_at
+    created_at,
+    updated_at
 FROM location_relations
 WHERE project_id = ? AND (from_id = ? OR to_id = ?)
 ORDER BY updated_at DESC, created_at DESC
@@ -243,8 +242,8 @@ type ListLocationRelationsByLocationRow struct {
 	Type      string
 	Distance  string
 	Notes     string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
 }
 
 func (q *Queries) ListLocationRelationsByLocation(ctx context.Context, arg ListLocationRelationsByLocationParams) ([]ListLocationRelationsByLocationRow, error) {
@@ -289,8 +288,8 @@ SELECT
     type,
     COALESCE(distance, '') AS distance,
     COALESCE(notes, '') AS notes,
-    COALESCE(created_at, '') AS created_at,
-    COALESCE(updated_at, '') AS updated_at
+    created_at,
+    updated_at
 FROM location_relations
 WHERE project_id = ?
 ORDER BY updated_at DESC, created_at DESC
@@ -304,8 +303,8 @@ type ListLocationRelationsByProjectRow struct {
 	Type      string
 	Distance  string
 	Notes     string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
 }
 
 func (q *Queries) ListLocationRelationsByProject(ctx context.Context, projectID string) ([]ListLocationRelationsByProjectRow, error) {
@@ -353,8 +352,8 @@ SELECT
     COALESCE(atmosphere, '') AS atmosphere,
     COALESCE(parent_id, '') AS parent_id,
     COALESCE(image_url, '') AS image_url,
-    COALESCE(created_at, '') AS created_at,
-    COALESCE(updated_at, '') AS updated_at
+    created_at,
+    updated_at
 FROM locations
 WHERE project_id = ?
 ORDER BY CASE WHEN parent_id IS NULL THEN 0 ELSE 1 END ASC, parent_id ASC, updated_at DESC, created_at DESC
@@ -371,8 +370,8 @@ type ListLocationsByProjectRow struct {
 	Atmosphere  string
 	ParentID    string
 	ImageUrl    string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	CreatedAt   sql.NullTime
+	UpdatedAt   sql.NullTime
 }
 
 func (q *Queries) ListLocationsByProject(ctx context.Context, projectID string) ([]ListLocationsByProjectRow, error) {

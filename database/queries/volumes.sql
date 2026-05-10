@@ -8,7 +8,7 @@ SELECT
     project_id,
     title,
     sort_order,
-    COALESCE(created_at, '') AS created_at
+    created_at
 FROM volumes
 WHERE id = ?;
 
@@ -18,7 +18,7 @@ SELECT
     project_id,
     title,
     sort_order,
-    COALESCE(created_at, '') AS created_at
+    created_at
 FROM volumes
 WHERE project_id = ?
 ORDER BY sort_order ASC, created_at ASC;

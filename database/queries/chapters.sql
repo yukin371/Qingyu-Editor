@@ -13,8 +13,8 @@ SELECT
     COALESCE(word_count, 0) AS word_count,
     COALESCE(sort_order, 0) AS sort_order,
     COALESCE(status, 'draft') AS status,
-    COALESCE(created_at, '') AS created_at,
-    COALESCE(updated_at, '') AS updated_at
+    created_at,
+    updated_at
 FROM chapters
 WHERE id = ?;
 
@@ -29,8 +29,8 @@ SELECT
     COALESCE(word_count, 0) AS word_count,
     COALESCE(sort_order, 0) AS sort_order,
     COALESCE(status, 'draft') AS status,
-    COALESCE(created_at, '') AS created_at,
-    COALESCE(updated_at, '') AS updated_at
+    created_at,
+    updated_at
 FROM chapters
 WHERE project_id = ?
 ORDER BY CASE WHEN volume_id IS NULL THEN 0 ELSE 1 END ASC, volume_id ASC, sort_order ASC, created_at ASC;

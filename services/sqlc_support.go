@@ -6,18 +6,17 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"Qingyu-Editor/database/sqlc"
 )
 
 const sqliteTimestampLayout = "2006-01-02 15:04:05"
 
-func formatSQLiteTime(value time.Time) string {
-	if value.IsZero() {
+func formatSQLiteTime(value sql.NullTime) string {
+	if !value.Valid || value.Time.IsZero() {
 		return ""
 	}
-	return value.UTC().Format(sqliteTimestampLayout)
+	return value.Time.UTC().Format(sqliteTimestampLayout)
 }
 
 func toNullString(value string) sql.NullString {

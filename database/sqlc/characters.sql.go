@@ -8,7 +8,6 @@ package sqlc
 import (
 	"context"
 	"database/sql"
-	"time"
 )
 
 const characterExistsInProject = `-- name: CharacterExistsInProject :one
@@ -160,8 +159,8 @@ SELECT
     COALESCE(speech_pattern, '') AS speech_pattern,
     COALESCE(current_state, '') AS current_state,
     custom_status_json,
-    COALESCE(created_at, '') AS created_at,
-    COALESCE(updated_at, '') AS updated_at
+    created_at,
+    updated_at
 FROM characters
 WHERE id = ?
 `
@@ -179,8 +178,8 @@ type GetCharacterByIDRow struct {
 	SpeechPattern     string
 	CurrentState      string
 	CustomStatusJson  string
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
+	CreatedAt         sql.NullTime
+	UpdatedAt         sql.NullTime
 }
 
 func (q *Queries) GetCharacterByID(ctx context.Context, id string) (GetCharacterByIDRow, error) {
@@ -216,8 +215,8 @@ SELECT
     COALESCE(notes, '') AS notes,
     COALESCE(valid_from_chapter_id, '') AS valid_from_chapter_id,
     COALESCE(valid_until_chapter_id, '') AS valid_until_chapter_id,
-    COALESCE(created_at, '') AS created_at,
-    COALESCE(updated_at, '') AS updated_at
+    created_at,
+    updated_at
 FROM character_relations
 WHERE id = ?
 `
@@ -232,8 +231,8 @@ type GetCharacterRelationByIDRow struct {
 	Notes               string
 	ValidFromChapterID  string
 	ValidUntilChapterID string
-	CreatedAt           time.Time
-	UpdatedAt           time.Time
+	CreatedAt           sql.NullTime
+	UpdatedAt           sql.NullTime
 }
 
 func (q *Queries) GetCharacterRelationByID(ctx context.Context, id string) (GetCharacterRelationByIDRow, error) {
@@ -266,8 +265,8 @@ SELECT
     COALESCE(notes, '') AS notes,
     COALESCE(valid_from_chapter_id, '') AS valid_from_chapter_id,
     COALESCE(valid_until_chapter_id, '') AS valid_until_chapter_id,
-    COALESCE(created_at, '') AS created_at,
-    COALESCE(updated_at, '') AS updated_at
+    created_at,
+    updated_at
 FROM character_relations
 WHERE project_id = ? AND (from_id = ? OR to_id = ?)
 ORDER BY updated_at DESC, created_at DESC
@@ -289,8 +288,8 @@ type ListCharacterRelationsByCharacterRow struct {
 	Notes               string
 	ValidFromChapterID  string
 	ValidUntilChapterID string
-	CreatedAt           time.Time
-	UpdatedAt           time.Time
+	CreatedAt           sql.NullTime
+	UpdatedAt           sql.NullTime
 }
 
 func (q *Queries) ListCharacterRelationsByCharacter(ctx context.Context, arg ListCharacterRelationsByCharacterParams) ([]ListCharacterRelationsByCharacterRow, error) {
@@ -339,8 +338,8 @@ SELECT
     COALESCE(notes, '') AS notes,
     COALESCE(valid_from_chapter_id, '') AS valid_from_chapter_id,
     COALESCE(valid_until_chapter_id, '') AS valid_until_chapter_id,
-    COALESCE(created_at, '') AS created_at,
-    COALESCE(updated_at, '') AS updated_at
+    created_at,
+    updated_at
 FROM character_relations
 WHERE project_id = ?
 ORDER BY updated_at DESC, created_at DESC
@@ -356,8 +355,8 @@ type ListCharacterRelationsByProjectRow struct {
 	Notes               string
 	ValidFromChapterID  string
 	ValidUntilChapterID string
-	CreatedAt           time.Time
-	UpdatedAt           time.Time
+	CreatedAt           sql.NullTime
+	UpdatedAt           sql.NullTime
 }
 
 func (q *Queries) ListCharacterRelationsByProject(ctx context.Context, projectID string) ([]ListCharacterRelationsByProjectRow, error) {
@@ -409,8 +408,8 @@ SELECT
     COALESCE(speech_pattern, '') AS speech_pattern,
     COALESCE(current_state, '') AS current_state,
     custom_status_json,
-    COALESCE(created_at, '') AS created_at,
-    COALESCE(updated_at, '') AS updated_at
+    created_at,
+    updated_at
 FROM characters
 WHERE project_id = ?
 ORDER BY updated_at DESC, created_at DESC
@@ -429,8 +428,8 @@ type ListCharactersByProjectRow struct {
 	SpeechPattern     string
 	CurrentState      string
 	CustomStatusJson  string
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
+	CreatedAt         sql.NullTime
+	UpdatedAt         sql.NullTime
 }
 
 func (q *Queries) ListCharactersByProject(ctx context.Context, projectID string) ([]ListCharactersByProjectRow, error) {

@@ -8,7 +8,6 @@ package sqlc
 import (
 	"context"
 	"database/sql"
-	"time"
 )
 
 const createProject = `-- name: CreateProject :exec
@@ -56,13 +55,15 @@ SELECT
     COALESCE(p.cover_path, '') AS cover_path,
     COALESCE(p.word_count, 0) AS word_count,
     COALESCE(p.status, 'draft') AS status,
-    CAST(COUNT(c.id) AS INTEGER) AS chapter_count,
-    COALESCE(p.created_at, '') AS created_at,
-    COALESCE(p.updated_at, '') AS updated_at
+    CAST((
+        SELECT COUNT(1)
+        FROM chapters c
+        WHERE c.project_id = p.id
+    ) AS INTEGER) AS chapter_count,
+    p.created_at,
+    p.updated_at
 FROM projects p
-LEFT JOIN chapters c ON c.project_id = p.id
 WHERE p.id = ?
-GROUP BY p.id, p.title, p.description, p.cover_path, p.word_count, p.status, p.created_at, p.updated_at
 `
 
 type GetProjectRow struct {
@@ -73,8 +74,8 @@ type GetProjectRow struct {
 	WordCount    int64
 	Status       string
 	ChapterCount int64
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	CreatedAt    sql.NullTime
+	UpdatedAt    sql.NullTime
 }
 
 func (q *Queries) GetProject(ctx context.Context, id string) (GetProjectRow, error) {
@@ -102,12 +103,14 @@ SELECT
     COALESCE(p.cover_path, '') AS cover_path,
     COALESCE(p.word_count, 0) AS word_count,
     COALESCE(p.status, 'draft') AS status,
-    CAST(COUNT(c.id) AS INTEGER) AS chapter_count,
-    COALESCE(p.created_at, '') AS created_at,
-    COALESCE(p.updated_at, '') AS updated_at
+    CAST((
+        SELECT COUNT(1)
+        FROM chapters c
+        WHERE c.project_id = p.id
+    ) AS INTEGER) AS chapter_count,
+    p.created_at,
+    p.updated_at
 FROM projects p
-LEFT JOIN chapters c ON c.project_id = p.id
-GROUP BY p.id, p.title, p.description, p.cover_path, p.word_count, p.status, p.created_at, p.updated_at
 ORDER BY p.updated_at DESC, p.created_at DESC
 `
 
@@ -119,8 +122,8 @@ type ListProjectsRow struct {
 	WordCount    int64
 	Status       string
 	ChapterCount int64
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	CreatedAt    sql.NullTime
+	UpdatedAt    sql.NullTime
 }
 
 func (q *Queries) ListProjects(ctx context.Context) ([]ListProjectsRow, error) {

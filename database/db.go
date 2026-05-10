@@ -33,7 +33,7 @@ func Init(appName string) error {
 	}
 
 	dbPath := filepath.Join(dataDir, "qingyu-editor.db")
-	DB, err = sql.Open("sqlite3", dbPath+"?_journal_mode=WAL&_foreign_keys=on")
+	DB, err = sql.Open("sqlite3", dbPath+"?_journal_mode=WAL&_foreign_keys=on&_loc=auto")
 	if err != nil {
 		return fmt.Errorf("打开数据库失败: %w", err)
 	}

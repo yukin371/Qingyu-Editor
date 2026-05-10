@@ -7,7 +7,6 @@ package sqlc
 
 import (
 	"context"
-	"time"
 )
 
 const createVolume = `-- name: CreateVolume :exec
@@ -51,22 +50,14 @@ SELECT
     project_id,
     title,
     sort_order,
-    COALESCE(created_at, '') AS created_at
+    created_at
 FROM volumes
 WHERE id = ?
 `
 
-type GetVolumeByIDRow struct {
-	ID        string
-	ProjectID string
-	Title     string
-	SortOrder int64
-	CreatedAt time.Time
-}
-
-func (q *Queries) GetVolumeByID(ctx context.Context, id string) (GetVolumeByIDRow, error) {
+func (q *Queries) GetVolumeByID(ctx context.Context, id string) (Volume, error) {
 	row := q.db.QueryRowContext(ctx, getVolumeByID, id)
-	var i GetVolumeByIDRow
+	var i Volume
 	err := row.Scan(
 		&i.ID,
 		&i.ProjectID,
@@ -83,29 +74,21 @@ SELECT
     project_id,
     title,
     sort_order,
-    COALESCE(created_at, '') AS created_at
+    created_at
 FROM volumes
 WHERE project_id = ?
 ORDER BY sort_order ASC, created_at ASC
 `
 
-type ListVolumesByProjectRow struct {
-	ID        string
-	ProjectID string
-	Title     string
-	SortOrder int64
-	CreatedAt time.Time
-}
-
-func (q *Queries) ListVolumesByProject(ctx context.Context, projectID string) ([]ListVolumesByProjectRow, error) {
+func (q *Queries) ListVolumesByProject(ctx context.Context, projectID string) ([]Volume, error) {
 	rows, err := q.db.QueryContext(ctx, listVolumesByProject, projectID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListVolumesByProjectRow
+	var items []Volume
 	for rows.Next() {
-		var i ListVolumesByProjectRow
+		var i Volume
 		if err := rows.Scan(
 			&i.ID,
 			&i.ProjectID,

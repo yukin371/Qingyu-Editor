@@ -174,7 +174,7 @@ func (s *VolumeService) get(id string) (database.Volume, error) {
 	return mapVolume(row), nil
 }
 
-func mapVolume(row sqlc.GetVolumeByIDRow) database.Volume {
+func mapVolume(row sqlc.Volume) database.Volume {
 	return database.Volume{
 		ID:        row.ID,
 		ProjectID: row.ProjectID,
@@ -184,7 +184,7 @@ func mapVolume(row sqlc.GetVolumeByIDRow) database.Volume {
 	}
 }
 
-func mapVolumeList(row sqlc.ListVolumesByProjectRow) database.Volume {
+func mapVolumeList(row sqlc.Volume) database.Volume {
 	return database.Volume{
 		ID:        row.ID,
 		ProjectID: row.ProjectID,
