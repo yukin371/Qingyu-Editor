@@ -11,6 +11,53 @@ import { fileURLToPath, URL } from 'node:url'
 const isTest = process.env.VITEST || process.env.NODE_ENV === 'test'
 const isStorybook = process.env.STORYBOOK === 'true' || process.env.npm_lifecycle_event === 'storybook'
 const enableVueDevTools = process.env.VITE_ENABLE_VUE_DEVTOOLS === 'true'
+const createManualChunk = (id: string) => {
+  if (!id.includes('node_modules')) {
+    return undefined
+  }
+
+  if (
+    id.includes('/node_modules/vue/') ||
+    id.includes('/node_modules/vue-router/') ||
+    id.includes('/node_modules/pinia/')
+  ) {
+    return 'vue-vendor'
+  }
+
+  if (
+    id.includes('/node_modules/@tiptap/') ||
+    id.includes('/node_modules/prosemirror-') ||
+    id.includes('/node_modules/orderedmap/') ||
+    id.includes('/node_modules/rope-sequence/')
+  ) {
+    return 'tiptap-vendor'
+  }
+
+  if (id.includes('/node_modules/@floating-ui/')) {
+    return 'floating-ui-vendor'
+  }
+
+  if (id.includes('/node_modules/echarts/')) {
+    return 'echarts-vendor'
+  }
+
+  if (id.includes('/node_modules/d3/')) {
+    return 'graph-vendor'
+  }
+
+  if (
+    id.includes('/node_modules/axios/') ||
+    id.includes('/node_modules/dayjs/') ||
+    id.includes('/node_modules/dompurify/') ||
+    id.includes('/node_modules/marked/') ||
+    id.includes('/node_modules/nanoid/') ||
+    id.includes('/node_modules/nprogress/')
+  ) {
+    return 'utils-vendor'
+  }
+
+  return undefined
+}
 const plugins = [tailwindcss(), vue({
   // 启用 JSX 支持
   script: {
@@ -60,14 +107,7 @@ export default defineConfig({
     // 手动分包优化
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Vue核心库
-          'vue-vendor': ['vue', 'vue-router', 'pinia'],
-          // 图表库
-          'echarts': ['echarts'],
-          // 工具库
-          'utils': ['axios', 'marked', 'nanoid', 'nprogress']
-        }
+        manualChunks: createManualChunk,
       }
     },
     // 启用CSS代码分割

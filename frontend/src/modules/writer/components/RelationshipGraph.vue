@@ -3,19 +3,19 @@
     <!-- D3将直接在这里创建DOM -->
     <!-- 连线提示 -->
     <div v-if="isDrawingLine" class="drawing-hint">
-      <el-tag type="warning" size="small">
-        <el-icon><Connection /></el-icon>
+      <QyTag type="warning" size="sm">
+        <QyIcon name="Connection" :size="14" />
         拖拽到目标节点创建关系，松开取消
-      </el-tag>
+      </QyTag>
     </div>
     <!-- 工具提示 -->
     <div class="graph-toolbar">
-      <el-tooltip content="拖拽节点移动位置，双击节点释放回布局" placement="top">
-        <el-tag size="small" type="info">
-          <el-icon><QuestionFilled /></el-icon>
+      <div title="拖拽节点移动位置，双击节点释放回布局">
+        <QyTag size="sm" type="info">
+          <QyIcon name="QuestionFilled" :size="14" />
           拖拽移动 | 双击释放
-        </el-tag>
-      </el-tooltip>
+        </QyTag>
+      </div>
     </div>
   </div>
 </template>
@@ -23,7 +23,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import * as d3 from 'd3'
-import { Connection, QuestionFilled } from '@element-plus/icons-vue'
+import { QyIcon, QyTag } from '@/design-system/components'
 
 export interface GraphNode {
   id: string
@@ -523,7 +523,7 @@ onUnmounted(() => {
   z-index: 10;
   pointer-events: none;
 
-  .el-tag {
+  .qy-tag {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -539,7 +539,7 @@ onUnmounted(() => {
   right: 12px;
   z-index: 10;
 
-  .el-tag {
+  .qy-tag {
     display: flex;
     align-items: center;
     gap: 4px;

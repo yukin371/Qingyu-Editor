@@ -131,23 +131,10 @@ vi.mock('@/design-system/services', () => ({
   },
 }))
 
-vi.mock('element-plus', () => {
-  const actual = {} as Record<string, unknown>
-  return {
-    ...actual,
-    ElMessage: {
-      success: toastMocks.success,
-      info: toastMocks.info,
-      warning: toastMocks.warning,
-      error: toastMocks.error,
-    },
-  }
-})
-
 import CharacterGraphView from '../CharacterGraphView.vue'
 
-const ElButtonStub = defineComponent({
-  name: 'ElButtonStub',
+const QyButtonStub = defineComponent({
+  name: 'QyButtonStub',
   props: {
     disabled: Boolean,
   },
@@ -165,38 +152,31 @@ const ElButtonStub = defineComponent({
   },
 })
 
-const ElTagStub = defineComponent({
-  name: 'ElTagStub',
+const QyTagStub = defineComponent({
+  name: 'QyTagStub',
   setup(_, { slots }) {
     return () => h('span', slots.default?.())
   },
 })
 
-const ElScrollbarStub = defineComponent({
-  name: 'ElScrollbarStub',
+const QyScrollbarStub = defineComponent({
+  name: 'QyScrollbarStub',
   setup(_, { slots }) {
     return () => h('div', slots.default?.())
   },
 })
 
-const ElDescriptionsStub = defineComponent({
-  name: 'ElDescriptionsStub',
+const QyDescriptionsStub = defineComponent({
+  name: 'QyDescriptionsStub',
   setup(_, { slots }) {
     return () => h('div', slots.default?.())
   },
 })
 
-const ElDescriptionsItemStub = defineComponent({
-  name: 'ElDescriptionsItemStub',
+const QyDescriptionsItemStub = defineComponent({
+  name: 'QyDescriptionsItemStub',
   setup(_, { slots }) {
     return () => h('div', slots.default?.())
-  },
-})
-
-const ElEmptyStub = defineComponent({
-  name: 'ElEmptyStub',
-  setup(_, { attrs }) {
-    return () => h('div', attrs.description as string)
   },
 })
 
@@ -207,17 +187,10 @@ const QyEmptyStub = defineComponent({
   },
 })
 
-const ElProgressStub = defineComponent({
-  name: 'ElProgressStub',
+const QyProgressStub = defineComponent({
+  name: 'QyProgressStub',
   setup() {
     return () => h('div')
-  },
-})
-
-const ElIconStub = defineComponent({
-  name: 'ElIconStub',
-  setup(_, { slots }) {
-    return () => h('span', slots.default?.())
   },
 })
 
@@ -310,25 +283,19 @@ describe('CharacterGraphView asset candidates', () => {
           RelationshipGraph: RelationshipGraphStub,
           QyCard: true,
           QyIcon: true,
-          'el-form': true,
-          'el-form-item': true,
-          'el-button': ElButtonStub,
-          'el-divider': true,
-          'el-input': true,
-          'el-option': true,
-          'el-select': true,
-          'el-tag': ElTagStub,
-          'el-scrollbar': ElScrollbarStub,
-          'el-descriptions': ElDescriptionsStub,
-          'el-descriptions-item': ElDescriptionsItemStub,
-          'el-empty': ElEmptyStub,
-          'el-progress': ElProgressStub,
-          'el-icon': ElIconStub,
+          QyButton: QyButtonStub,
+          QyInput: true,
+          QyTextarea: true,
+          QySelect: true,
+          QySlider: true,
+          QyTag: QyTagStub,
+          QyScrollbar: QyScrollbarStub,
+          QyDescriptions: QyDescriptionsStub,
+          QyDescriptionsItem: QyDescriptionsItemStub,
+          QyProgress: QyProgressStub,
+          QyDivider: true,
           QyEmpty: QyEmptyStub,
           transition: false,
-        },
-        directives: {
-          loading: () => undefined,
         },
       },
     })
@@ -464,25 +431,19 @@ describe('CharacterGraphView asset candidates', () => {
           RelationshipGraph: RelationshipGraphStub,
           QyCard: true,
           QyIcon: true,
-          'el-form': true,
-          'el-form-item': true,
-          'el-button': ElButtonStub,
-          'el-divider': true,
-          'el-input': true,
-          'el-option': true,
-          'el-select': true,
-          'el-tag': ElTagStub,
-          'el-scrollbar': ElScrollbarStub,
-          'el-descriptions': ElDescriptionsStub,
-          'el-descriptions-item': ElDescriptionsItemStub,
-          'el-empty': ElEmptyStub,
-          'el-progress': ElProgressStub,
-          'el-icon': ElIconStub,
+          QyButton: QyButtonStub,
+          QyInput: true,
+          QyTextarea: true,
+          QySelect: true,
+          QySlider: true,
+          QyTag: QyTagStub,
+          QyScrollbar: QyScrollbarStub,
+          QyDescriptions: QyDescriptionsStub,
+          QyDescriptionsItem: QyDescriptionsItemStub,
+          QyProgress: QyProgressStub,
+          QyDivider: true,
           QyEmpty: QyEmptyStub,
           transition: false,
-        },
-        directives: {
-          loading: () => undefined,
         },
       },
     })
