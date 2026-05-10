@@ -2,7 +2,7 @@
  * Qingyu 全局服务导出
  *
  * canonical owner：对外提供 `message / messageBox / notification`。
- * 历史别名仅保留在 `src/utils/element-plus-compat.ts`。
+ * 历史别名已从 canonical 出口移除。
  */
 
 // Message 服务
