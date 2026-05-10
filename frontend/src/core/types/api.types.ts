@@ -114,7 +114,6 @@ export type ApiModuleName =
   | 'shared'
   | 'writer'
   | 'recommendation'
-  | 'admin'
   | 'finance'
   | 'discovery'
   | 'community'

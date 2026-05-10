@@ -43,8 +43,7 @@ export const HTTP_STATUS = {
 export const USER_ROLES = {
   GUEST: 'guest',
   USER: 'user',
-  AUTHOR: 'author',
-  ADMIN: 'admin'
+  AUTHOR: 'author'
 } as const
 
 // Ranking Types
