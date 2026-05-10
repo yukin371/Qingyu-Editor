@@ -9,6 +9,7 @@
 ## Owns
 
 - `app.go`、`main.go` 的桌面端 Wails 绑定入口。
+- `app.go` 内部缓存式 service container，负责收口 `db` 与各本地 service 的生命周期。
 - `database/` 下的 SQLite 连接、schema、`sqlc` 查询定义与生成代码。
 - `services/` 下的本地 CRUD、排序、关系校验、字数刷新等业务编排。
 

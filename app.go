@@ -3,16 +3,29 @@ package main
 import (
 	"context"
 	"database/sql"
+	"sync"
 
 	"Qingyu-Editor/ai"
 	"Qingyu-Editor/database"
 	"Qingyu-Editor/services"
 )
 
+type appServices struct {
+	project   *services.ProjectService
+	volume    *services.VolumeService
+	chapter   *services.ChapterService
+	character *services.CharacterService
+	location  *services.LocationService
+}
+
 // App 主应用结构
 type App struct {
-	ctx     context.Context
-	appName string
+	ctx       context.Context
+	appName   string
+	dbMu      sync.Mutex
+	serviceMu sync.Mutex
+	db        *sql.DB
+	services  appServices
 }
 
 // NewApp 创建应用实例
@@ -30,7 +43,13 @@ func (a *App) startup(ctx context.Context) {
 
 // shutdown 应用关闭时调用
 func (a *App) shutdown(ctx context.Context) {
+	a.dbMu.Lock()
+	defer a.dbMu.Unlock()
+	a.serviceMu.Lock()
+	defer a.serviceMu.Unlock()
 	database.Close()
+	a.db = nil
+	a.services = appServices{}
 }
 
 // InitDatabase 初始化数据库（前端可调用）
@@ -322,7 +341,12 @@ func (a *App) projectService() (*services.ProjectService, error) {
 	if err != nil {
 		return nil, err
 	}
-	return services.NewProjectService(db), nil
+	a.serviceMu.Lock()
+	defer a.serviceMu.Unlock()
+	if a.services.project == nil {
+		a.services.project = services.NewProjectService(db)
+	}
+	return a.services.project, nil
 }
 
 func (a *App) volumeService() (*services.VolumeService, error) {
@@ -330,7 +354,12 @@ func (a *App) volumeService() (*services.VolumeService, error) {
 	if err != nil {
 		return nil, err
 	}
-	return services.NewVolumeService(db), nil
+	a.serviceMu.Lock()
+	defer a.serviceMu.Unlock()
+	if a.services.volume == nil {
+		a.services.volume = services.NewVolumeService(db)
+	}
+	return a.services.volume, nil
 }
 
 func (a *App) chapterService() (*services.ChapterService, error) {
@@ -338,7 +367,12 @@ func (a *App) chapterService() (*services.ChapterService, error) {
 	if err != nil {
 		return nil, err
 	}
-	return services.NewChapterService(db), nil
+	a.serviceMu.Lock()
+	defer a.serviceMu.Unlock()
+	if a.services.chapter == nil {
+		a.services.chapter = services.NewChapterService(db)
+	}
+	return a.services.chapter, nil
 }
 
 func (a *App) characterService() (*services.CharacterService, error) {
@@ -346,7 +380,12 @@ func (a *App) characterService() (*services.CharacterService, error) {
 	if err != nil {
 		return nil, err
 	}
-	return services.NewCharacterService(db), nil
+	a.serviceMu.Lock()
+	defer a.serviceMu.Unlock()
+	if a.services.character == nil {
+		a.services.character = services.NewCharacterService(db)
+	}
+	return a.services.character, nil
 }
 
 func (a *App) locationService() (*services.LocationService, error) {
@@ -354,12 +393,29 @@ func (a *App) locationService() (*services.LocationService, error) {
 	if err != nil {
 		return nil, err
 	}
-	return services.NewLocationService(db), nil
+	a.serviceMu.Lock()
+	defer a.serviceMu.Unlock()
+	if a.services.location == nil {
+		a.services.location = services.NewLocationService(db)
+	}
+	return a.services.location, nil
 }
 
 func (a *App) serviceDB() (*sql.DB, error) {
+	a.dbMu.Lock()
+	defer a.dbMu.Unlock()
+	if a.db != nil {
+		return a.db, nil
+	}
+
 	if err := a.ensureDatabase(); err != nil {
 		return nil, err
 	}
-	return database.Get()
+
+	db, err := database.Get()
+	if err != nil {
+		return nil, err
+	}
+	a.db = db
+	return a.db, nil
 }
