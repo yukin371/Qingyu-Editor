@@ -430,7 +430,7 @@ try {
   const data = await fetchData()
 } catch (error) {
   console.error(error)
-  ElMessage.error('请求失败')
+  message.error('请求失败')
 }
 
 // ✅ 推荐做法
@@ -508,5 +508,4 @@ const loadData = async () => {
 3. **性能监控开销**：生产环境适度使用性能监控
 4. **浏览器兼容性**：部分 API 需要检查浏览器支持
 5. **内存泄漏**：及时清理不需要的缓存和监听器
-
 

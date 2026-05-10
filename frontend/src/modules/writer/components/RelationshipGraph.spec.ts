@@ -31,8 +31,8 @@ describe('RelationshipGraph - P0 Fix: D3直接DOM操作', () => {
       },
       global: {
         stubs: {
-          ElTag: true,
-          ElTooltip: true,
+          QyTag: true,
+          QyIcon: true,
         },
       },
     })
@@ -127,8 +127,8 @@ describe('RelationshipGraph - P0 Fix: D3直接DOM操作', () => {
       },
       global: {
         stubs: {
-          ElTag: true,
-          ElTooltip: true,
+          QyTag: true,
+          QyIcon: true,
         },
       },
     })
@@ -153,8 +153,8 @@ describe('RelationshipGraph - P0 Fix: D3直接DOM操作', () => {
       },
       global: {
         stubs: {
-          ElTag: true,
-          ElTooltip: true,
+          QyTag: true,
+          QyIcon: true,
         },
       },
     })
