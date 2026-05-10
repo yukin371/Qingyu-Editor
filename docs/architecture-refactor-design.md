@@ -811,7 +811,10 @@ SQLite（持久化）
 | `services/settings_service.go` | 新增 | 设置管理 |
 | `services/stats_service.go` | 新增 | 统计查询 |
 | `database/models.go` | 新增 | 数据模型 |
-| `database/migrations.go` | 新增 | Schema 迁移 |
+| `database/schema.sql` | 已落地 | Schema 真相源 |
+| `database/queries/*.sql` | 已落地 | sqlc 查询定义 |
+| `database/sqlc/*.go` | 已落地 | sqlc 生成查询代码 |
+| `sqlc.yaml` | 已落地 | sqlc 生成配置 |
 
 ### 前端（新增）
 
