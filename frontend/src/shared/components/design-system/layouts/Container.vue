@@ -1,11 +1,6 @@
-<template>
-  <div :class="containerClasses" :style="containerStyle">
-    <slot />
-  </div>
-</template>
-
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useAttrs } from 'vue'
+import { Container as CanonicalContainer } from '@/design-system/layout'
 
 interface Props {
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | 'full'
@@ -18,59 +13,36 @@ const props = withDefaults(defineProps<Props>(), {
   maxWidth: 'lg',
   padding: true,
   centered: true,
-  fluid: false
+  fluid: false,
 })
 
-const containerClasses = computed(() => {
-  return [
-    'qy-container',
-    {
-      'qy-container--centered': props.centered,
-      'qy-container--padded': props.padding,
-      'qy-container--fluid': props.fluid
-    }
-  ]
-})
+const attrs = useAttrs()
 
-const containerStyle = computed(() => {
-  if (props.fluid) return {}
-  
-  const maxWidths = {
-    sm: '640px',
-    md: '768px',
-    lg: '1024px',
-    xl: '1280px',
-    full: '100%'
+const containerSize = computed<'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'full'>(() => {
+  if (props.fluid) {
+    return 'full'
   }
-  
-  return {
-    maxWidth: maxWidths[props.maxWidth]
-  }
+
+  const sizeMap = {
+    sm: 'sm',
+    md: 'md',
+    lg: 'lg',
+    xl: 'xl',
+    full: 'full',
+  } as const
+
+  return sizeMap[props.maxWidth] ?? 'lg'
 })
 </script>
 
-<style scoped lang="scss">
-.qy-container {
-  width: 100%;
-  
-  &--centered {
-    margin-left: auto;
-    margin-right: auto;
-  }
-  
-  &--padded {
-    padding-left: 1rem;
-    padding-right: 1rem;
-    
-    @media (min-width: 768px) {
-      padding-left: 1.5rem;
-      padding-right: 1.5rem;
-    }
-  }
-  
-  &--fluid {
-    max-width: 100%;
-  }
-}
-</style>
-
+<template>
+  <CanonicalContainer
+    v-bind="attrs"
+    :size="containerSize"
+    :padding="padding"
+    :centered="centered"
+    :fluid="fluid"
+  >
+    <slot />
+  </CanonicalContainer>
+</template>
