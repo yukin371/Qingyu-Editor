@@ -32,7 +32,7 @@
 
 #### 主色调 - 青羽蓝
 ```typescript
-import { colors } from '@/shared/components/design-system'
+import { colors } from '@/design-system/tokens'
 
 colors.primary[500] // #2196F3
 ```
@@ -65,7 +65,7 @@ colors.gray[100]  // #F5F5F5 - 背景
 基于 4px 栅格系统：
 
 ```typescript
-import { spacing, getSpacing } from '@/shared/components/design-system'
+import { spacing } from '@/design-system/tokens'
 
 spacing.xs    // 4px
 spacing.sm    // 8px
@@ -73,8 +73,8 @@ spacing.md    // 16px
 spacing.lg    // 24px
 spacing.xl    // 32px
 
-// 或使用函数
-getSpacing(4)  // 16px (4 * 4px)
+// 或直接使用语义化预设
+spacing.padding.md  // 16px
 ```
 
 ### 排版系统
@@ -374,7 +374,8 @@ const handleRecharge = async () => {
 ### 1. 统一导入
 ```typescript
 // 推荐：从设计系统统一导入
-import { Container, Section, colors, spacing } from '@/shared/components/design-system'
+import { Container, Section } from '@/shared/components/design-system'
+import { colors, spacing } from '@/design-system/tokens'
 
 // 避免：直接从具体文件导入
 import Container from '@/shared/components/design-system/layouts/Container.vue'
