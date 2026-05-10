@@ -8,7 +8,7 @@
 
 ## 当前内容
 
-- 当前不保留独立运行时 root store；历史示例 `counter.ts` 已在 2026-05-11 归档退场。
+- `counter.ts`：示例/最小 Pinia 基座
 
 ## Must not own
 

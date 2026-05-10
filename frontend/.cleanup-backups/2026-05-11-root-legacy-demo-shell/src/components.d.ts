@@ -7,11 +7,15 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    BookCard: typeof import('./components/Book/BookCard.vue')['default']
+    CategoryList: typeof import('./components/Category/CategoryList.vue')['default']
     QyButton: typeof import('@/design-system/components/basic/QyButton')['QyButton']
     QyIcon: typeof import('@/design-system/components/basic/QyIcon')['QyIcon']
     QyImage: typeof import('@/design-system/components/basic/QyImage')['QyImage']
     QyInput: typeof import('@/design-system/components/basic/QyInput')['QyInput']
+    RankingList: typeof import('./components/Ranking/RankingList.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SectionTitle: typeof import('./components/common/SectionTitle.vue')['default']
   }
 }
