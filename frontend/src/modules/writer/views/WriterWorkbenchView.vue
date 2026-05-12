@@ -1,7 +1,7 @@
 <template>
   <WorkbenchShell
     title="开始今天的创作"
-    description="继续最近项目，或从空白、导入、模板开始。"
+    description="从空白、导入或模板开始。"
     active-nav-id="workbench"
     :last-project-id="lastProjectId"
   >
@@ -17,33 +17,6 @@
       <QyButton size="sm" @click="createDialogVisible = true">新建项目</QyButton>
     </template>
 
-    <section class="grid gap-4 pt-1 md:grid-cols-2 xl:grid-cols-4">
-      <button
-        v-for="action in quickActions"
-        :key="action.id"
-        type="button"
-        class="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left transition-colors hover:border-slate-300 hover:bg-slate-50"
-        @click="handleQuickAction(action.id)"
-      >
-        <div class="flex items-start gap-3">
-          <div
-            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-            :class="
-              action.emphasis === 'primary'
-                ? 'bg-sky-50 text-sky-600'
-                : 'bg-slate-100 text-slate-500'
-            "
-          >
-            <QyIcon :name="action.icon" :size="18" />
-          </div>
-          <div class="min-w-0 space-y-1">
-            <div class="text-sm font-semibold text-slate-950">{{ action.label }}</div>
-            <p class="text-xs leading-5 text-slate-500">{{ action.description }}</p>
-          </div>
-        </div>
-      </button>
-    </section>
-
     <section class="space-y-5">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <h2 class="text-lg font-semibold text-slate-950">最近项目</h2>
@@ -56,10 +29,7 @@
         </QyButton>
       </div>
 
-      <div
-        v-if="isLoading"
-        class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
-      >
+      <div v-if="isLoading" class="space-y-3">
         <QyCard
           v-for="index in recentProjectSkeletonRows"
           :key="index"
@@ -68,42 +38,49 @@
           padding="sm"
           class="rounded-3xl"
         >
-          <div class="space-y-3">
-            <div class="rounded-[24px] border border-slate-100 bg-slate-50/80 p-3">
-              <div class="flex items-center justify-between">
-                <Skeleton type="text" width="48px" height="18px" />
-                <Skeleton type="text" width="40px" height="18px" />
-              </div>
-              <div class="mt-8 space-y-2">
-                <Skeleton type="text" width="132px" height="18px" />
-                <Skeleton type="text" width="108px" height="18px" />
-              </div>
-            </div>
-            <div class="space-y-2">
-              <Skeleton type="text" width="144px" height="18px" />
-              <div class="flex items-center justify-between gap-3">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="min-w-0 flex-1 space-y-2">
+              <Skeleton type="text" width="156px" height="18px" />
+              <div class="flex flex-wrap items-center gap-3">
+                <Skeleton type="text" width="64px" height="12px" />
                 <Skeleton type="text" width="72px" height="12px" />
-                <Skeleton type="text" width="88px" height="12px" />
+                <Skeleton type="text" width="96px" height="12px" />
               </div>
             </div>
-            <Skeleton type="rect" width="100%" height="32px" class="rounded-xl" />
+            <Skeleton type="rect" width="88px" height="32px" class="rounded-xl" />
           </div>
         </QyCard>
       </div>
 
-      <QyEmpty v-else-if="recentProjects.length === 0" title="还没有项目" type="list">
-        <template #description>
-          当前没有可继续的项目，先从空白新建、导入 ZIP，或进入模板中心开始。
-        </template>
-        <template #action>
-          <div class="flex flex-wrap justify-center gap-3">
-            <QyButton @click="createDialogVisible = true">新建项目</QyButton>
-            <QyButton variant="ghost" @click="openImportPicker">导入项目</QyButton>
-          </div>
-        </template>
-      </QyEmpty>
+      <div v-else-if="recentProjects.length === 0">
+        <QyCard
+          variant="outlined"
+          shadow="never"
+          padding="sm"
+          class="rounded-3xl"
+        >
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 items-center gap-3">
+              <div
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-500"
+              >
+                <QyIcon name="BookOpen" :size="18" />
+              </div>
+              <div class="min-w-0">
+                <div class="text-sm font-semibold text-slate-950">还没有项目</div>
+                <p class="mt-1 text-sm text-slate-500">新建一个项目，或者先导入现有稿件。</p>
+              </div>
+            </div>
 
-      <div v-else class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div class="flex flex-wrap gap-2">
+              <QyButton size="sm" @click="createDialogVisible = true">新建项目</QyButton>
+              <QyButton size="sm" variant="ghost" @click="openImportPicker">导入</QyButton>
+            </div>
+          </div>
+        </QyCard>
+      </div>
+
+      <div v-else class="space-y-3">
         <QyCard
           v-for="project in recentProjects"
           :key="project.id"
@@ -112,42 +89,35 @@
           padding="sm"
           class="rounded-3xl"
         >
-          <div class="space-y-3">
-            <button
-              type="button"
-              class="block w-full rounded-[24px] border border-slate-100 bg-slate-50/80 p-3 text-left transition-colors hover:border-slate-200 hover:bg-slate-50"
-              @click="continueProject(project)"
-            >
-              <div class="flex items-center justify-between gap-3 text-xs text-slate-500">
-                <span class="rounded-full bg-white px-2.5 py-1 font-medium text-slate-700">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="min-w-0 flex-1 space-y-2">
+              <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                <span class="rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-700">
                   {{ project.category }}
                 </span>
                 <span>{{ project.statusLabel }}</span>
-              </div>
-              <div class="mt-10 flex min-h-[84px] items-end">
-                <div class="space-y-2">
-                  <div class="line-clamp-2 text-lg font-semibold leading-7 text-slate-950">
-                    {{ project.title }}
-                  </div>
-                  <div class="text-xs text-slate-500">
-                    {{ project.lastChapterTitle || '从项目入口继续创作' }}
-                  </div>
-                </div>
-              </div>
-            </button>
-
-            <div class="space-y-2">
-              <div class="line-clamp-1 text-sm font-medium text-slate-800">
-                {{ formatNumber(project.totalWords) }} 字
-              </div>
-              <div class="flex items-center justify-between gap-3 text-xs text-slate-500">
-                <span>{{ project.chapterCount }} 章</span>
                 <span>{{ formatDate(project.updatedAt) }}</span>
+              </div>
+
+              <button
+                type="button"
+                class="block text-left"
+                @click="continueProject(project)"
+              >
+                <div class="text-base font-semibold text-slate-950">{{ project.title }}</div>
+                <div class="mt-1 text-sm text-slate-500">
+                  {{ project.lastChapterTitle || '从项目入口继续创作' }}
+                </div>
+              </button>
+
+              <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                <span>{{ project.chapterCount }} 章</span>
+                <span>{{ formatNumber(project.totalWords) }} 字</span>
               </div>
             </div>
 
-            <div class="flex items-center gap-2">
-              <QyButton size="sm" class="flex-1" @click="continueProject(project)">继续</QyButton>
+            <div class="flex shrink-0 items-center gap-2">
+              <QyButton size="sm" @click="continueProject(project)">继续</QyButton>
               <QyButton size="sm" variant="ghost" @click="openProject(project.id)">进入</QyButton>
             </div>
           </div>
@@ -174,7 +144,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { QyButton, QyCard, QyEmpty, QyIcon, Skeleton } from '@/design-system/components'
+import { QyButton, QyCard, QyIcon, Skeleton } from '@/design-system/components'
 import { message } from '@/design-system/services'
 import WorkbenchShell from '@/modules/writer/components/workbench/WorkbenchShell.vue'
 import ProjectCreateDialog from '@/modules/writer/components/workbench/ProjectCreateDialog.vue'
@@ -185,10 +155,7 @@ import {
   importProjectArchive,
   sortProjectsByRecent,
 } from '@/modules/writer/services/workbenchProject.service'
-import type {
-  WorkbenchQuickAction,
-  WorkbenchRecentProjectCard,
-} from '@/modules/writer/types/workbench'
+import type { WorkbenchRecentProjectCard } from '@/modules/writer/types/workbench'
 
 const router = useRouter()
 const projectStore = useProjectStore()
@@ -204,46 +171,6 @@ const sortedProjects = computed(() => sortProjectsByRecent(projectStore.projects
 const lastProjectId = computed(
   () => recentProjects.value[0]?.id || sortedProjects.value[0]?.id || '',
 )
-
-const quickActions = computed<WorkbenchQuickAction[]>(() => {
-  const actions: WorkbenchQuickAction[] = [
-    {
-      id: 'create',
-      label: '新建项目',
-      description: '直接走空白创建，随后进入正文工作区。',
-      icon: 'EditPen',
-      emphasis: 'primary',
-    },
-    {
-      id: 'import',
-      label: '导入项目',
-      description: '沿用现有 ZIP 导入能力，把历史稿件接进本地项目。',
-      icon: 'Upload',
-      emphasis: 'secondary',
-    },
-    {
-      id: 'templates',
-      label: '模板中心',
-      description: '先预览大纲/角色/设定，再应用到新项目。',
-      icon: 'Collection',
-      emphasis: 'secondary',
-    },
-  ]
-
-  if (recentProjects.value.length > 0) {
-    actions.unshift({
-      id: 'continue',
-      label: '继续创作',
-      description: recentProjects.value[0]?.lastChapterTitle
-        ? `返回 ${recentProjects.value[0].lastChapterTitle}`
-        : '回到最近项目的正文工作区。',
-      icon: 'BookOpen',
-      emphasis: 'primary',
-    })
-  }
-
-  return actions
-})
 
 function formatDate(value: string): string {
   if (!value) {
@@ -338,27 +265,6 @@ async function handleCreateProject(payload: { title: string; summary: string }) 
     message.error('创建项目失败，请稍后重试')
   } finally {
     isCreating.value = false
-  }
-}
-
-function handleQuickAction(actionId: WorkbenchQuickAction['id']) {
-  if (actionId === 'create') {
-    createDialogVisible.value = true
-    return
-  }
-
-  if (actionId === 'import') {
-    openImportPicker()
-    return
-  }
-
-  if (actionId === 'templates') {
-    router.push({ name: WRITER_ROUTE_NAMES.templates })
-    return
-  }
-
-  if (actionId === 'continue' && recentProjects.value[0]) {
-    continueProject(recentProjects.value[0])
   }
 }
 
