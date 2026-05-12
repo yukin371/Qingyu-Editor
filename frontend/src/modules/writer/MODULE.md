@@ -25,6 +25,7 @@
 - **工具唯一入口**：`relations / timeline / branches / structure` 只允许通过 `WorkspaceToolOverlay` 承载；不要再让 `WorkspaceEditorContent` 主内容区直接切成工具页。
 - **工作台是默认首页，编辑器是项目内主工作区**：独立编辑器的 `/` 与 `/writer` 现在应先进入作者工作台，继续创作、项目列表、模板中心都从这里分流；真正的正文编辑只允许落到 `writer-project`，不要再把工作台页面做回第二个编辑器宿主。
 - **项目列表与模板中心必须保持独立页职责**：工作台首页只展示最近项目和快捷动作；完整项目筛选、模板浏览与模板详情预览分别落到独立项目页与模板中心，不要把这些控件重新塞回首页。
+- **入口动作 owner 是 `useWriterProjectEntryActions`**：工作台、项目列表、模板中心涉及“进入项目 / 继续创作 / 新建后进入 / 导入后进入”时，应复用这个 composable；不要在页面里各自拼 `writer-project` 路由或复制 ZIP 导入成功跳转逻辑。
 - **模板中心的 owner 是“新建项目工具”，不是模板后台**：模板页允许浏览分类、打开 `大纲 / 角色 / 设定` 抽屉，并把模板应用到新建项目；不要在这里偷偷长出模板编辑器、模板发布系统或第二套项目创建协议。
 - **工作台壳必须保持模块化和简洁**：`WorkbenchShell` 负责左侧主导航和右侧主内容区的基础骨架；首页、项目页、模板页优先复用 `QyCard / QyButton / QyInput / QySelect / QyDrawer / QyModal` 等设计系统原件，不要再堆叠装饰性卡片、大段说明或自定义平台式大壳。
 - **双壳模型要显式，不要伪装成同一页抖动**：顶层页壳只服务 `/writer`、`/writer/projects`、`/writer/templates`，并由页面显式传入 `activeNavId`；`/writer/project/:projectId` 只走 `WorkspaceShell` 编辑器壳。不要再让壳层通过路由猜测去兼容另一条主链。

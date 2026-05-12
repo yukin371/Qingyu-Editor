@@ -148,17 +148,19 @@ import { QyButton, QyCard, QyIcon, Skeleton } from '@/design-system/components'
 import { message } from '@/design-system/services'
 import WorkbenchShell from '@/modules/writer/components/workbench/WorkbenchShell.vue'
 import ProjectCreateDialog from '@/modules/writer/components/workbench/ProjectCreateDialog.vue'
+import { useWriterProjectEntryActions } from '@/modules/writer/composables/useWriterProjectEntryActions'
 import { useProjectStore } from '@/modules/writer/stores/projectStore'
 import { WRITER_ROUTE_NAMES } from '@/modules/writer/routes'
 import {
   buildWorkbenchRecentProjectCards,
-  importProjectArchive,
   sortProjectsByRecent,
 } from '@/modules/writer/services/workbenchProject.service'
 import type { WorkbenchRecentProjectCard } from '@/modules/writer/types/workbench'
 
 const router = useRouter()
 const projectStore = useProjectStore()
+const { openProject, continueProject, openCreatedProject, importProjectAndEnter } =
+  useWriterProjectEntryActions()
 
 const isLoading = ref(true)
 const isCreating = ref(false)
@@ -204,17 +206,6 @@ async function refreshWorkbench() {
   }
 }
 
-function openProject(projectId: string) {
-  router.push({
-    name: WRITER_ROUTE_NAMES.project,
-    params: { projectId },
-  })
-}
-
-function continueProject(project: WorkbenchRecentProjectCard) {
-  router.push(project.continueTarget)
-}
-
 function openImportPicker() {
   importInputRef.value?.click()
 }
@@ -228,18 +219,7 @@ async function handleImportChange(event: Event) {
     return
   }
 
-  const result = await importProjectArchive(file)
-  if (!result.success || !result.projectId) {
-    message.error(result.error || '导入失败，请重试')
-    return
-  }
-
-  await refreshWorkbench()
-  message.success(`已导入项目：${result.title || '未命名项目'}`)
-  router.push({
-    name: WRITER_ROUTE_NAMES.project,
-    params: { projectId: result.projectId },
-  })
+  await importProjectAndEnter(file, { refresh: refreshWorkbench })
 }
 
 async function handleCreateProject(payload: { title: string; summary: string }) {
@@ -250,16 +230,9 @@ async function handleCreateProject(payload: { title: string; summary: string }) 
       summary: payload.summary,
     })
     const createdProject = created as { id?: string; projectId?: string } | undefined
-    const projectId = createdProject?.id || createdProject?.projectId
     createDialogVisible.value = false
     await refreshWorkbench()
-
-    if (projectId) {
-      router.push({
-        name: WRITER_ROUTE_NAMES.project,
-        params: { projectId },
-      })
-    }
+    await openCreatedProject(createdProject)
   } catch (error) {
     console.error('[WriterWorkbench] 创建项目失败:', error)
     message.error('创建项目失败，请稍后重试')

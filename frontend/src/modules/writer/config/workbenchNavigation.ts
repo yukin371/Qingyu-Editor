@@ -36,7 +36,7 @@ export function getWriterWorkbenchNavigation(lastProjectId?: string): WriterWork
     },
     {
       id: 'writing',
-      label: '创作',
+      label: '继续创作',
       description: '继续进入正文工作区',
       icon: 'EditPen',
       to: lastProjectId

@@ -19,11 +19,20 @@
         />
       </label>
 
-      <label class="block space-y-2">
+      <QyButton
+        v-if="summaryCollapsed && !summaryVisible"
+        size="sm"
+        variant="ghost"
+        @click="summaryVisible = true"
+      >
+        添加一句话摘要
+      </QyButton>
+
+      <label v-if="summaryVisible" class="block space-y-2">
         <span class="text-sm font-medium text-slate-700">一句话摘要</span>
         <QyTextarea
           v-model="summary"
-          :rows="4"
+          :rows="3"
           :maxlength="300"
           show-count
           placeholder="可选，用一句话记录这本书的开场目标。"
@@ -33,7 +42,7 @@
 
     <template #footer>
       <QyButton variant="ghost" @click="handleVisibilityChange(false)">取消</QyButton>
-      <QyButton :loading="submitting" @click="handleSubmit">开始创建</QyButton>
+      <QyButton :loading="submitting" @click="handleSubmit">{{ effectiveSubmitText }}</QyButton>
     </template>
   </QyModal>
 </template>
@@ -48,11 +57,15 @@ const props = withDefaults(
     submitting?: boolean
     templateName?: string
     initialTitle?: string
+    summaryCollapsed?: boolean
+    submitText?: string
   }>(),
   {
     submitting: false,
     templateName: '',
     initialTitle: '',
+    summaryCollapsed: true,
+    submitText: '',
   },
 )
 
@@ -63,8 +76,12 @@ const emit = defineEmits<{
 
 const title = ref('')
 const summary = ref('')
+const summaryVisible = ref(false)
 
 const dialogTitle = computed(() => (props.templateName ? '应用模板并创建项目' : '新建空白项目'))
+const effectiveSubmitText = computed(
+  () => props.submitText || (props.templateName ? '应用并创建' : '开始创建'),
+)
 
 watch(
   () => props.visible,
@@ -75,6 +92,7 @@ watch(
 
     title.value = props.initialTitle || ''
     summary.value = ''
+    summaryVisible.value = !props.summaryCollapsed
   },
   { immediate: true },
 )

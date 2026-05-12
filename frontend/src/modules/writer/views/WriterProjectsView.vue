@@ -87,7 +87,7 @@
                 <span>{{ formatDate(project.updatedAt) }}</span>
               </div>
 
-              <button type="button" class="block text-left" @click="router.push(project.continueTarget)">
+              <button type="button" class="block text-left" @click="continueProject(project)">
                 <div class="text-base font-semibold text-slate-950">{{ project.title }}</div>
                 <div class="mt-1 text-sm text-slate-500">
                   {{ project.lastChapterTitle || '从项目入口继续创作' }}
@@ -101,7 +101,7 @@
             </div>
 
             <div class="flex shrink-0 flex-wrap gap-2">
-              <QyButton size="sm" @click="router.push(project.continueTarget)">继续</QyButton>
+              <QyButton size="sm" @click="continueProject(project)">继续</QyButton>
               <QyButton size="sm" variant="ghost" @click="openProject(project.id)">进入</QyButton>
             </div>
           </div>
@@ -127,23 +127,22 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { QyButton, QyCard, QyIcon, QyInput, QySelect, Skeleton } from '@/design-system/components'
 import { message } from '@/design-system/services'
 import WorkbenchShell from '@/modules/writer/components/workbench/WorkbenchShell.vue'
 import ProjectCreateDialog from '@/modules/writer/components/workbench/ProjectCreateDialog.vue'
-import { WRITER_ROUTE_NAMES } from '@/modules/writer/routes'
+import { useWriterProjectEntryActions } from '@/modules/writer/composables/useWriterProjectEntryActions'
 import {
   buildWorkbenchRecentProjectCards,
   getProjectStatusLabel,
-  importProjectArchive,
   sortProjectsByRecent,
 } from '@/modules/writer/services/workbenchProject.service'
 import { useProjectStore } from '@/modules/writer/stores/projectStore'
 import type { WorkbenchRecentProjectCard } from '@/modules/writer/types/workbench'
 
-const router = useRouter()
 const projectStore = useProjectStore()
+const { openProject, continueProject, openCreatedProject, importProjectAndEnter } =
+  useWriterProjectEntryActions()
 
 const isLoading = ref(true)
 const isCreating = ref(false)
@@ -243,13 +242,6 @@ async function refreshProjects() {
   }
 }
 
-function openProject(projectId: string) {
-  router.push({
-    name: WRITER_ROUTE_NAMES.project,
-    params: { projectId },
-  })
-}
-
 function openImportPicker() {
   importInputRef.value?.click()
 }
@@ -263,14 +255,7 @@ async function handleImportChange(event: Event) {
     return
   }
 
-  const result = await importProjectArchive(file)
-  if (!result.success || !result.projectId) {
-    message.error(result.error || '导入失败，请重试')
-    return
-  }
-
-  await refreshProjects()
-  message.success(`已导入项目：${result.title || '未命名项目'}`)
+  await importProjectAndEnter(file, { refresh: refreshProjects })
 }
 
 async function handleCreateProject(payload: { title: string; summary: string }) {
@@ -284,10 +269,7 @@ async function handleCreateProject(payload: { title: string; summary: string }) 
     await refreshProjects()
 
     const createdProject = created as { id?: string; projectId?: string } | undefined
-    const projectId = createdProject?.id || createdProject?.projectId
-    if (projectId) {
-      openProject(projectId)
-    }
+    await openCreatedProject(createdProject)
   } catch (error) {
     console.error('[WriterProjects] 创建项目失败:', error)
     message.error('创建项目失败，请稍后重试')

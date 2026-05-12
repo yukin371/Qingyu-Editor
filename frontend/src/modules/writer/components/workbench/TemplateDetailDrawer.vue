@@ -5,68 +5,76 @@
     direction="rtl"
     size="520px"
   >
-    <div v-if="template" class="space-y-5">
-      <div class="space-y-2">
-        <p class="text-sm text-slate-500">
-          {{ template.category }} · {{ template.templateType }}
-        </p>
-        <div class="space-y-2">
-          <h2 class="text-2xl font-semibold text-slate-950">{{ template.name }}</h2>
-          <p class="text-sm leading-6 text-slate-500">{{ template.tagline }}</p>
+    <div v-if="template" class="space-y-4">
+      <div class="space-y-2 border-b border-slate-100 pb-4">
+        <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+          <span class="rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-700">
+            {{ template.category }}
+          </span>
+          <span>{{ template.templateType }}</span>
+          <span>{{ template.emotionCurve }}</span>
         </div>
-        <p class="text-sm text-slate-500">
-          {{ template.emotionCurve }} · {{ template.recommendedLabel }}
-        </p>
+        <h2 class="text-xl font-semibold text-slate-950">{{ template.name }}</h2>
+        <p class="text-sm leading-6 text-slate-500">{{ template.tagline }}</p>
       </div>
 
       <Tabs v-model="activeTab" type="card">
         <TabPane name="outline" label="大纲">
-          <ul class="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white">
+          <ul class="divide-y divide-slate-100 border-y border-slate-100">
             <li
               v-for="chapter in template.previewTabs.outline"
               :key="chapter.order"
-              class="space-y-2 px-4 py-4"
+              class="space-y-2 py-4"
             >
               <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
                 <span>第 {{ chapter.order }} 章</span>
                 <span>{{ chapter.title }}</span>
               </div>
               <p class="text-sm leading-6 text-slate-600">{{ chapter.summary }}</p>
-              <div class="grid gap-2 text-sm text-slate-500">
-                <p><span class="font-medium text-slate-700">推进钩子：</span>{{ chapter.hook }}</p>
-                <p><span class="font-medium text-slate-700">兑现点：</span>{{ chapter.payoff }}</p>
-              </div>
+              <p class="text-sm text-slate-500">{{ chapter.hook }}</p>
             </li>
           </ul>
         </TabPane>
 
         <TabPane name="characters" label="角色">
-          <ul class="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white">
+          <ul class="divide-y divide-slate-100 border-y border-slate-100">
             <li
               v-for="section in template.previewTabs.characters"
               :key="section.id"
-              class="space-y-2 px-4 py-4"
+              class="space-y-2 py-4"
             >
               <h3 class="text-sm font-medium text-slate-900">{{ section.title }}</h3>
               <p class="text-sm leading-6 text-slate-600">{{ section.summary }}</p>
-              <ul class="list-disc space-y-1 pl-5 text-sm text-slate-500">
-                <li v-for="bullet in section.bullets" :key="bullet">{{ bullet }}</li>
+              <ul class="flex flex-wrap gap-2 text-xs text-slate-500">
+                <li
+                  v-for="bullet in section.bullets.slice(0, 2)"
+                  :key="bullet"
+                  class="rounded-full bg-slate-100 px-2 py-1"
+                >
+                  {{ bullet }}
+                </li>
               </ul>
             </li>
           </ul>
         </TabPane>
 
         <TabPane name="settings" label="设定">
-          <ul class="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white">
+          <ul class="divide-y divide-slate-100 border-y border-slate-100">
             <li
               v-for="section in template.previewTabs.settings"
               :key="section.id"
-              class="space-y-2 px-4 py-4"
+              class="space-y-2 py-4"
             >
               <h3 class="text-sm font-medium text-slate-900">{{ section.title }}</h3>
               <p class="text-sm leading-6 text-slate-600">{{ section.summary }}</p>
-              <ul class="list-disc space-y-1 pl-5 text-sm text-slate-500">
-                <li v-for="bullet in section.bullets" :key="bullet">{{ bullet }}</li>
+              <ul class="flex flex-wrap gap-2 text-xs text-slate-500">
+                <li
+                  v-for="bullet in section.bullets.slice(0, 2)"
+                  :key="bullet"
+                  class="rounded-full bg-slate-100 px-2 py-1"
+                >
+                  {{ bullet }}
+                </li>
               </ul>
             </li>
           </ul>
@@ -87,7 +95,7 @@
             应用后会创建 1 个卷骨架与 {{ template.previewTabs.outline.length }} 个起始章节。
           </p>
         </div>
-        <QyButton :loading="submitting" @click="$emit('apply')">应用于新建项目</QyButton>
+        <QyButton :loading="submitting" @click="$emit('apply')">应用并新建项目</QyButton>
       </div>
     </template>
   </QyDrawer>
