@@ -79,8 +79,6 @@
           @rename-title="handleRenameCurrentDocument"
           @create-structure-plan="handleCreateStructurePlan"
           @status-change="handleWorkspaceStatusChange"
-          @open-fullscreen-tool="handleOpenFullscreenTool"
-          @close-fullscreen="handleCloseFullscreen"
         />
       </template>
 
@@ -174,6 +172,7 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router'
 import { message, messageBox } from '@/design-system/services'
+import { WRITER_ROUTE_NAMES } from '@/modules/writer/routes'
 // 引入 Store 体系
 import { useProjectStore } from '@/modules/writer/stores/projectStore'
 import { useDocumentStore } from '@/modules/writer/stores/documentStore'
@@ -1651,9 +1650,17 @@ onMounted(async () => {
     return
   }
 
+  await projectStore.loadList()
+
+  try {
+    await projectStore.loadDetail(pId)
+  } catch (error) {
+    message.warning('项目不存在或已失效，已返回工作台')
+    await router.replace({ name: WRITER_ROUTE_NAMES.home })
+    return
+  }
+
   const bootstrapTasks: Array<Promise<unknown>> = [
-    projectStore.loadList(),
-    projectStore.loadDetail(pId),
     documentStore.loadTree(pId),
     loadOutlineTree(),
     writerStore.loadTimelines(pId),

@@ -75,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { QyButton, QyEmpty, QySelect } from '@/design-system/components'
 import { message } from '@/design-system/services'
@@ -89,16 +89,18 @@ import {
   listWorkbenchTemplateCategories,
   listWorkbenchTemplates,
 } from '@/modules/writer/services/workbenchTemplate.service'
+import { sortProjectsByRecent } from '@/modules/writer/services/workbenchProject.service'
+import { useProjectStore } from '@/modules/writer/stores/projectStore'
 import type { TemplateCatalogItem } from '@/modules/writer/types/workbench'
 
 const router = useRouter()
+const projectStore = useProjectStore()
 
 const categories = listWorkbenchTemplateCategories()
 const templates = listWorkbenchTemplates()
 
-const lastProjectId = computed(
-  () => window.localStorage.getItem('qingyu-editor:last-project') || '',
-)
+const sortedProjects = computed(() => sortProjectsByRecent(projectStore.projects))
+const lastProjectId = computed(() => sortedProjects.value[0]?.id || '')
 
 const activeCategory = ref('all')
 const selectedTemplateId = ref<TemplateCatalogItem['id'] | null>(null)
@@ -120,6 +122,10 @@ const filteredTemplates = computed(() =>
 const selectedTemplate = computed(() =>
   selectedTemplateId.value ? getWorkbenchTemplateDetail(selectedTemplateId.value) : null,
 )
+
+onMounted(async () => {
+  await projectStore.loadList()
+})
 
 function openTemplateDetail(templateId: TemplateCatalogItem['id']) {
   selectedTemplateId.value = templateId

@@ -56,7 +56,40 @@
         </QyButton>
       </div>
 
-      <div v-if="isLoading" class="text-sm text-slate-500">正在整理最近项目...</div>
+      <div
+        v-if="isLoading"
+        class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+      >
+        <QyCard
+          v-for="index in recentProjectSkeletonRows"
+          :key="index"
+          variant="outlined"
+          shadow="never"
+          padding="sm"
+          class="rounded-3xl"
+        >
+          <div class="space-y-3">
+            <div class="rounded-[24px] border border-slate-100 bg-slate-50/80 p-3">
+              <div class="flex items-center justify-between">
+                <Skeleton type="text" width="48px" height="18px" />
+                <Skeleton type="text" width="40px" height="18px" />
+              </div>
+              <div class="mt-8 space-y-2">
+                <Skeleton type="text" width="132px" height="18px" />
+                <Skeleton type="text" width="108px" height="18px" />
+              </div>
+            </div>
+            <div class="space-y-2">
+              <Skeleton type="text" width="144px" height="18px" />
+              <div class="flex items-center justify-between gap-3">
+                <Skeleton type="text" width="72px" height="12px" />
+                <Skeleton type="text" width="88px" height="12px" />
+              </div>
+            </div>
+            <Skeleton type="rect" width="100%" height="32px" class="rounded-xl" />
+          </div>
+        </QyCard>
+      </div>
 
       <QyEmpty v-else-if="recentProjects.length === 0" title="还没有项目" type="list">
         <template #description>
@@ -70,46 +103,55 @@
         </template>
       </QyEmpty>
 
-      <div v-else class="divide-y divide-slate-100 border-t border-slate-100">
-        <article
+      <div v-else class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <QyCard
           v-for="project in recentProjects"
           :key="project.id"
-          class="grid gap-6 py-6 lg:grid-cols-[112px_minmax(0,1fr)_auto] lg:items-center"
+          variant="outlined"
+          shadow="hover"
+          padding="sm"
+          class="rounded-3xl"
         >
-          <div class="flex justify-start pt-1">
-            <QyBookCover :src="''" :title="project.title" size="md" :shadow="false" />
-          </div>
+          <div class="space-y-3">
+            <button
+              type="button"
+              class="block w-full rounded-[24px] border border-slate-100 bg-slate-50/80 p-3 text-left transition-colors hover:border-slate-200 hover:bg-slate-50"
+              @click="continueProject(project)"
+            >
+              <div class="flex items-center justify-between gap-3 text-xs text-slate-500">
+                <span class="rounded-full bg-white px-2.5 py-1 font-medium text-slate-700">
+                  {{ project.category }}
+                </span>
+                <span>{{ project.statusLabel }}</span>
+              </div>
+              <div class="mt-10 flex min-h-[84px] items-end">
+                <div class="space-y-2">
+                  <div class="line-clamp-2 text-lg font-semibold leading-7 text-slate-950">
+                    {{ project.title }}
+                  </div>
+                  <div class="text-xs text-slate-500">
+                    {{ project.lastChapterTitle || '从项目入口继续创作' }}
+                  </div>
+                </div>
+              </div>
+            </button>
 
-          <div class="min-w-0 space-y-2.5">
-            <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-              <span class="font-medium text-slate-600">{{ project.statusLabel }}</span>
-              <span>{{ formatDate(project.updatedAt) }}</span>
+            <div class="space-y-2">
+              <div class="line-clamp-1 text-sm font-medium text-slate-800">
+                {{ formatNumber(project.totalWords) }} 字
+              </div>
+              <div class="flex items-center justify-between gap-3 text-xs text-slate-500">
+                <span>{{ project.chapterCount }} 章</span>
+                <span>{{ formatDate(project.updatedAt) }}</span>
+              </div>
             </div>
-            <div class="space-y-1.5">
-              <h3 class="text-xl font-semibold text-slate-950">{{ project.title }}</h3>
-              <p class="text-sm leading-6 text-slate-600">
-                {{ project.summary || '还没有项目摘要' }}
-              </p>
-            </div>
-            <div class="flex flex-wrap gap-5 text-xs text-slate-500">
-              <span>分类：{{ project.category }}</span>
-              <span>章节：{{ project.chapterCount }}</span>
-              <span>字数：{{ formatNumber(project.totalWords) }}</span>
-            </div>
-            <p class="text-xs text-slate-500">
-              {{
-                project.lastChapterTitle
-                  ? `最近章节：${project.lastChapterTitle}`
-                  : '还没有最近章节定位，继续创作会回到项目级入口。'
-              }}
-            </p>
-          </div>
 
-          <div class="flex shrink-0 flex-wrap items-center gap-2 self-center">
-            <QyButton size="sm" variant="ghost" @click="openProject(project.id)">进入项目</QyButton>
-            <QyButton size="sm" @click="continueProject(project)">继续创作</QyButton>
+            <div class="flex items-center gap-2">
+              <QyButton size="sm" class="flex-1" @click="continueProject(project)">继续</QyButton>
+              <QyButton size="sm" variant="ghost" @click="openProject(project.id)">进入</QyButton>
+            </div>
           </div>
-        </article>
+        </QyCard>
       </div>
     </section>
 
@@ -132,7 +174,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { QyBookCover, QyButton, QyEmpty, QyIcon } from '@/design-system/components'
+import { QyButton, QyCard, QyEmpty, QyIcon, Skeleton } from '@/design-system/components'
 import { message } from '@/design-system/services'
 import WorkbenchShell from '@/modules/writer/components/workbench/WorkbenchShell.vue'
 import ProjectCreateDialog from '@/modules/writer/components/workbench/ProjectCreateDialog.vue'
@@ -156,6 +198,7 @@ const isCreating = ref(false)
 const recentProjects = ref<WorkbenchRecentProjectCard[]>([])
 const createDialogVisible = ref(false)
 const importInputRef = ref<HTMLInputElement | null>(null)
+const recentProjectSkeletonRows = [1, 2, 3]
 
 const sortedProjects = computed(() => sortProjectsByRecent(projectStore.projects))
 const lastProjectId = computed(

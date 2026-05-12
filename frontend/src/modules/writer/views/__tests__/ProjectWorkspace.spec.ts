@@ -34,6 +34,9 @@ const { selectDocumentMock, loadDocumentMock } = vi.hoisted(() => ({
   selectDocumentMock: vi.fn().mockResolvedValue(undefined),
   loadDocumentMock: vi.fn().mockResolvedValue(undefined),
 }))
+const { loadProjectDetailMock } = vi.hoisted(() => ({
+  loadProjectDetailMock: vi.fn().mockResolvedValue(undefined),
+}))
 const baseFlatDocs = [
   {
     id: 'chapter-1',
@@ -172,7 +175,7 @@ vi.mock('@/modules/writer/stores/projectStore', () => ({
     projects: [],
     currentProject: null,
     loadList: vi.fn().mockResolvedValue(undefined),
-    loadDetail: vi.fn().mockResolvedValue(undefined),
+    loadDetail: loadProjectDetailMock,
   }),
 }))
 
@@ -590,6 +593,8 @@ describe('ProjectWorkspace Refactor', () => {
     messageBoxConfirm.mockClear()
     loadCharacters.mockClear()
     loadCharacterRelations.mockClear()
+    loadProjectDetailMock.mockReset()
+    loadProjectDetailMock.mockResolvedValue(undefined)
     writerStoreState.setCurrentOutlineNode.mockClear()
     selectDocumentMock.mockClear()
     loadDocumentMock.mockClear()
@@ -599,12 +604,27 @@ describe('ProjectWorkspace Refactor', () => {
 
   it('写作模式下应渲染工作区编辑宿主且不渲染旧 EditorPanel', async () => {
     const wrapper = mountProjectWorkspace()
+    await Promise.resolve()
+    await nextTick()
 
     expect(wrapper.find('[data-writer-shell="editor"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="workspace-editor-content-module-mock"]').exists()).toBe(true)
     expect(wrapper.html()).not.toContain('EditorPanel')
     expect(loadCharacters).toHaveBeenCalledWith('project-1')
     expect(loadCharacterRelations).toHaveBeenCalledWith('project-1')
+  })
+
+  it('项目不存在时应提示并返回工作台', async () => {
+    loadProjectDetailMock.mockRejectedValueOnce(new Error('项目不存在: project-1'))
+
+    mountProjectWorkspace()
+    await Promise.resolve()
+    await nextTick()
+
+    expect(messageWarning).toHaveBeenCalledWith('项目不存在或已失效，已返回工作台')
+    expect(routerReplace).toHaveBeenCalledWith({
+      name: 'writer-home',
+    })
   })
 
   it('切换章节时应通过路由保持写作模式', async () => {
