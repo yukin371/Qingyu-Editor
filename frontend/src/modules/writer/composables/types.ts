@@ -5,23 +5,6 @@
  */
 
 // =======================
-// Dock 工具类型
-// =======================
-
-/** 左侧 Dock 工具类型 */
-export type LeftDockTool =
-  | 'writing'
-  | 'immersive'
-  | 'structure'
-  | 'relations'
-  | 'encyclopedia'
-  | 'timeline'
-  | 'branches'
-
-/** 右侧 Dock 工具类型 */
-export type RightDockTool = 'ai'
-
-// =======================
 // 百科相关类型
 // =======================
 

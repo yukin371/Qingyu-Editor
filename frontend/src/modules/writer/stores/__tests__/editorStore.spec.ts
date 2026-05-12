@@ -38,19 +38,19 @@ describe('EditorStore', () => {
     it('应该设置当前工具', () => {
       const store = useEditorStore()
 
-      store.setActiveTool('chapters')
+      store.setActiveTool('immersive')
 
-      expect(store.activeTool).toBe('chapters')
+      expect(store.activeTool).toBe('immersive')
     })
 
     it('应该能切换到不同工具', () => {
       const store = useEditorStore()
 
-      store.setActiveTool('ai')
-      expect(store.activeTool).toBe('ai')
-
       store.setActiveTool('immersive')
       expect(store.activeTool).toBe('immersive')
+
+      store.setActiveTool('writing')
+      expect(store.activeTool).toBe('writing')
     })
   })
 
@@ -264,11 +264,11 @@ describe('EditorStore', () => {
 
     it('不应该重置工具状态', () => {
       const store = useEditorStore()
-      store.setActiveTool('ai')
+      store.setActiveTool('immersive')
 
       store.resetEditor()
 
-      expect(store.activeTool).toBe('ai')
+      expect(store.activeTool).toBe('immersive')
     })
   })
 
@@ -279,7 +279,7 @@ describe('EditorStore', () => {
       store.setCurrentChapter('chapter-1')
       store.setContent('内容')
       store.markDirty()
-      store.setActiveTool('ai')
+      store.setActiveTool('immersive')
       store.setSaving(true)
 
       store.reset()

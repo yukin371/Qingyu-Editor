@@ -247,7 +247,7 @@ import {
   QyTag,
   QyTextarea,
 } from '@/design-system/components'
-import { timelineApi } from '@/modules/writer/api'
+import { timelineApi } from '@/modules/writer/api/timeline'
 import {
   type StoryTime,
   type TimelineEvent,

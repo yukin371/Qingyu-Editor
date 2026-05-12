@@ -1,5 +1,9 @@
 import httpService from '@/core/services/http.service'
-import { isWailsWriterAvailable } from '../data-bridge/wails'
+import { standaloneLocalBridge } from '../data-bridge/standalone-local'
+import {
+  isStandaloneLocalWriterAvailable,
+  isWailsWriterAvailable,
+} from '../data-bridge/wails'
 import type {
   Timeline,
   TimelineEvent,
@@ -23,10 +27,6 @@ const BASE_PROJECT_URL = '/writer/projects'
 const BASE_TIMELINE_URL = '/writer/timelines'
 const BASE_EVENT_URL = '/writer/timeline-events'
 
-function throwDesktopTimelineUnsupported(): never {
-  throw new Error('桌面端暂未接入时间线本地持久化，请先保留为空白视图/TODO')
-}
-
 export const timelineApi = {
   // ==========================================
   // 时间线管理 (Timeline CRUD)
@@ -38,7 +38,10 @@ export const timelineApi = {
    */
   create(projectId: string, data: SaveTimelineRequest) {
     if (isWailsWriterAvailable()) {
-      throwDesktopTimelineUnsupported()
+      return standaloneLocalBridge.timeline.create(projectId, data)
+    }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.timeline.create(projectId, data)
     }
     return httpService.post<Timeline>(`${BASE_PROJECT_URL}/${projectId}/timelines`, data)
   },
@@ -48,8 +51,8 @@ export const timelineApi = {
    * GET /api/v1/projects/{projectId}/timelines
    */
   list(projectId: string) {
-    if (isWailsWriterAvailable()) {
-      return Promise.resolve([] as Timeline[])
+    if (isWailsWriterAvailable() || isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.timeline.list(projectId)
     }
     return httpService.get<Timeline[]>(`${BASE_PROJECT_URL}/${projectId}/timelines`)
   },
@@ -60,7 +63,10 @@ export const timelineApi = {
    */
   getDetail(timelineId: string, projectId: string) {
     if (isWailsWriterAvailable()) {
-      throwDesktopTimelineUnsupported()
+      return standaloneLocalBridge.timeline.get(timelineId)
+    }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.timeline.get(timelineId)
     }
     return httpService.get<Timeline>(
       `${BASE_TIMELINE_URL}/${timelineId}`,
@@ -74,7 +80,10 @@ export const timelineApi = {
    */
   delete(timelineId: string, projectId: string) {
     if (isWailsWriterAvailable()) {
-      throwDesktopTimelineUnsupported()
+      return standaloneLocalBridge.timeline.delete(timelineId)
+    }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.timeline.delete(timelineId)
     }
     return httpService.delete<void>(
       `${BASE_TIMELINE_URL}/${timelineId}`,
@@ -88,8 +97,8 @@ export const timelineApi = {
    * 返回类型可能是复杂的图表数据，暂时用 any 或定义专门的 Visualization 类型
    */
   getVisualization(timelineId: string) {
-    if (isWailsWriterAvailable()) {
-      return Promise.resolve({ events: [], links: [] })
+    if (isWailsWriterAvailable() || isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.timeline.getVisualization(timelineId)
     }
     return httpService.get<any>(`${BASE_TIMELINE_URL}/${timelineId}/visualization`)
   },
@@ -105,7 +114,10 @@ export const timelineApi = {
    */
   createEvent(timelineId: string, projectId: string, data: SaveTimelineEventRequest) {
     if (isWailsWriterAvailable()) {
-      throwDesktopTimelineUnsupported()
+      return standaloneLocalBridge.timeline.createEvent(timelineId, projectId, data)
+    }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.timeline.createEvent(timelineId, projectId, data)
     }
     return httpService.post<TimelineEvent>(
       `${BASE_TIMELINE_URL}/${timelineId}/events`,
@@ -119,8 +131,8 @@ export const timelineApi = {
    * GET /api/v1/writer/timelines/{timelineId}/events
    */
   listEvents(timelineId: string) {
-    if (isWailsWriterAvailable()) {
-      return Promise.resolve([] as TimelineEvent[])
+    if (isWailsWriterAvailable() || isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.timeline.listEvents(timelineId)
     }
     return httpService.get<TimelineEvent[]>(`${BASE_TIMELINE_URL}/${timelineId}/events`)
   },
@@ -131,7 +143,10 @@ export const timelineApi = {
    */
   getEvent(eventId: string, projectId: string) {
     if (isWailsWriterAvailable()) {
-      throwDesktopTimelineUnsupported()
+      return standaloneLocalBridge.timeline.getEvent(eventId)
+    }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.timeline.getEvent(eventId)
     }
     return httpService.get<TimelineEvent>(`${BASE_EVENT_URL}/${eventId}`, { params: { projectId } })
   },
@@ -142,7 +157,10 @@ export const timelineApi = {
    */
   updateEvent(eventId: string, projectId: string, data: SaveTimelineEventRequest) {
     if (isWailsWriterAvailable()) {
-      throwDesktopTimelineUnsupported()
+      return standaloneLocalBridge.timeline.updateEvent(eventId, projectId, data)
+    }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.timeline.updateEvent(eventId, projectId, data)
     }
     return httpService.put<TimelineEvent>(`${BASE_EVENT_URL}/${eventId}`, data, {
       params: { projectId },
@@ -155,7 +173,10 @@ export const timelineApi = {
    */
   deleteEvent(eventId: string, projectId: string) {
     if (isWailsWriterAvailable()) {
-      throwDesktopTimelineUnsupported()
+      return standaloneLocalBridge.timeline.deleteEvent(eventId, projectId)
+    }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.timeline.deleteEvent(eventId, projectId)
     }
     return httpService.delete<void>(`${BASE_EVENT_URL}/${eventId}`, { params: { projectId } })
   },

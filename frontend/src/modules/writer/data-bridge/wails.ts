@@ -144,6 +144,19 @@ type BridgeDocumentNode = {
 }
 
 const documentIndex = new Map<string, BridgeDocumentNode>()
+const STANDALONE_EDITOR_PORTS = new Set(['34115', '43127'])
+
+function getCurrentWindowUrl(): URL | null {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  try {
+    return new URL(window.location.href)
+  } catch {
+    return null
+  }
+}
 
 export function isWailsWriterAvailable(): boolean {
   if (typeof window === 'undefined') {
@@ -151,6 +164,39 @@ export function isWailsWriterAvailable(): boolean {
   }
   const candidate = window as typeof window & { go?: { main?: { App?: Record<string, unknown> } } }
   return !!candidate.go?.main?.App
+}
+
+export function isRemoteWriterMode(): boolean {
+  const currentUrl = getCurrentWindowUrl()
+  return currentUrl?.searchParams.get('remote') === 'true'
+}
+
+export function isStandaloneWriterRuntime(): boolean {
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  if (isWailsWriterAvailable()) {
+    return true
+  }
+
+  if (isRemoteWriterMode()) {
+    return false
+  }
+
+  if (window.location.protocol === 'file:') {
+    return true
+  }
+
+  if (STANDALONE_EDITOR_PORTS.has(window.location.port)) {
+    return true
+  }
+
+  return window.location.protocol === 'http:' || window.location.protocol === 'https:'
+}
+
+export function isStandaloneLocalWriterAvailable(): boolean {
+  return isStandaloneWriterRuntime() && !isWailsWriterAvailable()
 }
 
 function cacheTree(projectId: string, tree: BridgeDocumentNode[]) {

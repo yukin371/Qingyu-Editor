@@ -150,13 +150,11 @@ import {
 } from '@/modules/writer/types/workflow'
 
 // 子组件
-import {
-  AIConversationToolbar,
-  AISelectionNotice,
-  AIChatMessages,
-  AIQuickActions,
-  AIInputArea,
-} from './ai'
+import AIConversationToolbar from './ai/AIConversationToolbar.vue'
+import AISelectionNotice from './ai/AISelectionNotice.vue'
+import AIChatMessages from './ai/AIChatMessages.vue'
+import AIQuickActions from './ai/AIQuickActions.vue'
+import AIInputArea from './ai/AIInputArea.vue'
 
 // 类型
 import type {

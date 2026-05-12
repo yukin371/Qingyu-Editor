@@ -28,6 +28,7 @@
 
 <script setup lang="ts">
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
+import { OVERLAY_TOOL_GROUPS } from '@/modules/writer/config/workspacePanels'
 import type { ToolType } from '@/modules/writer/composables/useToolOverlay'
 
 interface Props {
@@ -40,33 +41,7 @@ const emit = defineEmits<{
   (e: 'toolChange', toolId: ToolType): void
 }>()
 
-const toolGroups: Array<{
-  id: 'primary' | 'professional'
-  label: string
-  tools: Array<{
-    id: ToolType
-    name: string
-    icon: string
-  }>
-}> = [
-  {
-    id: 'primary',
-    label: '主辅助',
-    tools: [
-      { id: 'structure', name: '结构舞台', icon: 'Grid' },
-      { id: 'assets', name: '资产总览', icon: 'Collection' },
-    ],
-  },
-  {
-    id: 'professional',
-    label: '专业',
-    tools: [
-      { id: 'relations', name: '关系图谱', icon: 'Share' },
-      { id: 'timeline', name: '时间线', icon: 'Clock' },
-      { id: 'branches', name: '故事分支', icon: 'Connection' },
-    ],
-  },
-]
+const toolGroups = OVERLAY_TOOL_GROUPS
 
 function handleToolClick(toolId: ToolType) {
   emit('toolChange', toolId)

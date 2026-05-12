@@ -27,7 +27,7 @@
       <!-- 左侧面板插槽 -->
       <template #left-panel>
         <WorkspaceLeftPanel
-          v-model:project-id="currentProjectId"
+          v-model:project-id="boundProjectId"
           v-model:chapter-id="displayChapterId"
           :collapsed="panelStore.leftCollapsed"
           :is-immersive-mode="isImmersiveMode"
@@ -51,14 +51,10 @@
       </template>
 
       <!-- 主编辑器插槽 -->
-      <template #editor="{ activeTool }">
+      <template #editor>
         <WorkspaceEditorContent
           ref="workspaceEditorContentRef"
-          :active-tool="activeTool"
-          :is-encyclopedia="isEncyclopediaTool"
-          :sub-view="encyclopediaSubView"
-          :category="encyclopediaCategory"
-          :project-id="currentProjectId"
+          :project-id="safeCurrentProjectId"
           :chapter-id="displayChapterId"
           :chapter-title="displayChapterTitle"
           :tool-overlay-chapter-id="toolOverlayChapterId"
@@ -75,12 +71,12 @@
           :handle-trigger-index="handleStoryHarnessTriggerIndex"
           :is-triggering-index="isStoryHarnessTriggering"
           v-model:content="tipTapContent"
-          @update:category="setEncyclopediaCategory"
           @trigger-ai-action="handleWorkflowAction"
           @open-graph="handleOpenGraph"
           @jump-to-chapter="handleChapterIdUpdate"
           @save="handleTipTapSave"
           @add-doc="handleAddDoc"
+          @rename-title="handleRenameCurrentDocument"
           @status-change="handleWorkspaceStatusChange"
           @open-fullscreen-tool="handleOpenFullscreenTool"
           @close-fullscreen="handleCloseFullscreen"
@@ -92,7 +88,7 @@
         <WorkspaceRightPanel
           :collapsed="panelStore.rightCollapsed"
           :is-immersive-mode="isImmersiveMode"
-          :project-id="currentProjectId"
+          :project-id="safeCurrentProjectId"
           :chapter-id="displayChapterId"
           :chapter-title="displayChapterTitle"
           :chapters="flatChapters"
@@ -117,7 +113,7 @@
           :visible="workspaceLayoutStore.areas.bottom.visible"
           :active-panel-id="workspaceLayoutStore.areas.bottom.activePanelId"
           :panel-ids="workspaceLayoutStore.areas.bottom.panelIds"
-          :project-id="currentProjectId"
+          :project-id="safeCurrentProjectId"
           :chapter-id="displayChapterId"
           :chapter-count="chapterCount"
           :directory-count="directoryCount"
@@ -135,7 +131,7 @@
           :active-entities="activeEntities"
           :is-immersive-mode="isImmersiveMode"
           :harness-data="{
-            projectId: currentProjectId,
+            projectId: safeCurrentProjectId,
             chapterId: displayChapterId,
             chapterTitle: displayChapterTitle,
             content: tipTapContent,
@@ -171,19 +167,10 @@
     </template>
   </WorkspaceShell>
 
-  <!-- 新建文档对话框 -->
-  <QyFormModal
-    v-model:visible="showCreateDocDialog"
-    title="新建文档"
-    :fields="createDocFields"
-    :loading="createDocLoading"
-    @submit="handleCreateDocSubmit"
-    @cancel="showCreateDocDialog = false"
-  />
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, unref, nextTick } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router'
 import { message, messageBox } from '@/design-system/services'
 // 引入 Store 体系
@@ -201,7 +188,7 @@ import type { OutlineNode } from '@/types/writer'
 // 引入 Composables
 import { useWorkspaceState } from '@/modules/writer/composables/useWorkspaceState'
 import { useImmersiveTimer } from '@/modules/writer/composables/useImmersiveTimer'
-import { useEncyclopediaView } from '@/modules/writer/composables/useEncyclopediaView'
+import { useLegacyEncyclopediaView } from '@/modules/writer/composables/useLegacyEncyclopediaView'
 import { useDirectoryOutline } from '@/modules/writer/composables/useDirectoryOutline'
 import { useStoryHarnessWorkspace } from '@/modules/writer/composables/useStoryHarnessWorkspace'
 import { useWorkflowContext } from '@/modules/writer/composables/useWorkflowContext'
@@ -213,7 +200,11 @@ import {
   type CreateOutlineRequest,
   type UpdateOutlineRequest,
 } from '@/modules/writer/api/outline'
-import { createDocument } from '@/modules/writer/api/document'
+import { createDocument, updateDocument } from '@/modules/writer/api/document'
+import {
+  isStandaloneWriterRuntime,
+  isWailsWriterAvailable,
+} from '@/modules/writer/data-bridge/wails'
 
 // 引入子组件
 import WorkspaceTopbar from '@/modules/writer/components/workspace/WorkspaceTopbar.vue'
@@ -224,8 +215,6 @@ import WorkspaceShell from '@/modules/writer/components/workspace/WorkspaceShell
 import WorkspaceStatusbar from '@/modules/writer/components/workspace/WorkspaceStatusbar.vue'
 import WorkspaceEditorContent from '@/modules/writer/components/workspace/WorkspaceEditorContent.vue'
 import EditorLayout from '@/modules/writer/components/editor/EditorLayout.vue'
-import QyFormModal from '@/design-system/components/advanced/QyFormModal/QyFormModal.vue'
-import type { FormField } from '@/design-system/components/advanced/QyFormModal/QyFormModal.vue'
 import {
   appendPlainTextToEditorContent,
   buildEditorContentFromPlainText,
@@ -289,9 +278,9 @@ const mockProject = computed(() =>
 )
 const queryChapterId = computed(() => String(route.query.chapterId || ''))
 const queryTool = computed(() => String(route.query.tool || ''))
-const resolvedActiveTool = computed<ActiveTool>(() => unref(editorStore.activeTool) as ActiveTool)
-const activeTool = computed(() => resolvedActiveTool.value)
+const resolvedActiveTool = computed<ActiveTool>(() => editorStore.activeTool ?? 'writing')
 const workspaceExtraStatusChips = ref<string[]>([])
+const STANDALONE_LAST_PROJECT_KEY = 'qingyu-editor:last-project'
 
 // =======================
 // 使用 Composables
@@ -327,8 +316,7 @@ const { immersiveTimerText, startImmersiveTimer, stopImmersiveTimer } = useImmer
   isImmersiveMode,
 })
 
-const { isEncyclopediaTool, encyclopediaSubView, encyclopediaCategory, setEncyclopediaCategory } =
-  useEncyclopediaView({ activeTool })
+const { encyclopediaSubView } = useLegacyEncyclopediaView()
 
 const { buildDirectoryOutline } = useDirectoryOutline({ availableDocMap, mockProject })
 
@@ -467,8 +455,6 @@ const { workflowContext, activeEntities } = useWorkflowContext({
 // =======================
 // UI 状态
 // =======================
-const showCreateDocDialog = ref(false)
-const createDocLoading = ref(false)
 const isStoryHarnessTriggering = ref(false)
 const aiActionTrigger = ref<WriterAIActionTrigger | null>(null)
 const aiApplyFeedback = ref<WriterAIApplyFeedback | null>(null)
@@ -481,27 +467,13 @@ const visibleDraftProposals = computed(() =>
       proposal.chapterId === displayChapterId.value,
   ),
 )
-
-// 新建文档表单字段配置
-const createDocFields: FormField[] = [
-  {
-    key: 'title',
-    label: '文档标题',
-    type: 'text',
-    placeholder: '请输入文档标题',
-    required: true,
+const safeCurrentProjectId = computed(() => currentProjectId.value || '')
+const boundProjectId = computed({
+  get: () => safeCurrentProjectId.value,
+  set: (value: string) => {
+    currentProjectId.value = value
   },
-  {
-    key: 'type',
-    label: '文档类型',
-    type: 'select',
-    defaultValue: 'chapter',
-    options: [
-      { label: '章节', value: 'chapter' },
-      { label: '卷', value: 'volume' },
-    ],
-  },
-]
+})
 
 // =======================
 // 事件处理
@@ -519,8 +491,75 @@ const retireWorkflowActionSession = () => {
   latestSelectionContext.value = null
 }
 
-const handleAddDoc = () => {
-  showCreateDocDialog.value = true
+const resolveCurrentDocumentParentId = () => {
+  const currentDoc = availableDocMap.value.get(currentChapterId.value)
+  if (!currentDoc) {
+    return undefined
+  }
+
+  if (currentDoc.type === DocumentType.VOLUME) {
+    return currentDoc.id
+  }
+
+  const parentId = currentDoc.parentId
+  if (!parentId) {
+    return undefined
+  }
+
+  const parentDoc = availableDocMap.value.get(parentId)
+  return parentDoc?.type === DocumentType.VOLUME ? parentId : undefined
+}
+
+const buildDefaultChapterTitle = (parentId?: string) => {
+  const siblingCount = flatChapters.value.filter(
+    (chapter) =>
+      chapter.nodeType !== 'directory' && (chapter.parentId || undefined) === (parentId || undefined),
+  ).length
+
+  return {
+    title: `第${siblingCount + 1}章`,
+    order: siblingCount,
+  }
+}
+
+const focusCurrentTitleInput = async () => {
+  await nextTick()
+  await workspaceEditorContentRef.value?.focusTitleInput?.()
+}
+
+const handleAddDoc = async () => {
+  if (!currentProjectId.value) {
+    message.warning('请先选择项目')
+    return
+  }
+
+  try {
+    const parentId = resolveCurrentDocumentParentId()
+    const { title, order } = buildDefaultChapterTitle(parentId)
+    const newDoc = await documentStore.create(currentProjectId.value, {
+      title,
+      type: DocumentType.CHAPTER,
+      projectId: currentProjectId.value,
+      parentId,
+      order,
+    })
+
+    if (!newDoc?.id) {
+      message.error('创建章节失败')
+      return
+    }
+
+    currentChapterId.value = newDoc.id
+    const nextQuery = { ...route.query } as LocationQueryRaw
+    nextQuery.chapterId = newDoc.id
+    nextQuery.tool = 'writing'
+    delete nextQuery.encyclopediaView
+    await router.replace({ query: nextQuery })
+    await focusCurrentTitleInput()
+  } catch (error) {
+    console.error('[ProjectWorkspace] 创建章节失败:', error)
+    message.error('创建章节失败，请重试')
+  }
 }
 
 const handleOpenDirectoryOutline = async (directoryId: string) => {
@@ -615,37 +654,33 @@ const handleBackToDashboard = () => {
   router.push('/writer')
 }
 
-const handleCreateDocSubmit = async (formData: Record<string, unknown>) => {
-  const title = formData.title as string
-  if (!title) return
+const handleRenameCurrentDocument = async (title: string) => {
+  if (!currentChapterId.value) {
+    return
+  }
 
-  createDocLoading.value = true
+  const nextTitle = title.trim()
+  if (!nextTitle) {
+    message.warning('标题不能为空')
+    return
+  }
+
   try {
-    // 确定父节点：如果当前选中的是目录类型，则作为父节点
-    const currentDoc = availableDocMap.value.get(currentChapterId.value)
-    const parentId = currentDoc?.type === DocumentType.VOLUME ? currentChapterId.value : undefined
+    await updateDocument(currentChapterId.value, { title: nextTitle })
 
-    const newDoc = await documentStore.create(currentProjectId.value, {
-      title,
-      type: formData.type as DocumentType,
-      projectId: currentProjectId.value,
-      parentId, // 传递父节点ID
-    })
-    showCreateDocDialog.value = false
-    message.success('创建成功')
+    if (currentProjectId.value) {
+      await documentStore.loadTree(currentProjectId.value)
+    }
 
-    // 创建后自动选中新文档，进入编辑态
-    if (newDoc?.id) {
-      currentChapterId.value = newDoc.id
-      const nextQuery = { ...route.query } as LocationQueryRaw
-      nextQuery.chapterId = newDoc.id
-      await router.replace({ query: nextQuery })
+    if (writerStore.currentDocument?.id === currentChapterId.value) {
+      writerStore.currentDocument = {
+        ...writerStore.currentDocument,
+        title: nextTitle,
+      }
     }
   } catch (error) {
-    console.error('[ProjectWorkspace] Create failed:', error)
-    message.error('创建失败')
-  } finally {
-    createDocLoading.value = false
+    console.error('[ProjectWorkspace] 重命名文档失败:', error)
+    message.error('更新标题失败，请重试')
   }
 }
 
@@ -1545,29 +1580,62 @@ onMounted(async () => {
   // 恢复编辑器主题
   editorThemeStore.initTheme()
   editorAppearanceStore.initAppearance()
-  const pId = currentProjectId.value
-  if (pId) {
-    const bootstrapTasks: Array<Promise<unknown>> = [
-      projectStore.loadList(),
-      projectStore.loadDetail(pId),
-      documentStore.loadTree(pId),
-      loadOutlineTree(),
-      writerStore.loadTimelines(pId),
-    ]
+  const isStandaloneHost = isStandaloneWriterRuntime()
+  let pId = currentProjectId.value
 
-    if (writerStore.characters.list.length === 0) {
-      bootstrapTasks.push(writerStore.loadCharacters(pId))
+  if (!pId && isStandaloneHost) {
+    await projectStore.loadList()
+
+    const lastProjectId = window.localStorage.getItem(STANDALONE_LAST_PROJECT_KEY) || ''
+    const preferredProject =
+      projectStore.projects.find((project) => project.id === lastProjectId) || projectStore.projects[0]
+
+    if (preferredProject?.id) {
+      pId = preferredProject.id
+    } else {
+      const createdProject = (await projectStore.create({
+        title: '未命名项目',
+        summary: '',
+      })) as { id?: string; projectId?: string } | undefined
+      pId = createdProject?.id || createdProject?.projectId || ''
     }
 
-    if (writerStore.characters.relations.length === 0) {
-      bootstrapTasks.push(writerStore.loadCharacterRelations(pId))
+    if (pId) {
+      await router.replace({
+        name: 'writer-project',
+        params: { projectId: pId },
+        query: { ...route.query },
+      })
     }
+  }
 
-    await Promise.all(bootstrapTasks)
-    // 时间线列表加载完成后，如果有当前时间线则加载事件
-    if (writerStore.timeline.currentTimeline) {
-      await writerStore.loadTimelineEvents(writerStore.timeline.currentTimeline.id)
-    }
+  if (!pId) {
+    return
+  }
+
+  const bootstrapTasks: Array<Promise<unknown>> = [
+    projectStore.loadList(),
+    projectStore.loadDetail(pId),
+    documentStore.loadTree(pId),
+    loadOutlineTree(),
+    writerStore.loadTimelines(pId),
+  ]
+
+  if (writerStore.characters.list.length === 0) {
+    bootstrapTasks.push(writerStore.loadCharacters(pId))
+  }
+
+  if (writerStore.characters.relations.length === 0) {
+    bootstrapTasks.push(writerStore.loadCharacterRelations(pId))
+  }
+
+  if (!isWailsWriterAvailable() && isStandaloneHost) {
+    currentProjectId.value = pId
+  }
+
+  await Promise.all(bootstrapTasks)
+  if (writerStore.timeline.currentTimeline) {
+    await writerStore.loadTimelineEvents(writerStore.timeline.currentTimeline.id)
   }
 })
 
@@ -1584,6 +1652,18 @@ watch(
     resetWorkflowTransientState()
     writerStore.setSelectedText('')
   },
+)
+
+watch(
+  () => currentProjectId.value,
+  (projectId) => {
+    if (!projectId) {
+      return
+    }
+
+    window.localStorage.setItem(STANDALONE_LAST_PROJECT_KEY, projectId)
+  },
+  { immediate: true },
 )
 
 watch(
@@ -1617,12 +1697,8 @@ watch(
 watch(
   () => queryTool.value,
   (tool) => {
-    const normalizedTool =
-      tool === 'chapters' || tool === 'ai' || tool === 'encyclopedia' ? 'writing' : tool
-    const allowedTools: ActiveTool[] = ['writing', 'immersive', 'encyclopedia']
-    if (allowedTools.includes(normalizedTool as ActiveTool)) {
-      editorStore.setActiveTool(normalizedTool as ActiveTool)
-    }
+    const normalizedTool: ActiveTool = tool === 'immersive' ? 'immersive' : 'writing'
+    editorStore.setActiveTool(normalizedTool)
   },
   { immediate: true },
 )

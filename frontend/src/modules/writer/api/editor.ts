@@ -1,4 +1,6 @@
 import httpService from '@/core/services/http.service'
+import { standaloneLocalBridge } from '../data-bridge/standalone-local'
+import { calculateWordCount } from '../utils/editor'
 import type {
   AutoSaveRequest,
   AutoSaveResponse,
@@ -11,7 +13,11 @@ import type {
   UpdateShortcutsRequest,
   ShortcutCategory,
 } from '../types/editor'
-import { isWailsWriterAvailable, wailsWriterBridge } from '../data-bridge/wails'
+import {
+  isStandaloneLocalWriterAvailable,
+  isWailsWriterAvailable,
+  wailsWriterBridge,
+} from '../data-bridge/wails'
 
 const BASE_DOC_URL = '/writer/documents'
 const BASE_USER_URL = '/writer/user'
@@ -42,6 +48,9 @@ export const editorApi = {
     if (isWailsWriterAvailable()) {
       return wailsWriterBridge.editor.getContent(documentId)
     }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.editor.getContent(documentId)
+    }
     return httpService.get<DocumentContentResponse>(`${BASE_DOC_URL}/${documentId}/content`)
   },
 
@@ -60,6 +69,9 @@ export const editorApi = {
     if (isWailsWriterAvailable()) {
       return wailsWriterBridge.editor.updateContent(documentId, data as any)
     }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.editor.updateContent(documentId, data)
+    }
     return httpService.put<void>(`${BASE_DOC_URL}/${documentId}/content`, data)
   },
 
@@ -77,6 +89,9 @@ export const editorApi = {
   autoSave(documentId: string, data: AutoSaveRequest) {
     if (isWailsWriterAvailable()) {
       return wailsWriterBridge.editor.autoSave(documentId, data as any)
+    }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.editor.autoSave(documentId, data)
     }
     return httpService.post<AutoSaveResponse>(`${BASE_DOC_URL}/${documentId}/autosave`, data, {
       silent: true,
@@ -98,12 +113,18 @@ export const editorApi = {
     if (isWailsWriterAvailable()) {
       return wailsWriterBridge.editor.getSaveStatus(documentId)
     }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.editor.getSaveStatus(documentId)
+    }
     return httpService.get<SaveStatusResponse>(`${BASE_DOC_URL}/${documentId}/save-status`)
   },
 
   getContents(documentId: string) {
     if (isWailsWriterAvailable()) {
       return wailsWriterBridge.editor.getContents(documentId)
+    }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.editor.getContents(documentId)
     }
     return httpService.get(`${BASE_DOC_URL}/${documentId}/contents`)
   },
@@ -112,12 +133,18 @@ export const editorApi = {
     if (isWailsWriterAvailable()) {
       return wailsWriterBridge.editor.replaceContents(documentId, contents as any[])
     }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.editor.replaceContents(documentId, contents)
+    }
     return httpService.put(`${BASE_DOC_URL}/${documentId}/contents`, { contents })
   },
 
   reindexContents(documentId: string) {
     if (isWailsWriterAvailable()) {
       return wailsWriterBridge.editor.reindexContents(documentId)
+    }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.editor.reindexContents(documentId)
     }
     return httpService.post(`${BASE_DOC_URL}/${documentId}/contents/reindex`)
   },
@@ -138,6 +165,13 @@ export const editorApi = {
    * @security BearerAuth
    */
   calculateWordCount(documentId: string, data: WordCountRequest) {
+    if (isWailsWriterAvailable() || isStandaloneLocalWriterAvailable()) {
+      const content = typeof data.content === 'string' ? data.content : ''
+      return Promise.resolve({
+        wordCount: calculateWordCount(content, Boolean(data.filterMarkdown)),
+        charCount: content.length,
+      })
+    }
     return httpService.post<WordCountResult>(`${BASE_DOC_URL}/${documentId}/word-count`, data)
   },
 

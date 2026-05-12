@@ -1,6 +1,6 @@
 # Writer Module
 
-> 最后更新：2026-05-10
+> 最后更新：2026-05-12
 
 ## 职责
 
@@ -24,20 +24,32 @@
 
 - **工具唯一入口**：`relations / timeline / branches / structure` 只允许通过 `WorkspaceToolOverlay` 承载；不要再让 `WorkspaceEditorContent` 主内容区直接切成工具页。
 - **编辑器是默认首页**：独立编辑器的 `/` 与 `/writer` 都应优先落到 `ProjectWorkspace`，不要再让 `WriterDashboard`、`ProjectListView` 或平台式头部导航充当默认宿主。
+- **新建章节走“先创建再命名”**：`新建章节` 不再弹标题弹窗，而是按当前上下文直接创建默认 `第N章`；章节标题的细化命名应在主编辑区页内标题行完成，避免创建前表单打断写作流。
 - **历史入口直接收敛到路由兼容层**：旧 `dashboard / editor / publish` 页面不再保留独立运行时壳；兼容只允许留在 `routes.ts` 的重定向层，不再保留会继续腐化的空页面文件。
 - **桌面启动链保持最小化**：`frontend/src/main.ts` 与 `router/*` 不应再强制注入 auth session、websocket 或全局 mock 状态；mock/test-mode 只允许通过显式 `?test=true` 进入，避免桌面宿主继续背在线平台启动逻辑。
+- **独立编辑器宿主默认不探测原后端**：`main.ts`、`utils/api-health.ts`、`utils/syncService.ts` 在独立编辑器运行态下不得默认请求原 `/api/v1/system/health` 或 `/health`；宿主应直接把本地桥接或本地宿主视为在线，只有显式 `?remote=true` 联调模式才允许恢复远端健康探测。
+- **remote mode 是唯一远端 writer 开关**：`data-bridge/wails.ts` 里的 `isRemoteWriterMode()` 现在是 writer 远端联调的唯一显式入口；浏览器独立宿主默认走本地 owner，不允许再靠端口猜测或“没有 Wails 就回退 HTTP”维持隐式远端模式。
+- **快捷键配置在独立宿主默认本地优先**：`useShortcutConfig` 在独立编辑器运行态下只允许使用 `localStorage + 默认值`，不得为了加载或重置快捷键再访问 `/writer/user/shortcuts*`，避免设置面板继续隐式依赖原后端。
+- **Story Harness 后端上下文在独立宿主只允许显式降级**：`storyHarnessService.fetchChapterContext / fetchChangeRequests / triggerIndex / rebuildProjection` 在独立编辑器运行态下不得默认请求原后端；当前允许返回 `null / []` 维持本地工作流，后续若要恢复能力，必须先补本地 owner 或显式 `?remote=true` 联调入口。
 - **writer 模块组件已完成去全局 UI 插件依赖**：`main.ts` 已移除历史全局组件注册，writer 现有组件链已迁到 Tailwind + `Qy*`。若未来重新接入 legacy 组件或新建编辑器子面板，必须在组件内完成迁移，不能再恢复全局注册兜底。
 - **非 writer 平台模块已物理退场**：`frontend/src` 下的书城/社区/阅读/财务/用户/通知/后台等历史平台模块已从桌面宿主移除；新增能力若不属于写作闭环，不应再放回这个仓库的运行时主链。
 - **writer 内部历史孤岛也已开始物理退场**：旧 `components/ai/*`、模板工作流组件、废弃 `OutlineView*`、旧 `WorkspaceFullscreenOverlay` 与一批 legacy editor 组件已经删除；不要再从这些历史目录恢复入口，而应继续收敛到 `ProjectWorkspace / WorkspaceToolOverlay / WorkspaceRightPanel` 主链。
 - **布局壳 owner 单一**：`WorkspaceShell` 负责上/中/下区域的视口壳，`EditorLayout` 负责左/主/右分栏；`ProjectWorkspace` 只做数据编排、事件桥接和 slot 装配。
+- **`EditorLayout` 不要再偷拿 writer 业务数据**：这个组件应保持纯布局壳，只消费 slot 与响应式布局状态；项目、章节、树节点等真实数据必须由 `ProjectWorkspace` 之类上层宿主装配后传入插槽，而不是在 `EditorLayout` 内再走 route/store 补第二份默认内容。
+- **`EditorLayout` 主区模式只读 `editorStore`**：`EditorLayout` 不再暴露 `activeTool` prop、`update:activeTool` emit 或 `#editor` slot prop；主区 `writing / immersive` 状态统一由 `editorStore.activeTool` 提供，避免布局壳再维护一层影子同步状态。
 - **资产总览也走 overlay owner**：`assets` 与 `structure / relations / timeline / branches` 一样，只允许通过 `WorkspaceToolOverlay` 承载；分类状态 owner 在 overlay，自身视图只负责展示与发事件，避免路由、宿主、视图三处各维护一套资产分类状态。
-- **桌面数据路径以 Wails-first 为准**：当前 `project / document / editor` 已有 Wails 优先桥接；其余仍残留的 HTTP writer API 只视为迁移中的兼容债务，不能继续当成长期 canonical owner。
+- **桌面数据路径以 Wails-first + standalone-local fallback 为准**：当前 `project / document / editor / outline` 已有 `Wails bridge -> standalone-local(localStorage) -> 显式 remote=true` 三段式 owner。浏览器独立宿主即使没有 `window.go`，也必须优先走 `standalone-local`，不能回退成默认 HTTP writer API。
+- **核心 facade 的默认 HTTP 债务已收口**：`api/document.ts` 的复制/重排、`api/wrapper.ts` 的关键词检索、`api/editor.ts` 的字数统计、`api/project.ts` 的统计刷新，当前都已具备本地 owner 或本地 no-op 语义；这些能力不允许再作为“默认工作区缺口”回退远端。
+- **writer API 不再通过根 barrel 中转**：`api/index.ts`、`api/writer.ts` 这类兼容出口已退场；组件、store、service 应直接依赖 `api/wrapper.ts`、`api/document.ts`、`api/character.ts`、`api/timeline.ts` 等具体 facade，避免再次长回目录级影子 owner。
 - **大纲树已开始回收到文档 owner**：`api/outline.ts` 在桌面端默认从本地文档树派生大纲树，卷/章节型节点的增删改优先委托 `wailsWriterBridge.document`；只有还无法本地表达的 planning-only 大纲节点才允许保留显式兼容 fallback，不要再把 outline 当成独立在线真相源扩写。
-- **统一实体与概念当前只允许显式降级**：`api/entities.ts`、`api/concept.ts` 在桌面运行时不再默认请求在线接口；列表读取可降级为空集，但写操作必须明确提示“待本地化”，不要偷偷继续依赖云端真相源。
-- **时间线当前也只允许显式降级**：`api/timeline.ts` 在桌面运行时不再默认请求在线时间线接口；读路径可降级为空列表，写路径必须明确提示“待本地化”，不要把远端时间线接口继续伪装成本地能力。
-- **角色与地点已切到本地 owner**：`api/character.ts`、`api/location.ts` 当前默认走 `wailsWriterBridge.character/location`，后端 owner 为 `Go service + SQLite`；新增资产、关系维护、图谱读取都应优先补在这条链上，不要再把云端 REST 当成隐式 fallback。
+- **概念与时间线已补桌面本地 owner**：`api/concept.ts`、`api/timeline.ts` 在桌面运行态下不再默认降级为空列表或 TODO；当前统一走本地 owner，其中时间线会按项目自动自举 `主时间线`，事件增删改也留在本地宿主。
+- **统一实体 facade 在桌面端只做本地聚合**：`api/entities.ts` 在桌面运行态下应聚合本地角色/地点/概念与 `standaloneLocalBridge.entity`，优先服务资产总览与图谱速查；不要再请求在线统一实体接口，也不要在 writer 内复制第二套资产 store。
+- **物件/组织建档已并回统一实体本地口径**：`CharacterGraphView` 里的物件、组织候选建档都不再借道历史 `writerItems`；当前桌面端统一通过 `api/entities.ts` 本地落盘，并继续被资产总览/候选绑定链路消费。
+- **历史 `qingyu_writer_items:*` 只剩迁移兼容键**：旧桌面物件存储现在仅由 `standaloneLocalBridge.entity` 在首次访问项目时懒迁移读取；新的物件/组织写入不得再恢复独立 helper 或第二条本地写路径。
+- **角色与地点在桌面端已改为双本地 owner**：有 `Wails bridge` 时，`api/character.ts`、`api/location.ts` 走 `wailsWriterBridge.character/location`；无 bridge 的 standalone-local 宿主里，读写与关系数据都走 `standaloneLocalBridge` 的 `localStorage` 持久化。两档桌面运行态都不得再把云端 REST 当成隐式 fallback。
 - **结构舞台跳资产总览也只走 overlay 切换**：`StructureInspectorPanel` 里的“查看全局资产”只允许发 `switch-tool('assets')`，再由 `StructureStageView -> WorkspaceToolOverlay` 透传；不要在结构舞台内部内嵌资产列表、复制分类状态，或新增第二套资产宿主。
 - **主区优先写作**：即使从旧 `tool=encyclopedia&encyclopediaView=*` 链接进入，也应自动转成 overlay 打开，并让主工作区保持写作态。
+- **主区模式 owner 已收窄**：`editorStore.activeTool` 现在只承担 `writing / immersive` 两种主区状态；`ai / encyclopedia / chapters` 这类历史模式只能留在路由兼容或侧栏/overlay owner 中，不能再写回主编辑区状态机。
 - **快捷键 owner 已收口**：`useToolOverlay` 只做状态管理；快捷键动作定义在 `workspaceShortcutActions.ts`，配置由 `useShortcutConfig` 承接，行为绑定由 `useWorkspaceShortcuts` 承接。
 - **快捷键锁定规则按 action id**：快捷键设置面板不得再按 `Tab`、`Escape` 这类具体键名推断“系统键”；是否可编辑必须复用 `workspaceShortcutActions.ts` 中声明的 action 级锁定口径，避免编辑器宿主拆分后再次回到键位硬编码。
 - **AI handoff 不要断链**：工具页、Story Harness、编辑器选区发出的 `trigger-ai-action` 必须继续落到 `ProjectWorkspace.handleWorkflowAction`，否则右栏 AI 工作台会失去上下文注入。
@@ -60,6 +72,7 @@
 - **`/doc` 命令桥只做轻量演示接入**：`AIPanel` 内的 `/doc list/read/search/patch` 目前是面向当前 writer 工作区的本地命令桥。`list/read/search` 可直接返回文本结果；`patch` 必须统一转换成 `applyGeneratedText -> ProjectWorkspace.handleAIApplyGeneratedText` 的正文 diff。若目标不是当前章节，只允许先读取目标章节内容、生成预览，再通过 `targetDocumentId/targetDocumentTitle` 让宿主切章后挂起 diff，不允许绕过编辑器直接静默保存。
 - **会话操作应并入工具栏，不再回到独立头部**：清空当前对话、重命名、新建会话等动作统一放在 `AIConversationToolbar`，不要为了单个会话动作再长回额外标题栏。
 - **右栏是“双模式速查”宿主，不再只挂 AI/Harness**：`WorkspaceRightPanel` 现在承接 `AI / 设定 / 校对 / 灵感` 四种常驻工具；设定采用“列表 + 详情”双栏，AI/校对/灵感采用单栏。不要再把轻量查阅能力做回全屏覆盖层或主编辑区切页。
+- **右栏不再伪装成通用 layout area**：布局 store 里的通用区域只剩 `left / bottom / overlay`，右侧常驻工具单独归 `rightToolArea` owner。不要再往 `workspaceLayoutStore.areas` 恢复历史 `right` 区域状态。
 - **Overlay 继续承接深度工具，不回流常驻右栏**：`structure / assets-fullscreen / relations / timeline / branches` 仍由 `WorkspaceToolOverlay` owner 管理；右栏只负责快速查阅和“展开全屏 →” handoff，不要复制第二套全屏宿主状态。
 - **Story Harness 先保留在底栏兼容入口**：当前右侧 activity bar 已切到四个常驻工具，Harness 通过 `WorkspaceBottomPanel` 保留兼容入口；若未来要回到常驻区，必须先补对应 plan 和交互边界。
 - **Review Packet 预览只做前端只读聚合**：`StoryHarnessReviewPacketDrawer` 当前只聚合章节正文、Context Lens、活跃实体/关系、Change Request 和轻量 gate 摘要，服务人类审查，不写后端、不导入外部 Story Canvas 文件，也不替代后续后端正式 review packet owner。
@@ -68,7 +81,7 @@
 - **全屏工具可见上下文由 overlay 统一展示**：`WorkspaceToolOverlay` 应使用 `useWorkflowContext` 同 owner 的摘要能力，把章节 / 场景 / 活跃实体显示在工具层顶部；不要再让 `CharacterGraphView / TimelineOutlineView / StoryBranchView / StructureStageView` 各自维护一份独立的“当前上下文”条。
 - **资产总览优先复用统一实体口径**：`EncyclopediaView` 当前已被复用为 Phase 4 资产总览 MVP，数据源应优先拼接 `writerStore.characters / locations`、统一实体接口 `api/entities.ts`（至少 item / organization）与 `conceptApi`，不要再额外新建影子资产 store。若后续要升级为独立 `AssetsOverviewView`，也必须先保持这套聚合口径不变。
 - **右栏设定速查与 overlay 资产总览共用同一套资产聚合口径**：右栏 `AssetListPanel / AssetDetailPanel` 与 `EncyclopediaView` 必须继续复用统一资产数据来源和分类口径；不要让右栏为了方便再维护一套单独的资产 store 或分类枚举。
-- **右栏设定按钮当前只到前端占位，不要偷做第二套持久化 owner**：设定面板里的新建 / 编辑 / 删除目前只提供前端按钮与 `TODO` 提示；在 backend / shared entity owner 未明确前，不得在 writer 宿主内本地落盘成第二套资产真相。
+- **右栏设定区当前是只读速查 owner**：`ToolRightPanel` 已移除只弹 `TODO` 的设定新建 / 编辑 / 删除按钮。当前右栏只允许做列表/详情速查与“展开全屏” handoff；在 backend / shared entity owner 未明确前，不得在 writer 宿主内偷偷恢复第二套资产 CRUD。
 - **编辑器外观偏好 owner 是 `editorAppearanceStore`**：字号、行距、版心、字体族与紧凑工具栏都应统一走 `editorAppearanceStore` 本地偏好；`TipTapEditorView` 只负责输出 CSS variables，`QyTipTapEditor` 只消费 `toolbarPreset`，不要再在组件内各自维护一份主题/排版状态。
 - **编辑器图片先走本地嵌入，不走在线存储**：`QyTipTapEditor` 当前应通过 writer 自己的图片适配层把 PNG/JPG/GIF 转成 data URL 直接写入正文，避免依赖 `/shared/storage/*` 这类在线平台 API；若未来要改成本地资产目录，也应由 writer/Wails owner 接管，而不是回退到 shared online storage。
 - **资产总览图谱深链由 overlay 接管**：`EncyclopediaView` 只负责发 `focus-graph-asset + switch-tool` 事件，不自己持有图谱 focus 状态；`WorkspaceToolOverlay` 是这条 focus payload 的 owner，并只把一次性聚焦参数透传给 `CharacterGraphView`。不要把图谱定点跳转状态再塞回路由、store 或资产视图本身。

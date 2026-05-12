@@ -7,14 +7,18 @@
  * - 记住上次使用的工具
  */
 
-import { readonly, ref } from 'vue'
+import { computed, readonly, ref } from 'vue'
+import {
+  DEFAULT_OVERLAY_TOOL,
+  OVERLAY_TOOL_ORDER,
+  getWorkspacePanelIcon,
+  getWorkspacePanelTitle,
+} from '@/modules/writer/config/workspacePanels'
+import { useWorkspaceLayoutStore } from '@/modules/writer/stores/workspaceLayoutStore'
+import type { OverlayToolType } from '@/modules/writer/types/workspaceLayout'
 import type { EncyclopediaCategory, GraphFocusTarget } from './types'
 
-const LAST_TOOL_KEY = 'qingyu_last_tool'
-const TOOL_IDS = ['structure', 'assets', 'relations', 'timeline', 'branches'] as const
-const DEFAULT_TOOL = 'structure'
-
-export type ToolType = 'structure' | 'assets' | 'relations' | 'timeline' | 'branches'
+export type ToolType = OverlayToolType
 
 export interface ToolOverlayContext {
   assetsCategory?: EncyclopediaCategory
@@ -23,23 +27,20 @@ export interface ToolOverlayContext {
 }
 
 // 单例状态
-const visible = ref(false)
-const activeTool = ref<ToolType>(getLastTool())
 const context = ref<ToolOverlayContext | null>(null)
 
-function getLastTool(): ToolType {
-  const saved = localStorage.getItem(LAST_TOOL_KEY)
-  if (saved && TOOL_IDS.includes(saved as ToolType)) {
-    return saved as ToolType
-  }
-  return DEFAULT_TOOL as ToolType
-}
-
-function setLastTool(toolId: string) {
-  localStorage.setItem(LAST_TOOL_KEY, toolId)
+function isOverlayTool(panelId: unknown): panelId is ToolType {
+  return typeof panelId === 'string' && OVERLAY_TOOL_ORDER.includes(panelId as ToolType)
 }
 
 export function useToolOverlay() {
+  const workspaceLayoutStore = useWorkspaceLayoutStore()
+  const visible = computed(() => workspaceLayoutStore.areas.overlay.visible)
+  const activeTool = computed<ToolType>(() => {
+    const panelId = workspaceLayoutStore.areas.overlay.activePanelId
+    return isOverlayTool(panelId) ? panelId : DEFAULT_OVERLAY_TOOL
+  })
+
   const applyContext = (nextContext?: ToolOverlayContext | null) => {
     context.value = nextContext ? { ...nextContext } : null
   }
@@ -49,22 +50,16 @@ export function useToolOverlay() {
    * @param tool 可选，指定打开的工具类型，默认为上次使用的工具
    */
   function open(tool?: ToolType, nextContext?: ToolOverlayContext | null) {
-    if (tool) {
-      activeTool.value = tool
-      setLastTool(tool)
-    } else {
-      // 确保 activeTool 是有效的
-      activeTool.value = getLastTool()
-    }
+    workspaceLayoutStore.setAreaActivePanel('overlay', tool ?? activeTool.value)
     applyContext(nextContext)
-    visible.value = true
+    workspaceLayoutStore.setAreaVisibility('overlay', true)
   }
 
   /**
    * 关闭工具面板
    */
   function close() {
-    visible.value = false
+    workspaceLayoutStore.setAreaVisibility('overlay', false)
   }
 
   /**
@@ -83,12 +78,9 @@ export function useToolOverlay() {
    * 如果面板未打开，会自动打开
    */
   function switchTool(toolId: ToolType, nextContext?: ToolOverlayContext | null) {
-    activeTool.value = toolId
-    setLastTool(toolId)
+    workspaceLayoutStore.setAreaActivePanel('overlay', toolId)
     applyContext(nextContext)
-    if (!visible.value) {
-      visible.value = true
-    }
+    workspaceLayoutStore.setAreaVisibility('overlay', true)
   }
 
   function openFromRightPanel(toolId: ToolType, nextContext?: ToolOverlayContext | null) {
@@ -98,31 +90,12 @@ export function useToolOverlay() {
   /**
    * 获取当前工具的名称
    */
-  const toolNames: Record<ToolType, string> = {
-    structure: '结构舞台',
-    assets: '资产总览',
-    relations: '关系图谱',
-    timeline: '时间线',
-    branches: '故事分支',
-  }
-
-  /**
-   * 获取当前工具的图标
-   */
-  const toolIcons: Record<ToolType, string> = {
-    structure: 'Grid',
-    assets: 'Collection',
-    relations: 'Share',
-    timeline: 'Clock',
-    branches: 'Connection',
-  }
-
   function getToolName(toolId: ToolType): string {
-    return toolNames[toolId] || toolId
+    return getWorkspacePanelTitle(toolId)
   }
 
   function getToolIcon(toolId: ToolType): string {
-    return toolIcons[toolId] || 'Tools'
+    return getWorkspacePanelIcon(toolId)
   }
 
   return {
@@ -139,7 +112,5 @@ export function useToolOverlay() {
     // 工具信息
     getToolName,
     getToolIcon,
-    toolNames,
-    toolIcons,
   }
 }

@@ -23,7 +23,7 @@ export class Storage {
   get<T = any>(key: string, defaultValue?: T): T | null {
     try {
       const item = localStorage.getItem(PREFIX + key)
-      if (item === null || item === 'undefined' || item === 'null') {
+      if (item == null || item === 'undefined' || item === 'null') {
         return defaultValue !== undefined ? defaultValue : null
       }
       return JSON.parse(item) as T
@@ -81,7 +81,7 @@ export default storage
 export function readStoredAuthToken(): string | null {
   try {
     const item = localStorage.getItem(PREFIX + 'token')
-    if (item === null || item === 'undefined' || item === 'null') {
+    if (item == null || item === 'undefined' || item === 'null') {
       return null
     }
     // 支持直接存储的字符串或 JSON 格式

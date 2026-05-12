@@ -1,5 +1,10 @@
 import httpService from '@/core/services/http.service'
-import { isWailsWriterAvailable, wailsWriterBridge } from '../data-bridge/wails'
+import { standaloneLocalBridge } from '../data-bridge/standalone-local'
+import {
+  isStandaloneLocalWriterAvailable,
+  isWailsWriterAvailable,
+  wailsWriterBridge,
+} from '../data-bridge/wails'
 import type {
   Character,
   CharacterRelation,
@@ -36,6 +41,9 @@ export const characterApi = {
         data as unknown as Record<string, unknown>,
       ) as Promise<Character>
     }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.character.create(projectId, data)
+    }
     return httpService.post<Character>(`${BASE_PROJECT_URL}/${projectId}/characters`, data)
   },
 
@@ -53,6 +61,9 @@ export const characterApi = {
   getDetail(characterId: string, projectId: string) {
     if (isWailsWriterAvailable()) {
       return wailsWriterBridge.character.get(characterId) as Promise<Character>
+    }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.character.get(characterId)
     }
     return httpService.get<Character>(
       `${BASE_CHAR_URL}/${characterId}`,
@@ -73,6 +84,9 @@ export const characterApi = {
   list(projectId: string) {
     if (isWailsWriterAvailable()) {
       return wailsWriterBridge.character.list(projectId) as Promise<Character[]>
+    }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.character.list(projectId)
     }
     return httpService.get<Character[]>(`${BASE_PROJECT_URL}/${projectId}/characters`)
   },
@@ -96,6 +110,9 @@ export const characterApi = {
         data as unknown as Record<string, unknown>,
       ) as Promise<Character>
     }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.character.update(characterId, data)
+    }
     return httpService.put<Character>(
       `${BASE_CHAR_URL}/${characterId}`,
       data,
@@ -117,6 +134,9 @@ export const characterApi = {
   delete(characterId: string, projectId: string) {
     if (isWailsWriterAvailable()) {
       return wailsWriterBridge.character.delete(characterId) as Promise<void>
+    }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.character.delete(characterId)
     }
     return httpService.delete<void>(
       `${BASE_CHAR_URL}/${characterId}`,
@@ -146,6 +166,9 @@ export const characterApi = {
         data as unknown as Record<string, unknown>,
       ) as Promise<CharacterRelation>
     }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.character.createRelation(projectId, data)
+    }
     return httpService.post<CharacterRelation>(
       `${BASE_CHAR_URL}/relations`,
       data,
@@ -171,6 +194,9 @@ export const characterApi = {
         characterId,
       ) as Promise<CharacterRelation[]>
     }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.character.listRelations(projectId, characterId)
+    }
     const params: any = {}
     if (characterId) params.characterId = characterId
 
@@ -195,6 +221,9 @@ export const characterApi = {
     if (isWailsWriterAvailable()) {
       return wailsWriterBridge.character.deleteRelation(relationId) as Promise<void>
     }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.character.deleteRelation(relationId)
+    }
     return httpService.delete<void>(`${BASE_CHAR_URL}/relations/${relationId}`, { params: { projectId } } as any)
   },
 
@@ -211,6 +240,9 @@ export const characterApi = {
   getGraph(projectId: string) {
     if (isWailsWriterAvailable()) {
       return wailsWriterBridge.character.getGraph(projectId) as Promise<CharacterGraph>
+    }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.character.getGraph(projectId)
     }
     return httpService.get<CharacterGraph>(`${BASE_PROJECT_URL}/${projectId}/characters/graph`)
   },

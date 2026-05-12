@@ -24,27 +24,37 @@ import { getIcon, hasIcon } from '../assets/icons'
  * ```
  */
 export function getIconSVG(name: string): string | undefined {
+  const mappedName = iconMapping[name] || name
+
   // Try exact match first
-  if (hasIcon(name)) {
-    return getIcon(name)
+  if (hasIcon(mappedName)) {
+    return getIcon(mappedName)
   }
 
   // Try with first letter capitalized
-  const capitalized = name.charAt(0).toUpperCase() + name.slice(1)
+  const capitalized = mappedName.charAt(0).toUpperCase() + mappedName.slice(1)
   if (hasIcon(capitalized)) {
     return getIcon(capitalized)
   }
 
   // Try all uppercase
-  const uppercased = name.toUpperCase()
+  const uppercased = mappedName.toUpperCase()
   if (hasIcon(uppercased)) {
     return getIcon(uppercased)
   }
 
   // Try all lowercase
-  const lowercased = name.toLowerCase()
+  const lowercased = mappedName.toLowerCase()
   if (hasIcon(lowercased)) {
     return getIcon(lowercased)
+  }
+
+  for (const [canonicalName, aliases] of Object.entries(iconAliases)) {
+    if (canonicalName === mappedName || aliases.includes(mappedName)) {
+      if (hasIcon(canonicalName)) {
+        return getIcon(canonicalName)
+      }
+    }
   }
 
   // Not found
@@ -66,9 +76,14 @@ export function iconExists(name: string): boolean {
  * Add any custom mappings here if icon names differ
  */
 export const iconMapping: Record<string, string> = {
-  // Legacy names -> our icons
-  // Add custom mappings if needed
-  // Example: 'ep-search': 'Search'
+  RefreshLeft: 'Refresh',
+  DocumentChecked: 'CircleCheck',
+  SetUp: 'Setting',
+  List: 'Menu',
+  ChatBubbleLeftRight: 'ChatLineSquare',
+  Pencil: 'EditPen',
+  DocumentText: 'Document',
+  Promotion: 'ArrowRight',
 }
 
 /**
@@ -78,9 +93,7 @@ export const iconMapping: Record<string, string> = {
  * @returns SVG string or undefined if not found
  */
 export function getMappedIconSVG(name: string): string | undefined {
-  // Check if there's a custom mapping
-  const mappedName = iconMapping[name] || name
-  return getIconSVG(mappedName)
+  return getIconSVG(name)
 }
 
 /**

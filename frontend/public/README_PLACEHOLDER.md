@@ -162,7 +162,7 @@ const book = {
 ## 测试
 
 添加图片后，访问：
-- `http://localhost:5173/placeholder-book.png`
+- `http://localhost:43127/placeholder-book.png`
 - 应该能看到占位图
 
 ---
@@ -170,7 +170,6 @@ const book = {
 **更新时间**：2025-10-26  
 **优先级**：中等  
 **可选**：可以暂时忽略图片错误，不影响功能测试
-
 
 
 

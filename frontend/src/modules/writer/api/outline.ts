@@ -1,6 +1,11 @@
 import httpService from '@/core/services/http.service'
 import type { OutlineNode } from '@/types/writer'
-import { isWailsWriterAvailable, wailsWriterBridge } from '../data-bridge/wails'
+import { standaloneLocalBridge } from '../data-bridge/standalone-local'
+import {
+  isStandaloneLocalWriterAvailable,
+  isWailsWriterAvailable,
+  wailsWriterBridge,
+} from '../data-bridge/wails'
 import { DocumentType } from '../types/document'
 
 // ============================================================================
@@ -268,6 +273,9 @@ export const outlineApi = {
     if (isWailsWriterAvailable()) {
       return createWailsOutlineNode(projectId, data)
     }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.outline.create(projectId, data)
+    }
     return httpService.post<OutlineNode>(`${BASE_PROJECT_URL}/${projectId}/outlines`, data)
   },
 
@@ -279,6 +287,11 @@ export const outlineApi = {
     if (isWailsWriterAvailable()) {
       return getWailsOutlineNode(outlineId)
     }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.document.get(outlineId).then((document) =>
+        mapWailsDocumentNodeToOutlineNode(document as unknown as WailsDocumentNode, projectId),
+      )
+    }
     return httpService.get<OutlineNode>(`${BASE_OUTLINE_URL}/${outlineId}?projectId=${projectId}`)
   },
 
@@ -289,6 +302,9 @@ export const outlineApi = {
   update(outlineId: string, projectId: string, data: UpdateOutlineRequest) {
     if (isWailsWriterAvailable()) {
       return updateWailsOutlineNode(outlineId, data)
+    }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.outline.update(outlineId, projectId, data)
     }
     return httpService.put<OutlineNode>(
       `${BASE_OUTLINE_URL}/${outlineId}?projectId=${projectId}`,
@@ -303,6 +319,9 @@ export const outlineApi = {
   delete(outlineId: string, projectId: string) {
     if (isWailsWriterAvailable()) {
       return deleteWailsOutlineNode(outlineId)
+    }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.outline.delete(outlineId)
     }
     return httpService.delete<void>(`${BASE_OUTLINE_URL}/${outlineId}?projectId=${projectId}`)
   },
@@ -321,6 +340,9 @@ export const outlineApi = {
         mapWailsTreeToOutlineTree(tree, projectId),
       )
     }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.outline.getTree(projectId)
+    }
     return httpService.get<OutlineNode[]>(`${BASE_PROJECT_URL}/${projectId}/outlines`)
   },
 
@@ -332,6 +354,9 @@ export const outlineApi = {
     if (isWailsWriterAvailable()) {
       const tree = await wailsWriterBridge.document.getTree(projectId)
       return mapWailsTreeToOutlineTree(tree, projectId)
+    }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.outline.getTree(projectId)
     }
     const response = await httpService.get<unknown>(
       `${BASE_PROJECT_URL}/${projectId}/outlines/tree`,
@@ -347,6 +372,29 @@ export const outlineApi = {
     if (isWailsWriterAvailable()) {
       return wailsWriterBridge.document.getTree(projectId).then((tree) => {
         const outlineTree = mapWailsTreeToOutlineTree(tree, projectId)
+        if (!parentId) {
+          return outlineTree
+        }
+
+        const queue = [...outlineTree]
+        while (queue.length > 0) {
+          const current = queue.shift()
+          if (!current) {
+            continue
+          }
+          if (current.id === parentId) {
+            return current.children || []
+          }
+          if (current.children?.length) {
+            queue.push(...current.children)
+          }
+        }
+
+        return []
+      })
+    }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.outline.getTree(projectId).then((outlineTree) => {
         if (!parentId) {
           return outlineTree
         }

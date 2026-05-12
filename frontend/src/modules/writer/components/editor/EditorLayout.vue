@@ -50,13 +50,10 @@
         >
           <SidePanel position="left" :class="{ 'panel-visible': leftPanelVisible }">
             <slot name="left-panel">
-              <!-- 默认内容 -->
-              <ProjectTree
-                :project-id="projectId"
-                :chapters="chapters"
-                :current-chapter-id="currentChapterId"
-              />
-              <ChapterTree :tree-data="treeData" :project-id="projectId" />
+              <div class="editor-layout__placeholder" data-testid="editor-layout-left-placeholder">
+                <strong>Left Panel Slot Recommended</strong>
+                <span>请在 `EditorLayout` 中传入左侧面板插槽。</span>
+              </div>
             </slot>
           </SidePanel>
         </ResizablePanel>
@@ -70,7 +67,7 @@
           { 'immersive-mode': isImmersiveMode },
         ]"
       >
-        <slot name="editor" :active-tool="activeTool">
+        <slot name="editor">
           <div class="editor-layout__placeholder" data-testid="editor-layout-editor-placeholder">
             <strong>Editor Slot Required</strong>
             <span>请在 `EditorLayout` 中传入编辑器内容插槽。</span>
@@ -120,75 +117,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, ref } from 'vue'
 import ResizablePanel from './ResizablePanel.vue'
 import SidePanel from './SidePanel.vue'
-import ProjectTree from '../ProjectTree.vue'
-import ChapterTree from '../DocumentTree.vue'
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
 import { useResponsiveLayout } from '@/composables/useResponsiveLayout'
 import { useEditorStore, type ActiveTool } from '../../stores/editorStore'
-import { useDocumentStore } from '../../stores/documentStore'
 import { usePanelStore } from '../../stores/panelStore'
-
-// ==================== Props & Emits ====================
-interface Props {
-  activeTool?: ActiveTool
-}
-
-interface Emits {
-  (e: 'update:activeTool', val: ActiveTool): void
-  (e: 'toolChange', tool: ActiveTool): void
-}
-
-const props = defineProps<Props>()
-
-const emit = defineEmits<Emits>()
 
 // ==================== 插槽类型定义 ====================
 defineSlots<{
   'left-panel'?: () => unknown
-  editor?: (props: { activeTool: ActiveTool }) => unknown
+  editor?: () => unknown
   'right-panel'?: () => unknown
 }>()
 
-const route = useRoute()
 const editorStore = useEditorStore()
-const documentStore = useDocumentStore()
 const panelStore = usePanelStore()
-
-// 内部 activeTool 状态（用于本地管理）
-const internalActiveTool = ref<ActiveTool>(props.activeTool ?? editorStore.activeTool ?? 'writing')
-
-// 计算 activeTool（优先使用 props，否则使用内部状态，最后使用 store）
-const activeTool = computed<ActiveTool>({
-  get: () => props.activeTool ?? internalActiveTool.value ?? editorStore.activeTool ?? 'writing',
-  set: (value: ActiveTool) => {
-    internalActiveTool.value = value
-    editorStore.setActiveTool(value)
-    emit('update:activeTool', value)
-  },
-})
-
-watch(
-  () => props.activeTool,
-  (newTool) => {
-    if (newTool && newTool !== internalActiveTool.value) {
-      internalActiveTool.value = newTool
-    }
-  },
-)
-
-// 监听 store 中 activeTool 的变化
-watch(
-  () => editorStore.activeTool,
-  (newTool) => {
-    if (newTool !== internalActiveTool.value) {
-      internalActiveTool.value = newTool
-    }
-  },
-)
+const activeTool = computed<ActiveTool>(() => editorStore.activeTool ?? 'writing')
 
 // ==================== 面板可见性计算 ====================
 const leftPanelVisible = computed(() => {
@@ -217,18 +163,6 @@ const rightPanelState = computed((): 'expanded' | 'collapsed' | 'hidden' => {
 
 // 是否为沉浸模式
 const isImmersiveMode = computed(() => activeTool.value === 'immersive')
-
-// 从路由参数获取项目ID
-const projectId = computed(() => (route.params.projectId as string) || '')
-
-// 从 documentStore 获取章节数据
-const chapters = computed(() => documentStore.flatDocs)
-
-// 从 documentStore 获取当前文档ID
-const currentChapterId = computed(() => documentStore.currentDocMeta?.id || '')
-
-// 从 documentStore 获取文档树数据
-const treeData = computed(() => documentStore.tree)
 
 // 响应式布局
 const { layout, switchTab, handleTouchGesture: handleGesture } = useResponsiveLayout()
@@ -297,11 +231,8 @@ const layoutModeLabel = computed(() => {
   const modeLabel = labels[layout.value.mode]
   // 添加工具模式信息
   const toolLabels: Record<ActiveTool, string> = {
-    chapters: '章节模式',
     writing: '写作模式',
     immersive: '沉浸模式',
-    ai: 'AI助手模式',
-    encyclopedia: '设定百科模式',
   }
   return `${modeLabel} - ${toolLabels[activeTool.value]}`
 })
@@ -349,8 +280,6 @@ function handleContentTouchEnd(event: TouchEvent) {
     }, 1000)
   }
 }
-
-onMounted(() => {})
 </script>
 
 <style scoped lang="scss">

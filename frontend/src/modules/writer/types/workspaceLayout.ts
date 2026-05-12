@@ -1,10 +1,12 @@
-export type WorkspaceAreaId = 'left' | 'right' | 'bottom' | 'overlay'
+export type WorkspaceAreaId = 'left' | 'bottom' | 'overlay'
+export type WorkspacePanelDockId = WorkspaceAreaId | 'right-tool'
 
 export type WorkspaceSidebarTab = 'chapters' | 'outline'
-export type WorkspaceRightPanelTab = 'chat' | 'harness'
 export type RightToolType = 'ai' | 'assets' | 'proofread' | 'inspiration'
+export type OverlayToolType = 'structure' | 'assets' | 'relations' | 'timeline' | 'branches'
 
 export type WorkspacePanelId =
+  | 'structure'
   | 'chapters'
   | 'outline'
   | 'ai'
@@ -32,9 +34,12 @@ export interface RightToolAreaState {
 export interface WorkspacePanelDefinition {
   id: WorkspacePanelId
   title: string
-  defaultArea: WorkspaceAreaId
+  defaultArea: WorkspacePanelDockId
+  allowedAreas: WorkspacePanelDockId[]
   detachable: boolean
-  tabGroup: 'left-sidebar' | 'right-sidebar' | 'overlay'
+  tabGroup: 'left-sidebar' | 'right-tool' | 'bottom' | 'overlay'
+  icon?: string
+  overlayGroup?: 'primary' | 'professional'
 }
 
 export interface WorkspaceAreaState {
@@ -46,7 +51,6 @@ export interface WorkspaceAreaState {
 export interface WorkspaceLayoutSnapshot {
   preset: WorkspaceLayoutPreset
   leftSidebarTab: WorkspaceSidebarTab
-  rightPanelTab: WorkspaceRightPanelTab
   rightToolArea: RightToolAreaState
   areas: Record<WorkspaceAreaId, WorkspaceAreaState>
 }

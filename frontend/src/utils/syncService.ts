@@ -1,9 +1,10 @@
 /**
  * 自动同步服务
- * 检测后端连接状态，网络恢复时自动刷新数据
+ * 检测连接状态，网络恢复时自动刷新数据
  */
 
 import { httpService } from '@/core/services/http.service'
+import { isRemoteWriterMode } from '@/modules/writer/data-bridge/wails'
 
 // ==================== 类型定义 ====================
 
@@ -21,8 +22,9 @@ export type StatusChangeCallback = (status: SyncStatus) => void
 // ==================== 同步服务 ====================
 
 class SyncService {
+  private readonly usesRemoteBackend = isRemoteWriterMode()
   private status: SyncStatus = {
-    isOnline: navigator.onLine,
+    isOnline: this.usesRemoteBackend ? navigator.onLine : true,
     lastSyncTime: null,
     isSyncing: false,
     error: null,
@@ -31,6 +33,7 @@ class SyncService {
   private callbacks: SyncCallback[] = []
   private statusCallbacks: StatusChangeCallback[] = []
   private healthCheckInterval: number | null = null
+  private desktopHealthInitialized = false
   private readonly HEALTH_CHECK_INTERVAL = 60000 // 60秒检查一次
 
   constructor() {
@@ -41,6 +44,10 @@ class SyncService {
    * 设置网络状态监听器
    */
   private setupNetworkListeners(): void {
+    if (!this.usesRemoteBackend) {
+      return
+    }
+
     // 监听网络恢复事件
     window.addEventListener('online', () => {
       console.log('[SyncService] 网络已恢复')
@@ -98,6 +105,10 @@ class SyncService {
    * 检查后端健康状态
    */
   async checkBackendHealth(): Promise<boolean> {
+    if (!this.usesRemoteBackend) {
+      return true
+    }
+
     try {
       const response = await httpService.get<{ status: string }>('/health', { timeout: 5000 })
       const status = (response as any)?.status ?? (response as any)?.data?.status
@@ -112,6 +123,17 @@ class SyncService {
    * 启动定期健康检查
    */
   startHealthCheck(): void {
+    if (!this.usesRemoteBackend) {
+      if (this.desktopHealthInitialized) {
+        return
+      }
+
+      this.desktopHealthInitialized = true
+      this.updateStatus({ isOnline: true, error: null })
+      void this.triggerSync()
+      return
+    }
+
     if (this.healthCheckInterval) {
       return
     }
@@ -145,6 +167,11 @@ class SyncService {
    * 停止定期健康检查
    */
   stopHealthCheck(): void {
+    if (!this.usesRemoteBackend) {
+      this.desktopHealthInitialized = false
+      return
+    }
+
     if (this.healthCheckInterval) {
       clearInterval(this.healthCheckInterval)
       this.healthCheckInterval = null
@@ -203,7 +230,7 @@ class SyncService {
    * 强制刷新数据（网络恢复后调用）
    */
   async refreshAfterReconnect(): Promise<void> {
-    console.log('[SyncService] 网络恢复后刷新数据')
+    console.log('[SyncService] 连接恢复后刷新数据')
     await this.triggerSync()
   }
 }

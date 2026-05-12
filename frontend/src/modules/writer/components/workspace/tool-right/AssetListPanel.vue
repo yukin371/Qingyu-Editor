@@ -3,6 +3,8 @@
     <label class="asset-list-panel__search">
       <QyIcon name="Search" :size="14" />
       <input
+        id="writer-asset-search"
+        name="writer-asset-search"
         :value="searchKeyword"
         type="search"
         placeholder="搜索设定"

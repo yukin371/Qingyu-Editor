@@ -12,8 +12,10 @@
         <h4 class="section-title">基本信息</h4>
 
         <div class="form-field">
-          <label class="form-label">节点标题</label>
+          <label class="form-label" for="outline-node-title">节点标题</label>
           <input
+            id="outline-node-title"
+            name="outline-node-title"
             v-model="formData.title"
             type="text"
             class="form-input"
@@ -23,8 +25,10 @@
         </div>
 
         <div class="form-field">
-          <label class="form-label">摘要说明</label>
+          <label class="form-label" for="outline-node-summary">摘要说明</label>
           <textarea
+            id="outline-node-summary"
+            name="outline-node-summary"
             v-model="formData.summary"
             class="form-textarea"
             placeholder="简要描述本节内容..."
@@ -39,8 +43,13 @@
         <h4 class="section-title">章节绑定</h4>
 
         <div class="form-field">
-          <label class="form-label">关联章节</label>
-          <select v-model="formData.documentId" class="form-select">
+          <label class="form-label" for="outline-node-document">关联章节</label>
+          <select
+            id="outline-node-document"
+            v-model="formData.documentId"
+            name="outline-node-document"
+            class="form-select"
+          >
             <option value="">未关联章节</option>
             <option
               v-for="chapter in availableChapters"
@@ -60,8 +69,13 @@
 
         <div class="form-row">
           <div class="form-field">
-            <label class="form-label">结构类型</label>
-            <select v-model="formData.type" class="form-select">
+            <label class="form-label" for="outline-node-type">结构类型</label>
+            <select
+              id="outline-node-type"
+              v-model="formData.type"
+              name="outline-node-type"
+              class="form-select"
+            >
               <option value="">无类型</option>
               <option
                 v-for="nodeType in OUTLINE_NODE_TYPES"
@@ -77,8 +91,10 @@
           </div>
 
           <div class="form-field">
-            <label class="form-label">紧张度 (0-10)</label>
+            <label class="form-label" for="outline-node-tension">紧张度 (0-10)</label>
             <input
+              id="outline-node-tension"
+              name="outline-node-tension"
               v-model.number="formData.tension"
               type="number"
               class="form-input"
@@ -96,8 +112,10 @@
 
         <div class="form-row">
           <div class="form-field">
-            <label class="form-label">登场角色</label>
+            <label class="form-label" for="outline-node-characters">登场角色</label>
             <input
+              id="outline-node-characters"
+              name="outline-node-characters"
               v-model="charactersInput"
               type="text"
               class="form-input"
@@ -106,8 +124,10 @@
           </div>
 
           <div class="form-field">
-            <label class="form-label">涉及道具</label>
+            <label class="form-label" for="outline-node-items">涉及道具</label>
             <input
+              id="outline-node-items"
+              name="outline-node-items"
               v-model="itemsInput"
               type="text"
               class="form-input"

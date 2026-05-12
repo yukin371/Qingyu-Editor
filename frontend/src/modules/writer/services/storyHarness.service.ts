@@ -1,4 +1,5 @@
 import storage from '@/utils/storage'
+import { isStandaloneWriterRuntime } from '@/modules/writer/data-bridge/wails'
 import {
   createStoryHarnessBatch,
   getLatestStoryHarnessBatch,
@@ -138,6 +139,8 @@ const mergeBatchRecord = (
 }
 
 class StoryHarnessService {
+  private readonly isStandaloneMode = isStandaloneWriterRuntime()
+
   private readLocalBatchRecord(
     projectId: string,
     chapterId: string,
@@ -234,6 +237,9 @@ class StoryHarnessService {
 
   async fetchChapterContext(projectId: string, chapterId: string) {
     if (!projectId || !chapterId) return null
+    if (this.isStandaloneMode) {
+      return null
+    }
     try {
       const response = await storyHarnessApi.getChapterContext(projectId, chapterId)
       const data = (response as { data?: unknown })?.data ?? response
@@ -248,6 +254,9 @@ class StoryHarnessService {
 
   async fetchChangeRequests(projectId: string, chapterId: string, status = 'pending') {
     if (!projectId || !chapterId) return []
+    if (this.isStandaloneMode) {
+      return []
+    }
     try {
       const response = await storyHarnessApi.listChangeRequests(projectId, chapterId, status)
       const data = (response as { data?: unknown })?.data ?? response
@@ -262,6 +271,9 @@ class StoryHarnessService {
   }
 
   async processChangeRequest(requestId: string, status: 'accepted' | 'ignored' | 'deferred') {
+    if (this.isStandaloneMode) {
+      return false
+    }
     try {
       await storyHarnessApi.processChangeRequest(requestId, { status })
       return true
@@ -276,6 +288,9 @@ class StoryHarnessService {
   /** 手动触发章节索引 */
   async triggerIndex(projectId: string, chapterId: string) {
     if (!projectId || !chapterId) return null
+    if (this.isStandaloneMode) {
+      return null
+    }
     try {
       const response = await storyHarnessApi.triggerIndex(projectId, chapterId)
       const data = (response as { data?: unknown })?.data ?? response
@@ -297,6 +312,9 @@ class StoryHarnessService {
   /** accepted 后兜底重建 projection */
   async rebuildProjection(projectId: string, chapterId: string) {
     if (!projectId || !chapterId) return null
+    if (this.isStandaloneMode) {
+      return null
+    }
     try {
       const response = await storyHarnessApi.rebuildProjection(projectId, chapterId)
       const data = (response as { data?: unknown })?.data ?? response

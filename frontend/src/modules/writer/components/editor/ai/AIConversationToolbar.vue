@@ -2,7 +2,10 @@
   <div class="conversation-toolbar">
     <select
       :value="currentId"
+      id="ai-conversation-select"
+      name="ai-conversation-select"
       class="conversation-select"
+      aria-label="会话选择"
       :disabled="disabled"
       @change="handleChange"
     >

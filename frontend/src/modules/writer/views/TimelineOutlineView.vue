@@ -16,10 +16,10 @@
         </span>
       </div>
       <div class="timeline-outline-view__actions">
-        <el-button size="small" @click="handleRefresh">
+        <QyButton variant="secondary" size="sm" @click="handleRefresh">
           <QyIcon name="Refresh" :size="14" />
           刷新
-        </el-button>
+        </QyButton>
       </div>
     </header>
 
@@ -71,14 +71,14 @@
             <div class="timeline-event__card">
               <div class="timeline-event__head">
                 <h3>{{ event.title }}</h3>
-                <el-tag
-                  size="small"
+                <QyTag
+                  size="sm"
                   :type="
                     event.importance >= 8 ? 'danger' : event.importance >= 5 ? 'warning' : 'info'
                   "
                 >
                   P{{ event.importance || 0 }}
-                </el-tag>
+                </QyTag>
               </div>
               <p class="timeline-event__desc">{{ event.description || '暂无描述' }}</p>
               <div class="timeline-event__meta">
@@ -86,14 +86,14 @@
                 <span>类型：{{ event.eventType }}</span>
               </div>
               <div class="timeline-event__actions">
-                <el-button
-                  size="small"
-                  text
+                <QyButton
+                  variant="text"
+                  size="sm"
                   data-testid="timeline-send-to-ai"
                   @click="handleSendEventToAI(event)"
                 >
                   交给 AI
-                </el-button>
+                </QyButton>
               </div>
             </div>
           </article>
@@ -110,8 +110,7 @@
 
 <script setup lang="ts">
 import { computed, watch } from 'vue'
-import { ElButton, ElTag } from 'element-plus'
-import { QyIcon } from '@/design-system/components'
+import { QyButton, QyIcon, QyTag } from '@/design-system/components'
 import { Empty } from '@/design-system/base'
 import { useWriterStore } from '@/modules/writer/stores/writerStore'
 import {

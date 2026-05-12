@@ -4,7 +4,7 @@
     <div class="story-line-header">
       <div class="header-title">
         <span class="title-text">故事线视图</span>
-        <el-tag size="small" type="info" class="scope-tag">{{ scopeLabel }}</el-tag>
+        <QyTag size="sm" type="info" class="scope-tag">{{ scopeLabel }}</QyTag>
       </div>
       <div class="header-stats">
         <span class="stat-item">角色 {{ visibleCharacters.length }}</span>
@@ -14,10 +14,10 @@
     </div>
 
     <!-- Content -->
-    <el-scrollbar class="story-line-content">
+    <QyScrollbar class="story-line-content">
       <!-- Loading state -->
       <div v-if="loading" class="story-line-loading">
-        <el-icon class="loading-icon is-loading"><Loading /></el-icon>
+        <span class="loading-icon" aria-hidden="true"></span>
         <span>加载中...</span>
       </div>
 
@@ -45,14 +45,14 @@
             <span class="chapter-title" :title="chapter.title">{{ chapter.title }}</span>
             <div class="chapter-meta">
               <span v-if="chapter.wordCount" class="word-count">{{ formatWordCount(chapter.wordCount) }}</span>
-              <el-tag
+              <QyTag
                 v-if="chapter.status"
-                size="small"
+                size="sm"
                 :type="statusTagType(chapter.status)"
                 class="status-tag"
               >
                 {{ statusLabel(chapter.status) }}
-              </el-tag>
+              </QyTag>
             </div>
             <div class="chapter-badges">
               <span v-if="getChapterCharacters(chapter.id).length > 0" class="badge character-badge">
@@ -79,14 +79,14 @@
                 >
                   <span class="character-icon">&#128100;</span>
                   <span class="character-name">{{ charInfo.character.name }}</span>
-                  <el-tag
+                  <QyTag
                     v-if="charInfo.isFirstAppearance"
                     type="success"
-                    size="small"
+                    size="sm"
                     class="first-appearance-tag"
                   >
                     首次登场
-                  </el-tag>
+                  </QyTag>
                 </div>
               </div>
 
@@ -106,9 +106,9 @@
                     <span class="relation-dash">--</span>
                     {{ rel.toName }}
                     <span class="relation-arrow">-&gt;</span>
-                    <el-tag size="small" :type="getRelationTagType(rel.relation.type)" class="relation-type-tag">
+                    <QyTag size="sm" :type="getRelationTagType(rel.relation.type)" class="relation-type-tag">
                       {{ rel.relation.type }}
-                    </el-tag>
+                    </QyTag>
                     <span class="relation-strength">({{ rel.relation.strength }})</span>
                   </span>
                 </div>
@@ -125,13 +125,13 @@
           </transition>
         </div>
       </div>
-    </el-scrollbar>
+    </QyScrollbar>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Loading } from '@element-plus/icons-vue'
+import { QyScrollbar, QyTag } from '@/design-system/components'
 import type { OutlineNode, Character, CharacterRelation } from '@/types/writer'
 import { Empty } from '@/design-system/base'
 
@@ -513,7 +513,18 @@ function getRelationTagType(type: string): 'success' | 'info' | 'warning' | 'dan
 }
 
 .loading-icon {
-  font-size: 24px;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(148, 163, 184, 0.28);
+  border-top-color: #64748b;
+  border-radius: 999px;
+  animation: story-line-spin 0.8s linear infinite;
+}
+
+@keyframes story-line-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Chapter list */

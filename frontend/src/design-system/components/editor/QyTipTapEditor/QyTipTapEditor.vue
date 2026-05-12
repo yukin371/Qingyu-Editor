@@ -127,6 +127,8 @@
     <!-- 隐藏的文件输入框 -->
     <input
       ref="imageInputRef"
+      id="writer-editor-image-upload"
+      name="writer-editor-image-upload"
       type="file"
       accept="image/*"
       style="display: none"
@@ -171,8 +173,6 @@ import type { Editor as CoreEditor } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import CharacterCount from '@tiptap/extension-character-count'
-import Underline from '@tiptap/extension-underline'
-import Link from '@tiptap/extension-link'
 import Image from '@tiptap/extension-image'
 import QyKeywordPopover from '../QySmartKeyword/QyKeywordPopover.vue'
 import QyCompletionPopover from '../QySmartKeyword/QyCompletionPopover.vue'
@@ -182,7 +182,11 @@ import { SmartKeyword, type KeywordInfo } from '../QySmartKeyword/extensions/Sma
 import { ParagraphWithId } from '../QySmartKeyword/extensions/ParagraphWithId'
 import { AiDiffExtension } from '../QySmartKeyword/extensions/AiDiffExtension'
 import { searchProjectKeywords, type ParagraphContent } from '@/modules/writer/api/wrapper'
+import { characterApi } from '@/modules/writer/api/character'
+import { conceptApi } from '@/modules/writer/api/concept'
+import { locationApi } from '@/modules/writer/api/location'
 import { createEmbeddedEditorImage } from '@/modules/writer/services/editorImageAsset.service'
+import { extractEntitiesFromTipTapContent } from '@/modules/writer/utils/entityParser'
 
 const props = withDefaults(
   defineProps<{
@@ -232,21 +236,31 @@ type ToolbarCommand =
 // 图片上传相关
 const imageInputRef = ref<HTMLInputElement | null>(null)
 const isUploadingImage = ref(false)
+const enableTipTapDebug =
+  import.meta.env.DEV &&
+  typeof window !== 'undefined' &&
+  window.localStorage.getItem('qingyu-editor:debug-tiptap') === 'true'
+
+function tiptapDebugLog(...args: unknown[]) {
+  if (enableTipTapDebug) {
+    console.log(...args)
+  }
+}
 
 function parseInitialContent() {
-  console.log('[QyTipTapEditor] parseInitialContent 输入:', props.modelValue?.substring(0, 200))
+  tiptapDebugLog('[QyTipTapEditor] parseInitialContent 输入:', props.modelValue?.substring(0, 200))
 
   if (!props.modelValue) {
-    console.log('[QyTipTapEditor] modelValue为空，返回默认段落')
+    tiptapDebugLog('[QyTipTapEditor] modelValue为空，返回默认段落')
     return '<p></p>'
   }
 
   try {
     const parsed = JSON.parse(props.modelValue)
-    console.log('[QyTipTapEditor] JSON解析成功:', parsed)
+    tiptapDebugLog('[QyTipTapEditor] JSON解析成功:', parsed)
     return parsed
   } catch (error) {
-    console.log('[QyTipTapEditor] JSON解析失败，返回原始内容:', error)
+    tiptapDebugLog('[QyTipTapEditor] JSON解析失败，返回原始内容:', error)
     return props.modelValue
   }
 }
@@ -381,8 +395,6 @@ const editor = useEditor({
   content: parseInitialContent(),
   extensions: [
     StarterKit,
-    Underline,
-    Link,
     Image,
     CharacterCount,
     Placeholder.configure({ placeholder: props.placeholder }),
@@ -432,19 +444,19 @@ const editor = useEditor({
     },
   },
   onCreate({ editor: currentEditor }: { editor: CoreEditor }) {
-    console.log('[QyTipTapEditor] ========== 编辑器创建成功 ==========')
-    console.log('[QyTipTapEditor] 编辑器实例:', currentEditor)
-    console.log('[QyTipTapEditor] 编辑器是否可编辑:', currentEditor.isEditable)
+    tiptapDebugLog('[QyTipTapEditor] ========== 编辑器创建成功 ==========')
+    tiptapDebugLog('[QyTipTapEditor] 编辑器实例:', currentEditor)
+    tiptapDebugLog('[QyTipTapEditor] 编辑器是否可编辑:', currentEditor.isEditable)
 
     // 检查编辑器的初始内容
     const initialContent = currentEditor.getJSON()
-    console.log('[QyTipTapEditor] 初始内容:', initialContent)
+    tiptapDebugLog('[QyTipTapEditor] 初始内容:', initialContent)
 
     // 检查DOM是否正确渲染
     setTimeout(() => {
       const editorElement = document.querySelector('.ProseMirror')
-      console.log('[QyTipTapEditor] ProseMirror DOM元素:', editorElement)
-      console.log('[QyTipTapEditor] ProseMirror HTML:', editorElement?.innerHTML?.substring(0, 500))
+      tiptapDebugLog('[QyTipTapEditor] ProseMirror DOM元素:', editorElement)
+      tiptapDebugLog('[QyTipTapEditor] ProseMirror HTML:', editorElement?.innerHTML?.substring(0, 500))
     }, 100)
 
     emit('ready', currentEditor)
@@ -527,58 +539,58 @@ watch(
 watch(
   () => props.modelValue,
   (value) => {
-    console.log('[QyTipTapEditor] ========== modelValue changed ==========')
-    console.log('[QyTipTapEditor] 新value长度:', value?.length || 0)
-    console.log('[QyTipTapEditor] 新value预览:', value?.substring(0, 200) + '...')
+    tiptapDebugLog('[QyTipTapEditor] ========== modelValue changed ==========')
+    tiptapDebugLog('[QyTipTapEditor] 新value长度:', value?.length || 0)
+    tiptapDebugLog('[QyTipTapEditor] 新value预览:', value?.substring(0, 200) + '...')
 
     if (!editor.value) {
-      console.log('[QyTipTapEditor] editor not ready yet')
+      tiptapDebugLog('[QyTipTapEditor] editor not ready yet')
       return
     }
 
     const next = value || ''
     if (!next) {
-      console.log('[QyTipTapEditor] value is empty, skipping')
+      tiptapDebugLog('[QyTipTapEditor] value is empty, skipping')
       return
     }
 
     try {
       // 尝试解析为 JSON
       const nextJson = JSON.parse(next)
-      console.log('[QyTipTapEditor] JSON解析成功，类型:', typeof nextJson)
-      console.log('[QyTipTapEditor] nextJson:', nextJson)
+      tiptapDebugLog('[QyTipTapEditor] JSON解析成功，类型:', typeof nextJson)
+      tiptapDebugLog('[QyTipTapEditor] nextJson:', nextJson)
 
       const currentJson = editor.value.getJSON()
-      console.log('[QyTipTapEditor] 当前编辑器内容:', currentJson)
+      tiptapDebugLog('[QyTipTapEditor] 当前编辑器内容:', currentJson)
 
       // 比较内容是否相同
       if (JSON.stringify(nextJson) !== JSON.stringify(currentJson)) {
-        console.log('[QyTipTapEditor] 内容不同，更新编辑器')
+        tiptapDebugLog('[QyTipTapEditor] 内容不同，更新编辑器')
         editor.value.commands.setContent(nextJson, { emitUpdate: false })
-        console.log('[QyTipTapEditor] 编辑器更新完成')
+        tiptapDebugLog('[QyTipTapEditor] 编辑器更新完成')
 
         // 检查更新后的DOM
         setTimeout(() => {
           const proseMirror = document.querySelector('.ProseMirror')
-          console.log(
+          tiptapDebugLog(
             '[QyTipTapEditor] 更新后的ProseMirror HTML:',
             proseMirror?.innerHTML?.substring(0, 500),
           )
         }, 100)
       } else {
-        console.log('[QyTipTapEditor] 内容相同，跳过更新')
+        tiptapDebugLog('[QyTipTapEditor] 内容相同，跳过更新')
       }
     } catch (error) {
-      console.log('[QyTipTapEditor] JSON解析失败:', error)
-      console.log('[QyTipTapEditor] 尝试作为纯文本处理')
+      tiptapDebugLog('[QyTipTapEditor] JSON解析失败:', error)
+      tiptapDebugLog('[QyTipTapEditor] 尝试作为纯文本处理')
       // 不是 JSON，可能是纯文本，直接设置
       const currentText = editor.value.getText()
       if (next !== currentText) {
-        console.log('[QyTipTapEditor] 纯文本模式，更新编辑器')
+        tiptapDebugLog('[QyTipTapEditor] 纯文本模式，更新编辑器')
         editor.value.commands.setContent(next, { emitUpdate: false })
       }
     }
-    console.log('[QyTipTapEditor] ===================')
+    tiptapDebugLog('[QyTipTapEditor] ===================')
   },
 )
 
@@ -810,7 +822,6 @@ function cleanParagraphLeadingSpaces(doc: unknown): unknown {
 
 async function scanAndNotifyEntities(doc: unknown) {
   try {
-    const { extractEntitiesFromTipTapContent } = await import('@/modules/writer/utils/entityParser')
     const refs = extractEntitiesFromTipTapContent(doc)
     emit('entity-scan', refs)
   } catch {
@@ -853,7 +864,6 @@ async function handleEntityCreate(entity: {
   try {
     switch (entity.type) {
       case 'character': {
-        const { characterApi } = await import('@/modules/writer/api/character')
         const resp = await characterApi.create(props.projectId, {
           projectId: props.projectId,
           name: entity.name,
@@ -865,7 +875,6 @@ async function handleEntityCreate(entity: {
         break
       }
       case 'location': {
-        const { locationApi } = await import('@/modules/writer/api/location')
         const resp = await locationApi.create(props.projectId, {
           projectId: props.projectId,
           name: entity.name,
@@ -875,7 +884,6 @@ async function handleEntityCreate(entity: {
         break
       }
       case 'concept': {
-        const { conceptApi } = await import('@/modules/writer/api/concept')
         const resp = await conceptApi.create(props.projectId, {
           projectId: props.projectId,
           name: entity.name,

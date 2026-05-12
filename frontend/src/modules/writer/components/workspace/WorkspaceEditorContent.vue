@@ -11,6 +11,21 @@
   </div>
 
   <div v-else class="workspace-writing-surface" data-testid="workspace-writing-surface">
+    <div class="workspace-writing-surface__header">
+      <input
+        ref="titleInputRef"
+        id="writer-chapter-title"
+        name="writer-chapter-title"
+        v-model="titleDraft"
+        type="text"
+        class="workspace-writing-surface__title-input"
+        :placeholder="chapterTitle || '未命名章节'"
+        @focus="isEditingTitle = true"
+        @blur="handleTitleBlur"
+        @keydown.enter.prevent="handleTitleEnter"
+        @keydown.esc.prevent="handleTitleEscape"
+      />
+    </div>
     <div class="workspace-writing-surface__editor">
       <TipTapEditorView
         v-model="modelContent"
@@ -44,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import TipTapEditorView from '@/modules/writer/components/editor-new/TipTapEditorView.vue'
 import WorkspaceToolOverlay from '@/modules/writer/components/workspace/WorkspaceToolOverlay.vue'
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
@@ -58,19 +73,11 @@ import type {
   StoryHarnessRelationSummary,
 } from '@/modules/writer/stores/v3/storyHarnessStore'
 import type { WriterWorkflowActionRequest } from '@/modules/writer/types/workflow'
-import type {
-  EncyclopediaSubView,
-  EncyclopediaCategory,
-  SidebarChapterSummary,
-} from '@/modules/writer/composables/types'
+import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 import type { ActiveEntitySummary } from '@/modules/writer/composables/useWorkflowContext'
 import type { WriterWorkflowContext } from '@/modules/writer/types/workflow'
 
 const props = defineProps<{
-  activeTool: string
-  isEncyclopedia: boolean
-  subView: EncyclopediaSubView
-  category: EncyclopediaCategory
   projectId: string
   chapterId: string
   chapterTitle: string
@@ -100,21 +107,68 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:content', value: string): void
-  (e: 'update:category', value: EncyclopediaCategory): void
   (e: 'save', contents: unknown[]): void
   (e: 'add-doc'): void
+  (e: 'rename-title', value: string): void
   (e: 'trigger-ai-action', payload: WriterWorkflowActionRequest): void
   (e: 'jump-to-chapter', chapterId: string): void
   (e: 'open-graph', chapterId: string): void
   (e: 'status-change', chips: string[]): void
-  (e: 'open-fullscreen-tool', tool: string): void
-  (e: 'close-fullscreen'): void
 }>()
 
 const modelContent = computed({
   get: () => props.content,
   set: (value: string) => emit('update:content', value),
 })
+
+const titleInputRef = ref<HTMLInputElement | null>(null)
+const titleDraft = ref(props.chapterTitle || '')
+const isEditingTitle = ref(false)
+
+watch(
+  () => props.chapterTitle,
+  (value) => {
+    if (!isEditingTitle.value) {
+      titleDraft.value = value || ''
+    }
+  },
+  { immediate: true },
+)
+
+const commitTitleDraft = () => {
+  const nextTitle = titleDraft.value.trim()
+  const currentTitle = (props.chapterTitle || '').trim()
+  isEditingTitle.value = false
+
+  if (!nextTitle) {
+    titleDraft.value = props.chapterTitle || ''
+    return
+  }
+
+  if (nextTitle === currentTitle) {
+    titleDraft.value = props.chapterTitle || ''
+    return
+  }
+
+  emit('rename-title', nextTitle)
+}
+
+const handleTitleBlur = () => {
+  commitTitleDraft()
+}
+
+const handleTitleEnter = async () => {
+  commitTitleDraft()
+  await nextTick()
+  titleInputRef.value?.blur()
+}
+
+const handleTitleEscape = async () => {
+  titleDraft.value = props.chapterTitle || ''
+  isEditingTitle.value = false
+  await nextTick()
+  titleInputRef.value?.blur()
+}
 
 const overlayChapterId = computed(() => props.toolOverlayChapterId ?? props.chapterId)
 const overlayChapterTitle = computed(() => props.toolOverlayChapterTitle ?? props.chapterTitle)
@@ -145,6 +199,11 @@ defineExpose({
   },
   openToolOverlay: () => {
     toolOverlay.open()
+  },
+  focusTitleInput: async () => {
+    await nextTick()
+    titleInputRef.value?.focus()
+    titleInputRef.value?.select()
   },
 })
 </script>
@@ -186,10 +245,37 @@ defineExpose({
 .workspace-writing-surface {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   height: 100%;
   min-height: 0;
   overflow: hidden;
   background: #fff;
+}
+
+.workspace-writing-surface__header {
+  display: flex;
+  align-items: center;
+  padding: 18px 32px 10px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+  background:
+    linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(255, 255, 255, 0.96));
+}
+
+.workspace-writing-surface__title-input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #0f172a;
+  font-size: 28px;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  padding: 4px 0;
+}
+
+.workspace-writing-surface__title-input::placeholder {
+  color: #94a3b8;
 }
 
 .workspace-writing-surface__editor {

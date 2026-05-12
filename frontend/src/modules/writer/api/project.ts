@@ -1,5 +1,10 @@
 import httpService from '@/core/services/http.service'
-import { isWailsWriterAvailable, wailsWriterBridge } from '../data-bridge/wails'
+import { standaloneLocalBridge } from '../data-bridge/standalone-local'
+import {
+  isStandaloneLocalWriterAvailable,
+  isWailsWriterAvailable,
+  wailsWriterBridge,
+} from '../data-bridge/wails'
 
 // ==========================================
 // 类型定义 (对应 Go 后端 Models)
@@ -69,6 +74,7 @@ export interface ProjectSummary {
   category?: string
   tags?: string[]
   status: string
+  visibility?: string
   totalWords?: number
   wordCount?: number
   chapterCount?: number
@@ -160,6 +166,9 @@ export const projectApi = {
     if (isWailsWriterAvailable()) {
       return wailsWriterBridge.project.create(mappedData)
     }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.project.create(mappedData)
+    }
     return httpService.post<ProjectDetailResponse>(BASE_URL, mappedData)
   },
 
@@ -176,6 +185,9 @@ export const projectApi = {
   list(params?: ProjectListParams) {
     if (isWailsWriterAvailable()) {
       return wailsWriterBridge.project.list(params)
+    }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.project.list()
     }
     const query = params
       ? {
@@ -202,6 +214,9 @@ export const projectApi = {
     if (isWailsWriterAvailable()) {
       return wailsWriterBridge.project.get(id)
     }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.project.get(id)
+    }
     return httpService.get<ProjectDetailResponse>(`${BASE_URL}/${id}`)
   },
 
@@ -220,6 +235,9 @@ export const projectApi = {
     if (isWailsWriterAvailable()) {
       return wailsWriterBridge.project.update(id, data as Record<string, unknown>)
     }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.project.update(id, data)
+    }
     return httpService.put<void>(`${BASE_URL}/${id}`, data)
   },
 
@@ -237,6 +255,9 @@ export const projectApi = {
     if (isWailsWriterAvailable()) {
       return wailsWriterBridge.project.delete(id)
     }
+    if (isStandaloneLocalWriterAvailable()) {
+      return standaloneLocalBridge.project.delete(id)
+    }
     return httpService.delete<void>(`${BASE_URL}/${id}`)
   },
 
@@ -251,6 +272,9 @@ export const projectApi = {
    * @security BearerAuth
    */
   refreshStatistics(id: string) {
+    if (isWailsWriterAvailable() || isStandaloneLocalWriterAvailable()) {
+      return Promise.resolve()
+    }
     return httpService.put<void>(`${BASE_URL}/${id}/statistics`, null, {
       silent: true,
     } as any)

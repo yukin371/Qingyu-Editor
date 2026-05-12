@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import type { Project, Document, DocumentTreeNode } from '..'
 import {
   getProjects,
   getProjectById,
@@ -22,7 +21,23 @@ import {
   type ParagraphContent,
   type ProjectCreateData,
   type ProjectUpdateData,
-} from '..'
+} from '../api/wrapper'
+import {
+  characterApi,
+  listCharacters,
+  listCharacterRelations,
+} from '../api/character'
+import {
+  listLocations,
+  getLocationTree,
+} from '../api/location'
+import {
+  listTimelines,
+  listTimelineEvents,
+} from '../api/timeline'
+import type { Project } from '../types/project'
+import type { Document } from '../types/document'
+import type { Node as DocumentTreeNode } from '../types/node'
 import type {
   Character,
   CharacterRelation,
@@ -1263,8 +1278,7 @@ export const useWriterStore = defineStore('writer', {
 
       this.characters.loading = true
       try {
-        const writerModule = (await import('..')) as any
-        const list = (await (writerModule.listCharacters?.(pid) ?? [])) || []
+        const list = ((await listCharacters(pid)) as unknown as Character[]) || []
         // API 无数据时降级为 Mock
         this.characters.list = list.length > 0 ? list : MOCK_CHARACTER_GRAPH.characters
       } catch (error: any) {
@@ -1288,8 +1302,7 @@ export const useWriterStore = defineStore('writer', {
       }
 
       try {
-        const writerModule = (await import('..')) as any
-        const relations = (await (writerModule.listCharacterRelations?.(pid) ?? [])) || []
+        const relations = ((await listCharacterRelations(pid)) as unknown as CharacterRelation[]) || []
         this.characters.relations =
           relations.length > 0 ? (relations as any) : (MOCK_CHARACTER_GRAPH.relations as any)
       } catch (error: any) {
@@ -1313,7 +1326,6 @@ export const useWriterStore = defineStore('writer', {
       data: { fromId: string; toId: string; type: string; strength: number; notes?: string },
     ): Promise<CharacterRelation | null> {
       try {
-        const { characterApi } = await import('../api/character')
         const relation = (await characterApi.createRelation(projectId, {
           fromId: data.fromId,
           toId: data.toId,
@@ -1338,7 +1350,6 @@ export const useWriterStore = defineStore('writer', {
      */
     async deleteCharacterRelation(relationId: string, projectId: string): Promise<void> {
       try {
-        const { characterApi } = await import('../api/character')
         await characterApi.deleteRelation(relationId, projectId)
         this.characters.relations = this.characters.relations.filter((r) => r.id !== relationId)
       } catch (error: any) {
@@ -1364,8 +1375,7 @@ export const useWriterStore = defineStore('writer', {
 
       this.locations.loading = true
       try {
-        const writerModule = (await import('..')) as any
-        const list = (await (writerModule.listLocations?.(pid) ?? [])) || []
+        const list = ((await listLocations(pid)) as unknown as Location[]) || []
         this.locations.list = list.length > 0 ? list : (MOCK_ENTITIES.locations as any)
       } catch (error: any) {
         console.error('加载地点列表失败:', error)
@@ -1384,8 +1394,7 @@ export const useWriterStore = defineStore('writer', {
       if (!pid) return
 
       try {
-        const writerModule = (await import('..')) as any
-        this.locations.tree = (await (writerModule.getLocationTree?.(pid) ?? [])) || []
+        this.locations.tree = ((await getLocationTree(pid)) as unknown as LocationTreeNode[]) || []
       } catch (error: any) {
         console.error('加载地点树失败:', error)
       }
@@ -1419,8 +1428,7 @@ export const useWriterStore = defineStore('writer', {
 
       this.timeline.loading = true
       try {
-        const writerModule = (await import('..')) as any
-        const list = (await (writerModule.listTimelines?.(pid) ?? [])) || []
+        const list = ((await listTimelines(pid)) as unknown as Timeline[]) || []
         this.timeline.list = list.length > 0 ? list : []
         if (this.timeline.list.length > 0 && !this.timeline.currentTimeline) {
           this.timeline.currentTimeline = this.timeline.list[0]
@@ -1451,8 +1459,7 @@ export const useWriterStore = defineStore('writer', {
       }
 
       try {
-        const writerModule = (await import('..')) as any
-        this.timeline.events = (await (writerModule.listTimelineEvents?.(tid) ?? [])) || []
+        this.timeline.events = ((await listTimelineEvents(tid)) as unknown as TimelineEvent[]) || []
       } catch (error: any) {
         console.error('加载时间线事件失败:', error)
       }

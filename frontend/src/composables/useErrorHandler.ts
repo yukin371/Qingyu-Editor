@@ -1,7 +1,7 @@
 // src/composables/useErrorHandler.ts
 
 import { ref, onUnmounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { message } from '@/design-system/services'
 import type { ErrorResponse } from '@/types/error.types'
 
 /**
@@ -30,7 +30,7 @@ export function useErrorHandler() {
     state.value.error = error
     state.value.visible = true
 
-    ElMessage.error(error.message)
+    message.error(error.message)
 
     // 清除之前的定时器，避免竞态条件
     if (hideTimer) {
@@ -110,7 +110,7 @@ export function useErrorHandler() {
     return (error: unknown) => {
       const handled = handleApiError(error)
       if (!handled) {
-        ElMessage.error(fallbackMessage)
+        message.error(fallbackMessage)
       }
     }
   }

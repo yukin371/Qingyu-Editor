@@ -4,12 +4,22 @@
  * 对接后端 /api/v1/writer/projects/:id/entities 系列接口
  */
 import { request } from '@/utils/request-adapter'
-import { isWailsWriterAvailable } from '../data-bridge/wails'
+import { standaloneLocalBridge } from '../data-bridge/standalone-local'
+import {
+  isStandaloneLocalWriterAvailable,
+  isWailsWriterAvailable,
+} from '../data-bridge/wails'
 
 /**
  * 实体类型
  */
-export type EntityType = 'character' | 'item' | 'location' | 'organization' | 'foreshadowing'
+export type EntityType =
+  | 'character'
+  | 'item'
+  | 'location'
+  | 'concept'
+  | 'organization'
+  | 'foreshadowing'
 
 /**
  * 状态值
@@ -29,6 +39,7 @@ export interface EntitySummary {
   id: string
   name: string
   entityType: EntityType
+  alias?: string[]
   summary?: string
   stateFields?: Record<string, StateValue>
 }
@@ -54,13 +65,12 @@ export interface EntityGraph {
   edges: RelationEdge[]
 }
 
-const EMPTY_ENTITY_GRAPH: EntityGraph = {
-  nodes: [],
-  edges: [],
-}
-
-function throwDesktopEntityWriteUnsupported(): never {
-  throw new Error('桌面端暂未接入统一实体写入，本地 owner 待实现')
+export interface CreateLocalEntityRequest {
+  projectId: string
+  type: Extract<EntityType, 'item' | 'organization'>
+  name: string
+  alias?: string[]
+  summary?: string
 }
 
 /**
@@ -72,8 +82,8 @@ export async function listEntities(
   projectId: string,
   entityType?: EntityType,
 ): Promise<EntitySummary[]> {
-  if (isWailsWriterAvailable()) {
-    return []
+  if (isWailsWriterAvailable() || isStandaloneLocalWriterAvailable()) {
+    return standaloneLocalBridge.entity.list(projectId, entityType)
   }
 
   const params: Record<string, string> = {}
@@ -95,8 +105,8 @@ export async function listEntities(
  * @param projectId 项目ID
  */
 export async function getEntityGraph(projectId: string): Promise<EntityGraph> {
-  if (isWailsWriterAvailable()) {
-    return EMPTY_ENTITY_GRAPH
+  if (isWailsWriterAvailable() || isStandaloneLocalWriterAvailable()) {
+    return standaloneLocalBridge.entity.getGraph(projectId)
   }
 
   const response = await request<EntityGraph>({
@@ -116,8 +126,8 @@ export async function updateEntityStateFields(
   entityId: string,
   stateFields: Record<string, StateValue>,
 ): Promise<void> {
-  if (isWailsWriterAvailable()) {
-    throwDesktopEntityWriteUnsupported()
+  if (isWailsWriterAvailable() || isStandaloneLocalWriterAvailable()) {
+    return standaloneLocalBridge.entity.updateStateFields(entityId, stateFields)
   }
 
   await request({
@@ -125,4 +135,20 @@ export async function updateEntityStateFields(
     method: 'put',
     data: stateFields,
   })
+}
+
+export async function createLocalEntity(payload: CreateLocalEntityRequest): Promise<EntitySummary> {
+  if (isWailsWriterAvailable() || isStandaloneLocalWriterAvailable()) {
+    return standaloneLocalBridge.entity.create(payload)
+  }
+
+  throw new Error('当前宿主未启用本地统一实体创建，请改走后端 canonical owner')
+}
+
+export async function deleteLocalEntity(entityId: string, projectId: string): Promise<void> {
+  if (isWailsWriterAvailable() || isStandaloneLocalWriterAvailable()) {
+    return standaloneLocalBridge.entity.delete(entityId, projectId)
+  }
+
+  throw new Error('当前宿主未启用本地统一实体删除，请改走后端 canonical owner')
 }

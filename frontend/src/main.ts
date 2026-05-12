@@ -21,6 +21,7 @@ import '@/styles/common.scss'
 // 全局指令
 import { vLazy } from '@/directives/lazy'
 import { vSafeHtml } from '@/directives/safeHtml'
+import { isRemoteWriterMode } from '@/modules/writer/data-bridge/wails'
 
 // 全局错误处理
 import { createVueErrorHandler, createPromiseRejectionHandler } from './utils/errorHandler'
@@ -57,9 +58,11 @@ if (isDev) {
     })
   })
 
-  void import('./utils/api-health').then(({ initApiHealthCheck }) => {
-    initApiHealthCheck()
-  })
+  if (isRemoteWriterMode()) {
+    void import('./utils/api-health').then(({ initApiHealthCheck }) => {
+      initApiHealthCheck()
+    })
+  }
 }
 
 // 先注册 Pinia，确保 store 可用

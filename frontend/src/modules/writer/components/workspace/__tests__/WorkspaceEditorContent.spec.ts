@@ -17,10 +17,6 @@ describe('WorkspaceEditorContent', () => {
   it('在写作模式下应渲染写作面', () => {
     const wrapper = mount(WorkspaceEditorContent, {
       props: {
-        activeTool: 'writing',
-        isEncyclopedia: false,
-        subView: 'home',
-        category: 'all',
         projectId: 'project-1',
         chapterId: 'chapter-1',
         chapterTitle: '第一章',
@@ -70,10 +66,6 @@ describe('WorkspaceEditorContent', () => {
   it('旧百科路由态下仍应保留写作面，不再让工具页接管主编辑区', () => {
     const wrapper = mount(WorkspaceEditorContent, {
       props: {
-        activeTool: 'encyclopedia',
-        isEncyclopedia: true,
-        subView: 'relations',
-        category: 'all',
         projectId: 'project-1',
         chapterId: 'chapter-1',
         chapterTitle: '第一章',
@@ -103,10 +95,6 @@ describe('WorkspaceEditorContent', () => {
 
     const wrapper = mount(WorkspaceEditorContent, {
       props: {
-        activeTool: 'encyclopedia',
-        isEncyclopedia: true,
-        subView: 'relations',
-        category: 'all',
         projectId: 'project-1',
         chapterId: 'chapter-1',
         chapterTitle: '第一章',
@@ -134,10 +122,6 @@ describe('WorkspaceEditorContent', () => {
   it('未选择章节时应显示空状态', () => {
     const wrapper = mount(WorkspaceEditorContent, {
       props: {
-        activeTool: 'writing',
-        isEncyclopedia: false,
-        subView: 'home',
-        category: 'all',
         projectId: 'project-1',
         chapterId: '',
         chapterTitle: '',
@@ -174,10 +158,6 @@ describe('WorkspaceEditorContent', () => {
 
     const wrapper = mount(WorkspaceEditorContent, {
       props: {
-        activeTool: 'writing',
-        isEncyclopedia: false,
-        subView: 'home',
-        category: 'all',
         projectId: 'project-1',
         chapterId: 'chapter-1',
         chapterTitle: '第一章',
@@ -228,10 +208,6 @@ describe('WorkspaceEditorContent', () => {
 
     const wrapper = mount(WorkspaceEditorContent, {
       props: {
-        activeTool: 'writing',
-        isEncyclopedia: false,
-        subView: 'home',
-        category: 'all',
         projectId: 'project-1',
         chapterId: 'chapter-1',
         chapterTitle: '第一章',
@@ -264,10 +240,6 @@ describe('WorkspaceEditorContent', () => {
 
     const wrapper = mount(WorkspaceEditorContent, {
       props: {
-        activeTool: 'encyclopedia',
-        isEncyclopedia: true,
-        subView: 'structure',
-        category: 'all',
         projectId: 'project-1',
         chapterId: 'chapter-1',
         chapterTitle: '第一章',

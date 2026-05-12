@@ -1,6 +1,7 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import type { Shortcut, ShortcutCategory } from '../types/editor'
 import { editorApi } from '../api/editor'
+import { isStandaloneWriterRuntime } from '../data-bridge/wails'
 import {
   WORKSPACE_SHORTCUT_DEFAULTS,
   WORKSPACE_SYSTEM_SHORTCUT_IDS,
@@ -131,6 +132,35 @@ function buildDefaultRecord(): Record<string, Shortcut> {
   return record
 }
 
+function normalizeShortcutRecord(
+  source: Record<string, Shortcut> | null | undefined,
+): Record<string, Shortcut> {
+  const defaults = buildDefaultRecord()
+  if (!source || Object.keys(source).length === 0) {
+    return defaults
+  }
+
+  const normalized: Record<string, Shortcut> = { ...defaults }
+
+  for (const [id, shortcut] of Object.entries(source)) {
+    const fallback = defaults[id]
+    normalized[id] = {
+      ...(fallback ?? {
+        id,
+        keys: [],
+        description: '',
+        category: '',
+      }),
+      ...shortcut,
+      keys: Array.isArray(shortcut.keys) ? [...shortcut.keys] : [...(fallback?.keys ?? [])],
+      description: shortcut.description ?? fallback?.description ?? '',
+      category: shortcut.category ?? fallback?.category ?? '',
+    }
+  }
+
+  return normalized
+}
+
 /**
  * 从 localStorage 读取缓存
  */
@@ -171,6 +201,7 @@ export function useShortcutConfig() {
   const shortcuts = ref<Record<string, Shortcut>>({})
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const isDesktopMode = isStandaloneWriterRuntime()
 
   // 已注册的键盘事件处理器
   const handlers = new Map<string, (e: KeyboardEvent) => void>()
@@ -185,16 +216,15 @@ export function useShortcutConfig() {
 
     try {
       // 1. 先尝试 localStorage 缓存
-      const cached = loadFromCache()
-      if (cached && Object.keys(cached).length > 0) {
-        // Sanitize: ensure all shortcuts have valid keys array
-        for (const [id, s] of Object.entries(cached)) {
-          if (!Array.isArray(s.keys)) {
-            const defaultShortcut = DEFAULT_SHORTCUTS.find((d) => d.id === id)
-            s.keys = defaultShortcut?.keys ?? []
-          }
-        }
+      const rawCached = loadFromCache()
+      const cached = rawCached ? normalizeShortcutRecord(rawCached) : null
+      if (cached) {
         shortcuts.value = cached
+      }
+
+      if (isDesktopMode) {
+        shortcuts.value = cached ?? buildDefaultRecord()
+        return
       }
 
       // 2. 从后端获取最新配置
@@ -202,14 +232,7 @@ export function useShortcutConfig() {
         const res = await editorApi.getShortcuts()
         const data = (res as any)?.data ?? res
         if (data && data.shortcuts && Object.keys(data.shortcuts).length > 0) {
-          // Sanitize: ensure all shortcuts from API have valid keys array
-          const apiShortcuts = data.shortcuts as Record<string, Shortcut>
-          for (const [id, s] of Object.entries(apiShortcuts)) {
-            if (!Array.isArray(s.keys)) {
-              const defaultShortcut = DEFAULT_SHORTCUTS.find((d) => d.id === id)
-              s.keys = defaultShortcut?.keys ?? []
-            }
-          }
+          const apiShortcuts = normalizeShortcutRecord(data.shortcuts as Record<string, Shortcut>)
           shortcuts.value = apiShortcuts
           saveToCache(apiShortcuts)
         } else if (!cached) {
@@ -291,6 +314,10 @@ export function useShortcutConfig() {
     // 更新缓存
     saveToCache(shortcuts.value)
 
+    if (isDesktopMode) {
+      return true
+    }
+
     // 异步同步到后端（不阻塞）
     editorApi.updateShortcuts({ shortcuts: shortcuts.value }).catch((err: unknown) => {
       console.warn('[useShortcutConfig] 同步快捷键到后端失败:', err)
@@ -304,8 +331,11 @@ export function useShortcutConfig() {
    */
   async function resetToDefaults(): Promise<void> {
     try {
-      await editorApi.resetShortcuts()
-      shortcuts.value = buildDefaultRecord()
+      const defaults = buildDefaultRecord()
+      if (!isDesktopMode) {
+        await editorApi.resetShortcuts()
+      }
+      shortcuts.value = defaults
       saveToCache(shortcuts.value)
       error.value = null
     } catch (err) {

@@ -68,7 +68,7 @@ npm install
 npm run dev
 
 # 3. 访问应用
-# 前端: http://localhost:5173
+# 前端: http://localhost:43127
 # 后端: http://localhost:8080 (需单独启动)
 ```
 

@@ -1,7 +1,7 @@
 # Qingyu-Editor 架构重整设计
 
 **日期**: 2026-05-09
-**状态**: 实施中
+**状态**: writer 核心收尾完成，持续演进
 **范围**: Qingyu-Editor 全栈（Go 后端 + Vue 前端）
 **目标**: 从"前端搬运 + 后端空壳"重整为"仅保留 writer 的独立桌面应用"
 
@@ -22,6 +22,25 @@
 - **目标不是回放在线产品，而是维护一个简洁、可扩展的桌面编辑器**。
 
 因此，后续实施优先级应从“补齐所有平台映射”调整为“先切断在线平台依赖，再收口 writer 内核”。
+
+### 0.2 核心收尾落地（2026-05-12）
+
+本轮 writer 架构收尾已把几个仍会默认回流远端 HTTP 的核心缺口收住：
+
+- **运行时改为显式 remote opt-in**：`frontend/src/modules/writer/data-bridge/wails.ts` 新增 `isRemoteWriterMode()`；浏览器独立宿主默认视为本地 writer runtime，只有显式 `?remote=true` 才恢复远端联调语义。
+- **启动链不再默认探测原后端**：`frontend/src/main.ts`、`frontend/src/utils/api-health.ts`、`frontend/src/utils/syncService.ts` 现在只在 `?remote=true` 时探测 `/api/v1/system/health` 或 `/health`；本地 bridge / standalone-local 宿主直接视为在线。
+- **writer facade 默认 owner 收口到本地链路**：`api/document.ts` 已为本地/Wails 宿主补齐文档复制与重排；`api/wrapper.ts` 已把关键词检索收口为本地聚合匹配；`api/editor.ts` 已把字数统计收口为本地计算；`api/project.ts` 的统计刷新在本地宿主退化为本地一致性 no-op，不再默认打远端。
+- **右侧设定区移除假动作**：`ToolRightPanel.vue` 已删除仅弹 `TODO` 的设定新建/编辑/删除按钮。当前右栏设定区明确是“只读速查 + 展开全屏 handoff”，直到 canonical owner 明确前不再伪装成本地 CRUD。
+
+这意味着 writer 默认主链现在明确收敛为：
+
+```text
+writer workspace
+  -> facade
+    -> Wails bridge
+    -> standalone-local
+    -> 显式 ?remote=true 兼容路径
+```
 
 ### 1.1 问题总览
 
@@ -477,7 +496,7 @@ Data Bridge 是前端与 Wails 后端之间的适配层：
 
 1. **保住已跑通的本地主链**：`project / document / editor` 继续以 Wails-first 为准，不再重做一层泛化“可切换多后端”抽象
 2. **只迁当前运行态需要的 API**：优先 `outline / entities / character / concept / location / timeline`，因为它们仍被 `ProjectWorkspace`、overlay 与右栏资产速查直接使用
-3. **把 HTTP writer API 视为兼容债务，而不是长期架构**：`story-harness / export / template / batch-operation / generated writer wrapper` 若不服务当前桌面主链，应继续裁撤；若服务主链，则迁到本地 owner
+3. **把 HTTP writer API 视为兼容债务，而不是长期架构**：`story-harness / export / template / batch-operation / generated writer wrapper` 若不服务当前桌面主链，应继续裁撤；若服务主链，则迁到本地 owner。`search keywords / duplicate / word-count / health check` 这类默认工作区能力已完成本轮收口，不再允许回流成默认远端路径
 4. **mock 只做显式兼容层**：`?test=true` 与 `mock-data-manager` 继续保留，但不允许再次成为默认数据源
 
 ### 4.2 目录结构
@@ -603,9 +622,9 @@ export function useChapterManager() {
 
 | 文件 | 改造方式 |
 |------|---------|
-| `api/project.ts` | → 已接 Wails 优先桥，后续移除剩余 HTTP fallback |
-| `api/editor.ts` | → 已接 Wails 优先桥，后续收口快捷键/字数统计等 HTTP 分支 |
-| `api/document.ts` | → 已接 Wails 优先桥，后续移除剩余 HTTP fallback |
+| `api/project.ts` | → 已接 Wails/standalone-local 优先桥；默认本地宿主不再请求远端 statistics refresh |
+| `api/editor.ts` | → 已接 Wails/standalone-local 优先桥；字数统计已收口为本地计算 |
+| `api/document.ts` | → 已接 Wails/standalone-local 优先桥；复制与重排已补本地 owner |
 | `api/outline.ts` | → 重写为 data-bridge 调用 |
 | `api/entities.ts` | → 重写为 data-bridge 调用 |
 | `api/character.ts` | → 重写为 data-bridge 调用 |

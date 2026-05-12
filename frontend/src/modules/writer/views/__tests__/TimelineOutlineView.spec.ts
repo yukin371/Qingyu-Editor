@@ -33,8 +33,8 @@ vi.mock('@/modules/writer/stores/writerStore', () => ({
 
 import TimelineOutlineView from '../TimelineOutlineView.vue'
 
-const ElButtonStub = defineComponent({
-  name: 'ElButtonStub',
+const QyButtonStub = defineComponent({
+  name: 'QyButtonStub',
   emits: ['click'],
   setup(_, { emit, slots, attrs }) {
     return () =>
@@ -49,8 +49,8 @@ const ElButtonStub = defineComponent({
   },
 })
 
-const ElTagStub = defineComponent({
-  name: 'ElTagStub',
+const QyTagStub = defineComponent({
+  name: 'QyTagStub',
   setup(_, { slots }) {
     return () => h('span', slots.default?.())
   },
@@ -87,8 +87,8 @@ describe('TimelineOutlineView', () => {
       },
       global: {
         stubs: {
-          ElButton: ElButtonStub,
-          ElTag: ElTagStub,
+          QyButton: QyButtonStub,
+          QyTag: QyTagStub,
           QyIcon: { template: '<span />' },
           Empty: { template: '<div />' },
           SystemStatCard: { template: '<div />' },

@@ -41,6 +41,8 @@
     <div class="input-wrapper">
       <textarea
         ref="inputRef"
+        id="writer-ai-input"
+        name="writer-ai-input"
         :value="modelValue"
         class="message-input"
         :placeholder="placeholder"

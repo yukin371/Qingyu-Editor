@@ -716,6 +716,7 @@ async function executeDragOperation(
     if (dragMode === 'copy') {
       await duplicateDocument(dragData.id, {
         targetParentId: type === 'inner' ? dropData.id : dropData.parentId,
+        targetDocumentId: dropData.id,
         position: type,
         copyContent: true,
       })
@@ -724,6 +725,12 @@ async function executeDragOperation(
     } else {
       await moveDocument(dragData.id, {
         parentId: type === 'inner' ? dropData.id : dropData.parentId,
+        order:
+          type === 'inner'
+            ? undefined
+            : type === 'before'
+              ? Number(dropData.order ?? 0)
+              : Number(dropData.order ?? 0) + 1,
       })
 
       message.success(`已移动 "${dragData.title}" 到 "${dropData.title}"`, { duration: 2000 })

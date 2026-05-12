@@ -120,33 +120,31 @@
       </div>
     </div>
 
-    <el-dialog
-      v-model="showShortcutSettings"
+    <QyDialog
+      v-model:visible="showShortcutSettings"
       title="快捷键设置"
-      width="560px"
+      size="lg"
       :close-on-click-modal="true"
-      :append-to-body="true"
       class="shortcut-settings-dialog"
     >
       <ShortcutSettingsPanel />
-    </el-dialog>
+    </QyDialog>
 
-    <el-dialog
-      v-model="showWorkspaceSettings"
+    <QyDialog
+      v-model:visible="showWorkspaceSettings"
       title="工作区设置"
-      width="720px"
+      size="xl"
       :close-on-click-modal="true"
-      :append-to-body="true"
       class="workspace-settings-dialog"
     >
       <WorkspaceSettingsPanel />
-    </el-dialog>
+    </QyDialog>
   </header>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { ElDialog } from 'element-plus'
+import { QyDialog } from '@/design-system/components'
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
 import ShortcutSettingsPanel from '../settings/ShortcutSettingsPanel.vue'
 import WorkspaceSettingsPanel from '../settings/WorkspaceSettingsPanel.vue'

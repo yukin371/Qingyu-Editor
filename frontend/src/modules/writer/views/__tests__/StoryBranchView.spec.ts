@@ -96,7 +96,7 @@ describe('StoryBranchView', () => {
       },
       global: {
         stubs: {
-          ElButton: { template: '<button><slot /></button>' },
+          QyButton: { template: '<button><slot /></button>' },
           QyIcon: { template: '<span />' },
           Empty: { template: '<div />' },
           CanvasCore: CanvasCoreStub,

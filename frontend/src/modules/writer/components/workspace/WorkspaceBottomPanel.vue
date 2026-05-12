@@ -72,7 +72,10 @@ import type {
   StoryHarnessRelationSummary,
 } from '@/modules/writer/stores/v3/storyHarnessStore'
 import type { WriterWorkflowActionRequest } from '@/modules/writer/types/workflow'
-import { workspacePanelRegistryById } from '@/modules/writer/config/workspacePanels'
+import {
+  getWorkspaceAreaDefaultPanelIds,
+  getWorkspacePanelTitle,
+} from '@/modules/writer/config/workspacePanels'
 
 const props = withDefaults(
   defineProps<{
@@ -128,7 +131,7 @@ const props = withDefaults(
     scopeLabel: '',
     activeEntities: () => [],
     isImmersiveMode: false,
-    panelIds: () => ['status', 'context'],
+    panelIds: () => getWorkspaceAreaDefaultPanelIds('bottom'),
   },
 )
 
@@ -146,7 +149,7 @@ defineEmits<{
 }>()
 
 function getPanelTitle(panelId: WorkspacePanelId) {
-  return workspacePanelRegistryById[panelId]?.title || panelId
+  return getWorkspacePanelTitle(panelId)
 }
 </script>
 

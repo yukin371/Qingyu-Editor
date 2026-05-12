@@ -18,9 +18,9 @@ const createWrapper = () =>
     global: {
       plugins: [createPinia()],
       stubs: {
-        ElDialog: {
-          name: 'ElDialog',
-          template: '<div class="el-dialog-stub"><slot /></div>',
+        QyDialog: {
+          name: 'QyDialog',
+          template: '<div class="qy-dialog-stub"><slot /></div>',
         },
         QyIcon: true,
         ShortcutSettingsPanel: true,

@@ -42,16 +42,16 @@ vi.mock('@/modules/writer/composables/useShortcutConfig', () => ({
   }),
 }))
 
-const ElButtonStub = defineComponent({
-  name: 'ElButtonStub',
+const QyButtonStub = defineComponent({
+  name: 'QyButtonStub',
   inheritAttrs: false,
   setup(_, { slots, attrs }) {
     return () => h('button', attrs, slots.default?.())
   },
 })
 
-const ElInputStub = defineComponent({
-  name: 'ElInputStub',
+const QyInputStub = defineComponent({
+  name: 'QyInputStub',
   props: {
     modelValue: {
       type: String,
@@ -64,8 +64,8 @@ const ElInputStub = defineComponent({
   },
 })
 
-const ElTagStub = defineComponent({
-  name: 'ElTagStub',
+const QyTagStub = defineComponent({
+  name: 'QyTagStub',
   inheritAttrs: false,
   setup(_, { slots, attrs }) {
     return () => h('span', attrs, slots.default?.())
@@ -94,9 +94,9 @@ describe('ShortcutSettingsPanel', () => {
     mount(ShortcutSettingsPanel, {
       global: {
         stubs: {
-          ElButton: ElButtonStub,
-          ElInput: ElInputStub,
-          ElTag: ElTagStub,
+          QyButton: QyButtonStub,
+          QyInput: QyInputStub,
+          QyTag: QyTagStub,
         },
       },
     })

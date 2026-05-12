@@ -1,6 +1,6 @@
 # Qingyu-Editor Frontend
 
-> 最后更新：2026-05-10
+> 最后更新：2026-05-12
 
 ## 模块职责
 
@@ -26,12 +26,14 @@
 - `src/modules` 仍然保留，原因是 writer 与 ai 仍是独立编辑器的真实业务 owner。
 - `src/modules/*/api` 的定位是业务 facade；历史 `src/api/generated` 共享模型层已退场，不再作为当前工程链路的一部分。
 - 当前路由只注册 writer 入口；未接入路由的历史模块视为待清理残留，不应继续扩张。
+- 浏览器独立宿主默认本地优先，只有显式 `?remote=true` 才允许恢复 writer 远端联调语义；因此入口层不应再把健康探测、HTTP writer API 或平台回流当成默认前提。
 
 ## 不变量
 
 - 默认首屏和主链路必须围绕 writer 工作区，不回退到平台首页思路。
 - AI 能力只能以 writer 工具链配角存在，不能在独立编辑器内重新长出管理后台。
 - 新增共享层前必须先确认现有 owner，避免在 `src/shared`、`src/stores`、`src/api` 再造影子实现。
+- 当前前端宿主只允许把“右栏设定区”当作只读速查层；在 canonical asset CRUD owner 明确前，不得在 `frontend` 根层再补第二套本地资产持久化按钮或服务。
 
 ## 文档同步触发条件
 

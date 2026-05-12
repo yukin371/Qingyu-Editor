@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import WorkspaceToolOverlay from '../WorkspaceToolOverlay.vue'
+
+const settleAsyncToolView = async () => {
+  await vi.dynamicImportSettled()
+  await flushPromises()
+}
 
 vi.mock('@/modules/writer/views/CharacterGraphView.vue', () => ({
   default: defineComponent({
@@ -43,7 +48,7 @@ vi.mock('@/modules/writer/components/workspace/structure/StructureStageView.vue'
 }))
 
 describe('WorkspaceToolOverlay', () => {
-  it('应在工具层显示共享上下文摘要', () => {
+  it('应在工具层显示共享上下文摘要', async () => {
     const wrapper = mount(WorkspaceToolOverlay, {
       props: {
         visible: true,
@@ -80,6 +85,8 @@ describe('WorkspaceToolOverlay', () => {
       },
     })
 
+    await settleAsyncToolView()
+
     const contextBar = wrapper.get('[data-testid="tool-overlay-context"]')
     expect(contextBar.text()).toContain('当前上下文')
     expect(contextBar.text()).toContain('章节 第一章')
@@ -92,7 +99,7 @@ describe('WorkspaceToolOverlay', () => {
     expect(contextBar.text()).toContain('+1')
   })
 
-  it('应以结构舞台作为默认主辅助工具之外提供资产总览工具', () => {
+  it('应以结构舞台作为默认主辅助工具之外提供资产总览工具', async () => {
     const wrapper = mount(WorkspaceToolOverlay, {
       props: {
         visible: true,
@@ -110,6 +117,8 @@ describe('WorkspaceToolOverlay', () => {
         },
       },
     })
+
+    await settleAsyncToolView()
 
     expect(wrapper.text()).toContain('资产总览')
     const toolView = wrapper.get('[data-testid="tool-view-stub"]')
@@ -137,6 +146,8 @@ describe('WorkspaceToolOverlay', () => {
       },
     })
 
+    await settleAsyncToolView()
+
     const assetsView = wrapper.getComponent({ name: 'EncyclopediaViewStub' })
     await assetsView.vm.$emit('focus-graph-asset', {
       assetType: 'location',
@@ -149,6 +160,7 @@ describe('WorkspaceToolOverlay', () => {
     expect(wrapper.emitted('tool-change')?.at(-1)).toEqual(['relations'])
 
     await wrapper.setProps({ activeTool: 'relations' })
+    await settleAsyncToolView()
 
     const toolView = wrapper.get('[data-testid="tool-view-stub"]')
     expect(toolView.text()).toContain('graph')
@@ -173,6 +185,8 @@ describe('WorkspaceToolOverlay', () => {
         },
       },
     })
+
+    await settleAsyncToolView()
 
     const assetsView = wrapper.getComponent({ name: 'EncyclopediaViewStub' })
     await assetsView.vm.$emit('jump-to-chapter', 'chapter-2')

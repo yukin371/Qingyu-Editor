@@ -1,32 +1,44 @@
-/**
- * API健康检查 - 使用说明
- *
- * 在 main.ts 中添加：
- *
- * import { initApiHealthCheck } from '@/utils/api-health'
- *
- * // 开发环境启动健康检查
- * initApiHealthCheck()
- *
- * ---
- *
- * 在组件中使用（可选）：
- *
- * import { createApiStatusMonitor } from '@/utils/api-health'
- *
- * const { status, latency, error } = createApiStatusMonitor()
- *
- * <template>
- *   <div v-if="status === 'unhealthy'" class="api-warning">
- *     ⚠️ API服务不可用: {{ error }}
- *   </div>
- * </template>
- */
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { describe, it, expect } from 'vitest'
+const isRemoteWriterModeMock = vi.fn()
 
-describe.skip('API Health Check (Documentation Only)', () => {
-  it('this is a documentation file, not an actual test', () => {
-    expect(true).toBe(true)
+vi.mock('@/modules/writer/data-bridge/wails', () => ({
+  isRemoteWriterMode: () => isRemoteWriterModeMock(),
+}))
+
+import { checkApiHealth } from './api-health'
+
+describe('api-health', () => {
+  beforeEach(() => {
+    isRemoteWriterModeMock.mockReset()
+    vi.unstubAllGlobals()
+  })
+
+  it('skips remote health probing when writer is not in remote mode', async () => {
+    const fetchMock = vi.fn()
+    isRemoteWriterModeMock.mockReturnValue(false)
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(checkApiHealth()).resolves.toEqual({ healthy: true })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('probes remote health endpoint only in explicit remote mode', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+    })
+    isRemoteWriterModeMock.mockReturnValue(true)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await checkApiHealth()
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/v1/system/health')
+    expect(result).toEqual(
+      expect.objectContaining({
+        healthy: true,
+      }),
+    )
   })
 })

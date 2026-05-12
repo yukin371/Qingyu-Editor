@@ -28,10 +28,10 @@
             返回全部
           </button>
         </div>
-        <el-button size="small" @click="refreshOutline" :loading="isLoading">
+        <QyButton variant="secondary" size="sm" @click="refreshOutline" :loading="isLoading">
           <QyIcon name="Refresh" :size="14" />
           刷新
-        </el-button>
+        </QyButton>
       </div>
     </header>
 
@@ -216,7 +216,7 @@
  */
 
 import { computed, ref, watch } from 'vue'
-import { ElButton } from 'element-plus'
+import { QyButton } from '@/design-system/components'
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
 import { Empty } from '@/design-system/base'
 import type { OutlineNode } from '@/types/writer'

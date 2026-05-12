@@ -282,6 +282,20 @@ vi.mock('@/modules/writer/components/workspace/WorkspaceStatusbar.vue', () => ({
 
 import ProjectWorkspace from '../ProjectWorkspace.vue'
 
+const EditorLayoutStub = {
+  template: `
+    <div>
+      <slot name="left-panel" />
+      <slot name="editor" />
+      <slot name="right-panel" />
+    </div>
+  `,
+}
+
+const TipTapEditorViewStub = { template: '<div data-testid="tiptap-editor-view" />' }
+const EncyclopediaViewStub = { template: '<div data-testid="encyclopedia-view" />' }
+const AIPanelStub = { template: '<div data-testid="ai-panel" />' }
+
 const WorkspaceLeftPanelStub = defineComponent({
   emits: ['update:chapter-id', 'open-graph', 'outline-select'],
   setup(_, { emit }) {
@@ -502,6 +516,27 @@ const OverlayAwareEditorContentStub = defineComponent({
   },
 })
 
+const baseGlobalStubs = {
+  EditorLayout: EditorLayoutStub,
+  WorkspaceLeftPanel: WorkspaceLeftPanelStub,
+  WorkspaceRightPanel: WorkspaceRightPanelStub,
+  TipTapEditorView: TipTapEditorViewStub,
+  EncyclopediaView: EncyclopediaViewStub,
+  AIPanel: AIPanelStub,
+}
+
+function mountProjectWorkspace(extraStubs?: Record<string, unknown>) {
+  return mount(ProjectWorkspace, {
+    global: {
+      plugins: [createPinia()],
+      stubs: {
+        ...baseGlobalStubs,
+        ...extraStubs,
+      },
+    },
+  })
+}
+
 const GlobalOverlayEditorContentStub = defineComponent({
   props: {
     toolOverlayChapterId: {
@@ -558,27 +593,7 @@ describe('ProjectWorkspace Refactor', () => {
   })
 
   it('写作模式下应渲染工作区编辑宿主且不渲染旧 EditorPanel', async () => {
-    const wrapper = mount(ProjectWorkspace, {
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          EditorLayout: {
-            template: `
-              <div>
-                <slot name="left-panel" />
-                <slot name="editor" :active-tool="'writing'" />
-                <slot name="right-panel" />
-              </div>
-            `,
-          },
-          WorkspaceLeftPanel: WorkspaceLeftPanelStub,
-          WorkspaceRightPanel: WorkspaceRightPanelStub,
-          TipTapEditorView: { template: '<div data-testid="tiptap-editor-view" />' },
-          EncyclopediaView: { template: '<div data-testid="encyclopedia-view" />' },
-          AIPanel: { template: '<div data-testid="ai-panel" />' },
-        },
-      },
-    })
+    const wrapper = mountProjectWorkspace()
 
     expect(wrapper.find('[data-testid="workspace-editor-content-module-mock"]').exists()).toBe(true)
     expect(wrapper.html()).not.toContain('EditorPanel')
@@ -587,27 +602,7 @@ describe('ProjectWorkspace Refactor', () => {
   })
 
   it('切换章节时应通过路由保持写作模式', async () => {
-    const wrapper = mount(ProjectWorkspace, {
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          EditorLayout: {
-            template: `
-              <div>
-                <slot name="left-panel" />
-                <slot name="editor" :active-tool="'writing'" />
-                <slot name="right-panel" />
-              </div>
-            `,
-          },
-          WorkspaceLeftPanel: WorkspaceLeftPanelStub,
-          WorkspaceRightPanel: WorkspaceRightPanelStub,
-          TipTapEditorView: { template: '<div data-testid="tiptap-editor-view" />' },
-          EncyclopediaView: { template: '<div data-testid="encyclopedia-view" />' },
-          AIPanel: { template: '<div data-testid="ai-panel" />' },
-        },
-      },
-    })
+    const wrapper = mountProjectWorkspace()
 
     await wrapper.find('[data-testid="change-chapter"]').trigger('click')
 
@@ -620,27 +615,7 @@ describe('ProjectWorkspace Refactor', () => {
   })
 
   it('AI 回填后应把反馈重新传给右侧工作台', async () => {
-    const wrapper = mount(ProjectWorkspace, {
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          EditorLayout: {
-            template: `
-              <div>
-                <slot name="left-panel" />
-                <slot name="editor" :active-tool="'writing'" />
-                <slot name="right-panel" />
-              </div>
-            `,
-          },
-          WorkspaceLeftPanel: WorkspaceLeftPanelStub,
-          WorkspaceRightPanel: WorkspaceRightPanelStub,
-          TipTapEditorView: { template: '<div data-testid="tiptap-editor-view" />' },
-          EncyclopediaView: { template: '<div data-testid="encyclopedia-view" />' },
-          AIPanel: { template: '<div data-testid="ai-panel" />' },
-        },
-      },
-    })
+    const wrapper = mountProjectWorkspace()
 
     await wrapper.find('[data-testid="apply-ai-result"]').trigger('click')
     await nextTick()
@@ -650,27 +625,7 @@ describe('ProjectWorkspace Refactor', () => {
   })
 
   it('异章节 AI 回填应先切章再加载目标章节', async () => {
-    const wrapper = mount(ProjectWorkspace, {
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          EditorLayout: {
-            template: `
-              <div>
-                <slot name="left-panel" />
-                <slot name="editor" :active-tool="'writing'" />
-                <slot name="right-panel" />
-              </div>
-            `,
-          },
-          WorkspaceLeftPanel: WorkspaceLeftPanelStub,
-          WorkspaceRightPanel: WorkspaceRightPanelStub,
-          TipTapEditorView: { template: '<div data-testid="tiptap-editor-view" />' },
-          EncyclopediaView: { template: '<div data-testid="encyclopedia-view" />' },
-          AIPanel: { template: '<div data-testid="ai-panel" />' },
-        },
-      },
-    })
+    const wrapper = mountProjectWorkspace()
 
     await wrapper.find('[data-testid="apply-ai-result-to-other-chapter"]').trigger('click')
     await nextTick()
@@ -698,27 +653,8 @@ describe('ProjectWorkspace Refactor', () => {
       tool: 'writing',
     }
 
-    const wrapper = mount(ProjectWorkspace, {
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          EditorLayout: {
-            template: `
-              <div>
-                <slot name="left-panel" />
-                <slot name="editor" :active-tool="'encyclopedia'" />
-                <slot name="right-panel" />
-              </div>
-            `,
-          },
-          WorkspaceLeftPanel: WorkspaceLeftPanelStub,
-          WorkspaceRightPanel: WorkspaceRightPanelStub,
-          WorkspaceEditorContent: OverlayAwareEditorContentStub,
-          TipTapEditorView: { template: '<div data-testid="tiptap-editor-view" />' },
-          EncyclopediaView: { template: '<div data-testid="encyclopedia-view" />' },
-          AIPanel: { template: '<div data-testid="ai-panel" />' },
-        },
-      },
+    const wrapper = mountProjectWorkspace({
+      WorkspaceEditorContent: OverlayAwareEditorContentStub,
     })
 
     await wrapper.find('[data-testid="open-graph"]').trigger('click')
@@ -735,27 +671,8 @@ describe('ProjectWorkspace Refactor', () => {
       tool: 'writing',
     }
 
-    const wrapper = mount(ProjectWorkspace, {
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          EditorLayout: {
-            template: `
-              <div>
-                <slot name="left-panel" />
-                <slot name="editor" :active-tool="'encyclopedia'" />
-                <slot name="right-panel" />
-              </div>
-            `,
-          },
-          WorkspaceLeftPanel: WorkspaceLeftPanelStub,
-          WorkspaceRightPanel: WorkspaceRightPanelStub,
-          WorkspaceEditorContent: GlobalOverlayEditorContentStub,
-          TipTapEditorView: { template: '<div data-testid="tiptap-editor-view" />' },
-          EncyclopediaView: { template: '<div data-testid="encyclopedia-view" />' },
-          AIPanel: { template: '<div data-testid="ai-panel" />' },
-        },
-      },
+    const wrapper = mountProjectWorkspace({
+      WorkspaceEditorContent: GlobalOverlayEditorContentStub,
     })
 
     await wrapper.find('[data-testid="open-global-graph"]').trigger('click')
@@ -773,27 +690,8 @@ describe('ProjectWorkspace Refactor', () => {
       encyclopediaView: 'branches',
     }
 
-    mount(ProjectWorkspace, {
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          EditorLayout: {
-            template: `
-              <div>
-                <slot name="left-panel" />
-                <slot name="editor" :active-tool="'writing'" />
-                <slot name="right-panel" />
-              </div>
-            `,
-          },
-          WorkspaceLeftPanel: WorkspaceLeftPanelStub,
-          WorkspaceRightPanel: WorkspaceRightPanelStub,
-          WorkspaceEditorContent: OverlayAwareEditorContentStub,
-          TipTapEditorView: { template: '<div data-testid="tiptap-editor-view" />' },
-          EncyclopediaView: { template: '<div data-testid="encyclopedia-view" />' },
-          AIPanel: { template: '<div data-testid="ai-panel" />' },
-        },
-      },
+    mountProjectWorkspace({
+      WorkspaceEditorContent: OverlayAwareEditorContentStub,
     })
 
     await nextTick()
@@ -815,27 +713,7 @@ describe('ProjectWorkspace Refactor', () => {
       tool: 'structure',
     }
 
-    const wrapper = mount(ProjectWorkspace, {
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          EditorLayout: {
-            template: `
-              <div>
-                <slot name="left-panel" />
-                <slot name="editor" :active-tool="'writing'" />
-                <slot name="right-panel" />
-              </div>
-            `,
-          },
-          WorkspaceLeftPanel: WorkspaceLeftPanelStub,
-          WorkspaceRightPanel: WorkspaceRightPanelStub,
-          TipTapEditorView: { template: '<div data-testid="tiptap-editor-view" />' },
-          EncyclopediaView: { template: '<div data-testid="encyclopedia-view" />' },
-          AIPanel: { template: '<div data-testid="ai-panel" />' },
-        },
-      },
-    })
+    const wrapper = mountProjectWorkspace()
 
     await wrapper.find('[data-testid="outline-select"]').trigger('click')
     await nextTick()
@@ -855,27 +733,7 @@ describe('ProjectWorkspace Refactor', () => {
   })
 
   it('保存 AI 结果为提案后应把草案回传给右侧工作台', async () => {
-    const wrapper = mount(ProjectWorkspace, {
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          EditorLayout: {
-            template: `
-              <div>
-                <slot name="left-panel" />
-                <slot name="editor" :active-tool="'writing'" />
-                <slot name="right-panel" />
-              </div>
-            `,
-          },
-          WorkspaceLeftPanel: WorkspaceLeftPanelStub,
-          WorkspaceRightPanel: WorkspaceRightPanelStub,
-          TipTapEditorView: { template: '<div data-testid="tiptap-editor-view" />' },
-          EncyclopediaView: { template: '<div data-testid="encyclopedia-view" />' },
-          AIPanel: { template: '<div data-testid="ai-panel" />' },
-        },
-      },
-    })
+    const wrapper = mountProjectWorkspace()
 
     expect(wrapper.find('[data-testid="proposal-count"]').text()).toBe('0')
 
@@ -886,27 +744,8 @@ describe('ProjectWorkspace Refactor', () => {
   })
 
   it('工作流触发应注入 aiActionTrigger 与 workflowContext 到右侧面板', async () => {
-    const wrapper = mount(ProjectWorkspace, {
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          EditorLayout: {
-            template: `
-              <div>
-                <slot name="left-panel" />
-                <slot name="editor" :active-tool="'writing'" />
-                <slot name="right-panel" />
-              </div>
-            `,
-          },
-          WorkspaceLeftPanel: WorkspaceLeftPanelStub,
-          WorkspaceRightPanel: WorkspaceRightPanelStub,
-          WorkspaceEditorContent: WorkflowRelayEditorContentStub,
-          TipTapEditorView: { template: '<div data-testid="tiptap-editor-view" />' },
-          EncyclopediaView: { template: '<div data-testid="encyclopedia-view" />' },
-          AIPanel: { template: '<div data-testid="ai-panel" />' },
-        },
-      },
+    const wrapper = mountProjectWorkspace({
+      WorkspaceEditorContent: WorkflowRelayEditorContentStub,
     })
 
     await wrapper.find('[data-testid="relay-workflow-action"]').trigger('click')
@@ -921,27 +760,8 @@ describe('ProjectWorkspace Refactor', () => {
   })
 
   it('切章节后再次触发工作流动作时，应注入新章节的 workflowContext', async () => {
-    const wrapper = mount(ProjectWorkspace, {
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          EditorLayout: {
-            template: `
-              <div>
-                <slot name="left-panel" />
-                <slot name="editor" :active-tool="'writing'" />
-                <slot name="right-panel" />
-              </div>
-            `,
-          },
-          WorkspaceLeftPanel: WorkspaceLeftPanelStub,
-          WorkspaceRightPanel: WorkspaceRightPanelStub,
-          WorkspaceEditorContent: WorkflowRelayEditorContentStub,
-          TipTapEditorView: { template: '<div data-testid="tiptap-editor-view" />' },
-          EncyclopediaView: { template: '<div data-testid="encyclopedia-view" />' },
-          AIPanel: { template: '<div data-testid="ai-panel" />' },
-        },
-      },
+    const wrapper = mountProjectWorkspace({
+      WorkspaceEditorContent: WorkflowRelayEditorContentStub,
     })
 
     await wrapper.find('[data-testid="change-chapter"]').trigger('click')
@@ -959,27 +779,8 @@ describe('ProjectWorkspace Refactor', () => {
   })
 
   it('clears stale transient right-panel state on new workflow actions and chapter switches', async () => {
-    const wrapper = mount(ProjectWorkspace, {
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          EditorLayout: {
-            template: `
-              <div>
-                <slot name="left-panel" />
-                <slot name="editor" :active-tool="'writing'" />
-                <slot name="right-panel" />
-              </div>
-            `,
-          },
-          WorkspaceLeftPanel: WorkspaceLeftPanelStub,
-          WorkspaceRightPanel: WorkspaceRightPanelStub,
-          WorkspaceEditorContent: WorkflowRelayEditorContentStub,
-          TipTapEditorView: { template: '<div data-testid="tiptap-editor-view" />' },
-          EncyclopediaView: { template: '<div data-testid="encyclopedia-view" />' },
-          AIPanel: { template: '<div data-testid="ai-panel" />' },
-        },
-      },
+    const wrapper = mountProjectWorkspace({
+      WorkspaceEditorContent: WorkflowRelayEditorContentStub,
     })
 
     await wrapper.find('[data-testid="apply-ai-result"]').trigger('click')
@@ -998,27 +799,8 @@ describe('ProjectWorkspace Refactor', () => {
   })
 
   it('retires workflow trigger after applying generated text', async () => {
-    const wrapper = mount(ProjectWorkspace, {
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          EditorLayout: {
-            template: `
-              <div>
-                <slot name="left-panel" />
-                <slot name="editor" :active-tool="'writing'" />
-                <slot name="right-panel" />
-              </div>
-            `,
-          },
-          WorkspaceLeftPanel: WorkspaceLeftPanelStub,
-          WorkspaceRightPanel: WorkspaceRightPanelStub,
-          WorkspaceEditorContent: WorkflowRelayEditorContentStub,
-          TipTapEditorView: { template: '<div data-testid="tiptap-editor-view" />' },
-          EncyclopediaView: { template: '<div data-testid="encyclopedia-view" />' },
-          AIPanel: { template: '<div data-testid="ai-panel" />' },
-        },
-      },
+    const wrapper = mountProjectWorkspace({
+      WorkspaceEditorContent: WorkflowRelayEditorContentStub,
     })
 
     await wrapper.find('[data-testid="relay-workflow-action"]').trigger('click')
@@ -1033,27 +815,8 @@ describe('ProjectWorkspace Refactor', () => {
   })
 
   it('retires workflow trigger after saving a proposal draft', async () => {
-    const wrapper = mount(ProjectWorkspace, {
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          EditorLayout: {
-            template: `
-              <div>
-                <slot name="left-panel" />
-                <slot name="editor" :active-tool="'writing'" />
-                <slot name="right-panel" />
-              </div>
-            `,
-          },
-          WorkspaceLeftPanel: WorkspaceLeftPanelStub,
-          WorkspaceRightPanel: WorkspaceRightPanelStub,
-          WorkspaceEditorContent: WorkflowRelayEditorContentStub,
-          TipTapEditorView: { template: '<div data-testid="tiptap-editor-view" />' },
-          EncyclopediaView: { template: '<div data-testid="encyclopedia-view" />' },
-          AIPanel: { template: '<div data-testid="ai-panel" />' },
-        },
-      },
+    const wrapper = mountProjectWorkspace({
+      WorkspaceEditorContent: WorkflowRelayEditorContentStub,
     })
 
     await wrapper.find('[data-testid="relay-workflow-action"]').trigger('click')
@@ -1068,27 +831,8 @@ describe('ProjectWorkspace Refactor', () => {
   })
 
   it('提案应按当前章节过滤展示（Phase 2: chapter-scoped proposal visibility）', async () => {
-    const wrapper = mount(ProjectWorkspace, {
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          EditorLayout: {
-            template: `
-              <div>
-                <slot name="left-panel" />
-                <slot name="editor" :active-tool="'writing'" />
-                <slot name="right-panel" />
-              </div>
-            `,
-          },
-          WorkspaceLeftPanel: WorkspaceLeftPanelStub,
-          WorkspaceRightPanel: WorkspaceRightPanelStub,
-          WorkspaceEditorContent: WorkflowRelayEditorContentStub,
-          TipTapEditorView: { template: '<div data-testid="tiptap-editor-view" />' },
-          EncyclopediaView: { template: '<div data-testid="encyclopedia-view" />' },
-          AIPanel: { template: '<div data-testid="ai-panel" />' },
-        },
-      },
+    const wrapper = mountProjectWorkspace({
+      WorkspaceEditorContent: WorkflowRelayEditorContentStub,
     })
 
     await wrapper.find('[data-testid="save-proposal-draft"]').trigger('click')
@@ -1125,27 +869,7 @@ describe('ProjectWorkspace Refactor', () => {
   })
 
   it('章节总结结果应映射为 chapter-direction proposal', async () => {
-    const wrapper = mount(ProjectWorkspace, {
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          EditorLayout: {
-            template: `
-              <div>
-                <slot name="left-panel" />
-                <slot name="editor" :active-tool="'writing'" />
-                <slot name="right-panel" />
-              </div>
-            `,
-          },
-          WorkspaceLeftPanel: WorkspaceLeftPanelStub,
-          WorkspaceRightPanel: WorkspaceRightPanelStub,
-          TipTapEditorView: { template: '<div data-testid="tiptap-editor-view" />' },
-          EncyclopediaView: { template: '<div data-testid="encyclopedia-view" />' },
-          AIPanel: { template: '<div data-testid="ai-panel" />' },
-        },
-      },
-    })
+    const wrapper = mountProjectWorkspace()
 
     await wrapper.find('[data-testid="save-summary-proposal"]').trigger('click')
     await nextTick()
@@ -1156,27 +880,7 @@ describe('ProjectWorkspace Refactor', () => {
   })
 
   it('审校结果应映射为 review-workbench proposal', async () => {
-    const wrapper = mount(ProjectWorkspace, {
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          EditorLayout: {
-            template: `
-              <div>
-                <slot name="left-panel" />
-                <slot name="editor" :active-tool="'writing'" />
-                <slot name="right-panel" />
-              </div>
-            `,
-          },
-          WorkspaceLeftPanel: WorkspaceLeftPanelStub,
-          WorkspaceRightPanel: WorkspaceRightPanelStub,
-          TipTapEditorView: { template: '<div data-testid="tiptap-editor-view" />' },
-          EncyclopediaView: { template: '<div data-testid="encyclopedia-view" />' },
-          AIPanel: { template: '<div data-testid="ai-panel" />' },
-        },
-      },
-    })
+    const wrapper = mountProjectWorkspace()
 
     await wrapper.find('[data-testid="save-review-proposal"]').trigger('click')
     await nextTick()
@@ -1187,27 +891,7 @@ describe('ProjectWorkspace Refactor', () => {
   })
 
   it('提案状态变更后再次暂存应复位为 draft', async () => {
-    const wrapper = mount(ProjectWorkspace, {
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          EditorLayout: {
-            template: `
-              <div>
-                <slot name="left-panel" />
-                <slot name="editor" :active-tool="'writing'" />
-                <slot name="right-panel" />
-              </div>
-            `,
-          },
-          WorkspaceLeftPanel: WorkspaceLeftPanelStub,
-          WorkspaceRightPanel: WorkspaceRightPanelStub,
-          TipTapEditorView: { template: '<div data-testid="tiptap-editor-view" />' },
-          EncyclopediaView: { template: '<div data-testid="encyclopedia-view" />' },
-          AIPanel: { template: '<div data-testid="ai-panel" />' },
-        },
-      },
-    })
+    const wrapper = mountProjectWorkspace()
 
     await wrapper.find('[data-testid="save-proposal-draft"]').trigger('click')
     await nextTick()
@@ -1229,27 +913,7 @@ describe('ProjectWorkspace Refactor', () => {
   })
 
   it('selected 提案移出后应保持移出语义提示', async () => {
-    const wrapper = mount(ProjectWorkspace, {
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          EditorLayout: {
-            template: `
-              <div>
-                <slot name="left-panel" />
-                <slot name="editor" :active-tool="'writing'" />
-                <slot name="right-panel" />
-              </div>
-            `,
-          },
-          WorkspaceLeftPanel: WorkspaceLeftPanelStub,
-          WorkspaceRightPanel: WorkspaceRightPanelStub,
-          TipTapEditorView: { template: '<div data-testid="tiptap-editor-view" />' },
-          EncyclopediaView: { template: '<div data-testid="encyclopedia-view" />' },
-          AIPanel: { template: '<div data-testid="ai-panel" />' },
-        },
-      },
-    })
+    const wrapper = mountProjectWorkspace()
 
     await wrapper.find('[data-testid="save-summary-proposal"]').trigger('click')
     await nextTick()
@@ -1280,27 +944,7 @@ describe('ProjectWorkspace Refactor', () => {
       .mockResolvedValueOnce({ id: 'generated-doc-1' })
       .mockResolvedValueOnce({ id: 'generated-doc-2' })
 
-    const wrapper = mount(ProjectWorkspace, {
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          EditorLayout: {
-            template: `
-              <div>
-                <slot name="left-panel" />
-                <slot name="editor" :active-tool="'writing'" />
-                <slot name="right-panel" />
-              </div>
-            `,
-          },
-          WorkspaceLeftPanel: WorkspaceLeftPanelStub,
-          WorkspaceRightPanel: WorkspaceRightPanelStub,
-          TipTapEditorView: { template: '<div data-testid="tiptap-editor-view" />' },
-          EncyclopediaView: { template: '<div data-testid="encyclopedia-view" />' },
-          AIPanel: { template: '<div data-testid="ai-panel" />' },
-        },
-      },
-    })
+    const wrapper = mountProjectWorkspace()
 
     await wrapper.find('[data-testid="create-structure-plan"]').trigger('click')
     await Promise.resolve()

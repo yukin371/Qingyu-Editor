@@ -156,11 +156,9 @@ const chapterOptions = computed<SidebarChapterSummary[]>(() =>
 
 const outlineTreeNodes = computed<OutlineNode[]>(() => {
   const tree = writerStore.outline.tree
-  console.log('[WorkspaceLeftPanel] 获取大纲树:', tree)
 
   // 确保 tree 是数组
   if (Array.isArray(tree)) {
-    console.log('[WorkspaceLeftPanel] 大纲树是数组，长度:', tree.length)
     return tree
   }
   // 如果不是数组，返回空数组
@@ -174,7 +172,6 @@ watch(
   () => writerStore.outline.tree,
   (tree) => {
     if (tree && tree.length > 0 && outlineTreeState.expandedNodeIds.value.length === 0) {
-      console.log('[WorkspaceLeftPanel] 自动展开根节点')
       outlineTreeState.expandRootNodes()
     }
   },

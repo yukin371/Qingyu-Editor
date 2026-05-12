@@ -6,25 +6,27 @@
         <span class="shortcut-settings__title-icon">&#9000;</span>
         <h2>快捷键设置</h2>
       </div>
-      <el-button
-        text
-        size="small"
+      <QyButton
+        variant="text"
+        size="sm"
         class="shortcut-settings__reset-btn"
         @click="handleResetDefaults"
       >
         恢复默认
-      </el-button>
+      </QyButton>
     </div>
 
     <div class="shortcut-settings__divider" />
 
     <!-- 搜索栏 -->
     <div class="shortcut-settings__search">
-      <el-input
+      <QyInput
         v-model="searchQuery"
+        id="writer-shortcut-search"
+        name="writer-shortcut-search"
         placeholder="搜索快捷键..."
         clearable
-        size="small"
+        size="sm"
         class="shortcut-settings__search-input"
       />
     </div>
@@ -73,15 +75,14 @@
                 <span class="shortcut-settings__keys-placeholder">请按下新的快捷键...</span>
               </template>
               <template v-else>
-                <el-tag
+                <QyTag
                   v-for="key in shortcut.keys"
                   :key="key"
-                  size="small"
-                  class="shortcut-settings__key-tag"
-                  :class="{ 'is-system': isSystemKey(shortcut) }"
+                  size="sm"
+                  :class="isSystemKey(shortcut) ? 'shortcut-settings__key-tag is-system' : 'shortcut-settings__key-tag'"
                 >
                   {{ key }}
-                </el-tag>
+                </QyTag>
               </template>
             </span>
 
@@ -104,16 +105,16 @@
             </span>
 
             <!-- 编辑按钮 -->
-            <el-button
+            <QyButton
               v-if="!isSystemKey(shortcut)"
-              text
-              size="small"
+              variant="text"
+              size="sm"
               class="shortcut-settings__edit-btn"
               :disabled="editingId !== null && editingId !== shortcut.id"
               @click="startEditing(shortcut.id)"
             >
               {{ editingId === shortcut.id ? '取消' : '编辑' }}
-            </el-button>
+            </QyButton>
           </div>
         </div>
       </template>
@@ -147,7 +148,8 @@
  */
 
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { ElMessageBox, ElMessage } from 'element-plus'
+import { message, messageBox } from '@/design-system/services'
+import { QyButton, QyInput, QyTag } from '@/design-system/components'
 import { useShortcutConfig } from '../../composables/useShortcutConfig'
 import { WORKSPACE_SYSTEM_SHORTCUT_IDS } from '../../composables/workspaceShortcutActions'
 
@@ -280,7 +282,7 @@ function startEditing(shortcutId: string): void {
   // 5 秒超时自动取消
   editTimeout = setTimeout(() => {
     cancelEditing()
-    ElMessage.info('快捷键录制超时，已自动取消')
+    message.info('快捷键录制超时，已自动取消')
   }, 5000)
 }
 
@@ -331,12 +333,12 @@ function handleKeyDown(event: KeyboardEvent): void {
     // 检查冲突
     const conflict = detectConflict(editingId.value, keys)
     if (conflict) {
-      ElMessage.warning(`快捷键 ${formatKeys(keys)} 与「${conflict.description}」存在冲突`)
+      message.warning(`快捷键 ${formatKeys(keys)} 与「${conflict.description}」存在冲突`)
     } else {
-      ElMessage.success('快捷键已更新')
+      message.success('快捷键已更新')
     }
   } else {
-    ElMessage.error('快捷键设置失败')
+    message.error('快捷键设置失败')
   }
 
   // 退出编辑模式
@@ -360,13 +362,13 @@ function formatKey(key: string): string {
     PageUp: 'PageUp',
     PageDown: 'PageDown',
   }
-  return keyMap[key] || key.length === 1 ? key.toUpperCase() : key
+  return keyMap[key] || (key.length === 1 ? key.toUpperCase() : key)
 }
 
 /** 恢复默认快捷键 */
 async function handleResetDefaults(): Promise<void> {
   try {
-    await ElMessageBox.confirm(
+    await messageBox.confirm(
       '确定要恢复所有快捷键为默认设置吗？自定义的快捷键将被覆盖。',
       '恢复默认',
       {
@@ -376,7 +378,7 @@ async function handleResetDefaults(): Promise<void> {
       },
     )
     await resetToDefaults()
-    ElMessage.success('已恢复默认快捷键')
+    message.success('已恢复默认快捷键')
   } catch {
     // 用户取消操作，不做处理
   }

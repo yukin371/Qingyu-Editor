@@ -7,7 +7,7 @@
  * - 统计数据 (章节数、目录节点数)
  * - 工具标签、保存状态等 UI 状态
  */
-import { computed, unref, type ComputedRef, type WritableComputedRef } from 'vue'
+import { computed, type ComputedRef, type WritableComputedRef } from 'vue'
 import { useRoute } from 'vue-router'
 import { useProjectStore } from '@/modules/writer/stores/projectStore'
 import { useDocumentStore } from '@/modules/writer/stores/documentStore'
@@ -325,13 +325,10 @@ export function useWorkspaceState(options: UseWorkspaceStateOptions): UseWorkspa
 
   /** 当前工具标签 */
   const activeToolLabel = computed(() => {
-    const currentTool = unref(editorStore.activeTool) as ActiveTool
+    const currentTool = editorStore.activeTool ?? 'writing'
     const labels: Record<ActiveTool, string> = {
-      chapters: '章节模式',
       writing: '写作模式',
       immersive: '沉浸模式',
-      ai: 'AI助手',
-      encyclopedia: '设定百科',
     }
     return labels[currentTool] || '工作台'
   })

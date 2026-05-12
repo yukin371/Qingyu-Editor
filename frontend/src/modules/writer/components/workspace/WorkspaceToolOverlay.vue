@@ -90,15 +90,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, markRaw, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, markRaw, ref, watch, type Component } from 'vue'
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
 import QyGhostButton from '@/design-system/components/basic/QyGhostButton/QyGhostButton.vue'
 import ToolSidebar from './tool-overlay/ToolSidebar.vue'
-import CharacterGraphView from '@/modules/writer/views/CharacterGraphView.vue'
-import EncyclopediaView from '@/modules/writer/views/EncyclopediaView.vue'
-import TimelineOutlineView from '@/modules/writer/views/TimelineOutlineView.vue'
-import StoryBranchView from '@/modules/writer/views/StoryBranchView.vue'
-import StructureStageView from '@/modules/writer/components/workspace/structure/StructureStageView.vue'
 import { useToolOverlay, type ToolType } from '@/modules/writer/composables/useToolOverlay'
 import type { EncyclopediaCategory, GraphFocusTarget } from '@/modules/writer/composables/types'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
@@ -107,6 +102,32 @@ import {
   type ActiveEntitySummary,
 } from '@/modules/writer/composables/useWorkflowContext'
 import type { WriterWorkflowContext } from '@/modules/writer/types/workflow'
+
+const createAsyncToolView = (loader: () => Promise<Component>) =>
+  defineAsyncComponent({
+    loader,
+    delay: 0,
+    suspensible: false,
+  })
+
+const StructureStageView = createAsyncToolView(
+  () =>
+    import('@/modules/writer/components/workspace/structure/StructureStageView.vue').then(
+      (module) => module.default,
+    ),
+)
+const EncyclopediaView = createAsyncToolView(
+  () => import('@/modules/writer/views/EncyclopediaView.vue').then((module) => module.default),
+)
+const CharacterGraphView = createAsyncToolView(
+  () => import('@/modules/writer/views/CharacterGraphView.vue').then((module) => module.default),
+)
+const TimelineOutlineView = createAsyncToolView(
+  () => import('@/modules/writer/views/TimelineOutlineView.vue').then((module) => module.default),
+)
+const StoryBranchView = createAsyncToolView(
+  () => import('@/modules/writer/views/StoryBranchView.vue').then((module) => module.default),
+)
 
 // =======================
 // Props 定义
@@ -231,7 +252,7 @@ watch(
       assetsActiveCategory.value = assetsCategory
     }
     if (toolId === 'relations') {
-      relationsFocusedAsset.value = focusedAsset || null
+      relationsFocusedAsset.value = focusedAsset || relationsFocusedAsset.value
     }
   },
   { immediate: true },

@@ -1,12 +1,17 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { ParagraphContent } from '@/modules/writer/api/wrapper'
+import {
+  getDocumentContent,
+  getDocumentContents,
+  updateDocumentContent,
+  type ParagraphContent,
+} from '@/modules/writer/api/wrapper'
 import type { DocumentContent } from '@/modules/writer/types/document'
 
 /**
  * 工具切换类型
  */
-export type ActiveTool = 'chapters' | 'writing' | 'immersive' | 'ai' | 'encyclopedia'
+export type ActiveTool = 'writing' | 'immersive'
 
 /**
  * 编辑器状态接口
@@ -280,8 +285,7 @@ export const useEditorStore = defineStore('writer-editor', () => {
     setCurrentChapter(documentId)
     setSaving(true)
     try {
-      const writerApi = await import('@/modules/writer/api/wrapper')
-      const resp = await writerApi.getDocumentContents(documentId)
+      const resp = await getDocumentContents(documentId)
 
       const payload = (resp as any)?.data || resp || {}
 
@@ -386,8 +390,7 @@ export const useEditorStore = defineStore('writer-editor', () => {
       }
     } catch (error) {
       console.error('[loadDocument] 主API失败，尝试fallback:', error)
-      const writerApi = await import('@/modules/writer/api/wrapper')
-      const fallback = await writerApi.getDocumentContent(documentId)
+      const fallback = await getDocumentContent(documentId)
       const payload = (fallback as any)?.data || fallback || {}
       const text = String(payload.content || '')
 
@@ -419,8 +422,6 @@ export const useEditorStore = defineStore('writer-editor', () => {
     setSaving(true)
     const versionToSave = currentVersion.value || 0
     try {
-      const writerApi = await import('@/modules/writer/api/wrapper')
-
       // 提取第一个段落的TipTap JSON内容
       const firstContent = contents[0]
       if (!firstContent) {
@@ -436,7 +437,7 @@ export const useEditorStore = defineStore('writer-editor', () => {
         version: versionToSave,
       }
 
-      await writerApi.updateDocumentContent(currentChapterId.value, saveRequest)
+      await updateDocumentContent(currentChapterId.value, saveRequest)
 
       // 更新本地状态（已经是TipTap JSON，无需转换）
       setContent(tipTapJson, false)

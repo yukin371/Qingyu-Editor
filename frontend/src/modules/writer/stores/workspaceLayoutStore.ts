@@ -1,5 +1,9 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import {
+  getWorkspaceAreaDefaultPanelIds,
+  isWorkspacePanelAllowedInArea,
+} from '@/modules/writer/config/workspacePanels'
 import type {
   RightToolAreaState,
   RightToolPanelWidths,
@@ -9,7 +13,6 @@ import type {
   WorkspaceLayoutPreset,
   WorkspaceLayoutSnapshot,
   WorkspacePanelId,
-  WorkspaceRightPanelTab,
   WorkspaceSidebarTab,
 } from '@/modules/writer/types/workspaceLayout'
 
@@ -19,7 +22,6 @@ function createDefaultSnapshot(): WorkspaceLayoutSnapshot {
   return {
     preset: 'default',
     leftSidebarTab: 'chapters',
-    rightPanelTab: 'chat',
     rightToolArea: {
       visible: true,
       activeTool: 'ai',
@@ -32,22 +34,17 @@ function createDefaultSnapshot(): WorkspaceLayoutSnapshot {
       left: {
         visible: true,
         activePanelId: 'chapters',
-        panelIds: ['chapters', 'outline'],
-      },
-      right: {
-        visible: false,
-        activePanelId: 'harness',
-        panelIds: ['harness'],
+        panelIds: getWorkspaceAreaDefaultPanelIds('left'),
       },
       bottom: {
         visible: false,
         activePanelId: 'status',
-        panelIds: ['status', 'context', 'harness'],
+        panelIds: getWorkspaceAreaDefaultPanelIds('bottom'),
       },
       overlay: {
         visible: false,
-        activePanelId: 'assets',
-        panelIds: ['assets', 'relations', 'timeline', 'branches'],
+        activePanelId: 'structure',
+        panelIds: getWorkspaceAreaDefaultPanelIds('overlay'),
       },
     },
   }
@@ -89,21 +86,31 @@ function sanitizeRightToolArea(
 }
 
 function sanitizeAreaState(
+  areaId: WorkspaceAreaId,
   value: Partial<WorkspaceAreaState> | undefined,
   fallback: WorkspaceAreaState,
 ): WorkspaceAreaState {
   const panelIds = Array.isArray(value?.panelIds)
-    ? (value?.panelIds.filter(Boolean) as WorkspacePanelId[])
-    : fallback.panelIds
+    ? Array.from(
+        new Set(
+          value.panelIds.filter(
+            (panelId): panelId is WorkspacePanelId =>
+              typeof panelId === 'string' &&
+              isWorkspacePanelAllowedInArea(panelId as WorkspacePanelId, areaId),
+          ),
+        ),
+      )
+    : []
+  const normalizedPanelIds = panelIds.length > 0 ? panelIds : fallback.panelIds
   const activePanelId =
-    value?.activePanelId && panelIds.includes(value.activePanelId as WorkspacePanelId)
+    value?.activePanelId && normalizedPanelIds.includes(value.activePanelId as WorkspacePanelId)
       ? (value.activePanelId as WorkspacePanelId)
-      : fallback.activePanelId
+      : (normalizedPanelIds[0] ?? fallback.activePanelId)
 
   return {
     visible: typeof value?.visible === 'boolean' ? value.visible : fallback.visible,
     activePanelId,
-    panelIds,
+    panelIds: normalizedPanelIds,
   }
 }
 
@@ -118,14 +125,11 @@ function loadSnapshot(): WorkspaceLayoutSnapshot {
       preset: (parsed.preset as WorkspaceLayoutPreset) || fallback.preset,
       leftSidebarTab:
         parsed.leftSidebarTab === 'outline' ? parsed.leftSidebarTab : fallback.leftSidebarTab,
-      rightPanelTab:
-        parsed.rightPanelTab === 'harness' ? parsed.rightPanelTab : fallback.rightPanelTab,
       rightToolArea: sanitizeRightToolArea(parsed.rightToolArea, fallback.rightToolArea),
       areas: {
-        left: sanitizeAreaState(parsed.areas?.left, fallback.areas.left),
-        right: sanitizeAreaState(parsed.areas?.right, fallback.areas.right),
-        bottom: sanitizeAreaState(parsed.areas?.bottom, fallback.areas.bottom),
-        overlay: sanitizeAreaState(parsed.areas?.overlay, fallback.areas.overlay),
+        left: sanitizeAreaState('left', parsed.areas?.left, fallback.areas.left),
+        bottom: sanitizeAreaState('bottom', parsed.areas?.bottom, fallback.areas.bottom),
+        overlay: sanitizeAreaState('overlay', parsed.areas?.overlay, fallback.areas.overlay),
       },
     }
   } catch (error) {
@@ -155,15 +159,6 @@ export const useWorkspaceLayoutStore = defineStore('writer-workspace-layout', ()
     },
   })
 
-  const rightPanelTab = computed<WorkspaceRightPanelTab>({
-    get: () => snapshot.value.rightPanelTab,
-    set: (value) => {
-      snapshot.value.rightPanelTab = value
-      snapshot.value.areas.right.activePanelId = value === 'chat' ? 'ai' : 'harness'
-      saveSnapshot()
-    },
-  })
-
   const areas = computed(() => snapshot.value.areas)
   const rightToolArea = computed(() => snapshot.value.rightToolArea)
 
@@ -173,6 +168,9 @@ export const useWorkspaceLayoutStore = defineStore('writer-workspace-layout', ()
   }
 
   const setAreaActivePanel = (areaId: WorkspaceAreaId, panelId: WorkspacePanelId | null) => {
+    if (panelId && !isWorkspacePanelAllowedInArea(panelId, areaId)) {
+      return
+    }
     if (panelId && !snapshot.value.areas[areaId].panelIds.includes(panelId)) {
       snapshot.value.areas[areaId].panelIds.push(panelId)
     }
@@ -213,6 +211,10 @@ export const useWorkspaceLayoutStore = defineStore('writer-workspace-layout', ()
   }
 
   const movePanelToArea = (panelId: WorkspacePanelId, targetArea: WorkspaceAreaId) => {
+    if (!isWorkspacePanelAllowedInArea(panelId, targetArea)) {
+      return
+    }
+
     for (const areaId of Object.keys(snapshot.value.areas) as WorkspaceAreaId[]) {
       snapshot.value.areas[areaId].panelIds = snapshot.value.areas[areaId].panelIds.filter(
         (id) => id !== panelId,
@@ -235,7 +237,6 @@ export const useWorkspaceLayoutStore = defineStore('writer-workspace-layout', ()
 
     if (layoutPreset === 'focus') {
       next.areas.left.visible = false
-      next.areas.right.visible = false
       next.rightToolArea.visible = false
     }
 
@@ -246,7 +247,6 @@ export const useWorkspaceLayoutStore = defineStore('writer-workspace-layout', ()
     }
 
     if (layoutPreset === 'ai-first') {
-      next.rightPanelTab = 'chat'
       next.rightToolArea.activeTool = 'ai'
       next.rightToolArea.visible = true
     }
@@ -264,7 +264,6 @@ export const useWorkspaceLayoutStore = defineStore('writer-workspace-layout', ()
     preset,
     areas,
     leftSidebarTab,
-    rightPanelTab,
     rightToolArea,
     setAreaVisibility,
     setAreaActivePanel,

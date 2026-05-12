@@ -19,3 +19,5 @@ frontend/dist
 Thumbs.db
 .codex-logs/
 .serena/
+frontend-dev.log
+frontend-dev.err.log

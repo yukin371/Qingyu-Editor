@@ -1,34 +1,6 @@
 <template>
   <div class="tool-right-panel" :class="`tool-right-panel--${activeConfig.mode}`">
     <div class="tool-right-panel__topbar">
-      <div v-if="activeTool === 'assets'" class="tool-right-panel__actions">
-        <button
-          type="button"
-          class="tool-right-panel__icon-btn"
-          title="新建设定"
-          @click="triggerAssetTodo('新建设定')"
-        >
-          <QyIcon name="Plus" :size="14" />
-        </button>
-        <button
-          type="button"
-          class="tool-right-panel__icon-btn"
-          title="编辑设定"
-          :disabled="!selectedAsset"
-          @click="triggerAssetTodo('编辑设定')"
-        >
-          <QyIcon name="Edit" :size="14" />
-        </button>
-        <button
-          type="button"
-          class="tool-right-panel__icon-btn"
-          title="删除设定"
-          :disabled="!selectedAsset"
-          @click="triggerAssetTodo('删除设定')"
-        >
-          <QyIcon name="Delete" :size="14" />
-        </button>
-      </div>
       <button
         type="button"
         class="tool-right-panel__icon-btn"
@@ -108,7 +80,6 @@
 <script setup lang="ts">
 import { computed, ref, type ComponentPublicInstance } from 'vue'
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
-import { message } from '@/design-system/services'
 import AIChatPanel from '@/modules/writer/components/workspace/tool-right/AIChatPanel.vue'
 import AssetDetailPanel from '@/modules/writer/components/workspace/tool-right/AssetDetailPanel.vue'
 import AssetListPanel from '@/modules/writer/components/workspace/tool-right/AssetListPanel.vue'
@@ -211,10 +182,6 @@ const handleOpenAssetGraph = () => {
 const handleOpenInspirationFullscreen = () => {
   toolOverlay.openFromRightPanel('branches')
 }
-
-const triggerAssetTodo = (actionLabel: string) => {
-  message.info(`TODO: ${actionLabel}${selectedAsset.value ? ` 「${selectedAsset.value.name}」` : ''}`)
-}
 </script>
 
 <style scoped lang="scss">
@@ -236,12 +203,6 @@ const triggerAssetTodo = (actionLabel: string) => {
   gap: 8px;
   padding: 0 12px;
   border-bottom: 1px solid #eceff3;
-}
-
-.tool-right-panel__actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
 }
 
 .tool-right-panel__icon-btn {

@@ -25,6 +25,8 @@
         </span>
         <QyInput
           v-model="searchKeyword"
+          id="writer-project-search"
+          name="writer-project-search"
           placeholder="全书"
           clearable
           size="sm"

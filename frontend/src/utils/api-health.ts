@@ -4,6 +4,7 @@
  */
 
 import { ref } from 'vue'
+import { isRemoteWriterMode } from '@/modules/writer/data-bridge/wails'
 
 interface HealthCheckResult {
   healthy: boolean
@@ -22,10 +23,18 @@ function getApiBaseUrl(): string {
   return `/${configured.replace(/^\/+/, '').replace(/\/$/, '')}`
 }
 
+function shouldCheckRemoteApiHealth(): boolean {
+  return import.meta.env.DEV && isRemoteWriterMode()
+}
+
 /**
  * 检查API健康状态
  */
 export async function checkApiHealth(): Promise<HealthCheckResult> {
+  if (!shouldCheckRemoteApiHealth()) {
+    return { healthy: true }
+  }
+
   const startTime = performance.now()
   const apiBaseUrl = getApiBaseUrl()
 
@@ -72,7 +81,7 @@ export async function checkApiHealth(): Promise<HealthCheckResult> {
  * 在开发环境启动时执行健康检查
  */
 export function initApiHealthCheck() {
-  if (!import.meta.env.DEV) return
+  if (!shouldCheckRemoteApiHealth()) return
 
   checkApiHealth().then((result) => {
     if (result.healthy) {
@@ -97,7 +106,8 @@ export function initApiHealthCheck() {
  * 创建API状态监控组件（可选）
  */
 export function createApiStatusMonitor() {
-  const status = ref<'checking' | 'healthy' | 'unhealthy'>('checking')
+  const shouldCheck = shouldCheckRemoteApiHealth()
+  const status = ref<'checking' | 'healthy' | 'unhealthy'>(shouldCheck ? 'checking' : 'healthy')
   const latency = ref<number>(0)
   const error = ref<string>('')
 
@@ -110,7 +120,7 @@ export function createApiStatusMonitor() {
   }
 
   // 开发环境每30秒检查一次
-  if (import.meta.env.DEV) {
+  if (shouldCheck) {
     check()
     setInterval(check, 30000)
   }

@@ -7,7 +7,7 @@ import type {
   CancelTokenSource,
 } from 'axios'
 import axios from 'axios'
-import { ElMessage } from 'element-plus'
+import { message as uiMessage } from '@/design-system/services'
 import type { ErrorResponse } from '@/types/error.types'
 import { errorReporter } from './error-reporter'
 import { isInTestMode as checkTestMode, handleMockRequest } from './mock-data-manager'
@@ -206,14 +206,14 @@ apiClient.interceptors.response.use(
     // 网络错误处理
     if (!response) {
       if (error.code === 'ECONNABORTED') {
-        ElMessage.error('请求超时，请检查网络连接')
+        uiMessage.error('请求超时，请检查网络连接')
       } else {
-        ElMessage.error('网络连接失败，请检查网络')
+        uiMessage.error('网络连接失败，请检查网络')
       }
       return Promise.reject(error)
     }
 
-    const { code, message } = response.data
+    const { code, message: backendMessage } = response.data
 
     // 上报错误到监控系统
     errorReporter.report(response.data)
@@ -228,7 +228,7 @@ apiClient.interceptors.response.use(
         urlPath.endsWith('/auth/login')
       if (isLoginRequest) {
         // 登录失败，使用后端返回的错误消息
-        const errorMessage = message || '用户名或密码错误'
+        const errorMessage = backendMessage || '用户名或密码错误'
         const customError = new Error(errorMessage)
         return Promise.reject(customError)
       }
@@ -295,31 +295,31 @@ apiClient.interceptors.response.use(
 
       // 权限错误
       case 1003: // FORBIDDEN (1003)
-        ElMessage.error('您没有权限执行此操作')
+        uiMessage.error('您没有权限执行此操作')
         break
 
       // 参数错误
       case 1001: // INVALID_PARAMS (1001)
-        ElMessage.warning(message || '参数错误，请检查输入')
+        uiMessage.warning(backendMessage || '参数错误，请检查输入')
         break
 
       // 资源不存在
       case 1004: // NOT_FOUND (1004)
-        ElMessage.warning(message || '请求的资源不存在')
+        uiMessage.warning(backendMessage || '请求的资源不存在')
         break
 
       // 业务逻辑错误
       case 1007: // RATE_LIMIT_EXCEEDED (1007)
-        ElMessage.error('操作过于频繁，请稍后再试')
+        uiMessage.error('操作过于频繁，请稍后再试')
         break
 
       // 系统错误
       case 5000: // INTERNAL_ERROR (5000)
-        ElMessage.error('服务器内部错误，请稍后重试')
+        uiMessage.error('服务器内部错误，请稍后重试')
         break
 
       default:
-        ElMessage.error(message || '请求失败，请稍后重试')
+        uiMessage.error(backendMessage || '请求失败，请稍后重试')
     }
 
     return Promise.reject(error)
@@ -386,7 +386,7 @@ function handleAuthError() {
   })
 
   // 显示提示
-  ElMessage.warning('登录已过期，请重新登录')
+  uiMessage.warning('登录已过期，请重新登录')
 
   // 跳转到登录页（保留当前路径用于登录后跳回）
   const loginPath = buildAuthRedirectPath(window.location.pathname, window.location.search)

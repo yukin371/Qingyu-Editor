@@ -25,8 +25,8 @@
     "test:vitest:ui": "vitest --ui",
     "test:vitest:coverage": "vitest --coverage",
     "test:vitest:run": "vitest run",
-    "test:ci": "vitest run --config vitest.ci.config.ts src/modules/writer/stores/__tests__/editorStore.spec.ts src/modules/writer/stores/__tests__/editorStore.v2.spec.ts src/modules/writer/api/__tests__/desktop-fallback.spec.ts src/modules/writer/api/__tests__/outline.spec.ts src/modules/writer/api/__tests__/wrapper.test.ts src/modules/ai/api/__tests__/ai.spec.ts src/modules/ai/api/__tests__/workbench.spec.ts src/utils/api-health.spec.ts",
-    "test:ci:coverage": "vitest run --config vitest.ci.config.ts --coverage src/modules/writer/stores/__tests__/editorStore.spec.ts src/modules/writer/stores/__tests__/editorStore.v2.spec.ts src/modules/writer/api/__tests__/desktop-fallback.spec.ts src/modules/writer/api/__tests__/outline.spec.ts src/modules/writer/api/__tests__/wrapper.test.ts src/modules/ai/api/__tests__/ai.spec.ts src/modules/ai/api/__tests__/workbench.spec.ts src/utils/api-health.spec.ts",
+    "test:ci": "vitest run --config vitest.ci.config.ts src/modules/writer/stores/__tests__/editorStore.spec.ts src/modules/writer/stores/__tests__/editorStore.v2.spec.ts src/modules/writer/api/__tests__/desktop-fallback.spec.ts src/modules/writer/api/__tests__/outline.spec.ts src/modules/writer/api/__tests__/wrapper.test.ts src/modules/writer/data-bridge/__tests__/wails-runtime.spec.ts src/modules/ai/api/__tests__/ai.spec.ts src/modules/ai/api/__tests__/workbench.spec.ts src/utils/api-health.spec.ts src/utils/syncService.spec.ts",
+    "test:ci:coverage": "vitest run --config vitest.ci.config.ts --coverage src/modules/writer/stores/__tests__/editorStore.spec.ts src/modules/writer/stores/__tests__/editorStore.v2.spec.ts src/modules/writer/api/__tests__/desktop-fallback.spec.ts src/modules/writer/api/__tests__/outline.spec.ts src/modules/writer/api/__tests__/wrapper.test.ts src/modules/writer/data-bridge/__tests__/wails-runtime.spec.ts src/modules/ai/api/__tests__/ai.spec.ts src/modules/ai/api/__tests__/workbench.spec.ts src/utils/api-health.spec.ts src/utils/syncService.spec.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
@@ -56,6 +56,7 @@
     "nanoid": "^5.1.6",
     "nprogress": "^0.2.0",
     "pinia": "^2.1.7",
+    "pinyin-pro": "^3.28.1",
     "vditor": "^3.11.2",
     "vue": "^3.3.4",
     "vue-router": "^4.2.5"

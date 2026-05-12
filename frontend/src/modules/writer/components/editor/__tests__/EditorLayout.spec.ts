@@ -24,11 +24,11 @@ describe('EditorLayout', () => {
       global: {
         plugins: [pinia],
         stubs: {
-          SidePanel: true,
+          SidePanel: {
+            template: '<div class="side-panel-stub"><slot /></div>',
+          },
           EditorPanel: true,
-          AIPanel: true,
-          ProjectTree: true,
-          ChapterTree: true
+          AIPanel: true
         }
       }
     })
@@ -47,6 +47,7 @@ describe('EditorLayout', () => {
     expect(root.exists()).toBe(true)
     expect(root.attributes('role')).toBe('application')
     expect(wrapper.find('[aria-live="polite"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="editor-layout-left-placeholder"]').exists()).toBe(true)
   })
 
   it('移动端应显示 tabs', async () => {
