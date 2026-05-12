@@ -1,7 +1,7 @@
 <template>
   <WorkbenchShell
     title="项目列表"
-    description="完整浏览、筛选和排序都放在这里，首页只保留最近项目。"
+    description="浏览全部项目，并在这里完成筛选和继续创作。"
     eyebrow="项目页"
     active-nav-id="projects"
     :last-project-id="lastProjectId"
@@ -12,66 +12,98 @@
     </template>
 
     <section class="space-y-4">
-      <div class="space-y-1">
-        <h2 class="text-lg font-semibold text-slate-950">项目结果</h2>
-        <p class="text-sm text-slate-500">{{ filteredProjects.length }} 个项目符合当前筛选</p>
-      </div>
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div class="space-y-1">
+          <h2 class="text-lg font-semibold text-slate-950">全部项目</h2>
+          <p class="text-sm text-slate-500">{{ filteredProjects.length }} 个项目</p>
+        </div>
 
-      <div class="grid gap-4 lg:grid-cols-[minmax(0,2fr)_1fr_1fr]">
-        <label class="block space-y-2">
-          <span class="text-sm font-medium text-slate-700">搜索</span>
-          <QyInput v-model="searchQuery" clearable placeholder="按项目名或摘要搜索" />
-        </label>
-        <label class="block space-y-2">
-          <span class="text-sm font-medium text-slate-700">状态</span>
+        <div class="grid gap-3 md:grid-cols-[minmax(0,2fr)_180px_180px] lg:min-w-[720px]">
+          <QyInput v-model="searchQuery" clearable placeholder="搜索项目名或摘要" />
           <QySelect v-model="statusFilter" :options="statusSelectOptions" />
-        </label>
-        <label class="block space-y-2">
-          <span class="text-sm font-medium text-slate-700">排序</span>
           <QySelect v-model="sortKey" :options="sortOptions" />
-        </label>
+        </div>
       </div>
 
-      <div v-if="isLoading" class="text-sm text-slate-500">正在整理项目列表...</div>
+      <div v-if="isLoading" class="space-y-3">
+        <QyCard
+          v-for="index in loadingRows"
+          :key="index"
+          variant="outlined"
+          shadow="never"
+          padding="sm"
+          class="rounded-3xl"
+        >
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="min-w-0 flex-1 space-y-2">
+              <Skeleton type="text" width="156px" height="18px" />
+              <div class="flex flex-wrap items-center gap-3">
+                <Skeleton type="text" width="64px" height="12px" />
+                <Skeleton type="text" width="72px" height="12px" />
+                <Skeleton type="text" width="96px" height="12px" />
+              </div>
+            </div>
+            <Skeleton type="rect" width="88px" height="32px" class="rounded-xl" />
+          </div>
+        </QyCard>
+      </div>
 
-      <QyEmpty v-else-if="filteredProjects.length === 0" title="没有匹配结果" type="search">
-        <template #description>
-          试试清空筛选条件，或者直接新建一个项目。
-        </template>
-      </QyEmpty>
+      <div v-else-if="filteredProjects.length === 0">
+        <QyCard variant="outlined" shadow="never" padding="sm" class="rounded-3xl">
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 items-center gap-3">
+              <div
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-500"
+              >
+                <QyIcon name="Search" :size="18" />
+              </div>
+              <div class="min-w-0">
+                <div class="text-sm font-semibold text-slate-950">没有匹配结果</div>
+                <p class="mt-1 text-sm text-slate-500">试试清空筛选条件，或者直接新建一个项目。</p>
+              </div>
+            </div>
 
-      <div v-else class="divide-y divide-slate-100 border-t border-slate-100">
+            <div class="flex flex-wrap gap-2">
+              <QyButton size="sm" variant="ghost" @click="resetFilters">清空筛选</QyButton>
+              <QyButton size="sm" @click="createDialogVisible = true">新建项目</QyButton>
+            </div>
+          </div>
+        </QyCard>
+      </div>
+
+      <div v-else class="space-y-3">
         <article
           v-for="project in filteredProjects"
           :key="project.id"
-          class="grid gap-5 py-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
+          class="rounded-3xl border border-slate-100 bg-white px-4 py-4"
         >
-          <div class="min-w-0 space-y-2">
-            <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-              <span>{{ project.statusLabel }}</span>
-              <span>{{ formatDate(project.updatedAt) }}</span>
-            </div>
-            <div class="space-y-1">
-              <h3 class="text-lg font-semibold text-slate-950">{{ project.title }}</h3>
-              <p class="text-sm leading-6 text-slate-600">{{ project.summary }}</p>
-            </div>
-            <div class="flex flex-wrap gap-4 text-xs text-slate-500">
-              <span>分类：{{ project.category }}</span>
-              <span>章节：{{ project.chapterCount }}</span>
-              <span>字数：{{ formatNumber(project.totalWords) }}</span>
-            </div>
-            <p class="text-xs text-slate-500">
-              {{
-                project.lastChapterTitle
-                  ? `最近章节：${project.lastChapterTitle}`
-                  : '还没有最近章节定位。'
-              }}
-            </p>
-          </div>
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="min-w-0 flex-1 space-y-2">
+              <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                <span class="rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-700">
+                  {{ project.category }}
+                </span>
+                <span>{{ project.statusLabel }}</span>
+                <span>{{ formatDate(project.updatedAt) }}</span>
+              </div>
 
-          <div class="flex shrink-0 flex-wrap gap-2">
-            <QyButton size="sm" variant="ghost" @click="openProject(project.id)">进入项目</QyButton>
-            <QyButton size="sm" @click="router.push(project.continueTarget)">继续创作</QyButton>
+              <button type="button" class="block text-left" @click="router.push(project.continueTarget)">
+                <div class="text-base font-semibold text-slate-950">{{ project.title }}</div>
+                <div class="mt-1 text-sm text-slate-500">
+                  {{ project.lastChapterTitle || '从项目入口继续创作' }}
+                </div>
+              </button>
+
+              <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                <span>{{ project.chapterCount }} 章</span>
+                <span>{{ formatNumber(project.totalWords) }} 字</span>
+              </div>
+            </div>
+
+            <div class="flex shrink-0 flex-wrap gap-2">
+              <QyButton size="sm" @click="router.push(project.continueTarget)">继续</QyButton>
+              <QyButton size="sm" variant="ghost" @click="openProject(project.id)">进入</QyButton>
+            </div>
           </div>
         </article>
       </div>
@@ -96,7 +128,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { QyButton, QyEmpty, QyInput, QySelect } from '@/design-system/components'
+import { QyButton, QyCard, QyIcon, QyInput, QySelect, Skeleton } from '@/design-system/components'
 import { message } from '@/design-system/services'
 import WorkbenchShell from '@/modules/writer/components/workbench/WorkbenchShell.vue'
 import ProjectCreateDialog from '@/modules/writer/components/workbench/ProjectCreateDialog.vue'
@@ -118,6 +150,7 @@ const isCreating = ref(false)
 const projectCards = ref<WorkbenchRecentProjectCard[]>([])
 const createDialogVisible = ref(false)
 const importInputRef = ref<HTMLInputElement | null>(null)
+const loadingRows = [1, 2, 3]
 
 const searchQuery = ref('')
 const statusFilter = ref('all')
@@ -189,6 +222,12 @@ function formatDate(value: string): string {
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat('zh-CN').format(value)
+}
+
+function resetFilters() {
+  searchQuery.value = ''
+  statusFilter.value = 'all'
+  sortKey.value = 'updated-desc'
 }
 
 async function refreshProjects() {
