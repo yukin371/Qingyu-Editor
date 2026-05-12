@@ -19,5 +19,7 @@ frontend/dist
 Thumbs.db
 .codex-logs/
 .serena/
+.tmp/
+frontend/.cleanup-backups/
 frontend-dev.log
 frontend-dev.err.log
