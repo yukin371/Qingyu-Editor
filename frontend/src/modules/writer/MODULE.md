@@ -4,7 +4,7 @@
 
 ## 职责
 
-承接写作工作区、Editor V3、Story Harness、AI 工作台与辅助工具的一体化前端宿主。`src/modules/writer` 负责把章节编辑、建议生成、提案暂存、工具查看与 AI handoff 串成同一条作者工作流；不负责后端事实真相，也不在主编辑区再维护第二套工具页宿主。独立编辑器宿主默认首屏应直接进入编辑器工作区，`dashboard / projects` 只允许作为兼容遗留视图存在，不能继续充当主导航壳。
+承接作者工作台、写作工作区、Editor V3、Story Harness、AI 工作台与辅助工具的一体化前端宿主。`src/modules/writer` 负责把项目入口调度、模板起步、章节编辑、建议生成、提案暂存、工具查看与 AI handoff 串成同一条作者工作流；不负责后端事实真相，也不在主编辑区再维护第二套工具页宿主。独立编辑器宿主默认首屏现在是作者工作台，`/writer/project/:projectId` 才是项目内正文工作区，旧 `dashboard / projects` 语义不再允许继续扩张成主导航壳。
 
 ## 数据流
 
@@ -23,7 +23,11 @@
 ## 约定 & 陷阱
 
 - **工具唯一入口**：`relations / timeline / branches / structure` 只允许通过 `WorkspaceToolOverlay` 承载；不要再让 `WorkspaceEditorContent` 主内容区直接切成工具页。
-- **编辑器是默认首页**：独立编辑器的 `/` 与 `/writer` 都应优先落到 `ProjectWorkspace`，不要再让 `WriterDashboard`、`ProjectListView` 或平台式头部导航充当默认宿主。
+- **工作台是默认首页，编辑器是项目内主工作区**：独立编辑器的 `/` 与 `/writer` 现在应先进入作者工作台，继续创作、项目列表、模板中心都从这里分流；真正的正文编辑只允许落到 `writer-project`，不要再把工作台页面做回第二个编辑器宿主。
+- **项目列表与模板中心必须保持独立页职责**：工作台首页只展示最近项目和快捷动作；完整项目筛选、模板浏览与模板详情预览分别落到独立项目页与模板中心，不要把这些控件重新塞回首页。
+- **模板中心的 owner 是“新建项目工具”，不是模板后台**：模板页允许浏览分类、打开 `大纲 / 角色 / 设定` 抽屉，并把模板应用到新建项目；不要在这里偷偷长出模板编辑器、模板发布系统或第二套项目创建协议。
+- **工作台壳必须保持模块化和简洁**：`WorkbenchShell` 负责左侧主导航和右侧主内容区的基础骨架；首页、项目页、模板页优先复用 `QyCard / QyButton / QyInput / QySelect / QyDrawer / QyModal` 等设计系统原件，不要再堆叠装饰性卡片、大段说明或自定义平台式大壳。
+- **双壳模型要显式，不要伪装成同一页抖动**：顶层页壳只服务 `/writer`、`/writer/projects`、`/writer/templates`，并由页面显式传入 `activeNavId`；`/writer/project/:projectId` 只走 `WorkspaceShell` 编辑器壳。不要再让壳层通过路由猜测去兼容另一条主链。
 - **新建章节走“先创建再命名”**：`新建章节` 不再弹标题弹窗，而是按当前上下文直接创建默认 `第N章`；章节标题的细化命名应在主编辑区页内标题行完成，避免创建前表单打断写作流。
 - **历史入口直接收敛到路由兼容层**：旧 `dashboard / editor / publish` 页面不再保留独立运行时壳；兼容只允许留在 `routes.ts` 的重定向层，不再保留会继续腐化的空页面文件。
 - **桌面启动链保持最小化**：`frontend/src/main.ts` 与 `router/*` 不应再强制注入 auth session、websocket 或全局 mock 状态；mock/test-mode 只允许通过显式 `?test=true` 进入，避免桌面宿主继续背在线平台启动逻辑。

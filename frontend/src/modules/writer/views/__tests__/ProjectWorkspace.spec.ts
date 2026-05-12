@@ -600,6 +600,7 @@ describe('ProjectWorkspace Refactor', () => {
   it('写作模式下应渲染工作区编辑宿主且不渲染旧 EditorPanel', async () => {
     const wrapper = mountProjectWorkspace()
 
+    expect(wrapper.find('[data-writer-shell="editor"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="workspace-editor-content-module-mock"]').exists()).toBe(true)
     expect(wrapper.html()).not.toContain('EditorPanel')
     expect(loadCharacters).toHaveBeenCalledWith('project-1')

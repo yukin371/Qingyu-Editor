@@ -1,18 +1,19 @@
 <template>
   <div
-    class="workspace-shell"
-    :class="{ 'workspace-shell--immersive': isImmersiveMode }"
+    data-writer-shell="editor"
+    class="writer-editor-shell"
+    :class="{ 'writer-editor-shell--immersive': isImmersiveMode }"
     :data-editor-theme="editorTheme"
   >
-    <header class="workspace-shell__topbar">
+    <header class="writer-editor-shell__topbar">
       <slot name="topbar" />
     </header>
 
-    <main class="workspace-shell__body">
+    <main class="writer-editor-shell__body">
       <slot name="body" />
     </main>
 
-    <footer class="workspace-shell__statusbar">
+    <footer class="writer-editor-shell__statusbar">
       <slot name="statusbar" />
     </footer>
   </div>
@@ -32,7 +33,7 @@ defineSlots<{
 </script>
 
 <style scoped lang="scss">
-.workspace-shell {
+.writer-editor-shell {
   height: 100vh;
   min-height: 100vh;
   display: flex;
@@ -41,13 +42,13 @@ defineSlots<{
   overflow: hidden;
 }
 
-.workspace-shell__topbar,
-.workspace-shell__statusbar {
+.writer-editor-shell__topbar,
+.writer-editor-shell__statusbar {
   flex-shrink: 0;
   min-height: 0;
 }
 
-.workspace-shell__body {
+.writer-editor-shell__body {
   flex: 1;
   min-height: 0;
   overflow: hidden;
