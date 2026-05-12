@@ -3,7 +3,7 @@ import type { RouteRecordRaw } from 'vue-router'
 import { setupRouterGuards } from './guards' // 引入封装好的守卫
 
 import { errorRoutes } from './error-routes'
-import writerRoutes from '@/modules/writer/routes'
+import writerRoutes, { WRITER_ROUTE_NAMES } from '@/modules/writer/routes'
 
 // 定义路由元数据类型扩展
 declare module 'vue-router' {
@@ -18,13 +18,7 @@ declare module 'vue-router' {
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    redirect: () => {
-      const lastProjectId = window.localStorage.getItem('qingyu-editor:last-project') || ''
-      if (lastProjectId) {
-        return { name: 'writer-project', params: { projectId: lastProjectId } }
-      }
-      return { name: 'writer-home' }
-    },
+    redirect: { name: WRITER_ROUTE_NAMES.home },
   },
 
   ...writerRoutes,

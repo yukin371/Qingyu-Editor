@@ -5,7 +5,14 @@
 
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
-import { http } from '@/core/http'
+import { documentApi, createDocument } from '@/modules/writer/api/document'
+import { editorApi, updateDocumentContent } from '@/modules/writer/api/editor'
+import { projectApi } from '@/modules/writer/api/project'
+import { DocumentType } from '@/modules/writer/types/document'
+import {
+  buildEditorContentFromPlainText,
+  extractPlainTextFromEditorContent,
+} from '@/modules/writer/utils/editorContent'
 
 // ==================== 类型定义 ====================
 
@@ -32,13 +39,6 @@ export interface ImportResult {
   error?: string
 }
 
-// API 响应类型
-interface ProjectResponse {
-  id?: string
-  title?: string
-  description?: string
-}
-
 interface DocumentNode {
   documentId?: string
   id?: string
@@ -48,8 +48,10 @@ interface DocumentNode {
   children?: DocumentNode[]
 }
 
-interface ContentResponse {
-  content?: string
+interface ProjectResponse {
+  id?: string
+  projectId?: string
+  title?: string
 }
 
 // ==================== 导出功能 ====================
@@ -84,7 +86,7 @@ function addDocumentsToZip(
   documents: ExportDocument[],
   tree: Map<string | undefined, ExportDocument[]>,
   parentPath: string,
-  parentId?: string
+  parentId?: string,
 ): void {
   const children = tree.get(parentId) || []
 
@@ -128,12 +130,10 @@ function sanitizeFileName(name: string): string {
 export async function exportProjectToZip(projectId: string): Promise<void> {
   try {
     // 1. 获取项目详情
-    const project = await http.get<ProjectResponse>(`/writer/projects/${projectId}`)
+    const project = (await projectApi.getDetail(projectId)) as ProjectResponse
 
     // 2. 获取文档树
-    const documentsResponse = await http.get<DocumentNode[]>(
-      `/writer/project/${projectId}/documents/tree`
-    )
+    const documentsResponse = await documentApi.getTree(projectId)
 
     // 3. 获取所有文档内容
     const documents: ExportDocument[] = []
@@ -141,15 +141,13 @@ export async function exportProjectToZip(projectId: string): Promise<void> {
 
     for (const doc of documentList) {
       try {
-        const contentResponse = await http.get<ContentResponse>(
-          `/writer/documents/${doc.documentId || doc.id}/content`
-        )
         const currentDocId = doc.documentId || doc.id
         if (!currentDocId) continue
+        const contentResponse = (await editorApi.getContent(currentDocId)) as { content?: string }
         documents.push({
           documentId: currentDocId,
           title: doc.title,
-          content: contentResponse?.content || '',
+          content: extractPlainTextFromEditorContent(contentResponse?.content || ''),
           parentId: doc.parentId,
           sortOrder: doc.sortOrder || 0,
         })
@@ -234,7 +232,10 @@ export async function importProjectFromZip(file: File): Promise<ImportResult> {
     return result
   } catch (error: unknown) {
     console.error('[Import] 导入失败:', error)
-    return { success: false, error: `导入失败: ${error instanceof Error ? error.message : '未知错误'}` }
+    return {
+      success: false,
+      error: `导入失败: ${error instanceof Error ? error.message : '未知错误'}`,
+    }
   }
 }
 
@@ -293,7 +294,7 @@ async function parseZipStructure(zip: any, rootFolder: string): Promise<ParsedDo
     } else if (parts[parts.length - 1].endsWith('.txt')) {
       // 处理 TXT 文件
       const fileName = parts[parts.length - 1].replace('.txt', '')
-      const content = await zip.file(path)?.async('string') || ''
+      const content = (await zip.file(path)?.async('string')) || ''
 
       const doc: ParsedDocument = {
         title: fileName,
@@ -345,14 +346,14 @@ async function parseZipStructure(zip: any, rootFolder: string): Promise<ParsedDo
  */
 async function createProjectWithDocuments(
   projectTitle: string,
-  documents: ParsedDocument[]
+  documents: ParsedDocument[],
 ): Promise<ImportResult> {
   try {
     // 1. 创建项目
-    const projectResponse = await http.post<ProjectResponse>('/writer/projects', {
+    const projectResponse = (await projectApi.create({
       title: projectTitle,
-      description: `从文件导入于 ${new Date().toLocaleString('zh-CN')}`,
-    })
+      summary: `从文件导入于 ${new Date().toLocaleString('zh-CN')}`,
+    })) as { id?: string; projectId?: string }
 
     const projectId = projectResponse?.id
     if (!projectId) {
@@ -383,21 +384,23 @@ async function createDocumentsRecursive(
   projectId: string,
   documents: ParsedDocument[],
   parentId: string | null,
-  onCreated: () => void
+  onCreated: () => void,
 ): Promise<void> {
   for (const doc of documents) {
     try {
-      const response = await http.post<{ id?: string }>(
-        `/writer/project/${projectId}/documents`,
-        {
-          title: doc.title,
-          content: doc.content,
-          parentId: parentId || undefined,
-        }
-      )
+      const response = await createDocument(projectId, {
+        projectId,
+        title: doc.title,
+        parentId: parentId || undefined,
+        type: doc.isFolder ? DocumentType.VOLUME : DocumentType.CHAPTER,
+      })
 
       const newDocId = response?.id
       onCreated()
+
+      if (newDocId && !doc.isFolder && doc.content.trim()) {
+        await updateDocumentContent(newDocId, buildEditorContentFromPlainText(doc.content))
+      }
 
       // 递归创建子文档
       if (doc.children.length > 0 && newDocId) {

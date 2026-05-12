@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import writerRoutes from '../routes'
+import writerRoutes, { WRITER_ROUTE_NAMES } from '../routes'
 
 type LegacyEditorRedirectInput = {
   params: {
@@ -17,13 +17,21 @@ type LegacyEditorRedirectResult = {
   query: Record<string, string>
 }
 
-type LegacyEditorRedirect = (
-  input: LegacyEditorRedirectInput,
-) => LegacyEditorRedirectResult
+type LegacyEditorRedirect = (input: LegacyEditorRedirectInput) => LegacyEditorRedirectResult
 
 describe('writer routes', () => {
+  it('/writer 默认应指向作者工作台', () => {
+    const home = writerRoutes.find((route) => route.name === WRITER_ROUTE_NAMES.home)
+    const projects = writerRoutes.find((route) => route.name === WRITER_ROUTE_NAMES.projects)
+    const templates = writerRoutes.find((route) => route.name === WRITER_ROUTE_NAMES.templates)
+
+    expect(home?.path).toBe('/writer')
+    expect(projects?.path).toBe('/writer/projects')
+    expect(templates?.path).toBe('/writer/templates')
+  })
+
   it('legacy editor route 应重定向到 writer-project 并透传 chapterId/query', () => {
-    const legacy = writerRoutes.find((route) => route.name === 'writer-editor')
+    const legacy = writerRoutes.find((route) => route.name === WRITER_ROUTE_NAMES.editor)
     expect(legacy).toBeTruthy()
     expect(typeof legacy?.redirect).toBe('function')
 
@@ -35,14 +43,14 @@ describe('writer routes', () => {
 
     const result = redirect(target)
     expect(result).toEqual({
-      name: 'writer-project',
+      name: WRITER_ROUTE_NAMES.project,
       params: { projectId: 'project-1' },
       query: { test: 'true', tool: 'writing', chapterId: 'chapter-9' },
     })
   })
 
   it('legacy editor route 在无 chapterId 时不应注入 chapterId query', () => {
-    const legacy = writerRoutes.find((route) => route.name === 'writer-editor')
+    const legacy = writerRoutes.find((route) => route.name === WRITER_ROUTE_NAMES.editor)
     const redirect = legacy!.redirect as LegacyEditorRedirect
 
     const result = redirect({
@@ -51,7 +59,7 @@ describe('writer routes', () => {
     })
 
     expect(result).toEqual({
-      name: 'writer-project',
+      name: WRITER_ROUTE_NAMES.project,
       params: { projectId: 'project-2' },
       query: { foo: 'bar' },
     })
