@@ -180,7 +180,7 @@ const handleOpenAssetGraph = () => {
 }
 
 const handleOpenInspirationFullscreen = () => {
-  toolOverlay.openFromRightPanel('branches')
+  toolOverlay.openFromRightPanel('structure')
 }
 </script>
 

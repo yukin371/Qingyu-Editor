@@ -79,6 +79,7 @@
                 @status-change="(chips: string[]) => emit('status-change', chips)"
                 @open-graph="(chapterId: string) => emit('open-graph', chapterId)"
                 @jump-to-chapter="(chapterId: string) => emit('jump-to-chapter', chapterId)"
+                @create-structure-plan="(payload: any) => emit('create-structure-plan', payload)"
                 @trigger-ai-action="(payload: any) => emit('trigger-ai-action', payload)"
               />
             </KeepAlive>
@@ -101,7 +102,7 @@ import {
   buildActiveEntityPreview,
   type ActiveEntitySummary,
 } from '@/modules/writer/composables/useWorkflowContext'
-import type { WriterWorkflowContext } from '@/modules/writer/types/workflow'
+import type { WriterStructurePlanPayload, WriterWorkflowContext } from '@/modules/writer/types/workflow'
 
 const createAsyncToolView = (loader: () => Promise<Component>) =>
   defineAsyncComponent({
@@ -162,6 +163,7 @@ const emit = defineEmits<{
   (e: 'status-change', chips: string[]): void
   (e: 'open-graph', chapterId: string): void
   (e: 'jump-to-chapter', chapterId: string): void
+  (e: 'create-structure-plan', payload: WriterStructurePlanPayload): void
   (
     e: 'trigger-ai-action',
     payload: {

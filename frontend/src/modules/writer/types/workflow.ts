@@ -124,11 +124,16 @@ export interface WriterStructurePlanItem {
   reason?: string
 }
 
+export type WriterStructureImportTarget = 'current-volume' | 'project-root'
+export type WriterStructureDuplicateStrategy = 'allow_duplicate' | 'skip_existing'
+
 export interface WriterStructurePlanPayload {
   mode: WriterStructurePlanMode
   prompt: string
   summary: string
   items: WriterStructurePlanItem[]
+  importTarget?: WriterStructureImportTarget
+  duplicateStrategy?: WriterStructureDuplicateStrategy
 }
 
 export function buildWriterWorkflowContextSignature(

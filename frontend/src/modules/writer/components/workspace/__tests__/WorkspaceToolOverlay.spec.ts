@@ -193,4 +193,43 @@ describe('WorkspaceToolOverlay', () => {
 
     expect(wrapper.emitted('jump-to-chapter')?.at(-1)).toEqual(['chapter-2'])
   })
+
+  it('应透传结构舞台发出的创建结构草案事件', async () => {
+    const wrapper = mount(WorkspaceToolOverlay, {
+      props: {
+        visible: true,
+        activeTool: 'structure',
+        projectId: 'project-1',
+        chapterId: 'chapter-1',
+        chapterTitle: '第一章',
+        chapters: [],
+      },
+      global: {
+        stubs: {
+          QyIcon: { template: '<span />' },
+          QyGhostButton: { template: '<button><slot /></button>' },
+          ToolSidebar: { template: '<aside />' },
+        },
+      },
+    })
+
+    await settleAsyncToolView()
+
+    const structureView = wrapper.getComponent({ name: 'StructureStageViewStub' })
+    await structureView.vm.$emit('create-structure-plan', {
+      mode: 'chapter',
+      prompt: '导入黄金三章',
+      summary: '生成三章草案',
+      importTarget: 'current-volume',
+      duplicateStrategy: 'skip_existing',
+      items: [{ title: '屈辱现场' }],
+    })
+
+    expect(wrapper.emitted('create-structure-plan')?.at(-1)?.[0]).toMatchObject({
+      mode: 'chapter',
+      prompt: '导入黄金三章',
+      importTarget: 'current-volume',
+      duplicateStrategy: 'skip_existing',
+    })
+  })
 })

@@ -55,6 +55,7 @@
     @open-graph="(chapterId: string) => emit('open-graph', chapterId)"
     @jump-to-chapter="(chapterId: string) => emit('jump-to-chapter', chapterId)"
     @trigger-ai-action="handleOverlayTriggerAIAction"
+    @create-structure-plan="(payload) => emit('create-structure-plan', payload)"
   />
 </template>
 
@@ -72,7 +73,10 @@ import type {
   StoryHarnessChangeRequestPreview,
   StoryHarnessRelationSummary,
 } from '@/modules/writer/stores/v3/storyHarnessStore'
-import type { WriterWorkflowActionRequest } from '@/modules/writer/types/workflow'
+import type {
+  WriterStructurePlanPayload,
+  WriterWorkflowActionRequest,
+} from '@/modules/writer/types/workflow'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 import type { ActiveEntitySummary } from '@/modules/writer/composables/useWorkflowContext'
 import type { WriterWorkflowContext } from '@/modules/writer/types/workflow'
@@ -111,6 +115,7 @@ const emit = defineEmits<{
   (e: 'add-doc'): void
   (e: 'rename-title', value: string): void
   (e: 'trigger-ai-action', payload: WriterWorkflowActionRequest): void
+  (e: 'create-structure-plan', payload: WriterStructurePlanPayload): void
   (e: 'jump-to-chapter', chapterId: string): void
   (e: 'open-graph', chapterId: string): void
   (e: 'status-change', chips: string[]): void

@@ -77,6 +77,7 @@
           @save="handleTipTapSave"
           @add-doc="handleAddDoc"
           @rename-title="handleRenameCurrentDocument"
+          @create-structure-plan="handleCreateStructurePlan"
           @status-change="handleWorkspaceStatusChange"
           @open-fullscreen-tool="handleOpenFullscreenTool"
           @close-fullscreen="handleCloseFullscreen"
@@ -1088,6 +1089,12 @@ const buildStructureDocumentTitle = (
   return cleaned ? `第${sequence}章 ${cleaned}` : `第${sequence}章`
 }
 
+const normalizeStructureDocumentTitle = (rawTitle: string) =>
+  rawTitle
+    .replace(/^第[\d一二三四五六七八九十百千]+[卷章节回]\s*/u, '')
+    .replace(/^(卷|章节?)\s*[:：-]?\s*/u, '')
+    .trim()
+
 const handleCreateStructurePlan = async (payload: WriterStructurePlanPayload) => {
   if (!currentProjectId.value || payload.items.length === 0) {
     return
@@ -1097,7 +1104,10 @@ const handleCreateStructurePlan = async (payload: WriterStructurePlanPayload) =>
     (doc) => doc.type === DocumentType.VOLUME,
   )
   const currentVolumeDoc = resolveCurrentVolumeDocument()
-  const chapterParentId = payload.mode === 'chapter' ? currentVolumeDoc?.id : undefined
+  const importTarget = payload.importTarget || 'project-root'
+  const duplicateStrategy = payload.duplicateStrategy || 'allow_duplicate'
+  const chapterParentId =
+    payload.mode === 'chapter' && importTarget === 'current-volume' ? currentVolumeDoc?.id : undefined
   const chapterSiblingDocs =
     payload.mode === 'chapter'
       ? Array.from(availableDocMap.value.values()).filter(
@@ -1108,11 +1118,26 @@ const handleCreateStructurePlan = async (payload: WriterStructurePlanPayload) =>
     payload.mode === 'chapter' && chapterParentId
       ? findOutlineNodeByDocumentId(chapterParentId)
       : null
+  const existingChapterTitleSet =
+    payload.mode === 'chapter'
+      ? new Set(chapterSiblingDocs.map((doc) => normalizeStructureDocumentTitle(doc.title)))
+      : new Set<string>()
 
   try {
     const createdDocumentIds: string[] = []
+    let skippedCount = 0
 
     for (const [index, item] of payload.items.entries()) {
+      const normalizedItemTitle = normalizeStructureDocumentTitle(item.title)
+      if (
+        payload.mode === 'chapter' &&
+        duplicateStrategy === 'skip_existing' &&
+        existingChapterTitleSet.has(normalizedItemTitle)
+      ) {
+        skippedCount += 1
+        continue
+      }
+
       const sequenceBase = payload.mode === 'volume' ? volumeDocs.length : chapterSiblingDocs.length
       const title = buildStructureDocumentTitle(payload.mode, item.title, sequenceBase + index + 1)
       const created = await createDocument(currentProjectId.value, {
@@ -1128,6 +1153,7 @@ const handleCreateStructurePlan = async (payload: WriterStructurePlanPayload) =>
       }
 
       if (payload.mode === 'chapter' && createdDocumentId) {
+        existingChapterTitleSet.add(normalizedItemTitle)
         await outlineApi.create(currentProjectId.value, {
           parentId: outlineParentNode?.id,
           title,
@@ -1150,11 +1176,23 @@ const handleCreateStructurePlan = async (payload: WriterStructurePlanPayload) =>
       await router.replace({ query: nextQuery })
     }
 
-    message.success(
+    const createdCount = createdDocumentIds.length
+    const skippedText =
+      payload.mode === 'chapter' && duplicateStrategy === 'skip_existing' && skippedCount > 0
+        ? `，已跳过 ${skippedCount} 个重复章节`
+        : ''
+    const successText =
       payload.mode === 'volume'
-        ? `已创建 ${payload.items.length} 个 AI 卷草案`
-        : `已创建 ${payload.items.length} 个 AI 章节草案`,
-    )
+        ? `已创建 ${createdCount} 个 AI 卷草案`
+        : createdCount > 0
+          ? `已创建 ${createdCount} 个 AI 章节草案${skippedText}`
+          : `未新增章节，已跳过 ${skippedCount} 个重复章节`
+
+    if (createdCount > 0) {
+      message.success(successText)
+    } else {
+      message.info(successText)
+    }
   } catch (error) {
     console.error('[ProjectWorkspace] 创建 AI 结构草案失败:', error)
     message.error(payload.mode === 'volume' ? 'AI 增卷失败，请重试' : 'AI 增章节失败，请重试')

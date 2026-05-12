@@ -34,6 +34,21 @@ const { selectDocumentMock, loadDocumentMock } = vi.hoisted(() => ({
   selectDocumentMock: vi.fn().mockResolvedValue(undefined),
   loadDocumentMock: vi.fn().mockResolvedValue(undefined),
 }))
+const baseFlatDocs = [
+  {
+    id: 'chapter-1',
+    title: '第一章',
+    type: 'chapter',
+    projectId: 'project-1',
+  },
+  {
+    id: 'chapter-2',
+    title: '第二章',
+    type: 'chapter',
+    projectId: 'project-1',
+  },
+]
+const mockFlatDocs = [...baseFlatDocs]
 
 vi.mock('vue-router', () => ({
   useRoute: () => routeState,
@@ -164,20 +179,7 @@ vi.mock('@/modules/writer/stores/projectStore', () => ({
 vi.mock('@/modules/writer/stores/documentStore', () => ({
   useDocumentStore: () => ({
     currentDocMeta: null,
-    flatDocs: [
-      {
-        id: 'chapter-1',
-        title: '第一章',
-        type: 'chapter',
-        projectId: 'project-1',
-      },
-      {
-        id: 'chapter-2',
-        title: '第二章',
-        type: 'chapter',
-        projectId: 'project-1',
-      },
-    ],
+    flatDocs: mockFlatDocs,
     loadTree: vi.fn().mockResolvedValue(undefined),
     selectDocument: selectDocumentMock,
     create: vi.fn().mockResolvedValue(undefined),
@@ -410,6 +412,8 @@ const WorkspaceRightPanelStub = defineComponent({
               mode: 'chapter',
               prompt: '补两个后续章节',
               summary: '建议补 2 个后续章节。',
+              importTarget: 'project-root',
+              duplicateStrategy: 'skip_existing',
               items: [
                 {
                   title: '夜探旧仓库',
@@ -576,6 +580,7 @@ describe('ProjectWorkspace Refactor', () => {
     routerReplace.mockClear()
     setActiveTool.mockClear()
     setSelectedText.mockClear()
+    mockFlatDocs.splice(0, mockFlatDocs.length, ...baseFlatDocs)
     createDocumentMock.mockReset()
     createDocumentMock.mockResolvedValue({ id: 'generated-doc-1' })
     messageSuccess.mockClear()
@@ -969,5 +974,33 @@ describe('ProjectWorkspace Refactor', () => {
         type: 'chapter',
       }),
     )
+  })
+
+  it('跳过重复策略开启时应略过已有同名章节', async () => {
+    mockFlatDocs.push({
+      id: 'chapter-3',
+      title: '第3章 夜探旧仓库',
+      type: 'chapter',
+      projectId: 'project-1',
+    })
+    createDocumentMock.mockResolvedValueOnce({ id: 'generated-doc-4' })
+
+    const wrapper = mountProjectWorkspace()
+
+    await wrapper.find('[data-testid="create-structure-plan"]').trigger('click')
+    await Promise.resolve()
+    await nextTick()
+    await Promise.resolve()
+    await nextTick()
+
+    expect(createDocumentMock).toHaveBeenCalledTimes(1)
+    expect(createDocumentMock).toHaveBeenCalledWith(
+      'project-1',
+      expect.objectContaining({
+        title: '第5章 街口对峙',
+        type: 'chapter',
+      }),
+    )
+    expect(messageSuccess).toHaveBeenCalledWith('已创建 1 个 AI 章节草案，已跳过 1 个重复章节')
   })
 })

@@ -263,4 +263,39 @@ describe('WorkspaceEditorContent', () => {
       title: '结构节点分析：主线冲突',
     })
   })
+
+  it('全屏结构舞台创建结构草案时应透传为 create-structure-plan 事件', async () => {
+    const WorkspaceToolOverlayStub = {
+      emits: ['create-structure-plan'],
+      template:
+        "<button data-testid=\"structure-create-plan\" @click=\"$emit('create-structure-plan', { mode: 'chapter', prompt: '导入黄金三章', summary: '生成三章草案', importTarget: 'current-volume', duplicateStrategy: 'skip_existing', items: [{ title: '屈辱现场' }, { title: '身份初显' }, { title: '首次打脸' }] })\">plan</button>",
+    }
+
+    const wrapper = mount(WorkspaceEditorContent, {
+      props: {
+        projectId: 'project-1',
+        chapterId: 'chapter-1',
+        chapterTitle: '第一章',
+        chapters: [{ id: 'chapter-1', title: '第一章' }],
+        content: '这里是正文。',
+      },
+      global: {
+        plugins: [createPinia()],
+        stubs: {
+          TipTapEditorView: { template: '<div data-testid="tiptap-editor" />' },
+          WorkspaceToolOverlay: WorkspaceToolOverlayStub,
+        },
+      },
+    })
+
+    await wrapper.get('[data-testid="structure-create-plan"]').trigger('click')
+
+    expect(wrapper.emitted('create-structure-plan')?.[0]?.[0]).toMatchObject({
+      mode: 'chapter',
+      prompt: '导入黄金三章',
+      importTarget: 'current-volume',
+      duplicateStrategy: 'skip_existing',
+    })
+    expect(wrapper.emitted('create-structure-plan')?.[0]?.[0].items).toHaveLength(3)
+  })
 })

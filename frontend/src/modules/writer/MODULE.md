@@ -72,6 +72,10 @@
 - **`/doc` 命令桥只做轻量演示接入**：`AIPanel` 内的 `/doc list/read/search/patch` 目前是面向当前 writer 工作区的本地命令桥。`list/read/search` 可直接返回文本结果；`patch` 必须统一转换成 `applyGeneratedText -> ProjectWorkspace.handleAIApplyGeneratedText` 的正文 diff。若目标不是当前章节，只允许先读取目标章节内容、生成预览，再通过 `targetDocumentId/targetDocumentTitle` 让宿主切章后挂起 diff，不允许绕过编辑器直接静默保存。
 - **会话操作应并入工具栏，不再回到独立头部**：清空当前对话、重命名、新建会话等动作统一放在 `AIConversationToolbar`，不要为了单个会话动作再长回额外标题栏。
 - **右栏是“双模式速查”宿主，不再只挂 AI/Harness**：`WorkspaceRightPanel` 现在承接 `AI / 设定 / 校对 / 灵感` 四种常驻工具；设定采用“列表 + 详情”双栏，AI/校对/灵感采用单栏。不要再把轻量查阅能力做回全屏覆盖层或主编辑区切页。
+- **阶段 1 创作流元数据先走前端 sidecar owner**：`题材模板 / 目标读者 / 核心承诺 / 节奏合约 / 黄金三章` 当前由 `services/creativeWorkflow.service.ts` 以 `projectId` 为键落本地 sidecar，用于独立宿主的灵感 Gate 与开篇规划；在后端/Wails schema 未明确前，不要把这批字段偷偷塞回项目 REST schema，也不要在其它组件再长第二套阶段 1 持久化。
+- **结构舞台只读消费阶段 1 sidecar，不接管持久化**：`StructureStageView` 当前可以读取 `creativeWorkflow` sidecar 作为阶段 3 接力卡与 AI handoff 输入，但它只能消费和展示，不得反向成为模板/黄金三章的新 owner。
+- **黄金三章导入必须复用现有结构草案链**：从阶段 3 接力卡导入黄金三章时，只能发 `create-structure-plan` 交给 `ProjectWorkspace.handleCreateStructurePlan` 统一创建章节与 outline 节点；不要在 `StructureStageView` 里直接写文档或大纲。
+- **黄金三章导入控制项仍由宿主兜底**：阶段 3 接力卡可以补 `导入位置（当前卷 / 项目根目录）` 与 `重复策略（跳过 / 允许重复）`，但最终 parent 解析、同名跳过与成功提示都必须落在 `ProjectWorkspace.handleCreateStructurePlan`，不要在结构舞台局部自行分叉创建逻辑。
 - **右栏不再伪装成通用 layout area**：布局 store 里的通用区域只剩 `left / bottom / overlay`，右侧常驻工具单独归 `rightToolArea` owner。不要再往 `workspaceLayoutStore.areas` 恢复历史 `right` 区域状态。
 - **Overlay 继续承接深度工具，不回流常驻右栏**：`structure / assets-fullscreen / relations / timeline / branches` 仍由 `WorkspaceToolOverlay` owner 管理；右栏只负责快速查阅和“展开全屏 →” handoff，不要复制第二套全屏宿主状态。
 - **Story Harness 先保留在底栏兼容入口**：当前右侧 activity bar 已切到四个常驻工具，Harness 通过 `WorkspaceBottomPanel` 保留兼容入口；若未来要回到常驻区，必须先补对应 plan 和交互边界。

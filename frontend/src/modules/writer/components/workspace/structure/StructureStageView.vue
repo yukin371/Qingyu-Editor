@@ -187,6 +187,112 @@
           class="structure-stage-view__default-stage"
           data-testid="structure-stage-default"
         >
+          <section
+            v-if="hasCreativeWorkflowBlueprint"
+            class="structure-stage-view__blueprint-card"
+            data-testid="structure-blueprint-card"
+          >
+            <div class="structure-stage-view__blueprint-head">
+              <div>
+                <p class="structure-stage-view__default-eyebrow">Stage 3 Handoff</p>
+                <h3>{{ creativeWorkflowTemplateName || '蓝图接力' }}</h3>
+                <p class="structure-stage-view__blueprint-copy">
+                  {{ creativeWorkflowPitch || '阶段 1 已经沉淀出开篇方向，继续把它拆成结构推进任务。' }}
+                </p>
+              </div>
+              <div class="structure-stage-view__blueprint-actions">
+                <button
+                  type="button"
+                  class="structure-stage-view__blueprint-action is-secondary"
+                  @click="showAdvancedControls = true"
+                >
+                  展开结构视图
+                </button>
+                <button
+                  type="button"
+                  class="structure-stage-view__blueprint-action is-primary"
+                  data-testid="structure-blueprint-import"
+                  @click="emitCreativeWorkflowStructurePlan"
+                >
+                  导入章节草案
+                </button>
+                <button
+                  type="button"
+                  class="structure-stage-view__blueprint-action"
+                  @click="emitCreativeWorkflowToAI"
+                >
+                  交给 AI 做蓝图建议
+                </button>
+              </div>
+            </div>
+
+            <div class="structure-stage-view__blueprint-meta">
+              <span v-if="creativeWorkflowTemplateName">模板：{{ creativeWorkflowTemplateName }}</span>
+              <span v-if="creativeWorkflowAudienceLabel">读者：{{ creativeWorkflowAudienceLabel }}</span>
+              <span v-if="creativeWorkflowPaceContract">节奏：{{ creativeWorkflowPaceContract }}</span>
+            </div>
+
+            <div class="structure-stage-view__blueprint-controls">
+              <label class="structure-stage-view__blueprint-control">
+                <span>导入位置</span>
+                <select
+                  v-model="creativeWorkflowImportTarget"
+                  class="structure-stage-view__blueprint-select"
+                  data-testid="structure-import-target"
+                  @change="creativeWorkflowImportTargetTouched = true"
+                >
+                  <option v-if="currentVolumeDirectory" value="current-volume">
+                    {{ creativeWorkflowImportTargetLabel }}
+                  </option>
+                  <option value="project-root">项目根目录</option>
+                </select>
+                <small>当前导入到：{{ creativeWorkflowImportTargetLabel }}</small>
+              </label>
+
+              <label class="structure-stage-view__blueprint-control">
+                <span>重复策略</span>
+                <select
+                  v-model="creativeWorkflowDuplicateStrategy"
+                  class="structure-stage-view__blueprint-select"
+                  data-testid="structure-duplicate-strategy"
+                >
+                  <option value="skip_existing">跳过已存在章节</option>
+                  <option value="allow_duplicate">允许重复导入</option>
+                </select>
+                <small>默认优先保护当前卷或项目根目录下已有章节。</small>
+              </label>
+            </div>
+
+            <div
+              v-if="creativeWorkflowPromises.length"
+              class="structure-stage-view__blueprint-promises"
+            >
+              <span
+                v-for="promise in creativeWorkflowPromises"
+                :key="promise"
+                class="structure-stage-view__blueprint-token"
+              >
+                {{ promise }}
+              </span>
+            </div>
+
+            <div class="structure-stage-view__blueprint-chapters">
+              <article
+                v-for="chapter in creativeWorkflowGoldenChapters"
+                :key="chapter.chapterNumber"
+                class="structure-stage-view__blueprint-chapter"
+              >
+                <span class="structure-stage-view__blueprint-index">第 {{ chapter.chapterNumber }} 章</span>
+                <strong>{{ chapter.title }}</strong>
+                <p>{{ chapter.summary || '补一条本章目标，方便继续拆节拍。' }}</p>
+                <div class="structure-stage-view__blueprint-hints">
+                  <span>{{ `钩子：${chapter.hook || '待补齐'}` }}</span>
+                  <span>{{ `兑现：${chapter.payoff || '待补齐'}` }}</span>
+                </div>
+              </article>
+            </div>
+          </section>
+
           <article class="structure-stage-view__default-hero">
             <p class="structure-stage-view__default-eyebrow">Current Focus</p>
             <h3>{{ selectedNode?.title || '还没有可用节点' }}</h3>
@@ -460,10 +566,20 @@ import { DocumentStatus } from '@/modules/writer/types/document'
 import type { OutlineNode } from '@/types/writer'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 import type { ActiveEntitySummary } from '@/modules/writer/composables/useWorkflowContext'
-import type {
-  WriterWorkflowActionRequest,
-  WriterWorkflowContext,
+import {
+  buildWriterWorkflowContextPrompt,
+  type WriterWorkflowActionRequest,
+  type WriterWorkflowContext,
+  type WriterStructureDuplicateStrategy,
+  type WriterStructureImportTarget,
+  type WriterStructurePlanPayload,
 } from '@/modules/writer/types/workflow'
+import {
+  type GoldenChapterPlan,
+  getCreativeWorkflowTemplate,
+  loadCreativeWorkflow,
+  type CreativeWorkflowRecord,
+} from '@/modules/writer/services/creativeWorkflow.service'
 import FishboneOutlineBoard from './FishboneOutlineBoard.vue'
 import CanvasOutlineBoard from './CanvasOutlineBoard.vue'
 import BeatBoardPanel from './BeatBoardPanel.vue'
@@ -576,12 +692,14 @@ const viewModeOptions: Array<{ value: StageViewMode; label: string; icon: string
 ]
 const draftBindingChapterId = ref('')
 const structureRefreshError = ref('')
+const creativeWorkflow = ref<CreativeWorkflowRecord | null>(null)
 const assetRefState = ref<WriterAssetRefState>({
   chapterRefs: {},
   volumeRefs: {},
 })
 const emit = defineEmits<{
   (e: 'trigger-ai-action', payload: WriterWorkflowActionRequest): void
+  (e: 'create-structure-plan', payload: WriterStructurePlanPayload): void
   (e: 'jumpToChapter', chapterId: string): void
   (e: 'openGraph', chapterId: string): void
   (e: 'switch-tool', toolId: ToolType): void
@@ -726,6 +844,59 @@ const defaultStagePrimaryHint = computed(() => {
   }
   return '先从左侧大纲树或下方队列选择一个节点。'
 })
+const creativeWorkflowTemplate = computed(() =>
+  getCreativeWorkflowTemplate(creativeWorkflow.value?.templateId),
+)
+const hasCreativeWorkflowBlueprint = computed(
+  () =>
+    Boolean(
+      creativeWorkflow.value?.templateId ||
+        creativeWorkflow.value?.pitchLine ||
+        creativeWorkflow.value?.corePromises.length,
+    ),
+)
+const creativeWorkflowTemplateName = computed(() => creativeWorkflowTemplate.value?.name || '')
+const creativeWorkflowPitch = computed(() => creativeWorkflow.value?.pitchLine || '')
+const creativeWorkflowAudienceLabel = computed(
+  () => creativeWorkflow.value?.targetAudience.slice(0, 2).join(' / ') || '',
+)
+const creativeWorkflowPaceContract = computed(() => creativeWorkflow.value?.paceContract || '')
+const creativeWorkflowPromises = computed(() => creativeWorkflow.value?.corePromises || [])
+const creativeWorkflowGoldenChapters = computed<GoldenChapterPlan[]>(
+  () => creativeWorkflow.value?.goldenChapters || [],
+)
+const currentVolumeDirectory = computed(() => {
+  const currentChapter = props.chapters.find((chapter) => chapter.id === props.currentChapterId)
+  if (!currentChapter?.parentId) {
+    return ''
+  }
+
+  return (
+    props.chapters.find(
+      (chapter) => chapter.id === currentChapter.parentId && chapter.nodeType === 'directory',
+    )?.title || ''
+  )
+})
+const creativeWorkflowImportTarget = ref<WriterStructureImportTarget>('project-root')
+const creativeWorkflowImportTargetTouched = ref(false)
+const creativeWorkflowDuplicateStrategy =
+  ref<WriterStructureDuplicateStrategy>('skip_existing')
+const creativeWorkflowImportTargetLabel = computed(() =>
+  creativeWorkflowImportTarget.value === 'current-volume' && currentVolumeDirectory.value
+    ? `当前卷：${currentVolumeDirectory.value}`
+    : '项目根目录',
+)
+
+watch(
+  currentVolumeDirectory,
+  (value) => {
+    if (creativeWorkflowImportTargetTouched.value) {
+      return
+    }
+    creativeWorkflowImportTarget.value = value ? 'current-volume' : 'project-root'
+  },
+  { immediate: true },
+)
 
 function getNodeAssetCount(node: OutlineNode | null | undefined): number {
   const chapterId = getBoundChapterId(node)
@@ -735,6 +906,67 @@ function getNodeAssetCount(node: OutlineNode | null | undefined): number {
 
 function getDefaultNodeBindingLabel(node: OutlineNode): string {
   return findBoundChapter(node, chapterOptions.value)?.title || '未绑定章节'
+}
+
+function emitCreativeWorkflowToAI() {
+  if (!creativeWorkflow.value) return
+
+  const workflowPrompt = buildWriterWorkflowContextPrompt(props.workflowContext)
+  const lines = [
+    '阶段 1 创作流输入：',
+    creativeWorkflowTemplateName.value ? `题材模板：${creativeWorkflowTemplateName.value}` : '',
+    creativeWorkflowPitch.value ? `定位声明：${creativeWorkflowPitch.value}` : '',
+    creativeWorkflowAudienceLabel.value ? `目标读者：${creativeWorkflowAudienceLabel.value}` : '',
+    creativeWorkflowPromises.value.length
+      ? `核心承诺：${creativeWorkflowPromises.value.join('；')}`
+      : '',
+    creativeWorkflowPaceContract.value ? `节奏合约：${creativeWorkflowPaceContract.value}` : '',
+    ...creativeWorkflowGoldenChapters.value.map((chapter) =>
+      [
+        `第${chapter.chapterNumber}章：${chapter.title}`,
+        chapter.summary ? `目标：${chapter.summary}` : '',
+        chapter.hook ? `钩子：${chapter.hook}` : '',
+        chapter.payoff ? `兑现：${chapter.payoff}` : '',
+      ]
+        .filter(Boolean)
+        .join(' | '),
+    ),
+    workflowPrompt,
+  ].filter(Boolean)
+
+  emit('trigger-ai-action', {
+    source: 'workspace',
+    action: 'add_to_chat',
+    title: `蓝图接力：${creativeWorkflowTemplateName.value || '黄金三章规划'}`,
+    text: lines.join('\n'),
+    instructions:
+      '请把这些阶段 1 输入转成阶段 3 可执行蓝图建议，优先输出结构节点拆分、前三章 beats、爽点兑现顺序与伏笔预埋建议。',
+  })
+}
+
+function emitCreativeWorkflowStructurePlan() {
+  if (!creativeWorkflowGoldenChapters.value.length) {
+    message.warning('当前还没有可导入的黄金三章内容')
+    return
+  }
+
+  emit('create-structure-plan', {
+    mode: 'chapter',
+    prompt: `基于 ${creativeWorkflowTemplateName.value || '当前模板'} 导入黄金三章`,
+    summary:
+      creativeWorkflowPitch.value ||
+      creativeWorkflowPaceContract.value ||
+      '根据阶段 1 的黄金三章规划生成章节草案。',
+    importTarget: creativeWorkflowImportTarget.value,
+    duplicateStrategy: creativeWorkflowDuplicateStrategy.value,
+    items: creativeWorkflowGoldenChapters.value.map((chapter) => ({
+      title: chapter.title,
+      summary: chapter.summary,
+      reason: [chapter.hook ? `钩子：${chapter.hook}` : '', chapter.payoff ? `兑现：${chapter.payoff}` : '']
+        .filter(Boolean)
+        .join('；'),
+    })),
+  })
 }
 
 function getNodeSiblingContext(node: OutlineNode | null | undefined) {
@@ -1079,6 +1311,7 @@ async function handleRefresh() {
   try {
     await writerStore.loadOutlineTree(effectiveProjectId.value)
     assetRefState.value = loadWriterAssetRefState(effectiveProjectId.value)
+    creativeWorkflow.value = loadCreativeWorkflow(effectiveProjectId.value)
     expandRootNodes()
     if (!selectedNodeId.value && filteredRootNodes.value.length > 0) {
       selectNode(filteredRootNodes.value[0])
@@ -1331,8 +1564,142 @@ watch(
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: 16px;
+}
+
+.structure-stage-view__blueprint-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: var(--editor-radius-lg, 8px);
+  border: 1px solid rgba(191, 141, 79, 0.22);
+  background:
+    radial-gradient(circle at top right, rgba(245, 158, 11, 0.12), transparent 26%),
+    linear-gradient(180deg, rgba(255, 251, 235, 0.98), rgba(255, 255, 255, 0.96));
+  box-shadow: 0 14px 32px rgba(120, 74, 22, 0.08);
+}
+
+.structure-stage-view__blueprint-head,
+.structure-stage-view__blueprint-meta,
+.structure-stage-view__blueprint-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.structure-stage-view__blueprint-copy {
+  margin: 8px 0 0;
+  color: #5b4632;
+  line-height: 1.7;
+}
+
+.structure-stage-view__blueprint-actions {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.structure-stage-view__blueprint-action {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(91, 72, 50, 0.14);
+  background: rgba(255, 255, 255, 0.94);
+  color: #6b4f35;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &.is-primary {
+    border-color: rgba(217, 119, 6, 0.26);
+    color: #b45309;
+  }
+}
+
+.structure-stage-view__blueprint-meta {
+  flex-wrap: wrap;
+  color: #7c5f43;
+  font-size: 12px;
+}
+
+.structure-stage-view__blueprint-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.structure-stage-view__blueprint-control {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+
+  > span {
+    font-size: 12px;
+    font-weight: 700;
+    color: #6b4f35;
+  }
+
+  > small {
+    color: #8b6b4b;
+    line-height: 1.5;
+  }
+}
+
+.structure-stage-view__blueprint-select {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid rgba(191, 141, 79, 0.22);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #5b4632;
+  font-size: 13px;
+}
+
+.structure-stage-view__blueprint-promises,
+.structure-stage-view__blueprint-hints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.structure-stage-view__blueprint-token,
+.structure-stage-view__blueprint-hints span,
+.structure-stage-view__blueprint-index {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  color: #8b5e34;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.structure-stage-view__blueprint-chapters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.structure-stage-view__blueprint-chapter {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(91, 72, 50, 0.12);
+  background: rgba(255, 255, 255, 0.86);
+
+  strong,
+  p {
+    margin: 0;
+  }
+
+  p {
+    color: #6b7280;
+    line-height: 1.6;
+  }
 }
 
 .structure-stage-view__default-hero,
@@ -2074,6 +2441,18 @@ watch(
   .structure-stage-view__focus-card {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .structure-stage-view__blueprint-head {
+    flex-direction: column;
+  }
+
+  .structure-stage-view__blueprint-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .structure-stage-view__blueprint-chapters {
+    grid-template-columns: 1fr;
   }
 
   .structure-stage-view__header-actions {
