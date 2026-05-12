@@ -18,6 +18,10 @@ export function CreateCharacterRelation(arg1) {
   return window['go']['main']['App']['CreateCharacterRelation'](arg1);
 }
 
+export function CreateInspirationNote(arg1) {
+  return window['go']['main']['App']['CreateInspirationNote'](arg1);
+}
+
 export function CreateLocation(arg1) {
   return window['go']['main']['App']['CreateLocation'](arg1);
 }
@@ -28,6 +32,18 @@ export function CreateLocationRelation(arg1) {
 
 export function CreateProject(arg1) {
   return window['go']['main']['App']['CreateProject'](arg1);
+}
+
+export function CreateStoryHarnessBatch(arg1) {
+  return window['go']['main']['App']['CreateStoryHarnessBatch'](arg1);
+}
+
+export function CreateTimeline(arg1) {
+  return window['go']['main']['App']['CreateTimeline'](arg1);
+}
+
+export function CreateTimelineEvent(arg1) {
+  return window['go']['main']['App']['CreateTimelineEvent'](arg1);
 }
 
 export function CreateVolume(arg1) {
@@ -46,6 +62,10 @@ export function DeleteCharacterRelation(arg1) {
   return window['go']['main']['App']['DeleteCharacterRelation'](arg1);
 }
 
+export function DeleteInspirationNote(arg1) {
+  return window['go']['main']['App']['DeleteInspirationNote'](arg1);
+}
+
 export function DeleteLocation(arg1) {
   return window['go']['main']['App']['DeleteLocation'](arg1);
 }
@@ -56,6 +76,14 @@ export function DeleteLocationRelation(arg1) {
 
 export function DeleteProject(arg1) {
   return window['go']['main']['App']['DeleteProject'](arg1);
+}
+
+export function DeleteTimeline(arg1) {
+  return window['go']['main']['App']['DeleteTimeline'](arg1);
+}
+
+export function DeleteTimelineEvent(arg1) {
+  return window['go']['main']['App']['DeleteTimelineEvent'](arg1);
 }
 
 export function DeleteVolume(arg1) {
@@ -70,12 +98,40 @@ export function GetCharacter(arg1) {
   return window['go']['main']['App']['GetCharacter'](arg1);
 }
 
+export function GetCreativeWorkflow(arg1) {
+  return window['go']['main']['App']['GetCreativeWorkflow'](arg1);
+}
+
+export function GetLatestStoryHarnessBatch(arg1, arg2) {
+  return window['go']['main']['App']['GetLatestStoryHarnessBatch'](arg1, arg2);
+}
+
 export function GetLocation(arg1) {
   return window['go']['main']['App']['GetLocation'](arg1);
 }
 
 export function GetProject(arg1) {
   return window['go']['main']['App']['GetProject'](arg1);
+}
+
+export function GetStoryHarnessChapterContext(arg1, arg2) {
+  return window['go']['main']['App']['GetStoryHarnessChapterContext'](arg1, arg2);
+}
+
+export function GetTimeline(arg1) {
+  return window['go']['main']['App']['GetTimeline'](arg1);
+}
+
+export function GetTimelineEvent(arg1) {
+  return window['go']['main']['App']['GetTimelineEvent'](arg1);
+}
+
+export function GetTimelineVisualization(arg1) {
+  return window['go']['main']['App']['GetTimelineVisualization'](arg1);
+}
+
+export function GetWorkbenchTemplateDetail(arg1) {
+  return window['go']['main']['App']['GetWorkbenchTemplateDetail'](arg1);
 }
 
 export function InitDatabase() {
@@ -94,6 +150,10 @@ export function ListCharacters(arg1) {
   return window['go']['main']['App']['ListCharacters'](arg1);
 }
 
+export function ListInspirationNotes(arg1) {
+  return window['go']['main']['App']['ListInspirationNotes'](arg1);
+}
+
 export function ListLocationRelations(arg1, arg2) {
   return window['go']['main']['App']['ListLocationRelations'](arg1, arg2);
 }
@@ -106,12 +166,36 @@ export function ListProjects() {
   return window['go']['main']['App']['ListProjects']();
 }
 
+export function ListStoryHarnessChangeRequests(arg1, arg2, arg3) {
+  return window['go']['main']['App']['ListStoryHarnessChangeRequests'](arg1, arg2, arg3);
+}
+
+export function ListTimelineEvents(arg1) {
+  return window['go']['main']['App']['ListTimelineEvents'](arg1);
+}
+
+export function ListTimelines(arg1) {
+  return window['go']['main']['App']['ListTimelines'](arg1);
+}
+
 export function ListVolumes(arg1) {
   return window['go']['main']['App']['ListVolumes'](arg1);
 }
 
+export function ListWorkbenchTemplates() {
+  return window['go']['main']['App']['ListWorkbenchTemplates']();
+}
+
 export function MoveChapter(arg1) {
   return window['go']['main']['App']['MoveChapter'](arg1);
+}
+
+export function ProcessStoryHarnessChangeRequest(arg1, arg2) {
+  return window['go']['main']['App']['ProcessStoryHarnessChangeRequest'](arg1, arg2);
+}
+
+export function RebuildStoryHarnessProjection(arg1, arg2) {
+  return window['go']['main']['App']['RebuildStoryHarnessProjection'](arg1, arg2);
 }
 
 export function ReorderChapters(arg1) {
@@ -120,6 +204,14 @@ export function ReorderChapters(arg1) {
 
 export function ReorderVolumes(arg1) {
   return window['go']['main']['App']['ReorderVolumes'](arg1);
+}
+
+export function SaveCreativeWorkflow(arg1, arg2) {
+  return window['go']['main']['App']['SaveCreativeWorkflow'](arg1, arg2);
+}
+
+export function TriggerStoryHarnessIndex(arg1, arg2) {
+  return window['go']['main']['App']['TriggerStoryHarnessIndex'](arg1, arg2);
 }
 
 export function UpdateChapter(arg1, arg2) {
@@ -136,6 +228,14 @@ export function UpdateLocation(arg1, arg2) {
 
 export function UpdateProject(arg1, arg2) {
   return window['go']['main']['App']['UpdateProject'](arg1, arg2);
+}
+
+export function UpdateTimeline(arg1, arg2) {
+  return window['go']['main']['App']['UpdateTimeline'](arg1, arg2);
+}
+
+export function UpdateTimelineEvent(arg1, arg2) {
+  return window['go']['main']['App']['UpdateTimelineEvent'](arg1, arg2);
 }
 
 export function UpdateVolume(arg1, arg2) {

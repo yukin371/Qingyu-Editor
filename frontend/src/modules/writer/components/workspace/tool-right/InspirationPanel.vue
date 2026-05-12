@@ -292,7 +292,6 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import dayjs from 'dayjs'
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
 import {
   getCreativeWorkflowTemplate,
@@ -303,15 +302,14 @@ import {
   type CreativeWorkflowTemplateId,
   type GoldenChapterPlan,
 } from '@/modules/writer/services/creativeWorkflow.service'
+import {
+  createInspirationNote,
+  deleteInspirationNote as deleteInspirationNoteRecord,
+  listInspirationNotes,
+  type InspirationNoteRecord,
+} from '@/modules/writer/services/inspirationNotes.service'
 
-interface InspirationNote {
-  id: string
-  title: string
-  content: string
-  chapterId?: string
-  chapterTitle?: string
-  createdAt: string
-}
+type InspirationNote = InspirationNoteRecord
 
 const props = defineProps<{
   projectId: string
@@ -329,36 +327,55 @@ const draftContent = ref('')
 const notes = ref<InspirationNote[]>([])
 const audienceDraft = ref('')
 const promiseDraft = ref('')
-const workflow = ref<CreativeWorkflowRecord>(loadCreativeWorkflow(props.projectId))
+const workflow = ref<CreativeWorkflowRecord>({
+  version: 1,
+  projectId: props.projectId,
+  templateId: null,
+  pitchLine: '',
+  targetAudience: [],
+  corePromises: [],
+  paceContract: '',
+  goldenChapters: [],
+  gate: {
+    status: 'blocked',
+    missing: [],
+    nextActions: [],
+    completedFields: {
+      hasPrimaryGenre: false,
+      hasTargetAudience: false,
+      hasCorePromises: false,
+      hasPaceContract: false,
+    },
+  },
+  createdAt: '',
+  updatedAt: '',
+})
 const isHydratingWorkflow = ref(false)
 
-const notesStorageKey = computed(() => `qingyu_writer_inspirations_${props.projectId || 'global'}`)
 const canSubmit = computed(() => draftTitle.value.length > 0 && draftContent.value.length > 0)
 const selectedTemplate = computed(() => getCreativeWorkflowTemplate(workflow.value.templateId))
 
-const loadNotes = () => {
+const loadNotes = async () => {
   try {
-    const raw = localStorage.getItem(notesStorageKey.value)
-    notes.value = raw ? (JSON.parse(raw) as InspirationNote[]) : []
-  } catch {
+    notes.value = await listInspirationNotes(props.projectId)
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.warn('[InspirationPanel] load notes failed:', error)
+    }
     notes.value = []
   }
 }
 
-const saveNotes = () => {
-  localStorage.setItem(notesStorageKey.value, JSON.stringify(notes.value))
-}
-
-const loadWorkflowState = () => {
+const loadWorkflowState = async () => {
   isHydratingWorkflow.value = true
-  workflow.value = loadCreativeWorkflow(props.projectId)
+  workflow.value = await loadCreativeWorkflow(props.projectId)
   audienceDraft.value = ''
   promiseDraft.value = ''
   isHydratingWorkflow.value = false
 }
 
-const persistWorkflow = () => {
-  workflow.value = saveCreativeWorkflow(props.projectId, {
+const persistWorkflow = async () => {
+  workflow.value = await saveCreativeWorkflow(props.projectId, {
     pitchLine: workflow.value.pitchLine,
     targetAudience: workflow.value.targetAudience,
     corePromises: workflow.value.corePromises,
@@ -367,8 +384,8 @@ const persistWorkflow = () => {
   })
 }
 
-const applyTemplate = (templateId: CreativeWorkflowTemplateId) => {
-  workflow.value = saveCreativeWorkflow(props.projectId, {
+const applyTemplate = async (templateId: CreativeWorkflowTemplateId) => {
+  workflow.value = await saveCreativeWorkflow(props.projectId, {
     templateId,
     pitchLine: workflow.value.pitchLine,
   })
@@ -386,7 +403,7 @@ const appendToken = (kind: 'audience' | 'promise') => {
     workflow.value.corePromises = [...workflow.value.corePromises, nextValue]
     promiseDraft.value = ''
   }
-  persistWorkflow()
+  void persistWorkflow()
 }
 
 const removeToken = (kind: 'audience' | 'promise', value: string) => {
@@ -395,14 +412,14 @@ const removeToken = (kind: 'audience' | 'promise', value: string) => {
   } else {
     workflow.value.corePromises = workflow.value.corePromises.filter((item) => item !== value)
   }
-  persistWorkflow()
+  void persistWorkflow()
 }
 
 const updateGoldenChapter = (
   chapterNumber: GoldenChapterPlan['chapterNumber'],
   field: keyof Omit<GoldenChapterPlan, 'chapterNumber'>,
   value: string,
-) => {
+  ) => {
   workflow.value.goldenChapters = workflow.value.goldenChapters.map((chapter) =>
     chapter.chapterNumber === chapterNumber
       ? {
@@ -411,7 +428,7 @@ const updateGoldenChapter = (
         }
       : chapter,
   )
-  persistWorkflow()
+  void persistWorkflow()
 }
 
 const updateGoldenChapterFromEvent = (
@@ -423,34 +440,30 @@ const updateGoldenChapterFromEvent = (
   updateGoldenChapter(chapterNumber, field, target?.value ?? '')
 }
 
-const handleCreate = () => {
+const handleCreate = async () => {
   if (!canSubmit.value) return
-  notes.value = [
-    {
-      id: `${Date.now()}`,
-      title: draftTitle.value,
-      content: draftContent.value,
-      chapterId: props.chapterId || undefined,
-      chapterTitle: props.chapterTitle || undefined,
-      createdAt: dayjs().format('MM-DD HH:mm'),
-    },
-    ...notes.value,
-  ]
+  const created = await createInspirationNote({
+    projectId: props.projectId,
+    chapterId: props.chapterId || undefined,
+    chapterTitle: props.chapterTitle || undefined,
+    title: draftTitle.value,
+    content: draftContent.value,
+  })
+  notes.value = [created, ...notes.value.filter((note) => note.id !== created.id)]
   draftTitle.value = ''
   draftContent.value = ''
-  saveNotes()
 }
 
-const removeNote = (noteId: string) => {
+const removeNote = async (noteId: string) => {
+  await deleteInspirationNoteRecord(props.projectId, noteId)
   notes.value = notes.value.filter((note) => note.id !== noteId)
-  saveNotes()
 }
 
-watch(notesStorageKey, loadNotes, { immediate: true })
 watch(
   () => props.projectId,
   () => {
-    loadWorkflowState()
+    void loadNotes()
+    void loadWorkflowState()
   },
   { immediate: true },
 )
@@ -458,7 +471,7 @@ watch(
   [() => workflow.value.pitchLine, () => workflow.value.paceContract],
   () => {
     if (isHydratingWorkflow.value) return
-    persistWorkflow()
+    void persistWorkflow()
   },
 )
 </script>

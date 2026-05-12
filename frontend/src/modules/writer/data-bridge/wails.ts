@@ -2,34 +2,59 @@ import {
   CreateChapter,
   CreateCharacter,
   CreateCharacterRelation,
+  CreateInspirationNote,
   CreateLocation,
   CreateLocationRelation,
   CreateProject,
+  CreateStoryHarnessBatch,
+  CreateTimeline,
+  CreateTimelineEvent,
   CreateVolume,
   DeleteChapter,
   DeleteCharacter,
   DeleteCharacterRelation,
+  DeleteInspirationNote,
   DeleteLocation,
   DeleteLocationRelation,
   DeleteProject,
+  DeleteTimeline,
+  DeleteTimelineEvent,
   DeleteVolume,
   GetChapter,
   GetCharacter,
+  GetCreativeWorkflow,
+  GetLatestStoryHarnessBatch,
   GetLocation,
   GetProject,
+  GetStoryHarnessChapterContext,
+  GetTimeline,
+  GetTimelineEvent,
+  GetTimelineVisualization,
+  GetWorkbenchTemplateDetail,
   ListChapters,
   ListCharacterRelations,
   ListCharacters,
+  ListInspirationNotes,
   ListLocationRelations,
   ListLocations,
   ListProjects,
+  ListStoryHarnessChangeRequests,
+  ListTimelineEvents,
+  ListTimelines,
   ListVolumes,
+  ListWorkbenchTemplates,
   MoveChapter,
+  ProcessStoryHarnessChangeRequest,
+  RebuildStoryHarnessProjection,
   ReorderVolumes,
+  SaveCreativeWorkflow,
+  TriggerStoryHarnessIndex,
   UpdateChapter,
   UpdateCharacter,
   UpdateLocation,
   UpdateProject,
+  UpdateTimeline,
+  UpdateTimelineEvent,
   UpdateVolume,
 } from '../../../../wailsjs/go/main/App'
 import { DocumentType } from '../types/document'
@@ -141,6 +166,173 @@ type BridgeDocumentNode = {
   createdAt?: string
   updatedAt?: string
   children?: BridgeDocumentNode[]
+}
+
+type BridgeStoryTime = {
+  year?: number
+  month?: number
+  day?: number
+  hour?: number
+  minute?: number
+  era?: string
+  season?: string
+  description?: string
+}
+
+type BridgeGoldenChapterPlan = {
+  chapterNumber: number
+  title: string
+  summary?: string
+  hook?: string
+  payoff?: string
+}
+
+type BridgeTemplateDetailSection = {
+  id: string
+  title: string
+  summary?: string
+  bullets?: string[]
+}
+
+type BridgeCreativeWorkflowTemplate = {
+  id: string
+  name: string
+  tagline: string
+  category: string
+  templateType: string
+  recommendedLabel: string
+  applicableTo?: string[]
+  emotionCurve?: string
+  payoffFocus?: string[]
+  defaultAudience?: string[]
+  defaultPromises?: string[]
+  defaultPaceContract?: string
+  blueprintHints?: string[]
+  goldenChapterSeeds?: BridgeGoldenChapterPlan[]
+  characters?: BridgeTemplateDetailSection[]
+  settings?: BridgeTemplateDetailSection[]
+  projectCategory?: string
+  volumeTitle?: string
+  openingLine?: string
+}
+
+type BridgeCreativeWorkflowRecord = {
+  version?: number
+  projectId: string
+  templateId?: string
+  pitchLine?: string
+  targetAudience?: string[]
+  corePromises?: string[]
+  paceContract?: string
+  goldenChapters?: BridgeGoldenChapterPlan[]
+  createdAt?: string
+  updatedAt?: string
+}
+
+type BridgeInspirationNote = {
+  id: string
+  projectId: string
+  chapterId?: string
+  chapterTitle?: string
+  title: string
+  content: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+type BridgeTimeline = {
+  id: string
+  projectId: string
+  name: string
+  description?: string
+  startTime?: BridgeStoryTime
+  endTime?: BridgeStoryTime
+  createdAt?: string
+  updatedAt?: string
+}
+
+type BridgeTimelineEvent = {
+  id: string
+  projectId: string
+  timelineId: string
+  title: string
+  description?: string
+  storyTime?: BridgeStoryTime
+  duration?: string
+  impact?: string
+  participants?: string[]
+  locationIds?: string[]
+  chapterIds?: string[]
+  eventType?: string
+  importance?: number
+  createdAt?: string
+  updatedAt?: string
+}
+
+type BridgeStoryHarnessEvidence = {
+  documentId?: string
+  paragraphIdx?: number
+  quoteText?: string
+}
+
+type BridgeStoryHarnessChangeRequest = {
+  id: string
+  batchId?: string
+  projectId?: string
+  chapterId?: string
+  category?: string
+  priority?: string
+  status?: string
+  title: string
+  description?: string
+  suggestedChange?: Record<string, unknown>
+  evidence?: BridgeStoryHarnessEvidence[]
+  source?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+type BridgeStoryHarnessBatch = {
+  batchId: string
+  projectId: string
+  chapterId: string
+  chapterTitle?: string
+  committedAt: number
+  source?: string
+  changeRequests?: Array<{
+    id?: string
+    source?: string
+    type?: string
+    title?: string
+    summary?: string
+    reason?: string
+    evidence?: string
+    severity?: string
+    sourceTimestamp?: number
+  }>
+}
+
+type BridgeStoryHarnessChapterContext = {
+  characters?: Array<{
+    id: string
+    name: string
+    alias?: string[]
+    traits?: string[]
+    currentState?: string
+    shortDescription?: string
+    avatarUrl?: string
+  }>
+  relations?: Array<{
+    id: string
+    fromId: string
+    toId: string
+    fromName?: string
+    toName?: string
+    type?: string
+    strength?: number
+    notes?: string
+  }>
+  pendingCRs?: number
 }
 
 const documentIndex = new Map<string, BridgeDocumentNode>()
@@ -474,6 +666,231 @@ function toParagraphPayload(content: string, updatedAt: string, wordCount: numbe
       wordCount,
     },
   ]
+}
+
+function mapStoryTime(value?: BridgeStoryTime) {
+  if (!value || typeof value !== 'object') {
+    return {}
+  }
+  return {
+    year: typeof value.year === 'number' ? value.year : undefined,
+    month: typeof value.month === 'number' ? value.month : undefined,
+    day: typeof value.day === 'number' ? value.day : undefined,
+    hour: typeof value.hour === 'number' ? value.hour : undefined,
+    minute: typeof value.minute === 'number' ? value.minute : undefined,
+    era: typeof value.era === 'string' ? value.era : '',
+    season: typeof value.season === 'string' ? value.season : '',
+    description: typeof value.description === 'string' ? value.description : '',
+  }
+}
+
+function mapGoldenChapterPlan(value: BridgeGoldenChapterPlan, index: number) {
+  return {
+    chapterNumber:
+      typeof value.chapterNumber === 'number' && Number.isFinite(value.chapterNumber)
+        ? value.chapterNumber
+        : index + 1,
+    title: typeof value.title === 'string' ? value.title : `第${index + 1}章目标`,
+    summary: typeof value.summary === 'string' ? value.summary : '',
+    hook: typeof value.hook === 'string' ? value.hook : '',
+    payoff: typeof value.payoff === 'string' ? value.payoff : '',
+  }
+}
+
+function mapTemplateDetailSection(section: BridgeTemplateDetailSection) {
+  return {
+    id: section.id,
+    title: section.title,
+    summary: section.summary || '',
+    bullets: normalizeStringArray(section.bullets),
+  }
+}
+
+function mapCreativeWorkflowTemplate(template: BridgeCreativeWorkflowTemplate) {
+  return {
+    id: template.id,
+    name: template.name,
+    tagline: template.tagline || '',
+    category: template.category || '',
+    templateType: template.templateType || '',
+    recommendedLabel: template.recommendedLabel || '',
+    applicableTo: normalizeStringArray(template.applicableTo),
+    emotionCurve: template.emotionCurve || '',
+    payoffFocus: normalizeStringArray(template.payoffFocus),
+    defaultAudience: normalizeStringArray(template.defaultAudience),
+    defaultPromises: normalizeStringArray(template.defaultPromises),
+    defaultPaceContract: template.defaultPaceContract || '',
+    blueprintHints: normalizeStringArray(template.blueprintHints),
+    goldenChapterSeeds: Array.isArray(template.goldenChapterSeeds)
+      ? template.goldenChapterSeeds.map(mapGoldenChapterPlan)
+      : [],
+    characters: Array.isArray(template.characters)
+      ? template.characters.map(mapTemplateDetailSection)
+      : [],
+    settings: Array.isArray(template.settings) ? template.settings.map(mapTemplateDetailSection) : [],
+    projectCategory: template.projectCategory || '',
+    volumeTitle: template.volumeTitle || '',
+    openingLine: template.openingLine || '',
+  }
+}
+
+function mapCreativeWorkflowRecord(record: BridgeCreativeWorkflowRecord) {
+  return {
+    version: 1 as const,
+    projectId: record.projectId,
+    templateId: typeof record.templateId === 'string' ? record.templateId : '',
+    pitchLine: record.pitchLine || '',
+    targetAudience: normalizeStringArray(record.targetAudience),
+    corePromises: normalizeStringArray(record.corePromises),
+    paceContract: record.paceContract || '',
+    goldenChapters: Array.isArray(record.goldenChapters)
+      ? record.goldenChapters.map(mapGoldenChapterPlan)
+      : [],
+    createdAt: record.createdAt || '',
+    updatedAt: record.updatedAt || record.createdAt || '',
+  }
+}
+
+function mapInspirationNote(note: BridgeInspirationNote) {
+  return {
+    id: note.id,
+    projectId: note.projectId,
+    chapterId: note.chapterId || '',
+    chapterTitle: note.chapterTitle || '',
+    title: note.title,
+    content: note.content,
+    createdAt: note.createdAt || '',
+    updatedAt: note.updatedAt || note.createdAt || '',
+  }
+}
+
+function mapTimeline(timeline: BridgeTimeline) {
+  return {
+    id: timeline.id,
+    projectId: timeline.projectId,
+    name: timeline.name,
+    description: timeline.description || '',
+    startTime: mapStoryTime(timeline.startTime),
+    endTime: mapStoryTime(timeline.endTime),
+    createdAt: timeline.createdAt || '',
+    updatedAt: timeline.updatedAt || timeline.createdAt || '',
+  }
+}
+
+function mapTimelineEvent(timelineEvent: BridgeTimelineEvent) {
+  return {
+    id: timelineEvent.id,
+    projectId: timelineEvent.projectId,
+    timelineId: timelineEvent.timelineId,
+    title: timelineEvent.title,
+    description: timelineEvent.description || '',
+    storyTime: mapStoryTime(timelineEvent.storyTime),
+    duration: timelineEvent.duration || '',
+    impact: timelineEvent.impact || '',
+    participants: normalizeStringArray(timelineEvent.participants),
+    locationIds: normalizeStringArray(timelineEvent.locationIds),
+    chapterIds: normalizeStringArray(timelineEvent.chapterIds),
+    eventType: typeof timelineEvent.eventType === 'string' ? timelineEvent.eventType : 'plot',
+    importance:
+      typeof timelineEvent.importance === 'number' && Number.isFinite(timelineEvent.importance)
+        ? timelineEvent.importance
+        : 5,
+    createdAt: timelineEvent.createdAt || '',
+    updatedAt: timelineEvent.updatedAt || timelineEvent.createdAt || '',
+  }
+}
+
+function mapStoryHarnessChangeRequest(changeRequest: BridgeStoryHarnessChangeRequest) {
+  return {
+    id: changeRequest.id,
+    batchId: changeRequest.batchId || '',
+    projectId: changeRequest.projectId || '',
+    chapterId: changeRequest.chapterId || '',
+    category: changeRequest.category || 'scene_scope',
+    priority: changeRequest.priority || 'medium',
+    status: changeRequest.status || 'pending',
+    title: changeRequest.title,
+    description: changeRequest.description || '',
+    suggestedChange: normalizeRecord(changeRequest.suggestedChange) || {},
+    evidence: Array.isArray(changeRequest.evidence)
+      ? changeRequest.evidence.map((item) => ({
+          documentId: item.documentId || '',
+          paragraphIdx:
+            typeof item.paragraphIdx === 'number' && Number.isFinite(item.paragraphIdx)
+              ? item.paragraphIdx
+              : 0,
+          quoteText: item.quoteText || '',
+        }))
+      : [],
+    source: changeRequest.source || '',
+    createdAt: changeRequest.createdAt || '',
+    updatedAt: changeRequest.updatedAt || changeRequest.createdAt || '',
+  }
+}
+
+function mapStoryHarnessBatch(batch: BridgeStoryHarnessBatch | null | undefined) {
+  if (!batch) {
+    return null
+  }
+  return {
+    batchId: batch.batchId,
+    projectId: batch.projectId,
+    chapterId: batch.chapterId,
+    chapterTitle: batch.chapterTitle || '',
+    committedAt: batch.committedAt,
+    source: 'remote',
+    changeRequests: Array.isArray(batch.changeRequests)
+      ? batch.changeRequests.map((item, index) => ({
+          id: item.id || `story-harness:${batch.batchId}:${index}`,
+          source: item.source || 'save_batch',
+          type: item.type || 'scene_scope',
+          title: item.title || '正文指令建议',
+          summary: item.summary || '',
+          reason: item.reason || '',
+          evidence: item.evidence || '',
+          severity: item.severity || 'hint',
+          sourceTimestamp:
+            typeof item.sourceTimestamp === 'number' && Number.isFinite(item.sourceTimestamp)
+              ? item.sourceTimestamp
+              : batch.committedAt,
+        }))
+      : [],
+  }
+}
+
+function mapStoryHarnessChapterContext(payload: BridgeStoryHarnessChapterContext) {
+  return {
+    characters: Array.isArray(payload.characters)
+      ? payload.characters.map((item) => ({
+          id: item.id,
+          name: item.name,
+          alias: normalizeStringArray(item.alias),
+          traits: normalizeStringArray(item.traits),
+          currentState: item.currentState || '',
+          shortDescription: item.shortDescription || '',
+          avatarUrl: item.avatarUrl || '',
+        }))
+      : [],
+    relations: Array.isArray(payload.relations)
+      ? payload.relations.map((item) => ({
+          id: item.id,
+          fromId: item.fromId,
+          toId: item.toId,
+          fromName: item.fromName || '',
+          toName: item.toName || '',
+          type: item.type || '',
+          strength:
+            typeof item.strength === 'number' && Number.isFinite(item.strength)
+              ? item.strength
+              : 0,
+          notes: item.notes || '',
+        }))
+      : [],
+    pendingCRs:
+      typeof payload.pendingCRs === 'number' && Number.isFinite(payload.pendingCRs)
+        ? payload.pendingCRs
+        : 0,
+  }
 }
 
 export const wailsWriterBridge = {
@@ -926,6 +1343,229 @@ export const wailsWriterBridge = {
         documentId,
         total: payload.total,
       }
+    },
+  },
+  template: {
+    async list() {
+      const items = (await ListWorkbenchTemplates()) as BridgeCreativeWorkflowTemplate[]
+      return (items || []).map(mapCreativeWorkflowTemplate)
+    },
+    async getDetail(templateId: string) {
+      const detail = (await GetWorkbenchTemplateDetail(templateId)) as BridgeCreativeWorkflowTemplate
+      return mapCreativeWorkflowTemplate(detail)
+    },
+  },
+  creativeWorkflow: {
+    async get(projectId: string) {
+      const record = (await GetCreativeWorkflow(projectId)) as BridgeCreativeWorkflowRecord
+      return mapCreativeWorkflowRecord(record)
+    },
+    async save(projectId: string, payload: Record<string, unknown>) {
+      const record = (await SaveCreativeWorkflow(projectId, {
+        templateId:
+          payload.templateId === null
+            ? ''
+            : typeof payload.templateId === 'string'
+              ? payload.templateId
+              : undefined,
+        pitchLine: typeof payload.pitchLine === 'string' ? payload.pitchLine : undefined,
+        targetAudience: Array.isArray(payload.targetAudience) ? normalizeStringArray(payload.targetAudience) : undefined,
+        corePromises: Array.isArray(payload.corePromises) ? normalizeStringArray(payload.corePromises) : undefined,
+        paceContract: typeof payload.paceContract === 'string' ? payload.paceContract : undefined,
+        goldenChapters: Array.isArray(payload.goldenChapters)
+          ? payload.goldenChapters.map((item, index) => mapGoldenChapterPlan(item as BridgeGoldenChapterPlan, index))
+          : undefined,
+      } as any)) as BridgeCreativeWorkflowRecord
+      return mapCreativeWorkflowRecord(record)
+    },
+  },
+  inspiration: {
+    async list(projectId: string) {
+      const items = (await ListInspirationNotes(projectId)) as BridgeInspirationNote[]
+      return (items || []).map(mapInspirationNote)
+    },
+    async create(payload: {
+      projectId: string
+      chapterId?: string
+      chapterTitle?: string
+      title: string
+      content: string
+    }) {
+      const note = (await CreateInspirationNote({
+        projectId: payload.projectId,
+        chapterId: payload.chapterId || '',
+        chapterTitle: payload.chapterTitle || '',
+        title: payload.title,
+        content: payload.content,
+      })) as BridgeInspirationNote
+      return mapInspirationNote(note)
+    },
+    async delete(id: string) {
+      await DeleteInspirationNote(id)
+    },
+  },
+  timeline: {
+    async create(projectId: string, payload: Record<string, unknown>) {
+      const created = (await CreateTimeline({
+        projectId,
+        name: String(payload.name || ''),
+        description: typeof payload.description === 'string' ? payload.description : '',
+        startTime: mapStoryTime(payload.startTime as BridgeStoryTime),
+        endTime: mapStoryTime(payload.endTime as BridgeStoryTime),
+      } as any)) as BridgeTimeline
+      return mapTimeline(created)
+    },
+    async get(id: string) {
+      const item = (await GetTimeline(id)) as BridgeTimeline
+      return mapTimeline(item)
+    },
+    async list(projectId: string) {
+      const items = (await ListTimelines(projectId)) as BridgeTimeline[]
+      return (items || []).map(mapTimeline)
+    },
+    async update(id: string, payload: Record<string, unknown>) {
+      const item = (await UpdateTimeline(id, {
+        name: typeof payload.name === 'string' ? payload.name : undefined,
+        description: typeof payload.description === 'string' ? payload.description : undefined,
+        startTime:
+          payload.startTime && typeof payload.startTime === 'object'
+            ? mapStoryTime(payload.startTime as BridgeStoryTime)
+            : undefined,
+        endTime:
+          payload.endTime && typeof payload.endTime === 'object'
+            ? mapStoryTime(payload.endTime as BridgeStoryTime)
+            : undefined,
+      } as any)) as BridgeTimeline
+      return mapTimeline(item)
+    },
+    async delete(id: string) {
+      await DeleteTimeline(id)
+    },
+    async getVisualization(id: string) {
+      const payload = (await GetTimelineVisualization(id)) as {
+        timeline?: BridgeTimeline
+        events?: BridgeTimelineEvent[]
+      }
+      return {
+        timeline: payload.timeline ? mapTimeline(payload.timeline) : null,
+        events: Array.isArray(payload.events) ? payload.events.map(mapTimelineEvent) : [],
+      }
+    },
+    async createEvent(timelineId: string, projectId: string, payload: Record<string, unknown>) {
+      const created = (await CreateTimelineEvent({
+        projectId,
+        timelineId,
+        title: String(payload.title || ''),
+        description: typeof payload.description === 'string' ? payload.description : '',
+        storyTime: mapStoryTime(payload.storyTime as BridgeStoryTime),
+        duration: typeof payload.duration === 'string' ? payload.duration : '',
+        impact: typeof payload.impact === 'string' ? payload.impact : '',
+        participants: Array.isArray(payload.participants) ? normalizeStringArray(payload.participants) : [],
+        locationIds: Array.isArray(payload.locationIds) ? normalizeStringArray(payload.locationIds) : [],
+        chapterIds: Array.isArray(payload.chapterIds) ? normalizeStringArray(payload.chapterIds) : [],
+        eventType: typeof payload.eventType === 'string' ? payload.eventType : 'plot',
+        importance:
+          typeof payload.importance === 'number' && Number.isFinite(payload.importance)
+            ? payload.importance
+            : undefined,
+      } as any)) as BridgeTimelineEvent
+      return mapTimelineEvent(created)
+    },
+    async getEvent(id: string) {
+      const item = (await GetTimelineEvent(id)) as BridgeTimelineEvent
+      return mapTimelineEvent(item)
+    },
+    async listEvents(timelineId: string) {
+      const items = (await ListTimelineEvents(timelineId)) as BridgeTimelineEvent[]
+      return (items || []).map(mapTimelineEvent)
+    },
+    async updateEvent(id: string, _projectId: string, payload: Record<string, unknown>) {
+      const item = (await UpdateTimelineEvent(id, {
+        title: typeof payload.title === 'string' ? payload.title : undefined,
+        description: typeof payload.description === 'string' ? payload.description : undefined,
+        storyTime:
+          payload.storyTime && typeof payload.storyTime === 'object'
+            ? mapStoryTime(payload.storyTime as BridgeStoryTime)
+            : undefined,
+        duration: typeof payload.duration === 'string' ? payload.duration : undefined,
+        impact: typeof payload.impact === 'string' ? payload.impact : undefined,
+        participants: Array.isArray(payload.participants) ? normalizeStringArray(payload.participants) : undefined,
+        locationIds: Array.isArray(payload.locationIds) ? normalizeStringArray(payload.locationIds) : undefined,
+        chapterIds: Array.isArray(payload.chapterIds) ? normalizeStringArray(payload.chapterIds) : undefined,
+        eventType: typeof payload.eventType === 'string' ? payload.eventType : undefined,
+        importance:
+          typeof payload.importance === 'number' && Number.isFinite(payload.importance)
+            ? payload.importance
+            : undefined,
+      } as any)) as BridgeTimelineEvent
+      return mapTimelineEvent(item)
+    },
+    async deleteEvent(id: string) {
+      await DeleteTimelineEvent(id)
+    },
+  },
+  storyHarness: {
+    async createBatch(payload: {
+      projectId: string
+      chapterId: string
+      chapterTitle: string
+      changeRequests: Array<Record<string, unknown>>
+    }) {
+      const batch = (await CreateStoryHarnessBatch({
+        projectId: payload.projectId,
+        chapterId: payload.chapterId,
+        chapterTitle: payload.chapterTitle,
+        source: 'save_batch',
+        changeRequests: payload.changeRequests.map((item) => ({
+          id: typeof item.id === 'string' ? item.id : '',
+          source: typeof item.source === 'string' ? item.source : 'save_batch',
+          type: typeof item.type === 'string' ? item.type : 'scene_scope',
+          title: typeof item.title === 'string' ? item.title : '正文指令建议',
+          summary: typeof item.summary === 'string' ? item.summary : '',
+          reason: typeof item.reason === 'string' ? item.reason : '',
+          evidence: typeof item.evidence === 'string' ? item.evidence : '',
+          severity: typeof item.severity === 'string' ? item.severity : 'hint',
+          sourceTimestamp:
+            typeof item.sourceTimestamp === 'number' && Number.isFinite(item.sourceTimestamp)
+              ? item.sourceTimestamp
+              : undefined,
+        })),
+      } as any)) as BridgeStoryHarnessBatch
+      return mapStoryHarnessBatch(batch)
+    },
+    async getLatestBatch(projectId: string, chapterId: string) {
+      const batch = (await GetLatestStoryHarnessBatch(projectId, chapterId)) as
+        | BridgeStoryHarnessBatch
+        | null
+        | undefined
+      return mapStoryHarnessBatch(batch)
+    },
+    async getChapterContext(projectId: string, chapterId: string) {
+      const payload = (await GetStoryHarnessChapterContext(
+        projectId,
+        chapterId,
+      )) as BridgeStoryHarnessChapterContext
+      return mapStoryHarnessChapterContext(payload)
+    },
+    async listChangeRequests(projectId: string, chapterId: string, status = 'pending') {
+      const items = (await ListStoryHarnessChangeRequests(
+        projectId,
+        chapterId,
+        status,
+      )) as BridgeStoryHarnessChangeRequest[]
+      return (items || []).map(mapStoryHarnessChangeRequest)
+    },
+    async processChangeRequest(requestId: string, status: string) {
+      const item = (await ProcessStoryHarnessChangeRequest(requestId, {
+        status,
+      })) as BridgeStoryHarnessChangeRequest
+      return mapStoryHarnessChangeRequest(item)
+    },
+    async triggerIndex(projectId: string, chapterId: string) {
+      return TriggerStoryHarnessIndex(projectId, chapterId)
+    },
+    async rebuildProjection(projectId: string, chapterId: string) {
+      return RebuildStoryHarnessProjection(projectId, chapterId)
     },
   },
 }

@@ -1311,7 +1311,7 @@ async function handleRefresh() {
   try {
     await writerStore.loadOutlineTree(effectiveProjectId.value)
     assetRefState.value = loadWriterAssetRefState(effectiveProjectId.value)
-    creativeWorkflow.value = loadCreativeWorkflow(effectiveProjectId.value)
+    creativeWorkflow.value = await loadCreativeWorkflow(effectiveProjectId.value)
     expandRootNodes()
     if (!selectedNodeId.value && filteredRootNodes.value.length > 0) {
       selectNode(filteredRootNodes.value[0])

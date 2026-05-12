@@ -39,6 +39,8 @@ describe('WorkbenchShell', () => {
     expect(wrapper.find('[data-writer-shell="top-level"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="workbench-content"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="header-action"]').exists()).toBe(true)
+    expect(wrapper.find('[data-writer-shell="top-level"]').classes()).toContain('lg:overflow-hidden')
+    expect(wrapper.find('main').classes()).toContain('lg:overflow-y-auto')
 
     const navLinks = wrapper.findAll('a.router-link-stub')
     const activeLink = navLinks.find((link) => link.text().includes('项目'))

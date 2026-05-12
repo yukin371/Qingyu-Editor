@@ -11,11 +11,19 @@ export function CreateCharacter(arg1:database.CreateCharacterInput):Promise<data
 
 export function CreateCharacterRelation(arg1:database.CreateCharacterRelationInput):Promise<database.CharacterRelation>;
 
+export function CreateInspirationNote(arg1:database.CreateInspirationNoteInput):Promise<database.InspirationNote>;
+
 export function CreateLocation(arg1:database.CreateLocationInput):Promise<database.Location>;
 
 export function CreateLocationRelation(arg1:database.CreateLocationRelationInput):Promise<database.LocationRelation>;
 
 export function CreateProject(arg1:database.CreateProjectInput):Promise<database.Project>;
+
+export function CreateStoryHarnessBatch(arg1:database.CreateStoryHarnessBatchInput):Promise<database.StoryHarnessBatch>;
+
+export function CreateTimeline(arg1:database.CreateTimelineInput):Promise<database.Timeline>;
+
+export function CreateTimelineEvent(arg1:database.CreateTimelineEventInput):Promise<database.TimelineEvent>;
 
 export function CreateVolume(arg1:database.CreateVolumeInput):Promise<database.Volume>;
 
@@ -25,11 +33,17 @@ export function DeleteCharacter(arg1:string):Promise<void>;
 
 export function DeleteCharacterRelation(arg1:string):Promise<void>;
 
+export function DeleteInspirationNote(arg1:string):Promise<void>;
+
 export function DeleteLocation(arg1:string):Promise<void>;
 
 export function DeleteLocationRelation(arg1:string):Promise<void>;
 
 export function DeleteProject(arg1:string):Promise<void>;
+
+export function DeleteTimeline(arg1:string):Promise<void>;
+
+export function DeleteTimelineEvent(arg1:string):Promise<void>;
 
 export function DeleteVolume(arg1:string):Promise<void>;
 
@@ -37,9 +51,23 @@ export function GetChapter(arg1:string):Promise<database.Chapter>;
 
 export function GetCharacter(arg1:string):Promise<database.Character>;
 
+export function GetCreativeWorkflow(arg1:string):Promise<database.CreativeWorkflowRecord>;
+
+export function GetLatestStoryHarnessBatch(arg1:string,arg2:string):Promise<database.StoryHarnessBatch>;
+
 export function GetLocation(arg1:string):Promise<database.Location>;
 
 export function GetProject(arg1:string):Promise<database.Project>;
+
+export function GetStoryHarnessChapterContext(arg1:string,arg2:string):Promise<database.StoryHarnessChapterContext>;
+
+export function GetTimeline(arg1:string):Promise<database.Timeline>;
+
+export function GetTimelineEvent(arg1:string):Promise<database.TimelineEvent>;
+
+export function GetTimelineVisualization(arg1:string):Promise<database.TimelineVisualization>;
+
+export function GetWorkbenchTemplateDetail(arg1:string):Promise<database.CreativeWorkflowTemplate>;
 
 export function InitDatabase():Promise<void>;
 
@@ -49,19 +77,37 @@ export function ListCharacterRelations(arg1:string,arg2:string):Promise<Array<da
 
 export function ListCharacters(arg1:string):Promise<Array<database.Character>>;
 
+export function ListInspirationNotes(arg1:string):Promise<Array<database.InspirationNote>>;
+
 export function ListLocationRelations(arg1:string,arg2:string):Promise<Array<database.LocationRelation>>;
 
 export function ListLocations(arg1:string):Promise<Array<database.Location>>;
 
 export function ListProjects():Promise<Array<database.Project>>;
 
+export function ListStoryHarnessChangeRequests(arg1:string,arg2:string,arg3:string):Promise<Array<database.StoryHarnessChangeRequest>>;
+
+export function ListTimelineEvents(arg1:string):Promise<Array<database.TimelineEvent>>;
+
+export function ListTimelines(arg1:string):Promise<Array<database.Timeline>>;
+
 export function ListVolumes(arg1:string):Promise<Array<database.Volume>>;
 
+export function ListWorkbenchTemplates():Promise<Array<database.CreativeWorkflowTemplate>>;
+
 export function MoveChapter(arg1:database.MoveChapterInput):Promise<void>;
+
+export function ProcessStoryHarnessChangeRequest(arg1:string,arg2:database.StoryHarnessChangeRequestStatusUpdate):Promise<database.StoryHarnessChangeRequest>;
+
+export function RebuildStoryHarnessProjection(arg1:string,arg2:string):Promise<database.StoryHarnessRebuildProjectionResult>;
 
 export function ReorderChapters(arg1:database.ReorderChaptersInput):Promise<void>;
 
 export function ReorderVolumes(arg1:database.ReorderVolumesInput):Promise<void>;
+
+export function SaveCreativeWorkflow(arg1:string,arg2:database.CreativeWorkflowUpdate):Promise<database.CreativeWorkflowRecord>;
+
+export function TriggerStoryHarnessIndex(arg1:string,arg2:string):Promise<database.StoryHarnessTriggerIndexResult>;
 
 export function UpdateChapter(arg1:string,arg2:database.ChapterUpdate):Promise<database.Chapter>;
 
@@ -70,5 +116,9 @@ export function UpdateCharacter(arg1:string,arg2:database.CharacterUpdate):Promi
 export function UpdateLocation(arg1:string,arg2:database.LocationUpdate):Promise<database.Location>;
 
 export function UpdateProject(arg1:string,arg2:database.ProjectUpdate):Promise<database.Project>;
+
+export function UpdateTimeline(arg1:string,arg2:database.TimelineUpdate):Promise<database.Timeline>;
+
+export function UpdateTimelineEvent(arg1:string,arg2:database.TimelineEventUpdate):Promise<database.TimelineEvent>;
 
 export function UpdateVolume(arg1:string,arg2:database.VolumeUpdate):Promise<void>;

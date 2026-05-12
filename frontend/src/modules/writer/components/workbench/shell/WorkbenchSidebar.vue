@@ -1,6 +1,6 @@
 <template>
   <aside
-    class="min-h-screen border-r border-slate-100 bg-slate-50/80 px-4 py-5 lg:h-screen lg:overflow-y-auto"
+    class="min-h-screen border-r border-slate-100 bg-slate-50/80 px-4 py-5 lg:h-screen lg:min-h-0 lg:overflow-y-auto"
   >
     <div class="space-y-5">
       <div class="space-y-1 px-2 pt-2">

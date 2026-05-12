@@ -75,6 +75,18 @@ import type {
   ProjectListResponse,
 } from '@/types/models/project'
 
+const isExplicitWriterTestMode = (): boolean => {
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  try {
+    return new URL(window.location.href).searchParams.get('test') === 'true'
+  } catch {
+    return false
+  }
+}
+
 /**
  * 自动保存任务
  */
@@ -1268,8 +1280,14 @@ export const useWriterStore = defineStore('writer', {
      */
     async loadCharacters(projectId?: string): Promise<void> {
       const pid = projectId || this.currentProjectId
-      // 无项目时使用 Mock 数据演示
+      const useMockProject = Boolean(pid && isExplicitWriterTestMode() && getWorkspaceMockProject(pid))
       if (!pid) {
+        this.characters.loading = true
+        this.characters.list = isExplicitWriterTestMode() ? MOCK_CHARACTER_GRAPH.characters : []
+        this.characters.loading = false
+        return
+      }
+      if (useMockProject) {
         this.characters.loading = true
         this.characters.list = MOCK_CHARACTER_GRAPH.characters
         this.characters.loading = false
@@ -1279,13 +1297,11 @@ export const useWriterStore = defineStore('writer', {
       this.characters.loading = true
       try {
         const list = ((await listCharacters(pid)) as unknown as Character[]) || []
-        // API 无数据时降级为 Mock
-        this.characters.list = list.length > 0 ? list : MOCK_CHARACTER_GRAPH.characters
+        this.characters.list = list
       } catch (error: any) {
         console.error('加载角色列表失败:', error)
         this.error = error.message
-        // 出错时降级为 Mock 数据
-        this.characters.list = MOCK_CHARACTER_GRAPH.characters
+        this.characters.list = []
       } finally {
         this.characters.loading = false
       }
@@ -1296,18 +1312,24 @@ export const useWriterStore = defineStore('writer', {
      */
     async loadCharacterRelations(projectId?: string): Promise<void> {
       const pid = projectId || this.currentProjectId
+      const useMockProject = Boolean(pid && isExplicitWriterTestMode() && getWorkspaceMockProject(pid))
       if (!pid) {
+        this.characters.relations = isExplicitWriterTestMode()
+          ? (MOCK_CHARACTER_GRAPH.relations as any)
+          : []
+        return
+      }
+      if (useMockProject) {
         this.characters.relations = MOCK_CHARACTER_GRAPH.relations as any
         return
       }
 
       try {
         const relations = ((await listCharacterRelations(pid)) as unknown as CharacterRelation[]) || []
-        this.characters.relations =
-          relations.length > 0 ? (relations as any) : (MOCK_CHARACTER_GRAPH.relations as any)
+        this.characters.relations = relations as any
       } catch (error: any) {
         console.error('加载角色关系失败:', error)
-        this.characters.relations = MOCK_CHARACTER_GRAPH.relations as any
+        this.characters.relations = []
       }
     },
 
@@ -1366,7 +1388,14 @@ export const useWriterStore = defineStore('writer', {
      */
     async loadLocations(projectId?: string): Promise<void> {
       const pid = projectId || this.currentProjectId
+      const useMockProject = Boolean(pid && isExplicitWriterTestMode() && getWorkspaceMockProject(pid))
       if (!pid) {
+        this.locations.loading = true
+        this.locations.list = isExplicitWriterTestMode() ? (MOCK_ENTITIES.locations as any) : []
+        this.locations.loading = false
+        return
+      }
+      if (useMockProject) {
         this.locations.loading = true
         this.locations.list = MOCK_ENTITIES.locations as any
         this.locations.loading = false
@@ -1376,11 +1405,11 @@ export const useWriterStore = defineStore('writer', {
       this.locations.loading = true
       try {
         const list = ((await listLocations(pid)) as unknown as Location[]) || []
-        this.locations.list = list.length > 0 ? list : (MOCK_ENTITIES.locations as any)
+        this.locations.list = list
       } catch (error: any) {
         console.error('加载地点列表失败:', error)
         this.error = error.message
-        this.locations.list = MOCK_ENTITIES.locations as any
+        this.locations.list = []
       } finally {
         this.locations.loading = false
       }
@@ -1414,11 +1443,17 @@ export const useWriterStore = defineStore('writer', {
      */
     async loadTimelines(projectId?: string): Promise<void> {
       const pid = projectId || this.currentProjectId
-      const mockProject = pid ? getWorkspaceMockProject(pid) : null
-      // 无项目时使用 Mock 数据演示
-      if (!pid || mockProject) {
+      const mockProject = pid && isExplicitWriterTestMode() ? getWorkspaceMockProject(pid) : null
+      if (!pid) {
         this.timeline.loading = true
-        const timelineList = createMockTimelines(pid || 'mock-project')
+        this.timeline.list = isExplicitWriterTestMode() ? createMockTimelines('mock-project') : []
+        this.timeline.currentTimeline = this.timeline.list[0] || null
+        this.timeline.loading = false
+        return
+      }
+      if (mockProject) {
+        this.timeline.loading = true
+        const timelineList = createMockTimelines(pid)
         this.timeline.list = timelineList
         this.timeline.currentTimeline = timelineList[0] || null
         await this.loadTimelineEvents(this.timeline.currentTimeline?.id)
@@ -1429,7 +1464,7 @@ export const useWriterStore = defineStore('writer', {
       this.timeline.loading = true
       try {
         const list = ((await listTimelines(pid)) as unknown as Timeline[]) || []
-        this.timeline.list = list.length > 0 ? list : []
+        this.timeline.list = list
         if (this.timeline.list.length > 0 && !this.timeline.currentTimeline) {
           this.timeline.currentTimeline = this.timeline.list[0]
         }
@@ -1450,11 +1485,17 @@ export const useWriterStore = defineStore('writer', {
       const currentTimeline =
         this.timeline.list.find((timeline) => timeline.id === tid) || this.timeline.currentTimeline
       const timelineProjectId = currentTimeline?.projectId || this.currentProjectId
-      // 无时间线时使用 Mock 事件
-      if (!tid || getWorkspaceMockProject(timelineProjectId)) {
-        this.timeline.events = timelineProjectId
-          ? createMockTimelineEvents(timelineProjectId)
-          : MOCK_TIMELINE_EVENTS
+      const useMockProject =
+        typeof timelineProjectId === 'string' &&
+        timelineProjectId.length > 0 &&
+        isExplicitWriterTestMode() &&
+        Boolean(getWorkspaceMockProject(timelineProjectId))
+      if (!tid) {
+        this.timeline.events = isExplicitWriterTestMode() ? MOCK_TIMELINE_EVENTS : []
+        return
+      }
+      if (useMockProject) {
+        this.timeline.events = createMockTimelineEvents(timelineProjectId)
         return
       }
 
@@ -1462,6 +1503,7 @@ export const useWriterStore = defineStore('writer', {
         this.timeline.events = ((await listTimelineEvents(tid)) as unknown as TimelineEvent[]) || []
       } catch (error: any) {
         console.error('加载时间线事件失败:', error)
+        this.timeline.events = []
       }
     },
 
@@ -1490,7 +1532,7 @@ export const useWriterStore = defineStore('writer', {
     async loadOutlineTree(projectId?: string): Promise<void> {
       const pid = projectId || this.currentProjectId
       if (!pid) return
-      const mockProject = getWorkspaceMockProject(pid)
+      const mockProject = isExplicitWriterTestMode() ? getWorkspaceMockProject(pid) : null
 
       this.outline.loading = true
       try {

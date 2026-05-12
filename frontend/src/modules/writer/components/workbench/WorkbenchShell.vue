@@ -1,12 +1,12 @@
 <template>
   <div
     data-writer-shell="top-level"
-    class="min-h-screen bg-white lg:grid lg:grid-cols-[236px_minmax(0,1fr)]"
+    class="min-h-screen bg-white lg:grid lg:h-screen lg:grid-cols-[236px_minmax(0,1fr)] lg:overflow-hidden"
   >
     <WorkbenchSidebar :active-nav-id="activeNavId" :navigation="navigation" />
 
-    <main class="min-w-0 lg:min-h-screen">
-      <div class="mx-auto max-w-[1044px] space-y-7 px-5 py-5 lg:px-8">
+    <main class="min-w-0 lg:h-screen lg:min-h-0 lg:overflow-y-auto">
+      <div class="mx-auto max-w-[1044px] space-y-7 px-5 py-5 lg:px-8 lg:py-8">
         <WorkbenchPageHeader :title="title" :description="description" :eyebrow="eyebrow">
           <template #actions>
             <slot name="actions" />

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import type { Storage } from '@/utils/storage'
 import InspirationPanel from '../InspirationPanel.vue'
 
@@ -53,8 +54,11 @@ describe('InspirationPanel', () => {
 
   it('hydrates template defaults and promotes the gate after selecting a template', async () => {
     const wrapper = mountPanel()
+    await nextTick()
 
     await wrapper.get('[data-testid="template-mystery"]').trigger('click')
+    await nextTick()
+    await flushPromises()
 
     expect(wrapper.text()).toContain('可推进到阶段 2')
     expect(wrapper.text()).toContain('踏入异常')
@@ -63,15 +67,23 @@ describe('InspirationPanel', () => {
 
   it('persists workflow sidecar state across remounts', async () => {
     const wrapper = mountPanel()
+    await nextTick()
 
     await wrapper.get('[data-testid="template-building"]').trigger('click')
+    await nextTick()
+    await flushPromises()
 
     const pitchInput = wrapper.find('textarea')
     await pitchInput.setValue('一个濒临破产的领地，要靠第一座工坊翻盘。')
+    await nextTick()
+    await flushPromises()
 
     wrapper.unmount()
 
     const secondWrapper = mountPanel()
+    await nextTick()
+    await nextTick()
+    await flushPromises()
     expect(secondWrapper.text()).toContain('建设养成')
     expect(secondWrapper.text()).toContain('第一份成果')
     expect(secondWrapper.find('textarea').element.value).toContain('第一座工坊翻盘')

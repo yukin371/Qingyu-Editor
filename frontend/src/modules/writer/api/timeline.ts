@@ -3,6 +3,7 @@ import { standaloneLocalBridge } from '../data-bridge/standalone-local'
 import {
   isStandaloneLocalWriterAvailable,
   isWailsWriterAvailable,
+  wailsWriterBridge,
 } from '../data-bridge/wails'
 import type {
   Timeline,
@@ -38,7 +39,7 @@ export const timelineApi = {
    */
   create(projectId: string, data: SaveTimelineRequest) {
     if (isWailsWriterAvailable()) {
-      return standaloneLocalBridge.timeline.create(projectId, data)
+      return wailsWriterBridge.timeline.create(projectId, data as unknown as Record<string, unknown>)
     }
     if (isStandaloneLocalWriterAvailable()) {
       return standaloneLocalBridge.timeline.create(projectId, data)
@@ -51,7 +52,10 @@ export const timelineApi = {
    * GET /api/v1/projects/{projectId}/timelines
    */
   list(projectId: string) {
-    if (isWailsWriterAvailable() || isStandaloneLocalWriterAvailable()) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.timeline.list(projectId)
+    }
+    if (isStandaloneLocalWriterAvailable()) {
       return standaloneLocalBridge.timeline.list(projectId)
     }
     return httpService.get<Timeline[]>(`${BASE_PROJECT_URL}/${projectId}/timelines`)
@@ -63,7 +67,7 @@ export const timelineApi = {
    */
   getDetail(timelineId: string, projectId: string) {
     if (isWailsWriterAvailable()) {
-      return standaloneLocalBridge.timeline.get(timelineId)
+      return wailsWriterBridge.timeline.get(timelineId)
     }
     if (isStandaloneLocalWriterAvailable()) {
       return standaloneLocalBridge.timeline.get(timelineId)
@@ -80,7 +84,7 @@ export const timelineApi = {
    */
   delete(timelineId: string, projectId: string) {
     if (isWailsWriterAvailable()) {
-      return standaloneLocalBridge.timeline.delete(timelineId)
+      return wailsWriterBridge.timeline.delete(timelineId)
     }
     if (isStandaloneLocalWriterAvailable()) {
       return standaloneLocalBridge.timeline.delete(timelineId)
@@ -97,7 +101,10 @@ export const timelineApi = {
    * 返回类型可能是复杂的图表数据，暂时用 any 或定义专门的 Visualization 类型
    */
   getVisualization(timelineId: string) {
-    if (isWailsWriterAvailable() || isStandaloneLocalWriterAvailable()) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.timeline.getVisualization(timelineId)
+    }
+    if (isStandaloneLocalWriterAvailable()) {
       return standaloneLocalBridge.timeline.getVisualization(timelineId)
     }
     return httpService.get<any>(`${BASE_TIMELINE_URL}/${timelineId}/visualization`)
@@ -114,7 +121,11 @@ export const timelineApi = {
    */
   createEvent(timelineId: string, projectId: string, data: SaveTimelineEventRequest) {
     if (isWailsWriterAvailable()) {
-      return standaloneLocalBridge.timeline.createEvent(timelineId, projectId, data)
+      return wailsWriterBridge.timeline.createEvent(
+        timelineId,
+        projectId,
+        data as unknown as Record<string, unknown>,
+      )
     }
     if (isStandaloneLocalWriterAvailable()) {
       return standaloneLocalBridge.timeline.createEvent(timelineId, projectId, data)
@@ -131,7 +142,10 @@ export const timelineApi = {
    * GET /api/v1/writer/timelines/{timelineId}/events
    */
   listEvents(timelineId: string) {
-    if (isWailsWriterAvailable() || isStandaloneLocalWriterAvailable()) {
+    if (isWailsWriterAvailable()) {
+      return wailsWriterBridge.timeline.listEvents(timelineId)
+    }
+    if (isStandaloneLocalWriterAvailable()) {
       return standaloneLocalBridge.timeline.listEvents(timelineId)
     }
     return httpService.get<TimelineEvent[]>(`${BASE_TIMELINE_URL}/${timelineId}/events`)
@@ -143,7 +157,7 @@ export const timelineApi = {
    */
   getEvent(eventId: string, projectId: string) {
     if (isWailsWriterAvailable()) {
-      return standaloneLocalBridge.timeline.getEvent(eventId)
+      return wailsWriterBridge.timeline.getEvent(eventId)
     }
     if (isStandaloneLocalWriterAvailable()) {
       return standaloneLocalBridge.timeline.getEvent(eventId)
@@ -157,7 +171,11 @@ export const timelineApi = {
    */
   updateEvent(eventId: string, projectId: string, data: SaveTimelineEventRequest) {
     if (isWailsWriterAvailable()) {
-      return standaloneLocalBridge.timeline.updateEvent(eventId, projectId, data)
+      return wailsWriterBridge.timeline.updateEvent(
+        eventId,
+        projectId,
+        data as unknown as Record<string, unknown>,
+      )
     }
     if (isStandaloneLocalWriterAvailable()) {
       return standaloneLocalBridge.timeline.updateEvent(eventId, projectId, data)
@@ -173,7 +191,7 @@ export const timelineApi = {
    */
   deleteEvent(eventId: string, projectId: string) {
     if (isWailsWriterAvailable()) {
-      return standaloneLocalBridge.timeline.deleteEvent(eventId, projectId)
+      return wailsWriterBridge.timeline.deleteEvent(eventId)
     }
     if (isStandaloneLocalWriterAvailable()) {
       return standaloneLocalBridge.timeline.deleteEvent(eventId, projectId)

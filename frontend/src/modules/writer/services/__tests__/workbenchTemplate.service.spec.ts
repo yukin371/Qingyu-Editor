@@ -48,18 +48,19 @@ describe('workbenchTemplate.service', () => {
     createDocumentMock.mockReset()
     updateDocumentContentMock.mockReset()
     saveCreativeWorkflowMock.mockReset()
+    saveCreativeWorkflowMock.mockResolvedValue(undefined)
   })
 
-  it('模板详情应提供大纲/角色/设定三类结构化预览', () => {
-    const detail = getWorkbenchTemplateDetail('mystery')
+  it('模板详情应提供大纲/角色/设定三类结构化预览', async () => {
+    const detail = await getWorkbenchTemplateDetail('mystery')
 
     expect(detail?.previewTabs.outline).toHaveLength(3)
     expect(detail?.previewTabs.characters.length).toBeGreaterThan(0)
     expect(detail?.previewTabs.settings.length).toBeGreaterThan(0)
   })
 
-  it('模板分类列表应包含全部模板入口', () => {
-    const categories = listWorkbenchTemplateCategories()
+  it('模板分类列表应包含全部模板入口', async () => {
+    const categories = await listWorkbenchTemplateCategories()
 
     expect(categories[0]).toEqual({
       id: 'all',

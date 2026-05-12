@@ -11,11 +11,16 @@ import (
 )
 
 type appServices struct {
-	project   *services.ProjectService
-	volume    *services.VolumeService
-	chapter   *services.ChapterService
-	character *services.CharacterService
-	location  *services.LocationService
+	project          *services.ProjectService
+	volume           *services.VolumeService
+	chapter          *services.ChapterService
+	character        *services.CharacterService
+	location         *services.LocationService
+	template         *services.TemplateService
+	creativeWorkflow *services.CreativeWorkflowService
+	inspiration      *services.InspirationService
+	timeline         *services.TimelineService
+	storyHarness     *services.StoryHarnessService
 }
 
 // App 主应用结构
@@ -332,6 +337,239 @@ func (a *App) DeleteLocationRelation(id string) error {
 	return locationService.DeleteRelation(id)
 }
 
+func (a *App) ListWorkbenchTemplates() ([]database.CreativeWorkflowTemplate, error) {
+	templateService, err := a.templateService()
+	if err != nil {
+		return nil, err
+	}
+	return templateService.List(), nil
+}
+
+func (a *App) GetWorkbenchTemplateDetail(templateID string) (database.CreativeWorkflowTemplate, error) {
+	templateService, err := a.templateService()
+	if err != nil {
+		return database.CreativeWorkflowTemplate{}, err
+	}
+	return templateService.Get(templateID)
+}
+
+func (a *App) GetCreativeWorkflow(projectID string) (database.CreativeWorkflowRecord, error) {
+	creativeWorkflowService, err := a.creativeWorkflowService()
+	if err != nil {
+		return database.CreativeWorkflowRecord{}, err
+	}
+	return creativeWorkflowService.Get(projectID)
+}
+
+func (a *App) SaveCreativeWorkflow(
+	projectID string,
+	update database.CreativeWorkflowUpdate,
+) (database.CreativeWorkflowRecord, error) {
+	creativeWorkflowService, err := a.creativeWorkflowService()
+	if err != nil {
+		return database.CreativeWorkflowRecord{}, err
+	}
+	return creativeWorkflowService.Save(projectID, update)
+}
+
+func (a *App) ListInspirationNotes(projectID string) ([]database.InspirationNote, error) {
+	inspirationService, err := a.inspirationService()
+	if err != nil {
+		return nil, err
+	}
+	return inspirationService.List(projectID)
+}
+
+func (a *App) CreateInspirationNote(
+	input database.CreateInspirationNoteInput,
+) (database.InspirationNote, error) {
+	inspirationService, err := a.inspirationService()
+	if err != nil {
+		return database.InspirationNote{}, err
+	}
+	return inspirationService.Create(input)
+}
+
+func (a *App) DeleteInspirationNote(id string) error {
+	inspirationService, err := a.inspirationService()
+	if err != nil {
+		return err
+	}
+	return inspirationService.Delete(id)
+}
+
+func (a *App) CreateTimeline(input database.CreateTimelineInput) (database.Timeline, error) {
+	timelineService, err := a.timelineService()
+	if err != nil {
+		return database.Timeline{}, err
+	}
+	return timelineService.Create(input)
+}
+
+func (a *App) GetTimeline(id string) (database.Timeline, error) {
+	timelineService, err := a.timelineService()
+	if err != nil {
+		return database.Timeline{}, err
+	}
+	return timelineService.Get(id)
+}
+
+func (a *App) ListTimelines(projectID string) ([]database.Timeline, error) {
+	timelineService, err := a.timelineService()
+	if err != nil {
+		return nil, err
+	}
+	return timelineService.List(projectID)
+}
+
+func (a *App) UpdateTimeline(id string, update database.TimelineUpdate) (database.Timeline, error) {
+	timelineService, err := a.timelineService()
+	if err != nil {
+		return database.Timeline{}, err
+	}
+	return timelineService.Update(id, update)
+}
+
+func (a *App) DeleteTimeline(id string) error {
+	timelineService, err := a.timelineService()
+	if err != nil {
+		return err
+	}
+	return timelineService.Delete(id)
+}
+
+func (a *App) GetTimelineVisualization(
+	timelineID string,
+) (database.TimelineVisualization, error) {
+	timelineService, err := a.timelineService()
+	if err != nil {
+		return database.TimelineVisualization{}, err
+	}
+	return timelineService.GetVisualization(timelineID)
+}
+
+func (a *App) CreateTimelineEvent(
+	input database.CreateTimelineEventInput,
+) (database.TimelineEvent, error) {
+	timelineService, err := a.timelineService()
+	if err != nil {
+		return database.TimelineEvent{}, err
+	}
+	return timelineService.CreateEvent(input)
+}
+
+func (a *App) GetTimelineEvent(id string) (database.TimelineEvent, error) {
+	timelineService, err := a.timelineService()
+	if err != nil {
+		return database.TimelineEvent{}, err
+	}
+	return timelineService.GetEvent(id)
+}
+
+func (a *App) ListTimelineEvents(timelineID string) ([]database.TimelineEvent, error) {
+	timelineService, err := a.timelineService()
+	if err != nil {
+		return nil, err
+	}
+	return timelineService.ListEvents(timelineID)
+}
+
+func (a *App) UpdateTimelineEvent(
+	id string,
+	update database.TimelineEventUpdate,
+) (database.TimelineEvent, error) {
+	timelineService, err := a.timelineService()
+	if err != nil {
+		return database.TimelineEvent{}, err
+	}
+	return timelineService.UpdateEvent(id, update)
+}
+
+func (a *App) DeleteTimelineEvent(id string) error {
+	timelineService, err := a.timelineService()
+	if err != nil {
+		return err
+	}
+	return timelineService.DeleteEvent(id)
+}
+
+func (a *App) CreateStoryHarnessBatch(
+	input database.CreateStoryHarnessBatchInput,
+) (database.StoryHarnessBatch, error) {
+	storyHarnessService, err := a.storyHarnessService()
+	if err != nil {
+		return database.StoryHarnessBatch{}, err
+	}
+	return storyHarnessService.CreateBatch(input)
+}
+
+func (a *App) GetLatestStoryHarnessBatch(
+	projectID string,
+	chapterID string,
+) (*database.StoryHarnessBatch, error) {
+	storyHarnessService, err := a.storyHarnessService()
+	if err != nil {
+		return nil, err
+	}
+	return storyHarnessService.GetLatestBatch(projectID, chapterID)
+}
+
+func (a *App) GetStoryHarnessChapterContext(
+	projectID string,
+	chapterID string,
+) (database.StoryHarnessChapterContext, error) {
+	storyHarnessService, err := a.storyHarnessService()
+	if err != nil {
+		return database.StoryHarnessChapterContext{}, err
+	}
+	return storyHarnessService.GetChapterContext(projectID, chapterID)
+}
+
+func (a *App) ListStoryHarnessChangeRequests(
+	projectID string,
+	chapterID string,
+	status string,
+) ([]database.StoryHarnessChangeRequest, error) {
+	storyHarnessService, err := a.storyHarnessService()
+	if err != nil {
+		return nil, err
+	}
+	return storyHarnessService.ListChangeRequests(projectID, chapterID, status)
+}
+
+func (a *App) ProcessStoryHarnessChangeRequest(
+	requestID string,
+	update database.StoryHarnessChangeRequestStatusUpdate,
+) (database.StoryHarnessChangeRequest, error) {
+	storyHarnessService, err := a.storyHarnessService()
+	if err != nil {
+		return database.StoryHarnessChangeRequest{}, err
+	}
+	return storyHarnessService.ProcessChangeRequest(requestID, update)
+}
+
+func (a *App) TriggerStoryHarnessIndex(
+	projectID string,
+	chapterID string,
+) (database.StoryHarnessTriggerIndexResult, error) {
+	storyHarnessService, err := a.storyHarnessService()
+	if err != nil {
+		return database.StoryHarnessTriggerIndexResult{}, err
+	}
+	return storyHarnessService.TriggerIndex(projectID, chapterID)
+}
+
+func (a *App) RebuildStoryHarnessProjection(
+	projectID string,
+	chapterID string,
+) (database.StoryHarnessRebuildProjectionResult, error) {
+	storyHarnessService, err := a.storyHarnessService()
+	if err != nil {
+		return database.StoryHarnessRebuildProjectionResult{}, err
+	}
+	return storyHarnessService.RebuildProjection(projectID, chapterID)
+}
+
 func (a *App) ensureDatabase() error {
 	return database.Ensure(a.appName)
 }
@@ -399,6 +637,71 @@ func (a *App) locationService() (*services.LocationService, error) {
 		a.services.location = services.NewLocationService(db)
 	}
 	return a.services.location, nil
+}
+
+func (a *App) templateService() (*services.TemplateService, error) {
+	_, err := a.serviceDB()
+	if err != nil {
+		return nil, err
+	}
+	a.serviceMu.Lock()
+	defer a.serviceMu.Unlock()
+	if a.services.template == nil {
+		a.services.template = services.NewTemplateService()
+	}
+	return a.services.template, nil
+}
+
+func (a *App) creativeWorkflowService() (*services.CreativeWorkflowService, error) {
+	db, err := a.serviceDB()
+	if err != nil {
+		return nil, err
+	}
+	a.serviceMu.Lock()
+	defer a.serviceMu.Unlock()
+	if a.services.creativeWorkflow == nil {
+		a.services.creativeWorkflow = services.NewCreativeWorkflowService(db)
+	}
+	return a.services.creativeWorkflow, nil
+}
+
+func (a *App) inspirationService() (*services.InspirationService, error) {
+	db, err := a.serviceDB()
+	if err != nil {
+		return nil, err
+	}
+	a.serviceMu.Lock()
+	defer a.serviceMu.Unlock()
+	if a.services.inspiration == nil {
+		a.services.inspiration = services.NewInspirationService(db)
+	}
+	return a.services.inspiration, nil
+}
+
+func (a *App) timelineService() (*services.TimelineService, error) {
+	db, err := a.serviceDB()
+	if err != nil {
+		return nil, err
+	}
+	a.serviceMu.Lock()
+	defer a.serviceMu.Unlock()
+	if a.services.timeline == nil {
+		a.services.timeline = services.NewTimelineService(db)
+	}
+	return a.services.timeline, nil
+}
+
+func (a *App) storyHarnessService() (*services.StoryHarnessService, error) {
+	db, err := a.serviceDB()
+	if err != nil {
+		return nil, err
+	}
+	a.serviceMu.Lock()
+	defer a.serviceMu.Unlock()
+	if a.services.storyHarness == nil {
+		a.services.storyHarness = services.NewStoryHarnessService(db)
+	}
+	return a.services.storyHarness, nil
 }
 
 func (a *App) serviceDB() (*sql.DB, error) {

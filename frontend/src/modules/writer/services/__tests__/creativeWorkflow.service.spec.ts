@@ -40,8 +40,8 @@ describe('creativeWorkflow.service', () => {
     memoryStorage.clear()
   })
 
-  it('returns a blocked default workflow before template selection', () => {
-    const workflow = loadCreativeWorkflow('project-alpha')
+  it('returns a blocked default workflow before template selection', async () => {
+    const workflow = await loadCreativeWorkflow('project-alpha')
 
     expect(workflow.templateId).toBeNull()
     expect(workflow.goldenChapters).toHaveLength(3)
@@ -54,8 +54,8 @@ describe('creativeWorkflow.service', () => {
     ])
   })
 
-  it('hydrates template defaults and marks the gate ready after required fields are filled', () => {
-    const seeded = saveCreativeWorkflow('project-alpha', {
+  it('hydrates template defaults and marks the gate ready after required fields are filled', async () => {
+    const seeded = await saveCreativeWorkflow('project-alpha', {
       templateId: 'mystery',
       pitchLine: '一名新人调查员被迫进入会吃人的规则副本。',
     })
@@ -68,12 +68,12 @@ describe('creativeWorkflow.service', () => {
     expect(seeded.gate.status).toBe('ready')
   })
 
-  it('persists manual edits for promises, audience and golden chapters', () => {
-    saveCreativeWorkflow('project-alpha', {
+  it('persists manual edits for promises, audience and golden chapters', async () => {
+    await saveCreativeWorkflow('project-alpha', {
       templateId: 'building',
     })
 
-    const updated = saveCreativeWorkflow('project-alpha', {
+    const updated = await saveCreativeWorkflow('project-alpha', {
       targetAudience: ['喜欢经营闭环', '偏好资源增长可视化'],
       corePromises: ['前三章看到建设成果'],
       paceContract: '第一卷先做资源闭环，再上人口增长。',
@@ -112,14 +112,14 @@ describe('creativeWorkflow.service', () => {
     )
   })
 
-  it('can clear the sidecar workflow state', () => {
-    saveCreativeWorkflow('project-alpha', {
+  it('can clear the sidecar workflow state', async () => {
+    await saveCreativeWorkflow('project-alpha', {
       templateId: 'emotion',
     })
 
     removeCreativeWorkflow('project-alpha')
 
-    const workflow = loadCreativeWorkflow('project-alpha')
+    const workflow = await loadCreativeWorkflow('project-alpha')
     expect(workflow.templateId).toBeNull()
   })
 

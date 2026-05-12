@@ -1,6 +1,6 @@
 # Writer Module
 
-> 最后更新：2026-05-12
+> 最后更新：2026-05-13
 
 ## 职责
 
@@ -28,6 +28,7 @@
 - **入口动作 owner 是 `useWriterProjectEntryActions`**：工作台、项目列表、模板中心涉及“进入项目 / 继续创作 / 新建后进入 / 导入后进入”时，应复用这个 composable；不要在页面里各自拼 `writer-project` 路由或复制 ZIP 导入成功跳转逻辑。
 - **模板中心的 owner 是“新建项目工具”，不是模板后台**：模板页允许浏览分类、打开 `大纲 / 角色 / 设定` 抽屉，并把模板应用到新建项目；不要在这里偷偷长出模板编辑器、模板发布系统或第二套项目创建协议。
 - **工作台壳必须保持模块化和简洁**：`WorkbenchShell` 负责左侧主导航和右侧主内容区的基础骨架；首页、项目页、模板页优先复用 `QyCard / QyButton / QyInput / QySelect / QyDrawer / QyModal` 等设计系统原件，不要再堆叠装饰性卡片、大段说明或自定义平台式大壳。
+- **工作台壳桌面端必须分离滚动**：`WorkbenchShell` 在 `lg` 及以上视口下应保持“左侧导航整列固定高度 + 右侧主内容独立滚动”；不要再让 `/writer`、`/writer/projects`、`/writer/templates` 通过整页文档滚动把左侧导航一起带走。
 - **双壳模型要显式，不要伪装成同一页抖动**：顶层页壳只服务 `/writer`、`/writer/projects`、`/writer/templates`，并由页面显式传入 `activeNavId`；`/writer/project/:projectId` 只走 `WorkspaceShell` 编辑器壳。不要再让壳层通过路由猜测去兼容另一条主链。
 - **新建章节走“先创建再命名”**：`新建章节` 不再弹标题弹窗，而是按当前上下文直接创建默认 `第N章`；章节标题的细化命名应在主编辑区页内标题行完成，避免创建前表单打断写作流。
 - **历史入口直接收敛到路由兼容层**：旧 `dashboard / editor / publish` 页面不再保留独立运行时壳；兼容只允许留在 `routes.ts` 的重定向层，不再保留会继续腐化的空页面文件。
@@ -35,7 +36,7 @@
 - **独立编辑器宿主默认不探测原后端**：`main.ts`、`utils/api-health.ts`、`utils/syncService.ts` 在独立编辑器运行态下不得默认请求原 `/api/v1/system/health` 或 `/health`；宿主应直接把本地桥接或本地宿主视为在线，只有显式 `?remote=true` 联调模式才允许恢复远端健康探测。
 - **remote mode 是唯一远端 writer 开关**：`data-bridge/wails.ts` 里的 `isRemoteWriterMode()` 现在是 writer 远端联调的唯一显式入口；浏览器独立宿主默认走本地 owner，不允许再靠端口猜测或“没有 Wails 就回退 HTTP”维持隐式远端模式。
 - **快捷键配置在独立宿主默认本地优先**：`useShortcutConfig` 在独立编辑器运行态下只允许使用 `localStorage + 默认值`，不得为了加载或重置快捷键再访问 `/writer/user/shortcuts*`，避免设置面板继续隐式依赖原后端。
-- **Story Harness 后端上下文在独立宿主只允许显式降级**：`storyHarnessService.fetchChapterContext / fetchChangeRequests / triggerIndex / rebuildProjection` 在独立编辑器运行态下不得默认请求原后端；当前允许返回 `null / []` 维持本地工作流，后续若要恢复能力，必须先补本地 owner 或显式 `?remote=true` 联调入口。
+- **Story Harness 已切到桌面本地 owner**：`storyHarnessService.getLatestBatch / persistBatch / fetchChapterContext / fetchChangeRequests / triggerIndex / rebuildProjection` 在有 Wails bridge 时统一走 `Wails -> Go services -> SQLite`；浏览器独立宿主才允许保留本地缓存级 fallback，不得再把原在线 writer API 当默认真相源。
 - **writer 模块组件已完成去全局 UI 插件依赖**：`main.ts` 已移除历史全局组件注册，writer 现有组件链已迁到 Tailwind + `Qy*`。若未来重新接入 legacy 组件或新建编辑器子面板，必须在组件内完成迁移，不能再恢复全局注册兜底。
 - **非 writer 平台模块已物理退场**：`frontend/src` 下的书城/社区/阅读/财务/用户/通知/后台等历史平台模块已从桌面宿主移除；新增能力若不属于写作闭环，不应再放回这个仓库的运行时主链。
 - **writer 内部历史孤岛也已开始物理退场**：旧 `components/ai/*`、模板工作流组件、废弃 `OutlineView*`、旧 `WorkspaceFullscreenOverlay` 与一批 legacy editor 组件已经删除；不要再从这些历史目录恢复入口，而应继续收敛到 `ProjectWorkspace / WorkspaceToolOverlay / WorkspaceRightPanel` 主链。
@@ -77,7 +78,10 @@
 - **`/doc` 命令桥只做轻量演示接入**：`AIPanel` 内的 `/doc list/read/search/patch` 目前是面向当前 writer 工作区的本地命令桥。`list/read/search` 可直接返回文本结果；`patch` 必须统一转换成 `applyGeneratedText -> ProjectWorkspace.handleAIApplyGeneratedText` 的正文 diff。若目标不是当前章节，只允许先读取目标章节内容、生成预览，再通过 `targetDocumentId/targetDocumentTitle` 让宿主切章后挂起 diff，不允许绕过编辑器直接静默保存。
 - **会话操作应并入工具栏，不再回到独立头部**：清空当前对话、重命名、新建会话等动作统一放在 `AIConversationToolbar`，不要为了单个会话动作再长回额外标题栏。
 - **右栏是“双模式速查”宿主，不再只挂 AI/Harness**：`WorkspaceRightPanel` 现在承接 `AI / 设定 / 校对 / 灵感` 四种常驻工具；设定采用“列表 + 详情”双栏，AI/校对/灵感采用单栏。不要再把轻量查阅能力做回全屏覆盖层或主编辑区切页。
-- **阶段 1 创作流元数据先走前端 sidecar owner**：`题材模板 / 目标读者 / 核心承诺 / 节奏合约 / 黄金三章` 当前由 `services/creativeWorkflow.service.ts` 以 `projectId` 为键落本地 sidecar，用于独立宿主的灵感 Gate 与开篇规划；在后端/Wails schema 未明确前，不要把这批字段偷偷塞回项目 REST schema，也不要在其它组件再长第二套阶段 1 持久化。
+- **阶段 1 创作流元数据已改为 Wails-first owner**：`题材模板 / 目标读者 / 核心承诺 / 节奏合约 / 黄金三章` 当前由 `services/creativeWorkflow.service.ts` 优先通过 `wailsWriterBridge.creativeWorkflow` 落到本地 SQLite；`localStorage` 只保留无 bridge 的浏览器 fallback，不得再把这批字段写回旧在线 REST schema，也不要在页面里各自维护第二套 sidecar。
+- **模板目录和详情已改为本地 API owner**：作者工作台、模板中心消费的模板列表/详情统一走 `wailsWriterBridge.template`，由 Go `TemplateService` 提供稳定结构；前端静态模板数据只允许作为无 Wails 的开发 fallback，不再是默认运行态真相，且统一收口到 `services/templateCatalog.fallback.ts`，不要在页面或其他 service 再复制第三份模板定义。
+- **灵感笔记已改为本地 API owner**：`InspirationPanel` 的笔记列表、创建、删除统一走 `wailsWriterBridge.inspiration`；本地缓存只作为浏览器 fallback 和读失败兜底，不允许再直接在组件里操作 `localStorage`。
+- **时间线本地 owner 已补齐 CRUD**：`api/timeline.ts` 在 Wails 运行态下统一走 `wailsWriterBridge.timeline`，包含时间线、事件和可视化读取；仅显式 `?test=true` 才允许命中旧 mock 工具链。
 - **结构舞台只读消费阶段 1 sidecar，不接管持久化**：`StructureStageView` 当前可以读取 `creativeWorkflow` sidecar 作为阶段 3 接力卡与 AI handoff 输入，但它只能消费和展示，不得反向成为模板/黄金三章的新 owner。
 - **黄金三章导入必须复用现有结构草案链**：从阶段 3 接力卡导入黄金三章时，只能发 `create-structure-plan` 交给 `ProjectWorkspace.handleCreateStructurePlan` 统一创建章节与 outline 节点；不要在 `StructureStageView` 里直接写文档或大纲。
 - **黄金三章导入控制项仍由宿主兜底**：阶段 3 接力卡可以补 `导入位置（当前卷 / 项目根目录）` 与 `重复策略（跳过 / 允许重复）`，但最终 parent 解析、同名跳过与成功提示都必须落在 `ProjectWorkspace.handleCreateStructurePlan`，不要在结构舞台局部自行分叉创建逻辑。

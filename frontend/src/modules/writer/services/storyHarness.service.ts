@@ -1,5 +1,9 @@
 import storage from '@/utils/storage'
-import { isStandaloneWriterRuntime } from '@/modules/writer/data-bridge/wails'
+import {
+  isStandaloneWriterRuntime,
+  isWailsWriterAvailable,
+  wailsWriterBridge,
+} from '@/modules/writer/data-bridge/wails'
 import {
   createStoryHarnessBatch,
   getLatestStoryHarnessBatch,
@@ -139,7 +143,8 @@ const mergeBatchRecord = (
 }
 
 class StoryHarnessService {
-  private readonly isStandaloneMode = isStandaloneWriterRuntime()
+  private readonly useWailsBridge = isWailsWriterAvailable()
+  private readonly isStandaloneMode = isStandaloneWriterRuntime() && !this.useWailsBridge
 
   private readLocalBatchRecord(
     projectId: string,
@@ -174,6 +179,10 @@ class StoryHarnessService {
     }
 
     try {
+      if (this.useWailsBridge) {
+        const payload = await wailsWriterBridge.storyHarness.getLatestBatch(projectId, chapterId)
+        return payload ? normalizeBatchRecord(payload as StoryHarnessBatchRecord) : null
+      }
       const localRecord = this.readLocalBatchRecord(projectId, chapterId)
       const response = await getLatestStoryHarnessBatch(projectId, chapterId)
       const hasWrappedData =
@@ -211,6 +220,15 @@ class StoryHarnessService {
     const fallbackRecord = createLocalFallbackRecord(payload, 'local_fallback')
 
     try {
+      if (this.useWailsBridge) {
+        const remoteRecord = await wailsWriterBridge.storyHarness.createBatch({
+          projectId: payload.projectId,
+          chapterId: payload.chapterId,
+          chapterTitle: payload.chapterTitle,
+          changeRequests: payload.changeRequests as unknown as Array<Record<string, unknown>>,
+        })
+        return this.writeLocalBatch((remoteRecord as StoryHarnessBatchRecord) ?? fallbackRecord)
+      }
       const response = await createStoryHarnessBatch(payload.projectId, payload.chapterId, {
         chapterTitle: payload.chapterTitle,
         changeRequests: payload.changeRequests,
@@ -237,6 +255,16 @@ class StoryHarnessService {
 
   async fetchChapterContext(projectId: string, chapterId: string) {
     if (!projectId || !chapterId) return null
+    if (this.useWailsBridge) {
+      try {
+        return await wailsWriterBridge.storyHarness.getChapterContext(projectId, chapterId)
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn('[storyHarnessService] fetchChapterContext via Wails failed:', error)
+        }
+        return null
+      }
+    }
     if (this.isStandaloneMode) {
       return null
     }
@@ -254,6 +282,16 @@ class StoryHarnessService {
 
   async fetchChangeRequests(projectId: string, chapterId: string, status = 'pending') {
     if (!projectId || !chapterId) return []
+    if (this.useWailsBridge) {
+      try {
+        return await wailsWriterBridge.storyHarness.listChangeRequests(projectId, chapterId, status)
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn('[storyHarnessService] fetchChangeRequests via Wails failed:', error)
+        }
+        return []
+      }
+    }
     if (this.isStandaloneMode) {
       return []
     }
@@ -271,6 +309,17 @@ class StoryHarnessService {
   }
 
   async processChangeRequest(requestId: string, status: 'accepted' | 'ignored' | 'deferred') {
+    if (this.useWailsBridge) {
+      try {
+        await wailsWriterBridge.storyHarness.processChangeRequest(requestId, status)
+        return true
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn('[storyHarnessService] processChangeRequest via Wails failed:', error)
+        }
+        return false
+      }
+    }
     if (this.isStandaloneMode) {
       return false
     }
@@ -288,6 +337,16 @@ class StoryHarnessService {
   /** 手动触发章节索引 */
   async triggerIndex(projectId: string, chapterId: string) {
     if (!projectId || !chapterId) return null
+    if (this.useWailsBridge) {
+      try {
+        return await wailsWriterBridge.storyHarness.triggerIndex(projectId, chapterId)
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn('[storyHarnessService] triggerIndex via Wails failed:', error)
+        }
+        return null
+      }
+    }
     if (this.isStandaloneMode) {
       return null
     }
@@ -312,6 +371,16 @@ class StoryHarnessService {
   /** accepted 后兜底重建 projection */
   async rebuildProjection(projectId: string, chapterId: string) {
     if (!projectId || !chapterId) return null
+    if (this.useWailsBridge) {
+      try {
+        return await wailsWriterBridge.storyHarness.rebuildProjection(projectId, chapterId)
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn('[storyHarnessService] rebuildProjection via Wails failed:', error)
+        }
+        return null
+      }
+    }
     if (this.isStandaloneMode) {
       return null
     }

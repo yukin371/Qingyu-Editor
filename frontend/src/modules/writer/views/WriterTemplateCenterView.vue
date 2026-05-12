@@ -121,65 +121,68 @@ const router = useRouter()
 const projectStore = useProjectStore()
 const { openProject } = useWriterProjectEntryActions()
 
-const categories = listWorkbenchTemplateCategories()
-const templates = listWorkbenchTemplates()
+const categories = ref<Array<{ id: string; label: string; count: number }>>([])
+const templates = ref<TemplateCatalogItem[]>([])
 
 const sortedProjects = computed(() => sortProjectsByRecent(projectStore.projects))
 const lastProjectId = computed(() => sortedProjects.value[0]?.id || '')
 
 const activeCategory = ref('all')
 const selectedTemplateId = ref<TemplateCatalogItem['id'] | null>(null)
+const selectedTemplateDetail = ref<Awaited<ReturnType<typeof getWorkbenchTemplateDetail>> | null>(null)
 const detailDrawerVisible = ref(false)
 const createDialogVisible = ref(false)
 const isApplyingTemplate = ref(false)
 
-const categoryOptions = categories.map((category) => ({
-  label: `${category.label} (${category.count})`,
-  value: category.id,
-}))
+const categoryOptions = computed(() =>
+  categories.value.map((category) => ({
+    label: `${category.label} (${category.count})`,
+    value: category.id,
+  })),
+)
 
 const filteredTemplates = computed(() =>
   activeCategory.value === 'all'
-    ? templates
-    : templates.filter((template) => template.category === activeCategory.value),
+    ? templates.value
+    : templates.value.filter((template) => template.category === activeCategory.value),
 )
-
-const selectedTemplate = computed(() =>
-  selectedTemplateId.value ? getWorkbenchTemplateDetail(selectedTemplateId.value) : null,
-)
+const selectedTemplate = computed(() => selectedTemplateDetail.value)
 
 onMounted(async () => {
   await projectStore.loadList()
+  categories.value = await listWorkbenchTemplateCategories()
+  templates.value = await listWorkbenchTemplates()
 })
 
-function openTemplateDetail(templateId: TemplateCatalogItem['id']) {
+async function openTemplateDetail(templateId: TemplateCatalogItem['id']) {
   selectedTemplateId.value = templateId
+  selectedTemplateDetail.value = await getWorkbenchTemplateDetail(templateId)
   detailDrawerVisible.value = true
 }
 
 function openCreateDialogFromTemplate() {
-  if (!selectedTemplate.value) {
+  if (!selectedTemplateDetail.value) {
     return
   }
   createDialogVisible.value = true
 }
 
 async function handleCreateFromTemplate(payload: { title: string; summary: string }) {
-  if (!selectedTemplate.value) {
+  if (!selectedTemplateDetail.value) {
     return
   }
 
   isApplyingTemplate.value = true
   try {
     const result = await createProjectFromTemplate({
-      templateId: selectedTemplate.value.id,
+      templateId: selectedTemplateDetail.value.id,
       title: payload.title,
       summary: payload.summary,
     })
 
     createDialogVisible.value = false
     detailDrawerVisible.value = false
-    message.success(`已基于 ${selectedTemplate.value.name} 创建新项目`)
+    message.success(`已基于 ${selectedTemplateDetail.value.name} 创建新项目`)
     await openProject(
       result.projectId,
       result.chapterId ? { chapterId: result.chapterId } : undefined,
