@@ -3,11 +3,13 @@
     <header class="structure-stage-view__header">
       <div class="structure-stage-view__header-main">
         <div class="structure-stage-view__title-block">
-          <p class="structure-stage-view__eyebrow">Structure Stage</p>
           <h2>结构舞台</h2>
-          <p class="structure-stage-view__subtitle">
-            这里优先完成节点推进、章节绑定与进入写作。复杂筛选与专业视图已下沉。
-          </p>
+          <div class="structure-stage-view__header-summary">
+            <span>{{ `当前章节 ${currentChapterTitle || '未锁定'}` }}</span>
+            <span>节点 {{ selectedNode?.title || '未选择' }}</span>
+            <span>{{ `下一步 ${defaultStageActionText}` }}</span>
+            <span v-if="selectedNodeAssetCount > 0">{{ `资产 ${selectedNodeAssetCount}` }}</span>
+          </div>
         </div>
 
         <div class="structure-stage-view__header-actions">
@@ -18,20 +20,8 @@
             @click="showAdvancedControls = !showAdvancedControls"
           >
             <QyIcon name="Filter" :size="14" />
-            <span>{{ showAdvancedControls ? '收起高级控制' : '高级视图与筛选' }}</span>
+            <span>{{ showAdvancedControls ? '收起高级' : '高级视图' }}</span>
           </button>
-          <div
-            class="structure-stage-view__status"
-            :class="{ 'is-loading': isOutlineLoading, 'is-error': !!structureRefreshError }"
-          >
-            {{
-              isOutlineLoading
-                ? '正在同步结构...'
-                : structureRefreshError
-                  ? '同步失败'
-                  : '结构已就绪'
-            }}
-          </div>
           <button
             type="button"
             class="refresh-action"
@@ -40,40 +30,6 @@
           >
             <QyIcon :name="isOutlineLoading ? 'Loading' : 'Refresh'" :size="14" />
             <span>{{ isOutlineLoading ? '加载中' : '刷新' }}</span>
-          </button>
-        </div>
-      </div>
-
-      <div class="structure-stage-view__focus-card">
-        <div class="focus-card__summary">
-          <span class="focus-card__label">当前节点</span>
-          <strong class="focus-card__title">{{ selectedNode?.title || '未选择结构节点' }}</strong>
-          <span class="focus-card__meta">
-            <span>{{ boundChapter ? `章节：${boundChapter.title}` : '章节：未绑定' }}</span>
-            <span v-if="selectedNode">{{ `状态：${selectedNodeStatusText}` }}</span>
-            <span v-if="selectedNodeAssetCount > 0">{{ `资产：${selectedNodeAssetCount}` }}</span>
-          </span>
-          <p class="focus-card__hint">
-            图谱、时间线与分支已收进右侧结构检视，默认层先专注当前节点与进入写作。
-          </p>
-        </div>
-
-        <div class="focus-card__actions">
-          <button
-            type="button"
-            class="focus-card__action focus-card__action--primary"
-            :disabled="!boundChapter"
-            @click="boundChapter && emit('jumpToChapter', boundChapter.id)"
-          >
-            进入写作
-          </button>
-          <button
-            type="button"
-            class="focus-card__action focus-card__action--secondary"
-            :disabled="!selectedNode || !currentChapterId"
-            @click="selectedNode && currentChapterId && bindCurrentChapterForNode(selectedNode)"
-          >
-            绑定当前章节
           </button>
         </div>
       </div>
@@ -187,18 +143,194 @@
           class="structure-stage-view__default-stage"
           data-testid="structure-stage-default"
         >
+          <section class="structure-stage-view__default-hero">
+            <div class="structure-stage-view__default-hero-head">
+              <div>
+                <p class="structure-stage-view__default-eyebrow">当前工作位</p>
+                <h3>先把这一章落到结构上</h3>
+              </div>
+              <div class="structure-stage-view__default-meta">
+                <span>{{ `章节 ${currentChapterTitle || '未锁定'}` }}</span>
+                <span>{{ `动作 ${defaultStageActionText}` }}</span>
+              </div>
+            </div>
+            <div class="structure-stage-view__default-focus-table-wrap">
+              <table class="structure-stage-view__default-focus-table">
+                <tbody>
+                  <tr>
+                    <th scope="row">当前节点</th>
+                    <td>{{ selectedNode?.title || '还没有可用节点' }}</td>
+                    <th scope="row">当前章节</th>
+                    <td>{{ boundChapter?.title || currentChapterTitle || '未绑定章节' }}</td>
+                    <th scope="row">状态</th>
+                    <td>{{ selectedNodeStatusText || '等待节点选择' }}</td>
+                    <th scope="row">下一步</th>
+                    <td>{{ defaultStagePrimaryHint }}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">节点说明</th>
+                    <td colspan="7" class="structure-stage-view__default-focus-description">
+                      {{
+                        selectedNode?.description ||
+                        '默认层先处理节点推进、章节绑定与进入写作，复杂筛选和结构检视按需进入高级视图。'
+                      }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="structure-stage-view__default-work-actions">
+              <button
+                type="button"
+                class="focus-card__action focus-card__action--primary"
+                :disabled="!boundChapter"
+                @click="boundChapter && emit('jumpToChapter', boundChapter.id)"
+              >
+                进入当前章节写作
+              </button>
+              <button
+                type="button"
+                class="focus-card__action focus-card__action--secondary"
+                :disabled="!selectedNode || !currentChapterId"
+                @click="selectedNode && currentChapterId && bindCurrentChapterForNode(selectedNode)"
+              >
+                把当前章节绑定到节点
+              </button>
+            </div>
+          </section>
+
+          <section class="structure-stage-view__default-queue">
+            <div class="structure-stage-view__default-queue-header">
+              <div>
+                <p class="structure-stage-view__default-eyebrow">推进清单</p>
+                <h4>从这里决定下一章写什么</h4>
+              </div>
+              <div class="structure-stage-view__default-queue-meta">
+                <span class="structure-stage-view__default-count">
+                  {{ defaultStageNodes.length }} 个节点
+                </span>
+                <span
+                  v-if="defaultStageOverflowCount > 0"
+                  class="structure-stage-view__default-overflow"
+                >
+                  其余 {{ defaultStageOverflowCount }} 个节点已下沉到高级控制
+                </span>
+              </div>
+            </div>
+
+            <div
+              v-if="defaultStageNodes.length"
+              class="structure-stage-view__default-list"
+              data-testid="structure-stage-default-list"
+            >
+              <table class="structure-stage-view__default-table">
+                <thead>
+                  <tr>
+                    <th scope="col">顺位</th>
+                    <th scope="col">结构节点</th>
+                    <th scope="col">对应章节</th>
+                    <th scope="col">下一步</th>
+                    <th scope="col">进度</th>
+                    <th scope="col">补充信息</th>
+                    <th scope="col">动作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="(node, index) in defaultStageNodes"
+                    :key="node.id"
+                    class="structure-stage-view__default-row"
+                    :class="{ 'is-selected': selectedNodeId === node.id }"
+                    @click="selectNode(node)"
+                  >
+                    <td>
+                      <span class="structure-stage-view__default-rank">
+                        {{ index + 1 }}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="structure-stage-view__default-node">
+                        <strong class="structure-stage-view__default-node-title">
+                          {{ node.title || '未命名节点' }}
+                        </strong>
+                        <p class="structure-stage-view__default-node-copy">
+                          {{ node.description || '还没有补充节点摘要，先绑定章节或补充一句目标说明。' }}
+                        </p>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="structure-stage-view__default-node-binding">
+                        {{ getDefaultNodeBindingLabel(node) }}
+                      </span>
+                    </td>
+                    <td>
+                      {{ getDefaultNodeNextStep(node) }}
+                    </td>
+                    <td>
+                      <span
+                        class="structure-stage-view__default-node-status"
+                        :class="`is-${getStructureNodeLane(node)}`"
+                      >
+                        {{ getStructureNodeStatusText(node) }}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="structure-stage-view__default-node-meta">
+                        <span>{{ `L${node.level || 1}` }}</span>
+                        <span>{{ `子节点 ${node.children?.length || 0}` }}</span>
+                        <span class="structure-stage-view__default-node-assets">
+                          {{
+                            getNodeAssetCount(node) > 0
+                              ? `资产 ${getNodeAssetCount(node)}`
+                              : '资产待补'
+                          }}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="structure-stage-view__default-node-actions">
+                        <button
+                          v-if="getBoundChapterId(node)"
+                          type="button"
+                          class="structure-stage-view__default-node-action is-primary"
+                          @click.stop="emit('jumpToChapter', getBoundChapterId(node))"
+                        >
+                          进入写作
+                        </button>
+                        <button
+                          v-else
+                          type="button"
+                          class="structure-stage-view__default-node-action"
+                          :disabled="!currentChapterId"
+                          @click.stop="bindCurrentChapterForNode(node)"
+                        >
+                          绑定当前章节
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div v-else class="structure-stage-view__default-empty">
+              {{
+                isOutlineLoading
+                  ? '正在准备当前推进队列...'
+                  : '当前没有可推进的结构节点，先创建主线节点或从左侧选择节点。'
+              }}
+            </div>
+          </section>
+
           <section
             v-if="hasCreativeWorkflowBlueprint"
             class="structure-stage-view__blueprint-card"
             data-testid="structure-blueprint-card"
           >
             <div class="structure-stage-view__blueprint-head">
-              <div>
-                <p class="structure-stage-view__default-eyebrow">Stage 3 Handoff</p>
+              <div class="structure-stage-view__blueprint-intro">
+                <p class="structure-stage-view__default-eyebrow">蓝图输入</p>
                 <h3>{{ creativeWorkflowTemplateName || '蓝图接力' }}</h3>
-                <p class="structure-stage-view__blueprint-copy">
-                  {{ creativeWorkflowPitch || '阶段 1 已经沉淀出开篇方向，继续把它拆成结构推进任务。' }}
-                </p>
               </div>
               <div class="structure-stage-view__blueprint-actions">
                 <button
@@ -226,10 +358,26 @@
               </div>
             </div>
 
-            <div class="structure-stage-view__blueprint-meta">
-              <span v-if="creativeWorkflowTemplateName">模板：{{ creativeWorkflowTemplateName }}</span>
-              <span v-if="creativeWorkflowAudienceLabel">读者：{{ creativeWorkflowAudienceLabel }}</span>
-              <span v-if="creativeWorkflowPaceContract">节奏：{{ creativeWorkflowPaceContract }}</span>
+            <div class="structure-stage-view__blueprint-summary">
+              <span
+                v-if="creativeWorkflowPitch"
+                class="structure-stage-view__blueprint-summary-item is-wide"
+              >
+                <strong>定位</strong>
+                <em>{{ creativeWorkflowPitch }}</em>
+              </span>
+              <span class="structure-stage-view__blueprint-summary-item">
+                <strong>模板</strong>
+                <em>{{ creativeWorkflowTemplateName || '未指定模板' }}</em>
+              </span>
+              <span class="structure-stage-view__blueprint-summary-item">
+                <strong>目标读者</strong>
+                <em>{{ creativeWorkflowAudienceLabel || '待补充' }}</em>
+              </span>
+              <span class="structure-stage-view__blueprint-summary-item is-accent">
+                <strong>节奏合约</strong>
+                <em>{{ creativeWorkflowPaceContract || '待补充' }}</em>
+              </span>
             </div>
 
             <div class="structure-stage-view__blueprint-controls">
@@ -246,7 +394,7 @@
                   </option>
                   <option value="project-root">项目根目录</option>
                 </select>
-                <small>当前导入到：{{ creativeWorkflowImportTargetLabel }}</small>
+                <small>{{ `当前导入到：${creativeWorkflowImportTargetLabel}` }}</small>
               </label>
 
               <label class="structure-stage-view__blueprint-control">
@@ -259,7 +407,6 @@
                   <option value="skip_existing">跳过已存在章节</option>
                   <option value="allow_duplicate">允许重复导入</option>
                 </select>
-                <small>默认优先保护当前卷或项目根目录下已有章节。</small>
               </label>
             </div>
 
@@ -276,122 +423,36 @@
               </span>
             </div>
 
-            <div class="structure-stage-view__blueprint-chapters">
-              <article
-                v-for="chapter in creativeWorkflowGoldenChapters"
-                :key="chapter.chapterNumber"
-                class="structure-stage-view__blueprint-chapter"
-              >
-                <span class="structure-stage-view__blueprint-index">第 {{ chapter.chapterNumber }} 章</span>
-                <strong>{{ chapter.title }}</strong>
-                <p>{{ chapter.summary || '补一条本章目标，方便继续拆节拍。' }}</p>
-                <div class="structure-stage-view__blueprint-hints">
-                  <span>{{ `钩子：${chapter.hook || '待补齐'}` }}</span>
-                  <span>{{ `兑现：${chapter.payoff || '待补齐'}` }}</span>
-                </div>
-              </article>
-            </div>
-          </section>
-
-          <article class="structure-stage-view__default-hero">
-            <p class="structure-stage-view__default-eyebrow">Current Focus</p>
-            <h3>{{ selectedNode?.title || '还没有可用节点' }}</h3>
-            <p class="structure-stage-view__default-copy">
-              {{
-                selectedNode?.description ||
-                '默认层先承接节点推进与章节绑定。更复杂的视图切换和结构图展示，按需从上方高级控制进入。'
-              }}
-            </p>
-            <div class="structure-stage-view__default-meta">
-              <span>{{ defaultStagePrimaryHint }}</span>
-              <span>{{ currentChapterTitle || '当前未锁定章节' }}</span>
-            </div>
-          </article>
-
-          <section class="structure-stage-view__default-queue">
-            <div class="structure-stage-view__default-queue-header">
-              <div>
-                <p class="structure-stage-view__default-eyebrow">Structure Queue</p>
-                <h4>当前推进队列</h4>
-              </div>
-              <div class="structure-stage-view__default-queue-meta">
-                <span class="structure-stage-view__default-count">
-                  {{ defaultStageNodes.length }} 个节点
-                </span>
-                <span
-                  v-if="defaultStageOverflowCount > 0"
-                  class="structure-stage-view__default-overflow"
-                >
-                  其余 {{ defaultStageOverflowCount }} 个节点已下沉到高级控制
-                </span>
-              </div>
-            </div>
-
-            <div
-              v-if="defaultStageNodes.length"
-              class="structure-stage-view__default-list"
-              data-testid="structure-stage-default-list"
-            >
-              <button
-                v-for="node in defaultStageNodes"
-                :key="node.id"
-                type="button"
-                class="structure-stage-view__default-node"
-                :class="{ 'is-selected': selectedNodeId === node.id }"
-                @click="selectNode(node)"
-              >
-                <div class="structure-stage-view__default-node-header">
-                  <span
-                    class="structure-stage-view__default-node-status"
-                    :class="`is-${getStructureNodeLane(node)}`"
+            <div class="structure-stage-view__blueprint-table-wrap">
+              <table class="structure-stage-view__blueprint-table">
+                <thead>
+                  <tr>
+                    <th scope="col">章次</th>
+                    <th scope="col">章节标题</th>
+                    <th scope="col">节奏目标</th>
+                    <th scope="col">钩子</th>
+                    <th scope="col">兑现</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="chapter in creativeWorkflowGoldenChapters"
+                    :key="chapter.chapterNumber"
                   >
-                    {{ getStructureNodeStatusText(node) }}
-                  </span>
-                  <span class="structure-stage-view__default-node-binding">
-                    {{ getDefaultNodeBindingLabel(node) }}
-                  </span>
-                </div>
-                <strong class="structure-stage-view__default-node-title">
-                  {{ node.title || '未命名节点' }}
-                </strong>
-                <p class="structure-stage-view__default-node-copy">
-                  {{ node.description || '还没有补充节点摘要，先绑定章节或补充一句目标说明。' }}
-                </p>
-                <div class="structure-stage-view__default-node-meta">
-                  <span>{{ `L${node.level || 1}` }}</span>
-                  <span>{{ `子节点 ${node.children?.length || 0}` }}</span>
-                  <span v-if="getNodeAssetCount(node) > 0">{{
-                    `资产 ${getNodeAssetCount(node)}`
-                  }}</span>
-                </div>
-                <div class="structure-stage-view__default-node-actions">
-                  <button
-                    v-if="getBoundChapterId(node)"
-                    type="button"
-                    class="structure-stage-view__default-node-action is-primary"
-                    @click.stop="emit('jumpToChapter', getBoundChapterId(node))"
-                  >
-                    进入写作
-                  </button>
-                  <button
-                    v-else
-                    type="button"
-                    class="structure-stage-view__default-node-action"
-                    :disabled="!currentChapterId"
-                    @click.stop="bindCurrentChapterForNode(node)"
-                  >
-                    绑定当前章节
-                  </button>
-                </div>
-              </button>
-            </div>
-
-            <div v-else class="structure-stage-view__default-empty">
-              {{
-                isOutlineLoading
-                  ? '正在准备当前推进队列...'
-                  : '当前没有可推进的结构节点，先创建主线节点或从左侧选择节点。'
-              }}
+                    <td>
+                      <span class="structure-stage-view__blueprint-index">
+                        第 {{ chapter.chapterNumber }} 章
+                      </span>
+                    </td>
+                    <td>
+                      <strong>{{ chapter.title }}</strong>
+                    </td>
+                    <td>{{ chapter.summary || '补一条本章目标，方便继续拆节拍。' }}</td>
+                    <td>{{ chapter.hook || '待补齐' }}</td>
+                    <td>{{ chapter.payoff || '待补齐' }}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </section>
         </section>
@@ -844,6 +905,18 @@ const defaultStagePrimaryHint = computed(() => {
   }
   return '先从左侧大纲树或下方队列选择一个节点。'
 })
+const defaultStageActionText = computed(() => {
+  if (boundChapter.value) {
+    return '进入已绑定章节继续写'
+  }
+  if (selectedNode.value && props.currentChapterTitle) {
+    return '绑定当前章节'
+  }
+  if (selectedNode.value) {
+    return '补章节绑定'
+  }
+  return '先选节点'
+})
 const creativeWorkflowTemplate = computed(() =>
   getCreativeWorkflowTemplate(creativeWorkflow.value?.templateId),
 )
@@ -906,6 +979,24 @@ function getNodeAssetCount(node: OutlineNode | null | undefined): number {
 
 function getDefaultNodeBindingLabel(node: OutlineNode): string {
   return findBoundChapter(node, chapterOptions.value)?.title || '未绑定章节'
+}
+
+function getDefaultNodeNextStep(node: OutlineNode): string {
+  const chapterId = getBoundChapterId(node)
+
+  if (props.currentChapterId && chapterId === props.currentChapterId) {
+    return '直接进入当前章节写作'
+  }
+  if (chapterId) {
+    return '切到已绑定章节继续推进'
+  }
+  if (props.currentChapterId) {
+    return '把当前章节绑定到这里'
+  }
+  if (getNodeAssetCount(node) === 0) {
+    return '先补一句目标或关键资产'
+  }
+  return '补章节绑定后再进入写作'
 }
 
 function emitCreativeWorkflowToAI() {
@@ -1389,50 +1480,60 @@ watch(
 .structure-stage-view__header {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 0 4px;
+  gap: 6px;
+  padding: 0 2px;
 }
 
 .structure-stage-view__header-main {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 10px;
 }
 
 .structure-stage-view__title-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
 
   h2 {
     margin: 0;
-    font-size: 22px;
+    font-size: 16px;
     font-weight: 700;
     color: var(--editor-text-primary, #0f172a);
+    white-space: nowrap;
   }
-}
-
-.structure-stage-view__eyebrow {
-  margin: 0 0 4px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--structure-warm);
-}
-
-.structure-stage-view__subtitle {
-  margin: 6px 0 0;
-  max-width: 720px;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--editor-text-secondary, #475569);
 }
 
 .structure-stage-view__header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.structure-stage-view__header-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  min-width: 0;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: rgba(248, 250, 252, 0.88);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
 }
 
 .stage-secondary-action {
@@ -1462,68 +1563,12 @@ watch(
   }
 }
 
-.structure-stage-view__focus-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 16px;
-  border: 1px solid rgba(50, 83, 106, 0.12);
-  border-radius: 14px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(244, 248, 255, 0.96));
-}
-
-.focus-card__summary {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.focus-card__label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--editor-text-muted, #64748b);
-}
-
-.focus-card__title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--editor-text-primary, #0f172a);
-}
-
-.focus-card__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  font-size: 12px;
-  color: var(--editor-text-secondary, #475569);
-}
-
-.focus-card__hint {
-  margin: 0;
-  max-width: 520px;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--editor-text-muted, #64748b);
-}
-
-.focus-card__actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
 .focus-card__action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 34px;
-  padding: 0 12px;
+  min-height: 32px;
+  padding: 0 11px;
   border-radius: 10px;
   border: 1px solid transparent;
   font-size: 12px;
@@ -1564,24 +1609,21 @@ watch(
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 16px;
 }
 
 .structure-stage-view__blueprint-card {
   display: grid;
   gap: 14px;
-  padding: 18px;
+  padding: 16px;
   border-radius: var(--editor-radius-lg, 8px);
-  border: 1px solid rgba(191, 141, 79, 0.22);
-  background:
-    radial-gradient(circle at top right, rgba(245, 158, 11, 0.12), transparent 26%),
-    linear-gradient(180deg, rgba(255, 251, 235, 0.98), rgba(255, 255, 255, 0.96));
-  box-shadow: 0 14px 32px rgba(120, 74, 22, 0.08);
+  border: 1px solid rgba(191, 141, 79, 0.14);
+  background: rgba(255, 252, 246, 0.76);
+  box-shadow: none;
 }
 
 .structure-stage-view__blueprint-head,
-.structure-stage-view__blueprint-meta,
 .structure-stage-view__blueprint-actions {
   display: flex;
   align-items: flex-start;
@@ -1589,10 +1631,8 @@ watch(
   gap: 12px;
 }
 
-.structure-stage-view__blueprint-copy {
-  margin: 8px 0 0;
-  color: #5b4632;
-  line-height: 1.7;
+.structure-stage-view__blueprint-intro {
+  min-width: 0;
 }
 
 .structure-stage-view__blueprint-actions {
@@ -1617,10 +1657,44 @@ watch(
   }
 }
 
-.structure-stage-view__blueprint-meta {
+.structure-stage-view__blueprint-summary {
+  display: flex;
   flex-wrap: wrap;
-  color: #7c5f43;
-  font-size: 12px;
+  gap: 8px 12px;
+}
+
+.structure-stage-view__blueprint-summary-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(191, 141, 79, 0.14);
+  background: rgba(255, 255, 255, 0.82);
+
+  strong {
+    color: #a17648;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  em {
+    color: #5b4632;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 600;
+  }
+}
+
+.structure-stage-view__blueprint-summary-item.is-wide {
+  max-width: min(100%, 520px);
+}
+
+.structure-stage-view__blueprint-summary-item.is-accent {
+  background: rgba(255, 247, 230, 0.9);
 }
 
 .structure-stage-view__blueprint-controls {
@@ -1642,7 +1716,7 @@ watch(
 
   > small {
     color: #8b6b4b;
-    line-height: 1.5;
+    line-height: 1.4;
   }
 }
 
@@ -1665,7 +1739,6 @@ watch(
 }
 
 .structure-stage-view__blueprint-token,
-.structure-stage-view__blueprint-hints span,
 .structure-stage-view__blueprint-index {
   display: inline-flex;
   align-items: center;
@@ -1677,28 +1750,52 @@ watch(
   font-weight: 600;
 }
 
-.structure-stage-view__blueprint-chapters {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+.structure-stage-view__blueprint-table-wrap {
+  overflow: auto;
+  border: 1px solid rgba(191, 141, 79, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
 }
 
-.structure-stage-view__blueprint-chapter {
-  display: grid;
-  gap: 8px;
-  padding: 14px;
-  border-radius: 16px;
-  border: 1px solid rgba(91, 72, 50, 0.12);
-  background: rgba(255, 255, 255, 0.86);
+.structure-stage-view__blueprint-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
 
-  strong,
-  p {
-    margin: 0;
+  th,
+  td {
+    padding: 12px 14px;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid rgba(191, 141, 79, 0.1);
   }
 
-  p {
-    color: #6b7280;
-    line-height: 1.6;
+  th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: rgba(255, 248, 235, 0.96);
+    color: #8b6b4b;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  td {
+    color: #5b4632;
+    font-size: 13px;
+    line-height: 1.65;
+    background: rgba(255, 255, 255, 0.92);
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  strong {
+    color: #3f3023;
+    font-size: 13px;
   }
 }
 
@@ -1711,39 +1808,36 @@ watch(
 }
 
 .structure-stage-view__default-hero {
-  padding: 18px 20px;
-  background:
-    radial-gradient(circle at top right, rgba(6, 182, 212, 0.1), transparent 26%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(244, 248, 255, 0.98));
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.98);
 }
 
 .structure-stage-view__default-eyebrow {
   margin: 0;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--structure-warm);
+}
+
+.structure-stage-view__default-hero-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .structure-stage-view__default-hero h3,
 .structure-stage-view__default-queue-header h4 {
-  margin: 8px 0 0;
-  font-size: 20px;
+  margin: 4px 0 0;
+  font-size: 16px;
   font-weight: 700;
   color: var(--editor-text-primary, #0f172a);
 }
 
-.structure-stage-view__default-copy {
-  margin: 10px 0 0;
-  max-width: 720px;
-  font-size: 13px;
-  line-height: 1.65;
-  color: var(--editor-text-secondary, #475569);
-}
-
 .structure-stage-view__default-meta {
-  margin-top: 14px;
   display: flex;
   flex-wrap: wrap;
   gap: 8px 12px;
@@ -1751,15 +1845,69 @@ watch(
   span {
     display: inline-flex;
     align-items: center;
-    min-height: 28px;
-    padding: 0 10px;
+    min-height: 24px;
+    padding: 0 8px;
     border-radius: 999px;
-    background: rgba(236, 254, 255, 0.8);
-    border: 1px solid rgba(6, 182, 212, 0.12);
+    background: rgba(248, 250, 252, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.12);
     color: var(--editor-text-secondary, #334155);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
   }
+}
+
+.structure-stage-view__default-focus-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.structure-stage-view__default-focus-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 880px;
+
+  th,
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  tr:last-child th,
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  th {
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  td {
+    color: #0f172a;
+    font-size: 13px;
+    font-weight: 600;
+  }
+}
+
+.structure-stage-view__default-focus-description {
+  white-space: normal !important;
+  line-height: 1.6;
+  color: #475569 !important;
+  font-weight: 500 !important;
+}
+
+.structure-stage-view__default-work-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .structure-stage-view__default-queue {
@@ -1773,7 +1921,7 @@ watch(
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  padding: 16px 18px;
+  padding: 14px 16px;
   border-bottom: 1px solid var(--editor-border, #e2e8f0);
 }
 
@@ -1806,37 +1954,63 @@ watch(
 .structure-stage-view__default-list {
   min-height: 0;
   overflow: auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 14px;
-  padding: 16px;
+  padding: 0;
 }
 
-.structure-stage-view__default-node {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 16px;
-  text-align: left;
-  border-radius: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98));
+.structure-stage-view__default-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 12px 14px;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  }
+
+  th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+}
+
+.structure-stage-view__default-row {
   cursor: pointer;
-  transition:
-    border-color 120ms ease-out,
-    transform 120ms ease-out,
-    box-shadow 120ms ease-out;
+  transition: background-color 120ms ease-out;
 
   &:hover {
-    transform: translateY(-1px);
-    border-color: rgba(50, 83, 106, 0.18);
-    box-shadow: 0 12px 22px rgba(15, 23, 42, 0.06);
+    background: rgba(248, 250, 252, 0.88);
   }
 
   &.is-selected {
-    border-color: rgba(6, 182, 212, 0.28);
-    box-shadow: 0 14px 24px rgba(6, 182, 212, 0.12);
+    background: rgba(236, 254, 255, 0.76);
   }
+}
+
+.structure-stage-view__default-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(226, 232, 240, 0.9);
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.structure-stage-view__default-node {
+  display: grid;
+  gap: 6px;
 }
 
 .structure-stage-view__default-node-header,
@@ -1893,6 +2067,19 @@ watch(
   font-size: 13px;
   line-height: 1.6;
   color: var(--editor-text-secondary, #475569);
+}
+
+.structure-stage-view__default-node-assets {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(248, 250, 252, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  color: var(--editor-text-secondary, #475569);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .structure-stage-view__default-node-actions {
@@ -2010,58 +2197,6 @@ watch(
   display: flex;
   align-items: center;
   gap: 16px;
-}
-
-.structure-stage-view__status {
-  font-size: 12px;
-  color: #8a7e74;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  &::before {
-    content: '';
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #52c41a;
-    box-shadow: 0 0 8px rgba(82, 196, 26, 0.4);
-  }
-
-  &.is-loading {
-    color: var(--structure-accent);
-
-    &::before {
-      background: #1890ff;
-      animation: pulse 1.5s infinite;
-      box-shadow: 0 0 8px rgba(24, 144, 255, 0.4);
-    }
-  }
-
-  &.is-error {
-    color: var(--structure-warm);
-
-    &::before {
-      background: #ff4d4f;
-      box-shadow: 0 0 8px rgba(255, 77, 79, 0.4);
-    }
-  }
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(0.95);
-    opacity: 0.5;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(0.95);
-    opacity: 0.5;
-  }
 }
 
 .refresh-action {
@@ -2437,10 +2572,14 @@ watch(
 }
 
 @media (max-width: 1024px) {
-  .structure-stage-view__header-main,
-  .structure-stage-view__focus-card {
+  .structure-stage-view__header-main {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .structure-stage-view__title-block {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .structure-stage-view__blueprint-head {
@@ -2451,16 +2590,8 @@ watch(
     grid-template-columns: 1fr;
   }
 
-  .structure-stage-view__blueprint-chapters {
-    grid-template-columns: 1fr;
-  }
-
   .structure-stage-view__header-actions {
     flex-wrap: wrap;
-  }
-
-  .focus-card__actions {
-    justify-content: flex-start;
   }
 
   .structure-stage-view__default-queue-header {
@@ -2468,8 +2599,14 @@ watch(
     align-items: stretch;
   }
 
-  .structure-stage-view__default-list {
-    grid-template-columns: 1fr;
+  .structure-stage-view__default-hero-head {
+    flex-direction: column;
+  }
+
+  .structure-stage-view__blueprint-table-wrap,
+  .structure-stage-view__default-list,
+  .structure-stage-view__default-focus-table-wrap {
+    overflow-x: auto;
   }
 
   .structure-stage-view__grid {

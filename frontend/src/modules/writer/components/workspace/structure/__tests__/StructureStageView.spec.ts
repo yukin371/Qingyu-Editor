@@ -132,7 +132,7 @@ describe('StructureStageView', () => {
     mockWriterStore.setCurrentOutlineNode.mockClear()
   })
 
-  it('默认层应折叠高级视图与筛选', async () => {
+  it('默认层应折叠高级视图', async () => {
     const wrapper = mount(StructureStageView, {
       props: {
         projectId: 'project-1',
@@ -166,7 +166,7 @@ describe('StructureStageView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('结构舞台')
-    expect(wrapper.text()).toContain('Stage 3 Handoff')
+    expect(wrapper.text()).toContain('蓝图输入')
     expect(wrapper.text()).toContain('逆袭打脸')
     expect(wrapper.text()).toContain('首次打脸')
     expect(wrapper.text()).toContain('进入写作')
@@ -354,7 +354,7 @@ describe('StructureStageView', () => {
     })
   })
 
-  it('当前节点已绑定章节时，顶部主动作应跳转到写作章节', async () => {
+  it('当前节点已绑定章节时，当前工作位主动作应跳转到写作章节', async () => {
     const wrapper = mount(StructureStageView, {
       props: {
         projectId: 'project-1',
@@ -386,7 +386,9 @@ describe('StructureStageView', () => {
     })
 
     await flushPromises()
-    await wrapper.get('.focus-card__action--primary').trigger('click')
+    await wrapper
+      .get('.structure-stage-view__default-work-actions .focus-card__action--primary')
+      .trigger('click')
 
     expect(wrapper.emitted('jumpToChapter')?.[0]).toEqual(['chapter-1'])
   })
