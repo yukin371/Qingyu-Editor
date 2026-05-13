@@ -29,8 +29,10 @@
         </aside>
         <div
           class="tool-right-panel__divider"
+          :class="{ 'tool-right-panel__divider--active': isResizingList }"
           role="separator"
           aria-orientation="vertical"
+          aria-label="调整右侧设定列表宽度"
           @mousedown="startListResize"
         ></div>
       </template>
@@ -130,7 +132,7 @@ const searchKeyword = ref('')
 const assetCategory = ref<EncyclopediaCategory>('characters')
 const toolOverlay = useToolOverlay()
 const activeToolRef = computed(() => props.activeTool)
-const { activeConfig, showListPanel, listWidth, attachDetailPanel, startListResize } =
+const { activeConfig, showListPanel, listWidth, isResizingList, attachDetailPanel, startListResize } =
   useToolRightPanel(activeToolRef)
 const {
   loading,
@@ -248,9 +250,35 @@ const handleOpenInspirationFullscreen = () => {
 }
 
 .tool-right-panel__divider {
-  width: 1px;
+  position: relative;
+  width: var(--drag-handle-width, 6px);
   flex-shrink: 0;
-  background: #eceff3;
+  background: transparent;
   cursor: col-resize;
+  user-select: none;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+    transform: translateX(-50%);
+    background: #eceff3;
+    transition:
+      background-color var(--transition-fast, 100ms) ease-out,
+      width var(--transition-fast, 100ms) ease-out;
+  }
+
+  &:hover::before {
+    width: 2px;
+    background: var(--drag-handle-hover-bg, #007fd4);
+  }
+}
+
+.tool-right-panel__divider--active::before {
+  width: 3px;
+  background: var(--drag-handle-hover-bg, #007fd4);
 }
 </style>

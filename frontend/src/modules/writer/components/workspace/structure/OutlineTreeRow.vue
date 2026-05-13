@@ -5,6 +5,7 @@
       :class="{
         'is-selected': selectedNodeId === node.id,
         'is-dragging': draggingNodeId === node.id,
+        'is-volume': isVolumeNode,
         'is-drop-before': dropTargetNodeId === node.id && dropPosition === 'before',
         'is-drop-after': dropTargetNodeId === node.id && dropPosition === 'after',
       }"
@@ -129,6 +130,7 @@ const hasChildren = computed(
   () => Array.isArray(props.node.children) && props.node.children.length > 0,
 )
 const isExpanded = computed(() => props.expandedNodeIds.includes(props.node.id))
+const isVolumeNode = computed(() => ((props.node as OutlineNode & { type?: string }).type || '') === 'volume')
 const boundChapterId = computed(() => getBoundChapterId(props.node))
 const boundChapterLabel = computed(() => getBoundChapterLabel(props.node, props.chapters))
 const graphState = computed(() => getStructureNodeGraphState(props.node, props.chapterGraphs || []))
@@ -177,34 +179,47 @@ function handleContextMenu(event: MouseEvent) {
 <style scoped lang="scss">
 .outline-tree-row {
   display: grid;
-  gap: 8px;
+  gap: 2px;
 }
 
 .outline-tree-row__main {
   width: 100%;
   position: relative;
-  border: 1px solid rgba(117, 93, 67, 0.14);
-  border-radius: 16px;
-  background: linear-gradient(135deg, rgba(255, 252, 248, 0.95), rgba(251, 245, 236, 0.9));
-  min-height: 44px;
-  padding: 10px 12px 10px calc(12px + var(--outline-level, 0) * 18px);
+  border-left: 2px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  min-height: 34px;
+  padding: 4px 6px 4px calc(6px + var(--outline-level, 0) * 14px);
   display: grid;
-  grid-template-columns: 10px 24px minmax(0, 1fr);
+  grid-template-columns: 6px 20px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
-  transition: all 0.18s ease;
+  gap: 6px;
+  transition: background-color 0.14s ease, border-color 0.14s ease, opacity 0.14s ease;
 }
 
 .outline-tree-row__main:hover {
-  border-color: rgba(143, 63, 47, 0.22);
-  background: linear-gradient(135deg, rgba(255, 248, 240, 0.98), rgba(250, 238, 224, 0.98));
-  box-shadow: 0 12px 20px rgba(99, 60, 30, 0.06);
+  background: #f5f7fb;
+  border-left-color: #d1d5db;
 }
 
 .outline-tree-row__main.is-selected {
-  border-color: rgba(143, 63, 47, 0.36);
-  background: linear-gradient(135deg, rgba(255, 248, 240, 1), rgba(245, 225, 205, 0.98));
-  box-shadow: 0 14px 24px rgba(98, 57, 29, 0.1);
+  background: #eaf2ff;
+  border-left-color: #2563eb;
+}
+
+.outline-tree-row__main.is-volume {
+  background: #fff8e8;
+  border-left-color: #d4a72c;
+}
+
+.outline-tree-row__main.is-volume:hover {
+  background: #fff3d6;
+  border-left-color: #c99514;
+}
+
+.outline-tree-row__main.is-selected.is-volume {
+  background: #f5ead0;
+  border-left-color: #b9810c;
 }
 
 .outline-tree-row__main.is-dragging {
@@ -217,53 +232,46 @@ function handleContextMenu(event: MouseEvent) {
   position: absolute;
   left: 14px;
   right: 14px;
-  height: 3px;
+  height: 2px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #8f3f2f, #b76d38);
-  box-shadow: 0 0 0 3px rgba(143, 63, 47, 0.1);
+  background: #2563eb;
 }
 
 .outline-tree-row__main.is-drop-before::before {
-  top: -3px;
+  top: -1px;
 }
 
 .outline-tree-row__main.is-drop-after::after {
-  bottom: -3px;
+  bottom: -1px;
 }
 
 .outline-tree-row__depth {
   width: 2px;
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(183, 109, 56, 0.1), rgba(143, 63, 47, 0.34));
-  box-shadow: 0 0 0 4px rgba(183, 109, 56, 0.04);
+  background: rgba(209, 213, 219, 0.9);
 }
 
 .outline-tree-row__toggle {
-  width: 24px;
-  height: 24px;
-  border: 1px solid rgba(117, 93, 67, 0.18);
-  border-radius: 999px;
-  background: #fffaf4;
-  color: #6d5a47;
-  font-size: 14px;
-  font-weight: 700;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  transition:
-    transform 0.16s ease,
-    border-color 0.16s ease,
-    box-shadow 0.16s ease,
-    background 0.16s ease;
+  transition: background-color 0.14s ease, color 0.14s ease;
 }
 
 .outline-tree-row__toggle:hover:not(.is-hidden) {
-  transform: translateY(-1px);
-  border-color: rgba(143, 63, 47, 0.22);
-  box-shadow: 0 8px 14px rgba(99, 60, 30, 0.08);
+  background: rgba(229, 231, 235, 0.75);
+  color: #374151;
 }
 
 .outline-tree-row__toggle.is-hidden {
-  opacity: 0.45;
+  opacity: 0.35;
   cursor: default;
 }
 
@@ -281,115 +289,110 @@ function handleContextMenu(event: MouseEvent) {
 .outline-tree-row__content {
   min-width: 0;
   display: grid;
-  gap: 6px;
+  gap: 2px;
 }
 
 .outline-tree-row__title-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
 .outline-tree-row__title {
   min-width: 0;
-  color: #2f2b26;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.45;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.outline-tree-row__chapter {
-  border: 1px solid rgba(117, 93, 67, 0.12);
-  background: rgba(255, 251, 246, 0.94);
-  color: #6d5f52;
-  font-size: 11px;
+.outline-tree-row__main.is-selected .outline-tree-row__title {
+  color: #1d4ed8;
   font-weight: 700;
-  padding: 4px 8px;
-  border-radius: 999px;
+}
+
+.outline-tree-row__main.is-volume .outline-tree-row__title {
+  color: #8a5a00;
+  font-weight: 700;
+}
+
+.outline-tree-row__chapter {
+  color: #9ca3af;
+  font-size: 11px;
+  font-weight: 500;
   white-space: nowrap;
 }
 
 .outline-tree-row__meta-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   flex-wrap: wrap;
+  color: #9ca3af;
+  font-size: 11px;
 }
 
 .outline-tree-row__graph,
 .outline-tree-row__asset {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  border-radius: 999px;
+  display: inline;
   font-size: 11px;
-  font-weight: 700;
-  padding: 4px 8px;
+  font-weight: 400;
 }
 
 .outline-tree-row__graph {
-  border: 1px solid rgba(117, 93, 67, 0.14);
-  background: rgba(255, 251, 246, 0.92);
-  color: #6e6155;
+  color: #9ca3af;
 }
 
 .outline-tree-row__graph--ready {
-  border-color: rgba(74, 127, 88, 0.18);
-  background: rgba(232, 245, 236, 0.94);
   color: #2e6a3d;
 }
 
 .outline-tree-row__graph--inherit {
-  border-color: rgba(54, 80, 107, 0.18);
-  background: rgba(235, 244, 249, 0.94);
   color: #2c4d66;
 }
 
 .outline-tree-row__graph--missing {
-  border-color: rgba(183, 109, 56, 0.18);
-  background: rgba(255, 243, 230, 0.94);
   color: #9a551f;
 }
 
 .outline-tree-row__graph--unbound {
-  border-color: rgba(117, 93, 67, 0.14);
-  background: rgba(248, 241, 233, 0.92);
-  color: #7b6a5b;
+  color: #9ca3af;
 }
 
 .outline-tree-row__asset {
-  border: 1px solid rgba(84, 116, 79, 0.16);
-  background: rgba(239, 247, 236, 0.94);
-  color: #41613a;
+  color: #9ca3af;
+}
+
+.outline-tree-row__meta-row > span + span::before {
+  content: '·';
+  margin-right: 4px;
+  color: #c0c7d1;
 }
 
 .outline-tree-row__graph-action {
   align-self: center;
-  border: 1px solid rgba(74, 127, 88, 0.16);
-  border-radius: 999px;
-  background: rgba(232, 245, 236, 0.96);
-  color: #2e6a3d;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #6b7280;
   font-size: 11px;
-  font-weight: 800;
-  padding: 5px 9px;
+  font-weight: 500;
+  padding: 4px 6px;
   cursor: pointer;
-  transition:
-    transform 0.16s ease,
-    box-shadow 0.16s ease,
-    border-color 0.16s ease;
+  transition: background-color 0.14s ease, color 0.14s ease;
 }
 
 .outline-tree-row__graph-action:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 14px rgba(74, 127, 88, 0.12);
+  background: rgba(229, 231, 235, 0.75);
+  color: #374151;
 }
 
 .outline-tree-row__children {
   display: grid;
-  gap: 8px;
+  gap: 2px;
 }
 </style>

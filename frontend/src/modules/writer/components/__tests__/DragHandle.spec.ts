@@ -204,7 +204,7 @@ describe('DragHandle', () => {
   })
 
   describe('样式属性', () => {
-    it('应该设置正确的宽度为 4px', () => {
+    it('应该使用统一的拖拽命中区宽度', () => {
       const wrapper = mount(DragHandle)
       const dragHandle = wrapper.find('.drag-handle')
 

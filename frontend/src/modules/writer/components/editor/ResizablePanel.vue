@@ -212,7 +212,7 @@ defineExpose({
   position: absolute;
   top: 0;
   bottom: 0;
-  width: var(--drag-handle-width, 10px);
+  width: var(--drag-handle-width, 6px);
 }
 
 .resizable-panel--collapsed-left :deep(.drag-handle) {

@@ -63,6 +63,7 @@ export function useToolRightPanel(activeTool: Ref<RightToolType> | ComputedRef<R
     document.body.style.userSelect = ''
     window.removeEventListener('mousemove', onListResize)
     window.removeEventListener('mouseup', stopListResize)
+    window.removeEventListener('blur', stopListResize)
   }
 
   const onListResize = (event: MouseEvent) => {
@@ -75,6 +76,8 @@ export function useToolRightPanel(activeTool: Ref<RightToolType> | ComputedRef<R
 
   const startListResize = (event: MouseEvent) => {
     if (!showListPanel.value) return
+    event.preventDefault()
+    event.stopPropagation()
     isResizingList.value = true
     listResizeStartX.value = event.clientX
     listResizeStartWidth.value = listWidth.value
@@ -82,6 +85,7 @@ export function useToolRightPanel(activeTool: Ref<RightToolType> | ComputedRef<R
     document.body.style.userSelect = 'none'
     window.addEventListener('mousemove', onListResize)
     window.addEventListener('mouseup', stopListResize)
+    window.addEventListener('blur', stopListResize)
   }
 
   watch(
@@ -108,6 +112,7 @@ export function useToolRightPanel(activeTool: Ref<RightToolType> | ComputedRef<R
     activeConfig,
     showListPanel,
     listWidth,
+    isResizingList,
     attachDetailPanel,
     startListResize,
   }

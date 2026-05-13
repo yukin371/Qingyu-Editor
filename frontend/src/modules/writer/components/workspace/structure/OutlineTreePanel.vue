@@ -1,62 +1,67 @@
 <template>
   <section class="outline-tree-panel">
     <div class="outline-tree-panel__header">
-      <div>
-        <p class="outline-tree-panel__eyebrow">Outline Tree</p>
-        <h3 class="outline-tree-panel__title">结构树</h3>
+      <div class="outline-tree-panel__title-group">
+        <h3 class="outline-tree-panel__title">大纲</h3>
+        <span class="outline-tree-panel__count">{{ flattenedCount }}</span>
       </div>
-      <div class="outline-tree-panel__header-side">
-        <div class="outline-tree-panel__count">{{ flattenedCount }} 节点</div>
-        <div class="outline-tree-panel__hint">支持同级拖拽排序</div>
-        <div class="outline-tree-panel__actions">
-          <button
-            type="button"
-            class="outline-action outline-action--primary"
-            @click="emit('createRoot')"
-          >
-            新增主干
-          </button>
-          <button
-            type="button"
-            class="outline-action"
-            :disabled="!selectedNodeId"
-            @click="emit('createChild')"
-          >
-            新增子节点
-          </button>
-          <button
-            type="button"
-            class="outline-action"
-            :disabled="!canMoveUp"
-            @click="emit('moveUp')"
-          >
-            上移
-          </button>
-          <button
-            type="button"
-            class="outline-action"
-            :disabled="!canMoveDown"
-            @click="emit('moveDown')"
-          >
-            下移
-          </button>
-          <button
-            type="button"
-            class="outline-action"
-            :disabled="!selectedNodeId"
-            @click="handleEdit"
-          >
-            编辑
-          </button>
-          <button
-            type="button"
-            class="outline-action outline-action--danger"
-            :disabled="!selectedNodeId"
-            @click="handleDelete"
-          >
-            删除
-          </button>
-        </div>
+      <div class="outline-tree-panel__hint">支持同级拖拽排序</div>
+    </div>
+
+    <div class="outline-tree-panel__actions">
+      <button
+        type="button"
+        class="outline-action outline-action--primary"
+        @click="emit('createRoot')"
+      >
+        新增主干
+      </button>
+      <button
+        type="button"
+        class="outline-action"
+        :disabled="!selectedNodeId"
+        @click="emit('createChild')"
+      >
+        新增子节点
+      </button>
+      <button
+        type="button"
+        class="outline-action"
+        :disabled="!canMoveUp"
+        @click="emit('moveUp')"
+      >
+        上移
+      </button>
+      <button
+        type="button"
+        class="outline-action"
+        :disabled="!canMoveDown"
+        @click="emit('moveDown')"
+      >
+        下移
+      </button>
+      <button
+        type="button"
+        class="outline-action"
+        :disabled="!selectedNodeId"
+        @click="handleEdit"
+      >
+        编辑
+      </button>
+      <button
+        type="button"
+        class="outline-action outline-action--danger"
+        :disabled="!selectedNodeId"
+        @click="handleDelete"
+      >
+        删除
+      </button>
+    </div>
+
+    <div class="outline-tree-panel__section">
+      <div class="outline-tree-panel__section-title">
+        <span>结构节点</span>
+        <span class="outline-tree-panel__section-caption">{{ selectedNodeId ? '已选择节点' : '全部节点' }}</span>
       </div>
     </div>
 
@@ -352,122 +357,107 @@ function handleDialogConfirm(data: CreateOutlineRequest | UpdateOutlineRequest) 
 
 <style scoped lang="scss">
 .outline-tree-panel {
-  position: relative;
   height: 100%;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  border-radius: var(--editor-radius-lg);
-  border: 1px solid var(--editor-border);
-  background:
-    radial-gradient(circle at 0% 0%, var(--editor-bg-surface), transparent 26%),
-    linear-gradient(180deg, var(--editor-bg-base), var(--editor-bg-surface));
-  box-shadow: 0 16px 32px rgba(80, 49, 26, 0.08);
+  background: #fff;
   overflow: hidden;
 }
 
-.outline-tree-panel::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(120deg, rgba(255, 255, 255, 0.14), transparent 30%),
-    repeating-linear-gradient(
-      180deg,
-      transparent 0,
-      transparent 22px,
-      rgba(145, 117, 86, 0.03) 23px
-    );
-  pointer-events: none;
-}
-
 .outline-tree-panel__header {
-  position: relative;
-  z-index: 1;
-  padding: 18px 18px 14px;
+  padding: 10px 12px 8px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border-bottom: 1px solid var(--editor-border);
-}
-
-.outline-tree-panel__eyebrow {
-  margin: 0;
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--editor-accent);
-  font-weight: 800;
+  border-bottom: 1px solid #ebeff5;
 }
 
 .outline-tree-panel__title {
-  margin: 6px 0 0;
-  font-size: 22px;
-  color: var(--editor-text-primary);
+  margin: 0;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.outline-tree-panel__title-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .outline-tree-panel__count {
-  padding: 7px 10px;
-  border-radius: var(--radius-full, 9999px);
-  background: var(--editor-accent-soft);
-  border: 1px solid var(--editor-border);
-  color: var(--editor-accent);
-  font-size: 12px;
-  font-weight: 700;
+  color: #9ca3af;
+  font-size: 11px;
+  font-weight: 500;
   white-space: nowrap;
 }
 
-.outline-tree-panel__header-side {
-  display: grid;
-  gap: 8px;
-  justify-items: end;
-}
-
 .outline-tree-panel__hint {
-  color: var(--editor-text-muted);
+  color: #9ca3af;
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
 }
 
 .outline-tree-panel__actions {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  padding: 8px 12px;
+  border-bottom: 1px solid #ebeff5;
+  background: #fff;
+}
+
+.outline-tree-panel__section {
+  padding: 0 12px;
+  background: #fff;
+}
+
+.outline-tree-panel__section-title {
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #ebeff5;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.outline-tree-panel__section-caption {
+  color: #9ca3af;
+  font-size: 11px;
+  font-weight: 400;
 }
 
 .outline-action {
-  border: 1px solid var(--editor-border);
-  border-radius: var(--radius-full, 9999px);
-  background: var(--editor-bg-base);
-  color: var(--editor-text-secondary);
+  border: 1px solid #d8dee8;
+  border-radius: 6px;
+  background: #fff;
+  color: #4b5563;
   font-size: 12px;
-  font-weight: 700;
-  padding: 7px 10px;
+  font-weight: 500;
+  padding: 6px 10px;
   cursor: pointer;
   transition:
-    transform 0.16s ease,
-    box-shadow 0.16s ease,
     border-color 0.16s ease,
-    background 0.16s ease;
+    background-color 0.16s ease,
+    color 0.16s ease;
 }
 
 .outline-action--primary {
-  border-color: transparent;
-  background: linear-gradient(135deg, var(--editor-accent), #b76d38);
-  color: #fff9f3;
-  box-shadow: 0 10px 18px rgba(99, 60, 30, 0.12);
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
 }
 
 .outline-action--danger {
-  color: var(--editor-accent);
+  color: #b42318;
 }
 
 .outline-action:not(:disabled):hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 16px rgba(99, 60, 30, 0.08);
+  background: #f5f7fb;
+  border-color: #cfd7e3;
 }
 
 .outline-action:disabled {
@@ -476,48 +466,49 @@ function handleDialogConfirm(data: CreateOutlineRequest | UpdateOutlineRequest) 
 }
 
 .outline-tree-panel__body {
-  position: relative;
-  z-index: 1;
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 14px;
+  padding: 6px;
+  background: #fff;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.35);
+    border-radius: 999px;
+  }
 }
 
 .outline-tree-panel__tree {
   display: grid;
-  gap: 8px;
+  gap: 2px;
   align-content: start;
 }
 
 .outline-tree-panel__empty {
-  border-radius: 16px;
-  border: 1px dashed var(--editor-border);
-  background: var(--editor-bg-base);
+  border-radius: 8px;
+  border: 1px dashed #d8dee8;
+  background: #fafbfd;
   padding: 18px;
-  color: var(--editor-text-muted);
+  color: #6b7280;
   font-size: 13px;
   line-height: 1.6;
 }
 
 .outline-tree-panel__empty--loading {
-  border-style: solid;
-  border-color: rgba(54, 80, 107, 0.18);
-  background: rgba(235, 244, 249, 0.92);
-  color: #32536a;
+  border-style: dashed;
+  border-color: #cfe0f4;
+  background: #f7fbff;
+  color: #45627e;
 }
 
 @media (max-width: 960px) {
   .outline-tree-panel__header {
     flex-direction: column;
-  }
-
-  .outline-tree-panel__header-side {
-    justify-items: start;
-  }
-
-  .outline-tree-panel__actions {
-    justify-content: flex-start;
+    align-items: flex-start;
   }
 }
 </style>

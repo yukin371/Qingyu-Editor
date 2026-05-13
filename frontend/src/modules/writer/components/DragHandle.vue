@@ -29,7 +29,7 @@
  * - mousedown 触发 drag-start 事件
  * - hover 和拖拽状态视觉反馈
  * - 使用 VSCode 主题样式变量
- * - 4px 宽分隔条
+ * - 统一命中区宽度分隔条
  * - 无障碍支持
  */
 
@@ -210,7 +210,7 @@ onUnmounted(() => {
   z-index: 40;
   
   /* VSCode 主题变量 */
-  width: var(--drag-handle-width, 10px);
+  width: var(--drag-handle-width, 6px);
   background-color: transparent;
   
   /* 交互样式 */

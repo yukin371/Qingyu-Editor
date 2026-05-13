@@ -42,7 +42,7 @@ const CSS_VARIABLES = {
   '--navbar-height': '40px',
 
   // 拖拽手柄宽度
-  '--drag-handle-width': '4px',
+  '--drag-handle-width': '6px',
 } as const
 
 describe('VSCode Dark Theme', () => {
@@ -97,7 +97,7 @@ describe('VSCode Dark Theme', () => {
     })
 
     it('应该定义拖拽手柄宽度变量', () => {
-      expect(CSS_VARIABLES['--drag-handle-width']).toBe('4px')
+      expect(CSS_VARIABLES['--drag-handle-width']).toBe('6px')
     })
   })
 
