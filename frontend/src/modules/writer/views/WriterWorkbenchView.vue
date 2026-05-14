@@ -17,6 +17,45 @@
       <QyButton size="sm" @click="createDialogVisible = true">新建项目</QyButton>
     </template>
 
+    <section class="space-y-4">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-950">五阶段创作流程</h2>
+          <p class="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
+            先收灵感，再搭地基，接着绘蓝图，最后落到逐章施工和复盘成长。每个阶段都能直接进入对应的工作面。
+          </p>
+        </div>
+        <QyButton
+          size="sm"
+          variant="ghost"
+          @click="router.push({ name: WRITER_ROUTE_NAMES.projects })"
+        >
+          打开项目列表
+        </QyButton>
+      </div>
+
+      <div class="grid gap-3 lg:grid-cols-5">
+        <button
+          v-for="stage in creativeFlowStages"
+          :key="stage.id"
+          type="button"
+          class="rounded-2xl border border-slate-200 bg-white/85 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+          @click="openStage(stage.id)"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Stage {{ stage.order }}
+              </div>
+              <div class="mt-2 text-base font-semibold text-slate-950">{{ stage.title }}</div>
+            </div>
+            <QyIcon name="ArrowRight" :size="16" class="shrink-0 text-slate-400" />
+          </div>
+          <p class="mt-3 text-sm leading-6 text-slate-500">{{ stage.subtitle }}</p>
+        </button>
+      </div>
+    </section>
+
     <section class="space-y-5">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <h2 class="text-lg font-semibold text-slate-950">最近项目</h2>
@@ -53,12 +92,7 @@
       </div>
 
       <div v-else-if="recentProjects.length === 0">
-        <QyCard
-          variant="outlined"
-          shadow="never"
-          padding="sm"
-          class="rounded-3xl"
-        >
+        <QyCard variant="outlined" shadow="never" padding="sm" class="rounded-3xl">
           <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-center gap-3">
               <div
@@ -99,11 +133,7 @@
                 <span>{{ formatDate(project.updatedAt) }}</span>
               </div>
 
-              <button
-                type="button"
-                class="block text-left"
-                @click="continueProject(project)"
-              >
+              <button type="button" class="block text-left" @click="continueProject(project)">
                 <div class="text-base font-semibold text-slate-950">{{ project.title }}</div>
                 <div class="mt-1 text-sm text-slate-500">
                   {{ project.lastChapterTitle || '从项目入口继续创作' }}
@@ -146,6 +176,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { QyButton, QyCard, QyIcon, Skeleton } from '@/design-system/components'
 import { message } from '@/design-system/services'
+import { creativeFlowStages } from '@/modules/writer/config/creativeFlow'
 import WorkbenchShell from '@/modules/writer/components/workbench/WorkbenchShell.vue'
 import ProjectCreateDialog from '@/modules/writer/components/workbench/ProjectCreateDialog.vue'
 import { useWriterProjectEntryActions } from '@/modules/writer/composables/useWriterProjectEntryActions'
@@ -239,6 +270,20 @@ async function handleCreateProject(payload: { title: string; summary: string }) 
   } finally {
     isCreating.value = false
   }
+}
+
+async function openStage(stageId: string) {
+  if (stageId === 'inspiration') {
+    await router.push({ name: WRITER_ROUTE_NAMES.templates })
+    return
+  }
+
+  if (!lastProjectId.value) {
+    createDialogVisible.value = true
+    return
+  }
+
+  await openProject(lastProjectId.value, { stage: stageId })
 }
 
 onMounted(refreshWorkbench)

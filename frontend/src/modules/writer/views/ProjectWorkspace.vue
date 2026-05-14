@@ -24,85 +24,88 @@
 
     <template #body>
       <EditorLayout class="workspace-editor-layout">
-      <!-- 左侧面板插槽 -->
-      <template #left-panel>
-        <WorkspaceLeftPanel
-          v-model:project-id="boundProjectId"
-          v-model:chapter-id="displayChapterId"
-          :collapsed="panelStore.leftCollapsed"
-          :is-immersive-mode="isImmersiveMode"
-          :projects="projects"
-          :chapters="flatChapters"
-          @add-doc="handleAddDoc"
-          @add-volume="handleCreateOutlineRoot"
-          @open-directory-outline="handleOpenDirectoryOutline"
-          @delete-chapter="handleDeleteChapter"
-          @create-outline-root="handleCreateOutlineRoot"
-          @create-outline-child="handleCreateOutlineChild"
-          @edit-selected="handleEditOutlineNode"
-          @delete-selected="handleDeleteOutlineNode"
-          @move-up="() => handleMoveOutlineNode('up')"
-          @move-down="() => handleMoveOutlineNode('down')"
-          @open-graph="handleOpenGraph"
-          @open-fullscreen-tool="handleOpenFullscreenTool"
-          @outline-select="handleOutlineSelect"
-          @convert-to-chapter="handleConvertToChapter"
-        />
-      </template>
+        <!-- 左侧面板插槽 -->
+        <template #left-panel>
+          <WorkspaceLeftPanel
+            v-model:project-id="boundProjectId"
+            v-model:chapter-id="displayChapterId"
+            :collapsed="panelStore.leftCollapsed"
+            :is-immersive-mode="isImmersiveMode"
+            :projects="projects"
+            :chapters="flatChapters"
+            @add-doc="handleAddDoc"
+            @add-volume="handleCreateOutlineRoot"
+            @open-directory-outline="handleOpenDirectoryOutline"
+            @delete-chapter="handleDeleteChapter"
+            @create-outline-root="handleCreateOutlineRoot"
+            @create-outline-child="handleCreateOutlineChild"
+            @edit-selected="handleEditOutlineNode"
+            @delete-selected="handleDeleteOutlineNode"
+            @move-up="() => handleMoveOutlineNode('up')"
+            @move-down="() => handleMoveOutlineNode('down')"
+            @open-graph="handleOpenGraph"
+            @open-fullscreen-tool="handleOpenFullscreenTool"
+            @outline-select="handleOutlineSelect"
+            @convert-to-chapter="handleConvertToChapter"
+          />
+        </template>
 
-      <!-- 主编辑器插槽 -->
-      <template #editor>
-        <WorkspaceEditorContent
-          ref="workspaceEditorContentRef"
-          :project-id="safeCurrentProjectId"
-          :chapter-id="displayChapterId"
-          :chapter-title="displayChapterTitle"
-          :tool-overlay-chapter-id="toolOverlayChapterId"
-          :tool-overlay-chapter-title="toolOverlayChapterTitle"
-          :chapters="flatChapters"
-          :scope-label="currentScopeLabel"
-          :entity-stats="storyHarnessEntityStats"
-          :active-characters="activeScopeCharacters"
-          :active-relations="activeScopeRelations"
-          :change-requests="storyHarnessChangeRequests"
-          :workflow-context="workflowContext"
-          :active-entities="activeEntities"
-          :handle-change-request-decision="handleChangeRequestDecision"
-          :handle-trigger-index="handleStoryHarnessTriggerIndex"
-          :is-triggering-index="isStoryHarnessTriggering"
-          v-model:content="tipTapContent"
-          @trigger-ai-action="handleWorkflowAction"
-          @open-graph="handleOpenGraph"
-          @jump-to-chapter="handleChapterIdUpdate"
-          @save="handleTipTapSave"
-          @add-doc="handleAddDoc"
-          @rename-title="handleRenameCurrentDocument"
-          @create-structure-plan="handleCreateStructurePlan"
-          @status-change="handleWorkspaceStatusChange"
-        />
-      </template>
+        <!-- 主编辑器插槽 -->
+        <template #editor>
+          <WorkspaceEditorContent
+            ref="workspaceEditorContentRef"
+            :project-id="safeCurrentProjectId"
+            :chapter-id="displayChapterId"
+            :chapter-title="displayChapterTitle"
+            :tool-overlay-chapter-id="toolOverlayChapterId"
+            :tool-overlay-chapter-title="toolOverlayChapterTitle"
+            :chapters="flatChapters"
+            :scope-label="currentScopeLabel"
+            :entity-stats="storyHarnessEntityStats"
+            :active-characters="activeScopeCharacters"
+            :active-relations="activeScopeRelations"
+            :change-requests="storyHarnessChangeRequests"
+            :workflow-context="workflowContext"
+            :active-entities="activeEntities"
+            :initial-stage="initialCreativeStage"
+            :handle-change-request-decision="handleChangeRequestDecision"
+            :handle-trigger-index="handleStoryHarnessTriggerIndex"
+            :is-triggering-index="isStoryHarnessTriggering"
+            v-model:content="tipTapContent"
+            @trigger-ai-action="handleWorkflowAction"
+            @open-graph="handleOpenGraph"
+            @jump-to-chapter="handleChapterIdUpdate"
+            @save="handleTipTapSave"
+            @add-doc="handleAddDoc"
+            @rename-title="handleRenameCurrentDocument"
+            @create-structure-plan="handleCreateStructurePlan"
+            @status-change="handleWorkspaceStatusChange"
+            @open-right-tool="handleOpenRightTool"
+            @open-bottom-panel="handleOpenBottomPanel"
+          />
+        </template>
 
-      <!-- 右侧AI面板插槽 -->
-      <template #right-panel>
-        <WorkspaceRightPanel
-          :collapsed="panelStore.rightCollapsed"
-          :is-immersive-mode="isImmersiveMode"
-          :project-id="safeCurrentProjectId"
-          :chapter-id="displayChapterId"
-          :chapter-title="displayChapterTitle"
-          :chapters="flatChapters"
-          :source-text="currentChapterPlainText"
-          :ai-action-trigger="aiActionTrigger"
-          :ai-apply-feedback="aiApplyFeedback"
-          :workflow-context="workflowContext"
-          :draft-proposals="visibleDraftProposals"
-          @ai-apply="handleAIApplyGeneratedText"
-          @proposal-draft="handleProposalDraft"
-          @proposal-status-change="handleProposalStatusChange"
-          @create-structure-plan="handleCreateStructurePlan"
-          @jump-to-chapter="handleChapterIdUpdate"
-        />
-      </template>
+        <!-- 右侧AI面板插槽 -->
+        <template #right-panel>
+          <WorkspaceRightPanel
+            :collapsed="panelStore.rightCollapsed"
+            :is-immersive-mode="isImmersiveMode"
+            :project-id="safeCurrentProjectId"
+            :chapter-id="displayChapterId"
+            :chapter-title="displayChapterTitle"
+            :chapters="flatChapters"
+            :source-text="currentChapterPlainText"
+            :ai-action-trigger="aiActionTrigger"
+            :ai-apply-feedback="aiApplyFeedback"
+            :workflow-context="workflowContext"
+            :draft-proposals="visibleDraftProposals"
+            @ai-apply="handleAIApplyGeneratedText"
+            @proposal-draft="handleProposalDraft"
+            @proposal-status-change="handleProposalStatusChange"
+            @create-structure-plan="handleCreateStructurePlan"
+            @jump-to-chapter="handleChapterIdUpdate"
+          />
+        </template>
       </EditorLayout>
     </template>
 
@@ -165,7 +168,6 @@
       </div>
     </template>
   </WorkspaceShell>
-
 </template>
 
 <script setup lang="ts">
@@ -245,8 +247,12 @@ import type {
   WriterWorkflowActionRequest,
 } from '@/modules/writer/types/workflow'
 import { buildWriterAIActionTrigger } from '@/modules/writer/types/workflow'
-import type { WorkspaceLayoutPreset, WorkspacePanelId } from '@/modules/writer/types/workspaceLayout'
+import type {
+  WorkspaceLayoutPreset,
+  WorkspacePanelId,
+} from '@/modules/writer/types/workspaceLayout'
 import { useWorkspaceLayoutStore } from '@/modules/writer/stores/workspaceLayoutStore'
+import type { CreativeFlowStageId } from '@/modules/writer/config/creativeFlow'
 
 // =======================
 // Props 定义
@@ -273,6 +279,19 @@ const workspaceLayoutStore = useWorkspaceLayoutStore()
 // 计算属性
 // =======================
 const isTestMode = computed(() => route.query.test === 'true')
+const creativeStageIds: CreativeFlowStageId[] = [
+  'inspiration',
+  'foundation',
+  'blueprint',
+  'drafting',
+  'review',
+]
+const initialCreativeStage = computed<CreativeFlowStageId>(() => {
+  const stage = route.query.stage
+  return typeof stage === 'string' && creativeStageIds.includes(stage as CreativeFlowStageId)
+    ? (stage as CreativeFlowStageId)
+    : 'drafting'
+})
 const mockProject = computed(() =>
   isTestMode.value ? getWorkspaceMockProject(currentProjectId.value) : null,
 )
@@ -325,10 +344,7 @@ const handleWorkspaceStatusChange = (chips: string[]) => {
 }
 
 const toggleBottomPanel = () => {
-  workspaceLayoutStore.setAreaVisibility(
-    'bottom',
-    !workspaceLayoutStore.areas.bottom.visible,
-  )
+  workspaceLayoutStore.setAreaVisibility('bottom', !workspaceLayoutStore.areas.bottom.visible)
 }
 
 const handleOpenRightTool = (tool: 'ai' | 'assets' | 'proofread' | 'inspiration') => {
@@ -346,6 +362,11 @@ const handleToggleImmersive = () => {
 
 const handleBottomPanelSelect = (panelId: WorkspacePanelId) => {
   workspaceLayoutStore.setAreaActivePanel('bottom', panelId)
+}
+
+const handleOpenBottomPanel = (panelId: 'status' | 'context' | 'harness') => {
+  workspaceLayoutStore.setAreaActivePanel('bottom', panelId)
+  workspaceLayoutStore.setAreaVisibility('bottom', true)
 }
 
 const applyLayoutPreset = (preset: WorkspaceLayoutPreset) => {
@@ -513,7 +534,8 @@ const resolveCurrentDocumentParentId = () => {
 const buildDefaultChapterTitle = (parentId?: string) => {
   const siblingCount = flatChapters.value.filter(
     (chapter) =>
-      chapter.nodeType !== 'directory' && (chapter.parentId || undefined) === (parentId || undefined),
+      chapter.nodeType !== 'directory' &&
+      (chapter.parentId || undefined) === (parentId || undefined),
   ).length
 
   return {
@@ -1106,7 +1128,9 @@ const handleCreateStructurePlan = async (payload: WriterStructurePlanPayload) =>
   const importTarget = payload.importTarget || 'project-root'
   const duplicateStrategy = payload.duplicateStrategy || 'allow_duplicate'
   const chapterParentId =
-    payload.mode === 'chapter' && importTarget === 'current-volume' ? currentVolumeDoc?.id : undefined
+    payload.mode === 'chapter' && importTarget === 'current-volume'
+      ? currentVolumeDoc?.id
+      : undefined
   const chapterSiblingDocs =
     payload.mode === 'chapter'
       ? Array.from(availableDocMap.value.values()).filter(
@@ -1625,7 +1649,8 @@ onMounted(async () => {
 
     const lastProjectId = window.localStorage.getItem(STANDALONE_LAST_PROJECT_KEY) || ''
     const preferredProject =
-      projectStore.projects.find((project) => project.id === lastProjectId) || projectStore.projects[0]
+      projectStore.projects.find((project) => project.id === lastProjectId) ||
+      projectStore.projects[0]
 
     if (preferredProject?.id) {
       pId = preferredProject.id
