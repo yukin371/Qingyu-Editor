@@ -1,10 +1,7 @@
 <template>
   <div class="workspace-settings-panel">
     <header class="workspace-settings-panel__header">
-      <div>
-        <p class="workspace-settings-panel__eyebrow">Workspace Settings</p>
-        <h2>外观与写作偏好</h2>
-      </div>
+      <h2>外观与写作偏好</h2>
       <button type="button" class="workspace-settings-panel__reset" @click="appearanceStore.resetAppearance()">
         恢复默认
       </button>
@@ -34,19 +31,21 @@
         <div class="workspace-settings-panel__section-title">主题</div>
         <div class="workspace-settings-panel__theme-grid">
           <button
-            v-for="(meta, key) in EDITOR_THEMES"
-            :key="key"
+            v-for="option in editorThemeStore.themeOptions"
+            :key="option.value"
             type="button"
             class="workspace-settings-panel__theme-card"
-            :class="{ 'is-active': editorThemeStore.currentTheme === key }"
-            @click="editorThemeStore.setTheme(key as EditorThemeName)"
+            :class="{ 'is-active': editorThemeStore.currentTheme === option.value }"
+            @click="editorThemeStore.setTheme(option.value as EditorThemeName)"
           >
             <span
               class="workspace-settings-panel__theme-preview"
-              :style="{ background: meta.previewColor }"
+              :style="{
+                background: `linear-gradient(135deg, ${option.preview.base} 0%, ${option.preview.accentSoft} 100%)`,
+                '--theme-preview-accent': option.preview.accent,
+              }"
             ></span>
-            <strong>{{ meta.label }}</strong>
-            <span>{{ meta.description }}</span>
+            <strong>{{ option.label }}</strong>
           </button>
         </div>
       </div>
@@ -95,7 +94,6 @@
           <input v-model="appearanceStore.compactToolbar" type="checkbox" />
           <span>紧凑写作工具栏</span>
         </label>
-        <p class="workspace-settings-panel__hint">默认收口到小说写作高频格式，减少无关样式操作。</p>
       </div>
     </section>
 
@@ -109,7 +107,6 @@
 import { ref } from 'vue'
 import ShortcutSettingsPanel from './ShortcutSettingsPanel.vue'
 import {
-  EDITOR_THEMES,
   useEditorThemeStore,
   type EditorThemeName,
 } from '@/modules/writer/stores/editorThemeStore'
@@ -125,8 +122,8 @@ const appearanceStore = useEditorAppearanceStore()
   display: flex;
   flex-direction: column;
   min-height: 520px;
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--editor-bg-surface, #f8fafc);
+  color: var(--editor-text-primary, #0f172a);
 }
 
 .workspace-settings-panel__header {
@@ -135,16 +132,7 @@ const appearanceStore = useEditorAppearanceStore()
   justify-content: space-between;
   gap: 12px;
   padding: 18px 20px 14px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.workspace-settings-panel__eyebrow {
-  margin: 0 0 4px;
-  color: #64748b;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  border-bottom: 1px solid var(--editor-border, #e2e8f0);
 }
 
 .workspace-settings-panel__header h2 {
@@ -155,10 +143,10 @@ const appearanceStore = useEditorAppearanceStore()
 .workspace-settings-panel__reset {
   height: 32px;
   padding: 0 12px;
-  border: 1px solid #dbe3ee;
+  border: 1px solid var(--editor-border, #dbe3ee);
   border-radius: 8px;
-  background: #ffffff;
-  color: #334155;
+  background: var(--editor-bg-base, #ffffff);
+  color: var(--editor-text-secondary, #334155);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -175,15 +163,15 @@ const appearanceStore = useEditorAppearanceStore()
   padding: 0 12px;
   border: none;
   border-radius: 999px;
-  background: #eef2f7;
-  color: #64748b;
+  background: var(--editor-bg-elevated, #eef2f7);
+  color: var(--editor-text-muted, #64748b);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
 
   &.is-active {
-    background: #0f172a;
-    color: #ffffff;
+    background: var(--editor-text-primary, #0f172a);
+    color: var(--editor-text-inverse, #ffffff);
   }
 }
 
@@ -202,16 +190,16 @@ const appearanceStore = useEditorAppearanceStore()
 
 .workspace-settings-panel__section {
   padding: 16px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--editor-border, #e2e8f0);
   border-radius: 14px;
-  background: #ffffff;
+  background: var(--editor-bg-base, #ffffff);
 }
 
 .workspace-settings-panel__section-title {
   margin-bottom: 14px;
   font-size: 13px;
   font-weight: 700;
-  color: #334155;
+  color: var(--editor-text-secondary, #334155);
 }
 
 .workspace-settings-panel__theme-grid {
@@ -222,35 +210,55 @@ const appearanceStore = useEditorAppearanceStore()
 
 .workspace-settings-panel__theme-card {
   display: grid;
-  gap: 6px;
+  gap: 10px;
   padding: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--editor-border, #e2e8f0);
   border-radius: 12px;
-  background: #fff;
+  background: var(--editor-bg-base, #fff);
   text-align: left;
   cursor: pointer;
+  transition:
+    border-color var(--editor-transition-fast, 120ms ease-out),
+    background var(--editor-transition-fast, 120ms ease-out),
+    box-shadow var(--editor-transition-fast, 120ms ease-out);
+
+  &:hover {
+    border-color: var(--editor-accent-soft-border, #a5f3fc);
+    background: color-mix(in srgb, var(--editor-bg-base, #fff) 92%, var(--editor-accent-soft, #ecfeff) 8%);
+  }
 
   &.is-active {
-    border-color: #2563eb;
-    box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.12);
+    border-color: var(--editor-accent, #2563eb);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--editor-accent, #2563eb) 18%, transparent),
+      0 0 0 3px color-mix(in srgb, var(--editor-accent-soft-border, #a5f3fc) 55%, transparent);
   }
 
   strong {
     font-size: 13px;
-  }
-
-  span:last-child {
-    color: #64748b;
-    font-size: 12px;
+    color: var(--editor-text-primary, #0f172a);
   }
 }
 
 .workspace-settings-panel__theme-preview {
   display: block;
   width: 100%;
-  height: 28px;
-  border-radius: 8px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 72%, transparent);
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 18px;
+    border-radius: 999px;
+    background: var(--theme-preview-accent, var(--editor-accent, #06b6d4));
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.32);
+  }
 }
 
 .workspace-settings-panel__field {
@@ -265,7 +273,7 @@ const appearanceStore = useEditorAppearanceStore()
   span {
     font-size: 12px;
     font-weight: 600;
-    color: #334155;
+    color: var(--editor-text-secondary, #334155);
   }
 
   select,
@@ -276,10 +284,10 @@ const appearanceStore = useEditorAppearanceStore()
   select {
     height: 36px;
     padding: 0 10px;
-    border: 1px solid #dbe3ee;
+    border: 1px solid var(--editor-border, #dbe3ee);
     border-radius: 10px;
-    background: #ffffff;
-    color: #0f172a;
+    background: var(--editor-bg-base, #ffffff);
+    color: var(--editor-text-primary, #0f172a);
   }
 }
 
@@ -289,13 +297,6 @@ const appearanceStore = useEditorAppearanceStore()
   gap: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: #334155;
-}
-
-.workspace-settings-panel__hint {
-  margin: 10px 0 0;
-  font-size: 12px;
-  line-height: 1.6;
-  color: #64748b;
+  color: var(--editor-text-secondary, #334155);
 }
 </style>

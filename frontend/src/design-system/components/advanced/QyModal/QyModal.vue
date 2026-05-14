@@ -129,15 +129,16 @@ onUnmounted(() => {
 .qy-modal__overlay {
   position: absolute;
   inset: 0;
-  background-color: rgb(15 23 42 / 0.5);
+  background-color: color-mix(in srgb, var(--editor-text-primary, #0f172a) 36%, transparent);
   backdrop-filter: blur(4px);
 }
 
 .qy-modal__content {
   position: relative;
-  background-color: rgb(255 255 255);
+  background-color: var(--editor-bg-base, #ffffff);
+  border: 1px solid var(--editor-border, #e2e8f0);
   border-radius: 1.5rem;
-  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  box-shadow: var(--theme-shadow-lg, 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1));
   padding: 1.5rem;
   max-width: 90vw;
   max-height: 90vh;
@@ -155,15 +156,15 @@ onUnmounted(() => {
   justify-content: center;
   border: none;
   background: transparent;
-  color: rgb(100 116 139);
+  color: var(--editor-text-muted, #64748b);
   border-radius: 0.5rem;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .qy-modal__close:hover {
-  background-color: rgb(241 245 249);
-  color: rgb(51 65 85);
+  background-color: var(--editor-bg-surface, #f1f5f9);
+  color: var(--editor-text-secondary, #334155);
 }
 
 .qy-modal__close svg {
@@ -179,13 +180,13 @@ onUnmounted(() => {
 .qy-modal__title {
   font-size: 1.25rem;
   font-weight: 600;
-  color: rgb(30 41 59);
+  color: var(--editor-text-primary, #1e293b);
   margin: 0;
 }
 
 .qy-modal__body {
   margin-bottom: 1rem;
-  color: rgb(71 85 105);
+  color: var(--editor-text-secondary, #475569);
 }
 
 .qy-modal__footer {
@@ -193,7 +194,7 @@ onUnmounted(() => {
   justify-content: flex-end;
   gap: 0.75rem;
   padding-top: 1rem;
-  border-top: 1px solid rgb(226 232 240);
+  border-top: 1px solid var(--editor-border, #e2e8f0);
 }
 
 /* Modal animations */

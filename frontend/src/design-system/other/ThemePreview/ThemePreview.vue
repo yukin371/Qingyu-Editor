@@ -18,13 +18,14 @@ const props = withDefaults(defineProps<ThemePreviewProps>(), {
 })
 
 // 当前选中的主题
-const selectedTheme = ref<ThemeName>('qingyu')
+const selectedTheme = ref<ThemeName>('mist')
 
 // 主题显示名称映射
 const themeDisplayNames: Record<ThemeName, string> = {
-  qingyu: '青羽',
-  berry: '紫粉',
+  mist: '雾青',
+  amber: '暖砂',
   forest: '森林',
+  graphite: '石墨',
 }
 
 // 主题列表
@@ -43,7 +44,7 @@ const containerVariants = cva(
   {
     variants: {
       layout: {
-        grid: 'grid grid-cols-1 md:grid-cols-3',
+        grid: 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4',
         horizontal: 'flex flex-row',
       },
     },

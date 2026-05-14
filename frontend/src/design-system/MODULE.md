@@ -29,6 +29,7 @@
 
 - Storybook 中展示的基础组件是前端复用基线；新增页面或模块专有组件前，必须先确认是否已有可复用的 design-system 能力。
 - design-system 负责“通用 UI 能力”，module components 负责“业务语义封装”；两者不能互相吞并职责。
+- 全局主题与 writer 工作区主题现在共用 `src/design-system/tokens/theme.ts` 这一条真相源；writer 侧只允许做视图消费和设置面板接线，不再维护独立颜色主题 owner。
 - 如果某个页面修复需要反复通过局部样式覆盖来维持一致性，说明问题通常不该停留在页面层，而应回收到 design-system 或模块专有组件。
 - `shared/components` 不是新的基础 UI owner；真正的基础控件收口在 `src/design-system`。
 

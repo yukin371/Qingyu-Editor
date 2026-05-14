@@ -102,6 +102,7 @@
 - **右栏设定区与项目资产共用同一口径**：`ToolRightPanel` 的设定列表、详情和快速 CRUD 必须继续复用 `useWriterAssetCatalog` 与现有本地资产 API；允许做当前分类下的新建 / 编辑 / 删除，但不得在右栏再维护第二套资产 store、分类枚举或脱离项目资产的表单协议。
 - **`@资产` 是正文内的统一轻量引用格式**：`QyTipTapEditor` 的自动补全、创建实体、章节资产自动检测都必须优先支持统一 `@名称`，并能覆盖 `角色 / 地点 / 物件 / 组织 / 概念`；`#地点`、`%物件` 只作为兼容输入保留，不能再成为默认主路径。
 - **编辑器外观偏好 owner 是 `editorAppearanceStore`**：字号、行距、版心、字体族与紧凑工具栏都应统一走 `editorAppearanceStore` 本地偏好；`TipTapEditorView` 只负责输出 CSS variables，`QyTipTapEditor` 只消费 `toolbarPreset`，不要再在组件内各自维护一份主题/排版状态。
+- **颜色主题 owner 已收口到 design-system**：writer 工作区的 `WorkspaceSettingsPanel`、`WorkspaceShell` 与 overlay/tool 视图只消费 `src/design-system/tokens/theme.ts` 的统一主题；`editorThemeStore` 只做设置面板状态接线，不再定义第二套 `light/sepia/dark/focus` 独立主题真相。
 - **编辑器图片先走本地嵌入，不走在线存储**：`QyTipTapEditor` 当前应通过 writer 自己的图片适配层把 PNG/JPG/GIF 转成 data URL 直接写入正文，避免依赖 `/shared/storage/*` 这类在线平台 API；若未来要改成本地资产目录，也应由 writer/Wails owner 接管，而不是回退到 shared online storage。
 - **资产总览图谱深链由 overlay 接管**：`EncyclopediaView` 只负责发 `focus-graph-asset + switch-tool` 事件，不自己持有图谱 focus 状态；`WorkspaceToolOverlay` 是这条 focus payload 的 owner，并只把一次性聚焦参数透传给 `CharacterGraphView`。不要把图谱定点跳转状态再塞回路由、store 或资产视图本身。
 - **最近章节/节点数属于前端聚合口径**：资产总览里的“最近出现章节 / 关联结构节点数”目前由 `writerAssetRefs` 与 `OutlineNode.documentId` 绑定推导，只代表当前前端已知引用，不等同于后端统一事实。若未来后端补正式字段，必须先明确新 owner，再替换这层前端聚合逻辑。

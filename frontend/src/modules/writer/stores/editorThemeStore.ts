@@ -1,93 +1,59 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import {
+  THEME_OPTIONS,
+  THEME_OPTIONS_MAP,
+  currentThemeName,
+  initTheme as initGlobalTheme,
+  loadTheme,
+  setTheme as setGlobalTheme,
+  type ThemeName,
+} from '@/design-system/tokens/theme'
 
 /**
- * 编辑器主题名称
+ * 向后兼容旧命名，实际已收敛到统一 ThemeName。
  */
-export type EditorThemeName = 'light' | 'sepia' | 'dark' | 'focus'
+export type EditorThemeName = ThemeName
 
-const STORAGE_KEY = 'qingyu-editor-theme'
-
-/**
- * 主题元数据（用于 UI 展示）
- */
-export const EDITOR_THEMES: Record<EditorThemeName, { label: string; description: string; previewColor: string }> = {
-  light: {
-    label: '经典白',
-    description: '简洁明亮',
-    previewColor: '#ffffff'
-  },
-  sepia: {
-    label: '暖纸',
-    description: '护眼暖色',
-    previewColor: '#faf6f0'
-  },
-  dark: {
-    label: '深空',
-    description: '暗色主题',
-    previewColor: '#1e1e2e'
-  },
-  focus: {
-    label: '专注',
-    description: '极简沉浸',
-    previewColor: '#f5f5f5'
-  }
-}
+export const EDITOR_THEMES = Object.fromEntries(
+  THEME_OPTIONS.map((option) => [
+    option.value,
+    {
+      label: option.label,
+      description: option.description,
+      preview: option.preview,
+    },
+  ]),
+) as Record<ThemeName, { label: string; description: string; preview: { base: string; accent: string; accentSoft: string } }>
 
 export const useEditorThemeStore = defineStore('editor-theme', () => {
-  const currentTheme = ref<EditorThemeName>('light')
+  const currentTheme = ref<ThemeName>(loadTheme() || currentThemeName)
 
-  /**
-   * 从 localStorage 恢复主题
-   */
+  const themeOptions = computed(() => THEME_OPTIONS)
+
   const initTheme = () => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY)
-      if (saved && saved in EDITOR_THEMES) {
-        currentTheme.value = saved as EditorThemeName
-      }
-    } catch {
-      // localStorage 不可用时使用默认值
-    }
-    applyTheme()
+    const resolvedTheme = loadTheme() || currentTheme.value || currentThemeName
+    currentTheme.value = resolvedTheme
+    initGlobalTheme(resolvedTheme)
   }
 
-  /**
-   * 将主题应用到 DOM（更新 data-editor-theme 属性）
-   */
   const applyTheme = () => {
-    const el = document.querySelector('.workspace-studio')
-    if (el) {
-      // 防闪烁：先添加切换类
-      document.documentElement.classList.add('theme-switching')
-      el.setAttribute('data-editor-theme', currentTheme.value)
-      // 双帧后移除切换类
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          document.documentElement.classList.remove('theme-switching')
-        })
-      })
-    }
+    setGlobalTheme(currentTheme.value)
   }
 
-  /**
-   * 切换主题
-   */
-  const setTheme = (name: EditorThemeName) => {
-    if (!(name in EDITOR_THEMES)) return
-    currentTheme.value = name
-    applyTheme()
-    try {
-      localStorage.setItem(STORAGE_KEY, name)
-    } catch {
-      // localStorage 不可用时静默失败
+  const setTheme = (name: ThemeName) => {
+    if (!(name in THEME_OPTIONS_MAP)) {
+      return
     }
+    currentTheme.value = name
+    setGlobalTheme(name)
   }
 
   return {
     currentTheme,
+    themeOptions,
     initTheme,
     setTheme,
-    applyTheme
+    applyTheme,
   }
 })

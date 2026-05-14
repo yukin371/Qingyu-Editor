@@ -758,7 +758,7 @@ onBeforeUnmount(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--editor-bg-base, #fff);
 }
 
 .sidebar-header,
@@ -773,7 +773,7 @@ onBeforeUnmount(() => {
 .sidebar-header {
   padding-top: 12px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #ebeff5;
+  border-bottom: 1px solid var(--editor-border, #ebeff5);
 }
 
 .project-bar {
@@ -787,7 +787,7 @@ onBeforeUnmount(() => {
   min-width: 0;
   font-size: 15px;
   font-weight: 700;
-  color: #111827;
+  color: var(--editor-text-primary, #111827);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -802,12 +802,12 @@ onBeforeUnmount(() => {
   padding: 0 6px;
   border: none;
   background: transparent;
-  color: #6b7280;
+  color: var(--editor-text-muted, #6b7280);
   font-size: 12px;
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    color: #111827;
+    color: var(--editor-text-primary, #111827);
   }
 
   &:disabled {
@@ -838,7 +838,7 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #94a3b8;
+  color: var(--editor-text-ghost, #94a3b8);
   transform: translateY(-50%);
 }
 
@@ -849,7 +849,7 @@ onBeforeUnmount(() => {
 .sidebar-search :deep(.search-input input) {
   padding-left: 32px;
   font-size: 13px;
-  background: #f8fafc;
+  background: var(--editor-bg-surface, #f8fafc);
 }
 
 .keyword-option {
@@ -864,12 +864,12 @@ onBeforeUnmount(() => {
   cursor: pointer;
 
   &:hover {
-    background: #f8fafc;
+    background: var(--editor-bg-surface, #f8fafc);
   }
 }
 
 .keyword-option--status {
-  color: #6b7280;
+  color: var(--editor-text-muted, #6b7280);
   cursor: default;
 
   &:hover {
@@ -879,12 +879,12 @@ onBeforeUnmount(() => {
 
 .keyword-option__name {
   font-size: 13px;
-  color: #111827;
+  color: var(--editor-text-primary, #111827);
 }
 
 .keyword-option__meta {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--editor-text-muted, #6b7280);
 }
 
 .search-suggestion-panel {
@@ -894,10 +894,10 @@ onBeforeUnmount(() => {
   right: 0;
   z-index: 20;
   overflow: hidden;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--editor-border, #e2e8f0);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 18px 38px -24px rgba(15, 23, 42, 0.45);
+  background: color-mix(in srgb, var(--editor-bg-base, #ffffff) 96%, transparent);
+  box-shadow: var(--editor-shadow-lg, 0 18px 38px -24px rgba(15, 23, 42, 0.45));
   backdrop-filter: blur(12px);
 }
 
@@ -914,10 +914,10 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #d9dee6;
+  border: 1px solid var(--editor-border, #d9dee6);
   border-radius: 4px;
-  background: #fff;
-  color: #4b5563;
+  background: var(--editor-bg-base, #fff);
+  color: var(--editor-text-secondary, #4b5563);
   cursor: pointer;
   transition:
     background-color 0.14s ease,
@@ -925,19 +925,19 @@ onBeforeUnmount(() => {
     color 0.14s ease;
 
   &:hover {
-    background: #f8fafc;
-    color: #111827;
+    background: var(--editor-bg-surface, #f8fafc);
+    color: var(--editor-text-primary, #111827);
   }
 
   &--primary {
-    background: #2f6feb;
-    border-color: #2f6feb;
-    color: #fff;
+    background: var(--editor-accent, #2f6feb);
+    border-color: var(--editor-accent, #2f6feb);
+    color: var(--editor-text-inverse, #fff);
 
     &:hover {
-      background: #255fd1;
-      border-color: #255fd1;
-      color: #fff;
+      background: var(--editor-accent-hover, #255fd1);
+      border-color: var(--editor-accent-hover, #255fd1);
+      color: var(--editor-text-inverse, #fff);
     }
   }
 }
@@ -952,7 +952,7 @@ onBeforeUnmount(() => {
 
 .sidebar-tools__hint {
   min-width: 0;
-  color: #9ca3af;
+  color: var(--editor-text-ghost, #9ca3af);
   font-size: 11px;
   white-space: nowrap;
   overflow: hidden;
@@ -968,17 +968,17 @@ onBeforeUnmount(() => {
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: #6b7280;
+  color: var(--editor-text-muted, #6b7280);
   cursor: pointer;
 
   &:hover {
-    background: #f3f4f6;
-    color: #111827;
+    background: var(--editor-bg-elevated, #f3f4f6);
+    color: var(--editor-text-primary, #111827);
   }
 
   &.is-active {
-    background: #eaf2ff;
-    color: #1d4ed8;
+    background: var(--editor-accent-soft, #eaf2ff);
+    color: var(--editor-accent, #1d4ed8);
   }
 }
 
@@ -993,9 +993,9 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-top: 1px solid #ebeff5;
-  border-bottom: 1px solid #ebeff5;
-  color: #4b5563;
+  border-top: 1px solid var(--editor-border, #ebeff5);
+  border-bottom: 1px solid var(--editor-border, #ebeff5);
+  color: var(--editor-text-secondary, #4b5563);
 }
 
 .explorer-title {
@@ -1008,7 +1008,7 @@ onBeforeUnmount(() => {
 
 .section-count,
 .explorer-caption {
-  color: #9ca3af;
+  color: var(--editor-text-ghost, #9ca3af);
   font-size: 11px;
 }
 
@@ -1024,7 +1024,7 @@ onBeforeUnmount(() => {
   flex: 1;
   overflow-y: auto;
   padding: 6px;
-  background: #fff;
+  background: var(--editor-bg-base, #fff);
 
   &::-webkit-scrollbar {
     width: 6px;
@@ -1049,8 +1049,8 @@ onBeforeUnmount(() => {
   margin-left: calc(var(--tree-depth, 0) * 14px);
 
   &:hover {
-    background: #f5f7fb;
-    border-left-color: #d1d5db;
+    background: var(--editor-bg-surface, #f5f7fb);
+    border-left-color: var(--editor-border-light, #d1d5db);
 
     .item-actions {
       opacity: 1;
@@ -1058,26 +1058,26 @@ onBeforeUnmount(() => {
   }
 
   &.is-active {
-    background: #eaf2ff;
-    border-left-color: #2563eb;
+    background: var(--editor-accent-soft, #eaf2ff);
+    border-left-color: var(--editor-accent, #2563eb);
 
     .item-title {
-      color: #1d4ed8;
+      color: var(--editor-accent, #1d4ed8);
       font-weight: 700;
     }
   }
 
   &.is-directory {
-    background: #fff8e8;
-    border-left-color: #d4a72c;
+    background: color-mix(in srgb, var(--color-warning-50, #fff8e8) 88%, transparent);
+    border-left-color: var(--color-warning-400, #d4a72c);
 
     .item-title {
-      color: #8a5a00;
+      color: var(--color-warning-700, #8a5a00);
       font-weight: 700;
     }
 
     .item-file-icon {
-      color: #c0841a;
+      color: var(--color-warning-500, #c0841a);
     }
   }
 }
@@ -1098,7 +1098,7 @@ onBeforeUnmount(() => {
 
 .item-file-icon {
   margin-top: 2px;
-  color: #6b7280;
+  color: var(--editor-text-muted, #6b7280);
   flex-shrink: 0;
 }
 
@@ -1109,7 +1109,7 @@ onBeforeUnmount(() => {
 
 .item-title {
   margin-bottom: 2px;
-  color: #111827;
+  color: var(--editor-text-primary, #111827);
   font-size: 13px;
   line-height: 1.4;
   white-space: nowrap;
@@ -1119,7 +1119,7 @@ onBeforeUnmount(() => {
 
 .chapter-index,
 .item-meta {
-  color: #9ca3af;
+  color: var(--editor-text-ghost, #9ca3af);
 }
 
 .item-meta {
@@ -1130,7 +1130,7 @@ onBeforeUnmount(() => {
 }
 
 .item-meta--directory {
-  color: #8a5a00;
+  color: var(--color-warning-700, #8a5a00);
 }
 
 .dot {
@@ -1164,7 +1164,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  color: #4b5563;
+  color: var(--editor-text-secondary, #4b5563);
 }
 
 .list-empty {
@@ -1172,11 +1172,11 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 6px;
   padding: 14px 12px;
-  color: #6b7280;
+  color: var(--editor-text-muted, #6b7280);
   font-size: 12px;
 
   strong {
-    color: #111827;
+    color: var(--editor-text-primary, #111827);
     font-size: 13px;
   }
 
@@ -1194,22 +1194,22 @@ onBeforeUnmount(() => {
 .list-empty__btn {
   height: 26px;
   padding: 0 8px;
-  border: 1px solid #d9dee6;
+  border: 1px solid var(--editor-border, #d9dee6);
   border-radius: 4px;
-  background: #fff;
-  color: #374151;
+  background: var(--editor-bg-base, #fff);
+  color: var(--editor-text-secondary, #374151);
   font-size: 12px;
   cursor: pointer;
 
   &--primary {
-    color: #2f6feb;
-    border-color: #bfdbfe;
-    background: #eff6ff;
+    color: var(--editor-accent, #2f6feb);
+    border-color: var(--editor-accent-soft-border, #bfdbfe);
+    background: var(--editor-accent-soft, #eff6ff);
   }
 }
 
 :deep(.text-highlight) {
-  color: #2563eb;
+  color: var(--editor-accent, #2563eb);
   font-weight: 700;
 }
 </style>
