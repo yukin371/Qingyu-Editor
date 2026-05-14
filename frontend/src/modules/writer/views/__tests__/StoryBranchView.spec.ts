@@ -39,6 +39,40 @@ vi.mock('@/modules/writer/stores/writerStore', () => ({
   useWriterStore: () => writerStoreState,
 }))
 
+vi.mock('@/modules/writer/utils/writerAssetRefs', () => ({
+  WRITER_ASSET_REFS_UPDATED_EVENT: 'qingyu:writer-asset-refs-updated',
+  loadWriterAssetRefState: () => ({
+    chapterRefs: {},
+    volumeRefs: {},
+  }),
+  buildWriterAssetSummaryByChapterId: () => ({
+    'chapter-1': {
+      total: 2,
+      characters: 1,
+      locations: 1,
+      items: 0,
+      organizations: 0,
+      concepts: 0,
+    },
+  }),
+  buildWriterAssetSummaryItems: (summary: {
+    characters: number
+    locations: number
+    items: number
+    organizations: number
+    concepts: number
+  }) =>
+    [
+      summary.characters ? { type: 'character', label: '角色', count: summary.characters } : null,
+      summary.locations ? { type: 'location', label: '地点', count: summary.locations } : null,
+      summary.items ? { type: 'item', label: '物品', count: summary.items } : null,
+      summary.organizations
+        ? { type: 'organization', label: '组织', count: summary.organizations }
+        : null,
+      summary.concepts ? { type: 'concept', label: '概念', count: summary.concepts } : null,
+    ].filter(Boolean),
+}))
+
 vi.mock('@/modules/writer/composables/useOrgTreeLayout', () => ({
   useOrgTreeLayout: () => ({
     flatNodes: { value: [selectedNode] },
@@ -79,6 +113,18 @@ describe('StoryBranchView', () => {
         projectId: 'project-1',
         chapterId: 'chapter-1',
         chapterTitle: '第一章',
+        chapters: [
+          {
+            id: 'chapter-1',
+            projectId: 'project-1',
+            chapterNum: 1,
+            title: '第一章',
+            wordCount: 1200,
+            updatedAt: '2026-04-14T00:00:00.000Z',
+            status: 'draft',
+            nodeType: 'chapter',
+          },
+        ],
         activeEntities: [
           { id: 'char-1', name: '林舟', type: 'character', summary: '迟疑' },
           { id: 'loc-1', name: '城门口', type: 'location' },
@@ -109,6 +155,9 @@ describe('StoryBranchView', () => {
     await nextTick()
     await nextTick()
 
+    expect(wrapper.text()).toContain('当前资产')
+    expect(wrapper.text()).toContain('角色 1')
+    expect(wrapper.text()).toContain('地点 1')
     await wrapper.get('[data-testid="branch-send-to-ai"]').trigger('click')
 
     expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0]).toMatchObject({
@@ -141,6 +190,18 @@ describe('StoryBranchView', () => {
         projectId: 'project-1',
         chapterId: 'chapter-1',
         chapterTitle: '第一章',
+        chapters: [
+          {
+            id: 'chapter-1',
+            projectId: 'project-1',
+            chapterNum: 1,
+            title: '第一章',
+            wordCount: 1200,
+            updatedAt: '2026-04-14T00:00:00.000Z',
+            status: 'draft',
+            nodeType: 'chapter',
+          },
+        ],
       },
       global: {
         stubs: {

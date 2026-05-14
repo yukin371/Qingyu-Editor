@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { ref, computed } from 'vue'
 import {
   buildActiveEntityPreview,
+  buildActiveEntityTypeSummary,
   useWorkflowContext,
   formatEntityStatsLabel,
   buildEntitySummary,
@@ -205,6 +206,31 @@ describe('buildActiveEntityPreview', () => {
     expect(buildActiveEntityPreview([])).toEqual({
       items: [],
       hiddenCount: 0,
+      total: 0,
+    })
+  })
+})
+
+describe('buildActiveEntityTypeSummary', () => {
+  it('groups active entities by type and sorts by count', () => {
+    const summary = buildActiveEntityTypeSummary([
+      { id: 'char-1', name: '张三', type: 'character', summary: '紧张' },
+      { id: 'item-1', name: '铜钥匙', type: 'item' },
+      { id: 'item-2', name: '卷轴', type: 'item' },
+      { id: 'loc-1', name: '青石镇', type: 'location' },
+    ])
+
+    expect(summary.total).toBe(4)
+    expect(summary.items).toEqual([
+      { type: 'item', typeLabel: '物品', count: 2 },
+      { type: 'character', typeLabel: '角色', count: 1 },
+      { type: 'location', typeLabel: '地点', count: 1 },
+    ])
+  })
+
+  it('returns empty summary for missing active entities', () => {
+    expect(buildActiveEntityTypeSummary(undefined)).toEqual({
+      items: [],
       total: 0,
     })
   })

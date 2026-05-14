@@ -14,6 +14,18 @@
           场景：{{ workflowContext.scopeLabel }}
         </span>
       </div>
+      <div v-if="visibleAssetSummaryItems.length > 0" class="timeline-outline-view__asset-summary">
+        <span class="timeline-outline-view__asset-summary-label">当前资产</span>
+        <div class="timeline-outline-view__asset-summary-chips">
+          <span
+            v-for="item in visibleAssetSummaryItems"
+            :key="item.key"
+            class="timeline-outline-view__asset-chip"
+          >
+            {{ item.label }} {{ item.count }}
+          </span>
+        </div>
+      </div>
       <div class="timeline-outline-view__actions">
         <QyButton variant="secondary" size="sm" @click="handleRefresh">
           <QyIcon name="Refresh" :size="14" />
@@ -159,6 +171,8 @@ import {
   formatActiveEntitiesPrompt,
   type ActiveEntitySummary,
 } from '@/modules/writer/composables/useWorkflowContext'
+import { useWriterAssetSummary } from '@/modules/writer/composables/useWriterAssetSummary'
+import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 import type { Timeline, TimelineEvent } from '@/types/writer'
 import SystemStatCard from '@/modules/writer/components/system-design/SystemStatCard.vue'
 import type {
@@ -179,6 +193,7 @@ const props = withDefaults(
     projectId?: string
     chapterId?: string
     chapterTitle?: string
+    chapters?: SidebarChapterSummary[]
     workflowContext?: WriterWorkflowContext
     activeEntities?: ActiveEntitySummary[]
   }>(),
@@ -186,6 +201,7 @@ const props = withDefaults(
     projectId: '',
     chapterId: '',
     chapterTitle: '',
+    chapters: () => [],
     workflowContext: undefined,
     activeEntities: () => [],
   },
@@ -216,6 +232,12 @@ const effectiveProjectId = computed(() => props.projectId || writerStore.current
 const timelines = computed<Timeline[]>(() => writerStore.timeline.list || [])
 const events = computed<TimelineEvent[]>(() => writerStore.timeline.events || [])
 const currentTimelineId = computed(() => writerStore.timeline.currentTimeline?.id || '')
+const { visibleAssetSummaryItems } = useWriterAssetSummary({
+  projectId: effectiveProjectId,
+  chapterId: computed(() => props.chapterId),
+  chapters: computed(() => props.chapters || []),
+  activeEntities: computed(() => props.activeEntities || []),
+})
 
 const orderedEvents = computed(() =>
   [...events.value].sort((a, b) => {
@@ -460,6 +482,38 @@ watch(
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+}
+
+.timeline-outline-view__asset-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.timeline-outline-view__asset-summary-label {
+  color: var(--editor-text-muted, #667795);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.timeline-outline-view__asset-summary-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.timeline-outline-view__asset-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: rgba(79, 121, 216, 0.08);
+  border: 1px solid rgba(79, 121, 216, 0.14);
+  color: var(--editor-text-secondary, #475569);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .context-anchor {

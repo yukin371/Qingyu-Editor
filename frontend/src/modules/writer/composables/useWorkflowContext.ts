@@ -38,6 +38,17 @@ export interface ActiveEntityPreview {
   total: number
 }
 
+export interface ActiveEntityTypeSummaryItem {
+  type: string
+  typeLabel: string
+  count: number
+}
+
+export interface ActiveEntityTypeSummary {
+  items: ActiveEntityTypeSummaryItem[]
+  total: number
+}
+
 export interface UseWorkflowContextOptions {
   projectId: ComputedRef<string>
   chapterId: ComputedRef<string>
@@ -74,6 +85,15 @@ const ACTIVE_ENTITY_TYPE_LABELS: Record<string, string> = {
   concept: '概念',
   organization: '组织',
   foreshadowing: '伏笔',
+}
+
+const ACTIVE_ENTITY_TYPE_ORDER: Record<string, number> = {
+  character: 0,
+  location: 1,
+  item: 2,
+  organization: 3,
+  concept: 4,
+  foreshadowing: 5,
 }
 
 /**
@@ -270,6 +290,42 @@ export function buildActiveEntityPreview(
   return {
     items,
     hiddenCount: Math.max(activeEntities.length - items.length, 0),
+    total: activeEntities.length,
+  }
+}
+
+export function buildActiveEntityTypeSummary(
+  activeEntities: ActiveEntitySummary[] | null | undefined,
+): ActiveEntityTypeSummary {
+  if (!activeEntities?.length) {
+    return {
+      items: [],
+      total: 0,
+    }
+  }
+
+  const counts = new Map<string, number>()
+  for (const entity of activeEntities) {
+    counts.set(entity.type, (counts.get(entity.type) || 0) + 1)
+  }
+
+  const items = Array.from(counts.entries())
+    .map(([type, count]) => ({
+      type,
+      typeLabel: getActiveEntityTypeLabel(type),
+      count,
+    }))
+    .sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count
+      const orderDelta =
+        (ACTIVE_ENTITY_TYPE_ORDER[a.type] ?? Number.MAX_SAFE_INTEGER) -
+        (ACTIVE_ENTITY_TYPE_ORDER[b.type] ?? Number.MAX_SAFE_INTEGER)
+      if (orderDelta !== 0) return orderDelta
+      return a.typeLabel.localeCompare(b.typeLabel, 'zh-CN')
+    })
+
+  return {
+    items,
     total: activeEntities.length,
   }
 }

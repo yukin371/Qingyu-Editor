@@ -71,6 +71,46 @@ vi.mock('@/modules/writer/api/concept', () => ({
   },
 }))
 vi.mock('../utils/writerAssetRefs', () => ({
+  WRITER_ASSET_REFS_UPDATED_EVENT: 'qingyu:writer-asset-refs-updated',
+  createWriterAssetRefKey: (assetType: string, assetId?: string, assetName?: string) =>
+    `${assetType}:${assetId || assetName}`,
+  buildWriterAssetReferenceProjection: () =>
+    new Map([
+      [
+        'character:char-1',
+        {
+          key: 'character:char-1',
+          assetType: 'character',
+          assetId: 'char-1',
+          assetName: '林舟',
+          totalReferenceCount: 1,
+          chapterReferenceCount: 1,
+          volumeReferenceCount: 0,
+          latestChapterId: 'chapter-1',
+          latestUpdatedAt: '2026-04-14T00:00:00.000Z',
+          chapterIds: ['chapter-1'],
+          volumeIds: [],
+          unresolved: false,
+        },
+      ],
+      [
+        'item:item-1',
+        {
+          key: 'item:item-1',
+          assetType: 'item',
+          assetId: 'item-1',
+          assetName: '青铜钥匙',
+          totalReferenceCount: 1,
+          chapterReferenceCount: 1,
+          volumeReferenceCount: 0,
+          latestChapterId: 'chapter-1',
+          latestUpdatedAt: '2026-04-14T00:00:00.000Z',
+          chapterIds: ['chapter-1'],
+          volumeIds: [],
+          unresolved: false,
+        },
+      ],
+    ]),
   loadWriterAssetRefState: () => ({
     chapterRefs: {
       'chapter-1': [
@@ -102,6 +142,125 @@ vi.mock('../utils/writerAssetRefs', () => ({
   }),
 }))
 vi.mock('@/modules/writer/utils/writerAssetRefs', () => ({
+  WRITER_ASSET_REFS_UPDATED_EVENT: 'qingyu:writer-asset-refs-updated',
+  createWriterAssetRefKey: (assetType: string, assetId?: string, assetName?: string) =>
+    `${assetType}:${assetId || assetName}`,
+  buildWriterAssetReferenceProjection: () =>
+    new Map([
+      [
+        'character:char-1',
+        {
+          key: 'character:char-1',
+          assetType: 'character',
+          assetId: 'char-1',
+          assetName: '林舟',
+          chapterIds: ['chapter-1'],
+          volumeIds: ['volume-1'],
+          totalReferenceCount: 2,
+          latestChapterId: 'chapter-1',
+          unresolved: false,
+        },
+      ],
+      [
+        'location:loc-1',
+        {
+          key: 'location:loc-1',
+          assetType: 'location',
+          assetId: 'loc-1',
+          assetName: '云港',
+          chapterIds: ['chapter-1'],
+          volumeIds: [],
+          totalReferenceCount: 1,
+          latestChapterId: 'chapter-1',
+          unresolved: false,
+        },
+      ],
+      [
+        'organization:org-1',
+        {
+          key: 'organization:org-1',
+          assetType: 'organization',
+          assetId: 'org-1',
+          assetName: '北庭司',
+          chapterIds: ['chapter-1'],
+          volumeIds: [],
+          totalReferenceCount: 1,
+          latestChapterId: 'chapter-1',
+          unresolved: false,
+        },
+      ],
+      [
+        'concept:concept-1',
+        {
+          key: 'concept:concept-1',
+          assetType: 'concept',
+          assetId: 'concept-1',
+          assetName: '门禁法则',
+          chapterIds: ['chapter-1'],
+          volumeIds: [],
+          totalReferenceCount: 1,
+          latestChapterId: 'chapter-1',
+          unresolved: false,
+        },
+      ],
+    ]),
+  loadWriterAssetRefState: () => ({
+    chapterRefs: {
+      'chapter-1': [
+        {
+          id: 'ref-1',
+          assetType: 'character',
+          assetId: 'char-1',
+          assetName: '林舟',
+          scopeType: 'chapter',
+          scopeId: 'chapter-1',
+        },
+      ],
+    },
+    volumeRefs: {},
+  }),
+}))
+vi.mock('@/modules/writer/utils/writerAssetRefs', () => ({
+  WRITER_ASSET_REFS_UPDATED_EVENT: 'qingyu:writer-asset-refs-updated',
+  createWriterAssetRefKey: (assetType: string, assetId?: string, assetName?: string) =>
+    `${assetType}:${assetId || assetName}`,
+  buildWriterAssetReferenceProjection: () =>
+    new Map([
+      [
+        'character:char-1',
+        {
+          key: 'character:char-1',
+          assetType: 'character',
+          assetId: 'char-1',
+          assetName: '林舟',
+          totalReferenceCount: 1,
+          chapterReferenceCount: 1,
+          volumeReferenceCount: 0,
+          latestChapterId: 'chapter-1',
+          latestUpdatedAt: '2026-04-14T00:00:00.000Z',
+          chapterIds: ['chapter-1'],
+          volumeIds: [],
+          unresolved: false,
+        },
+      ],
+      [
+        'item:item-1',
+        {
+          key: 'item:item-1',
+          assetType: 'item',
+          assetId: 'item-1',
+          assetName: '青铜钥匙',
+          totalReferenceCount: 1,
+          chapterReferenceCount: 1,
+          volumeReferenceCount: 0,
+          latestChapterId: 'chapter-1',
+          latestUpdatedAt: '2026-04-14T00:00:00.000Z',
+          chapterIds: ['chapter-1'],
+          volumeIds: [],
+          unresolved: false,
+        },
+      ],
+    ]),
   loadWriterAssetRefState: () => ({
     chapterRefs: {
       'chapter-1': [
@@ -225,6 +384,8 @@ describe('EncyclopediaView', () => {
     expect(wrapper.text()).toContain('组织')
     expect(wrapper.text()).toContain('概念')
     expect(wrapper.text()).toContain('第一章')
+    expect(wrapper.text()).toContain('1 章')
+    expect(wrapper.text()).toContain('0 卷')
     expect(wrapper.text()).toContain('伏笔与未确认资产候选暂不进入资产总览')
 
     const organizationChip = wrapper

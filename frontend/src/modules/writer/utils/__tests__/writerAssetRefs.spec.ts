@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  WRITER_ASSET_REFS_UPDATED_EVENT,
+  buildWriterAssetSummaryItems,
+  buildWriterAssetReferenceProjection,
+  buildWriterAssetSummaryByChapterId,
   extractWriterAssetCandidates,
   loadWriterAssetRefState,
+  mergeWriterAssetRefs,
   removeScopeAssetRef,
   upsertScopeAssetRef,
 } from '../writerAssetRefs'
@@ -185,6 +190,30 @@ describe('writerAssetRefs', () => {
     expect(state.chapterRefs['chapter-1']).toEqual([])
   })
 
+  it('写入资产引用后应广播刷新事件', () => {
+    const projectId = 'project-event'
+    const listener = vi.fn()
+    window.addEventListener(WRITER_ASSET_REFS_UPDATED_EVENT, listener)
+
+    upsertScopeAssetRef({
+      projectId,
+      scopeType: 'chapter',
+      scopeId: 'chapter-1',
+      assetType: 'character',
+      assetId: 'char-1',
+      assetName: '沈砚',
+      source: 'mention',
+    })
+
+    expect(listener).toHaveBeenCalledTimes(1)
+    expect(listener.mock.calls[0]?.[0]).toBeInstanceOf(CustomEvent)
+    expect((listener.mock.calls[0]?.[0] as CustomEvent).detail).toMatchObject({
+      projectId,
+    })
+
+    window.removeEventListener(WRITER_ASSET_REFS_UPDATED_EVENT, listener)
+  })
+
   it('应持久化组织与概念绑定', () => {
     const projectId = 'project-1'
     upsertScopeAssetRef({
@@ -221,5 +250,143 @@ describe('writerAssetRefs', () => {
         }),
       ]),
     )
+  })
+
+  it('应合并章节与卷级引用并按资产去重', () => {
+    const merged = mergeWriterAssetRefs({
+      chapterRefs: [
+        {
+          id: 'chapter-ref-1',
+          assetType: 'character',
+          assetId: 'char-1',
+          assetName: '沈砚',
+          scopeType: 'chapter',
+          scopeId: 'chapter-1',
+          source: 'mention',
+          createdAt: '2026-05-15T10:00:00.000Z',
+          updatedAt: '2026-05-15T10:00:00.000Z',
+        },
+      ],
+      volumeRefs: [
+        {
+          id: 'volume-ref-1',
+          assetType: 'character',
+          assetId: 'char-1',
+          assetName: '沈砚',
+          scopeType: 'volume',
+          scopeId: 'volume-1',
+          source: 'chapter_rollup',
+          createdAt: '2026-05-15T09:00:00.000Z',
+          updatedAt: '2026-05-15T09:00:00.000Z',
+        },
+        {
+          id: 'volume-ref-2',
+          assetType: 'location',
+          assetId: 'loc-1',
+          assetName: '雾港',
+          scopeType: 'volume',
+          scopeId: 'volume-1',
+          source: 'chapter_rollup',
+          createdAt: '2026-05-15T09:30:00.000Z',
+          updatedAt: '2026-05-15T09:30:00.000Z',
+        },
+      ],
+    })
+
+    expect(merged).toHaveLength(2)
+    expect(merged.map((item) => item.assetName)).toEqual(['沈砚', '雾港'])
+  })
+
+  it('应按章节生成统一资产摘要并继承卷级引用', () => {
+    const projectId = 'project-2'
+    upsertScopeAssetRef({
+      projectId,
+      scopeType: 'volume',
+      scopeId: 'volume-1',
+      assetType: 'location',
+      assetId: 'loc-1',
+      assetName: '雾港',
+      source: 'chapter_rollup',
+    })
+    upsertScopeAssetRef({
+      projectId,
+      scopeType: 'chapter',
+      scopeId: 'chapter-1',
+      assetType: 'character',
+      assetId: 'char-1',
+      assetName: '沈砚',
+      source: 'mention',
+    })
+
+    const summaryByChapter = buildWriterAssetSummaryByChapterId(loadWriterAssetRefState(projectId), [
+      { id: 'chapter-1', parentId: 'volume-1' },
+    ])
+
+    expect(summaryByChapter['chapter-1']).toMatchObject({
+      total: 2,
+      characters: 1,
+      locations: 1,
+    })
+  })
+
+  it('应把资产摘要格式化为稳定顺序的展示项', () => {
+    expect(
+      buildWriterAssetSummaryItems({
+        total: 4,
+        characters: 1,
+        locations: 1,
+        items: 2,
+        organizations: 0,
+        concepts: 0,
+      }),
+    ).toEqual([
+      { type: 'character', label: '角色', count: 1 },
+      { type: 'location', label: '地点', count: 1 },
+      { type: 'item', label: '物品', count: 2 },
+    ])
+  })
+
+  it('应构建资产引用投影以支持右栏影响面提示', () => {
+    const projectId = 'project-3'
+    upsertScopeAssetRef({
+      projectId,
+      scopeType: 'chapter',
+      scopeId: 'chapter-1',
+      assetType: 'character',
+      assetId: 'char-1',
+      assetName: '沈砚',
+      source: 'mention',
+    })
+    upsertScopeAssetRef({
+      projectId,
+      scopeType: 'chapter',
+      scopeId: 'chapter-2',
+      assetType: 'character',
+      assetId: 'char-1',
+      assetName: '沈砚',
+      source: 'mention',
+    })
+    upsertScopeAssetRef({
+      projectId,
+      scopeType: 'volume',
+      scopeId: 'volume-1',
+      assetType: 'character',
+      assetId: 'char-1',
+      assetName: '沈砚',
+      source: 'chapter_rollup',
+    })
+
+    const projection = buildWriterAssetReferenceProjection(loadWriterAssetRefState(projectId)).get(
+      'character:char-1',
+    )
+
+    expect(projection).toMatchObject({
+      totalReferenceCount: 3,
+      chapterReferenceCount: 2,
+      volumeReferenceCount: 1,
+      chapterIds: ['chapter-1', 'chapter-2'],
+      volumeIds: ['volume-1'],
+      latestChapterId: 'chapter-2',
+    })
   })
 })

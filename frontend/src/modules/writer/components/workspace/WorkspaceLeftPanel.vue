@@ -56,12 +56,12 @@ import { ref, computed, watch } from 'vue'
 import ProjectSidebar from '@/modules/writer/components/ProjectSidebar.vue'
 import WorkspaceLeftPanelChrome from '@/modules/writer/components/workspace/WorkspaceLeftPanelChrome.vue'
 import OutlineTreePanel from '@/modules/writer/components/workspace/structure/OutlineTreePanel.vue'
+import { useWriterAssetRefState } from '@/modules/writer/composables/useWriterAssetRefState'
 import { useWriterStore } from '@/modules/writer/stores/writerStore'
 import { useWorkspaceLayoutStore } from '@/modules/writer/stores/workspaceLayoutStore'
 import { loadCharacterGraphDraftState } from '@/modules/writer/utils/characterGraphDrafts'
 import {
-  loadWriterAssetRefState,
-  summarizeWriterAssetRefs,
+  buildWriterAssetSummaryByChapterId,
   type WriterAssetSummary,
 } from '@/modules/writer/utils/writerAssetRefs'
 import { useOutlineTreeState } from '@/modules/writer/composables/useOutlineTreeState'
@@ -181,28 +181,10 @@ watch(
 const graphDraftState = computed(() => loadCharacterGraphDraftState(props.projectId))
 const chapterGraphs = computed<ChapterGraph[]>(() => graphDraftState.value.chapterGraphs)
 
-const assetRefState = computed(() => loadWriterAssetRefState(props.projectId))
-const assetSummaryByChapterId = computed<Record<string, WriterAssetSummary>>(() => {
-  const summaries: Record<string, WriterAssetSummary> = {}
-  for (const chapter of chapterOptions.value) {
-    const chapterRefs = assetRefState.value.chapterRefs[chapter.id] || []
-    const volumeRefs = chapter.parentId
-      ? assetRefState.value.volumeRefs[chapter.parentId] || []
-      : []
-    const merged = [...chapterRefs]
-    const seen = new Set(
-      chapterRefs.map((ref) => `${ref.assetType}:${ref.assetId || ref.assetName}`),
-    )
-    for (const ref of volumeRefs) {
-      const key = `${ref.assetType}:${ref.assetId || ref.assetName}`
-      if (seen.has(key)) continue
-      seen.add(key)
-      merged.push(ref)
-    }
-    summaries[chapter.id] = summarizeWriterAssetRefs(merged)
-  }
-  return summaries
-})
+const { assetRefState } = useWriterAssetRefState(computed(() => props.projectId))
+const assetSummaryByChapterId = computed<Record<string, WriterAssetSummary>>(() =>
+  buildWriterAssetSummaryByChapterId(assetRefState.value, chapterOptions.value),
+)
 
 // =======================
 // 本地双向绑定

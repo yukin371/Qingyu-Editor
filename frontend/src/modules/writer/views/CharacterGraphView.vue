@@ -265,8 +265,10 @@ import {
   type CharacterGraphDraftState,
 } from '../utils/characterGraphDrafts'
 import {
+  createWriterAssetRefKey,
   extractWriterAssetCandidates,
   loadWriterAssetRefState,
+  mergeWriterAssetRefs,
   removeScopeAssetRef,
   upsertScopeAssetRef,
   type WriterAssetCandidate,
@@ -561,12 +563,9 @@ const boundScopeAssetRefs = computed<WriterAssetRef[]>(() => {
     return volumeBoundAssetRefs.value
   }
 
-  const seen = new Set<string>()
-  return [...chapterBoundAssetRefs.value, ...inheritedVolumeAssetRefs.value].filter((item) => {
-    const key = `${item.assetType}:${item.assetId || item.assetName}`
-    if (seen.has(key)) return false
-    seen.add(key)
-    return true
+  return mergeWriterAssetRefs({
+    chapterRefs: chapterBoundAssetRefs.value,
+    volumeRefs: inheritedVolumeAssetRefs.value,
   })
 })
 const chapterDetectedAssetCandidates = computed<WriterAssetCandidate[]>(() => {
@@ -604,13 +603,15 @@ const volumeRollupAssetCandidates = computed<WriterAssetCandidate[]>(() => {
   if (currentScopeType.value !== 'volume') return []
 
   const boundKeys = new Set(
-    volumeBoundAssetRefs.value.map((item) => `${item.assetType}:${item.assetId || item.assetName}`),
+    volumeBoundAssetRefs.value.map((item) =>
+      createWriterAssetRefKey(item.assetType, item.assetId, item.assetName),
+    ),
   )
   const summary = new Map<string, WriterAssetCandidate>()
 
   for (const chapterId of currentVolumeChapterIds.value) {
     for (const asset of assetRefState.value.chapterRefs[chapterId] || []) {
-      const key = `${asset.assetType}:${asset.assetId || asset.assetName}`
+      const key = createWriterAssetRefKey(asset.assetType, asset.assetId, asset.assetName)
       if (boundKeys.has(key) || summary.has(key)) continue
       summary.set(key, {
         key,
@@ -1038,12 +1039,18 @@ const graphStatusChips = computed(() => {
 const volumeAppearedCharacterIds = computed<Set<string>>(() => {
   const result = new Set<string>()
   if (!currentScopeVolumeId.value) return result
-  for (const chapterId of currentVolumeChapterIds.value) {
-    for (const asset of assetRefState.value.chapterRefs[chapterId] || []) {
+
+  const mergedRefs = mergeWriterAssetRefs({
+    chapterRefs: currentVolumeChapterIds.value.flatMap(
+      (chapterId) => assetRefState.value.chapterRefs[chapterId] || [],
+    ),
+    volumeRefs: volumeBoundAssetRefs.value,
+  })
+
+  for (const asset of mergedRefs) {
       if (asset.assetType === 'character' && asset.assetId) {
         result.add(asset.assetId)
       }
-    }
   }
   return result
 })
@@ -1239,7 +1246,7 @@ const graphNodes = computed<GraphNode[]>(() => {
 
   const inheritedAssetKeySet = new Set(
     inheritedVolumeAssetRefs.value.map(
-      (asset) => `${asset.assetType}:${asset.assetId || asset.assetName}`,
+      (asset) => createWriterAssetRefKey(asset.assetType, asset.assetId, asset.assetName),
     ),
   )
   const nonCharacterNodes = boundScopeAssetRefs.value
@@ -1250,7 +1257,7 @@ const graphNodes = computed<GraphNode[]>(() => {
         assetId: asset.assetId,
         assetName: asset.assetName,
         isInherited: inheritedAssetKeySet.has(
-          `${asset.assetType}:${asset.assetId || asset.assetName}`,
+          createWriterAssetRefKey(asset.assetType, asset.assetId, asset.assetName),
         ),
         isAppeared: asset.source !== 'manual',
       }),

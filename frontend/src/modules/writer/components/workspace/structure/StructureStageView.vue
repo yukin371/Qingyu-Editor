@@ -647,12 +647,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { message, messageBox } from '@/design-system/services'
+import { useWriterAssetRefState } from '@/modules/writer/composables/useWriterAssetRefState'
 import { useWriterStore } from '@/modules/writer/stores/writerStore'
 import { loadCharacterGraphDraftState } from '@/modules/writer/utils/characterGraphDrafts'
 import {
-  loadWriterAssetRefState,
-  summarizeWriterAssetRefs,
-  type WriterAssetRefState,
+  buildWriterAssetSummaryByChapterId,
   type WriterAssetSummary,
 } from '@/modules/writer/utils/writerAssetRefs'
 import { DocumentStatus } from '@/modules/writer/types/document'
@@ -787,10 +786,6 @@ const viewModeOptions: Array<{ value: StageViewMode; label: string; icon: string
 const draftBindingChapterId = ref('')
 const structureRefreshError = ref('')
 const creativeWorkflow = ref<CreativeWorkflowRecord | null>(null)
-const assetRefState = ref<WriterAssetRefState>({
-  chapterRefs: {},
-  volumeRefs: {},
-})
 const emit = defineEmits<{
   (e: 'trigger-ai-action', payload: WriterWorkflowActionRequest): void
   (e: 'create-structure-plan', payload: WriterStructurePlanPayload): void
@@ -804,33 +799,12 @@ const isOutlineLoading = computed(() => writerStore.outline.loading)
 const chapterOptions = computed(() =>
   props.chapters.filter((chapter) => chapter.nodeType !== 'directory'),
 )
+const { assetRefState, reloadWriterAssetRefs } = useWriterAssetRefState(effectiveProjectId)
 const graphDraftState = computed(() => loadCharacterGraphDraftState(effectiveProjectId.value))
 const chapterGraphs = computed(() => graphDraftState.value.chapterGraphs)
-const assetSummaryByChapterId = computed<Record<string, WriterAssetSummary>>(() => {
-  const summaries: Record<string, WriterAssetSummary> = {}
-
-  for (const chapter of chapterOptions.value) {
-    const chapterRefs = assetRefState.value.chapterRefs[chapter.id] || []
-    const volumeRefs = chapter.parentId
-      ? assetRefState.value.volumeRefs[chapter.parentId] || []
-      : []
-    const merged = [...chapterRefs]
-    const seen = new Set(
-      chapterRefs.map((ref) => `${ref.assetType}:${ref.assetId || ref.assetName}`),
-    )
-
-    for (const ref of volumeRefs) {
-      const key = `${ref.assetType}:${ref.assetId || ref.assetName}`
-      if (seen.has(key)) continue
-      seen.add(key)
-      merged.push(ref)
-    }
-
-    summaries[chapter.id] = summarizeWriterAssetRefs(merged)
-  }
-
-  return summaries
-})
+const assetSummaryByChapterId = computed<Record<string, WriterAssetSummary>>(() =>
+  buildWriterAssetSummaryByChapterId(assetRefState.value, chapterOptions.value),
+)
 const filterOptions: Array<{ value: StructureFilterMode; label: string }> = [
   { value: 'all', label: '全部' },
   { value: 'linked', label: '已绑定' },
@@ -1616,7 +1590,7 @@ async function handleRefresh() {
   structureRefreshError.value = ''
   try {
     await writerStore.loadOutlineTree(effectiveProjectId.value)
-    assetRefState.value = loadWriterAssetRefState(effectiveProjectId.value)
+    reloadWriterAssetRefs()
     creativeWorkflow.value = await loadCreativeWorkflow(effectiveProjectId.value)
     expandRootNodes()
     if (!selectedNodeId.value && filteredRootNodes.value.length > 0) {

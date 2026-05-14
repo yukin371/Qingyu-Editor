@@ -32,6 +32,48 @@ vi.mock('@/modules/writer/stores/writerStore', () => ({
   useWriterStore: () => writerStoreState,
 }))
 
+vi.mock('@/modules/writer/utils/writerAssetRefs', () => ({
+  WRITER_ASSET_REFS_UPDATED_EVENT: 'qingyu:writer-asset-refs-updated',
+  loadWriterAssetRefState: () => ({
+    chapterRefs: {},
+    volumeRefs: {},
+  }),
+  buildWriterAssetSummaryByChapterId: () => ({
+    'chapter-1': {
+      total: 2,
+      characters: 1,
+      locations: 0,
+      items: 1,
+      organizations: 0,
+      concepts: 0,
+    },
+    'chapter-80': {
+      total: 1,
+      characters: 1,
+      locations: 0,
+      items: 0,
+      organizations: 0,
+      concepts: 0,
+    },
+  }),
+  buildWriterAssetSummaryItems: (summary: {
+    characters: number
+    locations: number
+    items: number
+    organizations: number
+    concepts: number
+  }) =>
+    [
+      summary.characters ? { type: 'character', label: '角色', count: summary.characters } : null,
+      summary.locations ? { type: 'location', label: '地点', count: summary.locations } : null,
+      summary.items ? { type: 'item', label: '物品', count: summary.items } : null,
+      summary.organizations
+        ? { type: 'organization', label: '组织', count: summary.organizations }
+        : null,
+      summary.concepts ? { type: 'concept', label: '概念', count: summary.concepts } : null,
+    ].filter(Boolean),
+}))
+
 import TimelineOutlineView from '../TimelineOutlineView.vue'
 
 const QyButtonStub = defineComponent({
@@ -81,6 +123,18 @@ describe('TimelineOutlineView', () => {
         projectId: 'project-1',
         chapterId: 'chapter-1',
         chapterTitle: '第一章',
+        chapters: [
+          {
+            id: 'chapter-1',
+            projectId: 'project-1',
+            chapterNum: 1,
+            title: '第一章',
+            wordCount: 1200,
+            updatedAt: '2026-04-14T00:00:00.000Z',
+            status: 'draft',
+            nodeType: 'chapter',
+          },
+        ],
         activeEntities: [
           { id: 'char-1', name: '亚伯', type: 'character', summary: '犹豫' },
           { id: 'item-1', name: '劝退任务书', type: 'item' },
@@ -108,6 +162,9 @@ describe('TimelineOutlineView', () => {
       },
     })
 
+    expect(wrapper.text()).toContain('当前资产')
+    expect(wrapper.text()).toContain('角色 1')
+    expect(wrapper.text()).toContain('物品 1')
     await wrapper.get('[data-testid="timeline-send-to-ai"]').trigger('click')
 
     expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0]).toMatchObject({
@@ -138,6 +195,18 @@ describe('TimelineOutlineView', () => {
         projectId: 'project-1',
         chapterId: 'chapter-80',
         chapterTitle: '第80章',
+        chapters: [
+          {
+            id: 'chapter-80',
+            projectId: 'project-1',
+            chapterNum: 80,
+            title: '第80章',
+            wordCount: 1200,
+            updatedAt: '2026-04-14T00:00:00.000Z',
+            status: 'draft',
+            nodeType: 'chapter',
+          },
+        ],
       },
       global: {
         stubs: {
@@ -185,6 +254,18 @@ describe('TimelineOutlineView', () => {
         projectId: 'project-1',
         chapterId: 'chapter-1',
         chapterTitle: '第1章',
+        chapters: [
+          {
+            id: 'chapter-1',
+            projectId: 'project-1',
+            chapterNum: 1,
+            title: '第1章',
+            wordCount: 1200,
+            updatedAt: '2026-04-14T00:00:00.000Z',
+            status: 'draft',
+            nodeType: 'chapter',
+          },
+        ],
       },
       global: {
         stubs: {

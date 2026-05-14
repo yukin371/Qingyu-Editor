@@ -204,10 +204,20 @@ const handleEditAsset = () => {
 
 const handleDeleteAsset = async () => {
   if (!selectedAsset.value) return
+  const chapterImpact = selectedAsset.value.chapterReferenceCount
+    ? `将影响 ${selectedAsset.value.chapterReferenceCount} 个章节引用`
+    : '当前没有章节引用记录'
+  const volumeImpact = selectedAsset.value.volumeReferenceCount
+    ? `，涉及 ${selectedAsset.value.volumeReferenceCount} 个卷级投影`
+    : ''
   try {
-    await messageBox.confirm(`确定删除资产「${selectedAsset.value.name}」吗？此操作不可恢复`, '删除资产', {
-      type: 'warning',
-    })
+    await messageBox.confirm(
+      `确定删除资产「${selectedAsset.value.name}」吗？${chapterImpact}${volumeImpact}。此操作不可恢复。`,
+      '删除资产',
+      {
+        type: 'warning',
+      },
+    )
     await deleteAsset(selectedAsset.value)
     message.success('资产已删除')
   } catch {

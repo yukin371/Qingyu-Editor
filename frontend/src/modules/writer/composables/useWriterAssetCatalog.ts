@@ -14,8 +14,13 @@ import {
 } from '@/modules/writer/api/entities'
 import { locationApi } from '@/modules/writer/api/location'
 import type { EncyclopediaCategory, GraphFocusTarget, SidebarChapterSummary } from './types'
+import { useWriterAssetRefState } from '@/modules/writer/composables/useWriterAssetRefState'
 import { useWriterStore } from '@/modules/writer/stores/writerStore'
-import { loadWriterAssetRefState } from '@/modules/writer/utils/writerAssetRefs'
+import {
+  buildWriterAssetReferenceProjection,
+  createWriterAssetRefKey,
+  type WriterAssetType,
+} from '@/modules/writer/utils/writerAssetRefs'
 import type { Concept } from '@/modules/writer/types/entity'
 import type { Character, Location, OutlineNode } from '@/types/writer'
 
@@ -32,6 +37,9 @@ export interface WriterAssetListItem {
   latestChapterId?: string
   latestChapterTitle?: string
   linkedNodeCount: number
+  chapterReferenceCount: number
+  volumeReferenceCount: number
+  totalReferenceCount: number
   raw: AssetRecord
 }
 
@@ -107,7 +115,7 @@ export function useWriterAssetCatalog(options: {
   const chapters = computed<SidebarChapterSummary[]>(() => unref(options.chapters) || [])
   const characters = computed<Character[]>(() => writerStore.characters.list ?? [])
   const locations = computed<Location[]>(() => writerStore.locations.list ?? [])
-  const assetRefState = computed(() => loadWriterAssetRefState(effectiveProjectId.value))
+  const { assetRefState } = useWriterAssetRefState(effectiveProjectId)
 
   const nodesByChapterId = computed(() => {
     const map = new Map<string, Set<string>>()
@@ -129,21 +137,14 @@ export function useWriterAssetCatalog(options: {
     return map
   })
 
-  const createRefLookupKey = (assetType: string, assetId: string | undefined, assetName: string) =>
-    `${assetType}:${assetId || assetName}`
-
   const assetReferenceMetaByKey = computed(() => {
-    const latestChapterByKey = new Map<string, { chapterId: string; updatedAt: string }>()
     const linkedNodeCountByKey = new Map<string, Set<string>>()
+    const projectionByKey = buildWriterAssetReferenceProjection(assetRefState.value)
 
     for (const [chapterId, refs] of Object.entries(assetRefState.value.chapterRefs || {})) {
       const linkedNodes = nodesByChapterId.value.get(chapterId) || new Set<string>()
       for (const ref of refs) {
-        const key = createRefLookupKey(ref.assetType, ref.assetId, ref.assetName)
-        const existing = latestChapterByKey.get(key)
-        if (!existing || existing.updatedAt < ref.updatedAt) {
-          latestChapterByKey.set(key, { chapterId, updatedAt: ref.updatedAt })
-        }
+        const key = createWriterAssetRefKey(ref.assetType, ref.assetId, ref.assetName)
         if (!linkedNodeCountByKey.has(key)) {
           linkedNodeCountByKey.set(key, new Set<string>())
         }
@@ -155,22 +156,25 @@ export function useWriterAssetCatalog(options: {
     }
 
     return {
-      latestChapterByKey,
+      projectionByKey,
       linkedNodeCountByKey,
     }
   })
 
-  const enrichAssetMeta = (assetType: string, assetId: string | undefined, assetName: string) => {
-    const key = createRefLookupKey(assetType, assetId, assetName)
-    const latestChapter = assetReferenceMetaByKey.value.latestChapterByKey.get(key)
+  const enrichAssetMeta = (assetType: WriterAssetType, assetId: string | undefined, assetName: string) => {
+    const key = createWriterAssetRefKey(assetType, assetId, assetName)
+    const projection = assetReferenceMetaByKey.value.projectionByKey.get(key)
     const linkedNodeCount = assetReferenceMetaByKey.value.linkedNodeCountByKey.get(key)?.size || 0
 
     return {
-      latestChapterId: latestChapter?.chapterId,
-      latestChapterTitle: latestChapter?.chapterId
-        ? chapterTitleById.value.get(latestChapter.chapterId) || latestChapter.chapterId
+      latestChapterId: projection?.latestChapterId,
+      latestChapterTitle: projection?.latestChapterId
+        ? chapterTitleById.value.get(projection.latestChapterId) || projection.latestChapterId
         : undefined,
       linkedNodeCount,
+      chapterReferenceCount: projection?.chapterIds.length || 0,
+      volumeReferenceCount: projection?.volumeIds.length || 0,
+      totalReferenceCount: projection?.totalReferenceCount || 0,
     }
   }
 
@@ -334,6 +338,8 @@ export function useWriterAssetCatalog(options: {
       selectedAsset.value.latestChapterTitle
         ? { label: '最近章节', value: selectedAsset.value.latestChapterTitle }
         : null,
+      { label: '提及章节', value: `${selectedAsset.value.chapterReferenceCount} 章` },
+      { label: '涉及卷', value: `${selectedAsset.value.volumeReferenceCount} 卷` },
       { label: '关联结构节点', value: String(selectedAsset.value.linkedNodeCount) },
     ].filter(Boolean) as WriterAssetDetailField[]
 
@@ -397,7 +403,7 @@ export function useWriterAssetCatalog(options: {
   const selectedDataHint = computed(() => {
     if (!selectedAsset.value) return ''
     if (selectedAsset.value.latestChapterTitle) {
-      return `最近章节与关联节点数来自现有章节资产引用和大纲 documentId 绑定关系，属于当前前端 Phase 4 的聚合口径。${ASSET_SCOPE_HINT}`
+      return `最近章节、提及章节数、涉及卷数与关联节点数来自现有章节资产引用和大纲 documentId 绑定关系，属于当前前端聚合口径。${ASSET_SCOPE_HINT}`
     }
     if (
       selectedAsset.value.category === 'items' ||

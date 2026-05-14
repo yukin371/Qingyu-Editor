@@ -1,4 +1,5 @@
 const STORAGE_PREFIX = 'qingyu_writer_asset_refs'
+export const WRITER_ASSET_REFS_UPDATED_EVENT = 'qingyu:writer-asset-refs-updated'
 
 export type WriterAssetType = 'character' | 'location' | 'item' | 'organization' | 'concept'
 export type WriterAssetScopeType = 'chapter' | 'volume'
@@ -40,6 +41,27 @@ export interface WriterAssetSummary {
   items: number
   organizations: number
   concepts: number
+}
+
+export interface WriterAssetSummaryItem {
+  type: WriterAssetType
+  label: string
+  count: number
+}
+
+export interface WriterAssetReferenceProjection {
+  key: string
+  assetType: WriterAssetType
+  assetId?: string
+  assetName: string
+  totalReferenceCount: number
+  chapterReferenceCount: number
+  volumeReferenceCount: number
+  latestChapterId?: string
+  latestUpdatedAt?: string
+  chapterIds: string[]
+  volumeIds: string[]
+  unresolved: boolean
 }
 
 interface ExtractionParams {
@@ -85,6 +107,121 @@ export function summarizeWriterAssetRefs(refs: WriterAssetRef[]): WriterAssetSum
   )
 }
 
+export function buildWriterAssetSummaryItems(summary: WriterAssetSummary): WriterAssetSummaryItem[] {
+  const items: WriterAssetSummaryItem[] = [
+    { type: 'character', label: '角色', count: summary.characters },
+    { type: 'location', label: '地点', count: summary.locations },
+    { type: 'item', label: '物品', count: summary.items },
+    { type: 'organization', label: '组织', count: summary.organizations },
+    { type: 'concept', label: '概念', count: summary.concepts },
+  ]
+
+  return items.filter((item) => item.count > 0)
+}
+
+export function mergeWriterAssetRefs(params: {
+  chapterRefs?: WriterAssetRef[]
+  volumeRefs?: WriterAssetRef[]
+}) {
+  const merged = [...(params.chapterRefs || [])]
+  const seen = new Set(
+    merged.map((ref) => createWriterAssetRefKey(ref.assetType, ref.assetId, ref.assetName)),
+  )
+
+  for (const ref of params.volumeRefs || []) {
+    const key = createWriterAssetRefKey(ref.assetType, ref.assetId, ref.assetName)
+    if (seen.has(key)) continue
+    seen.add(key)
+    merged.push(ref)
+  }
+
+  return merged
+}
+
+export function buildWriterAssetSummaryByChapterId(
+  state: WriterAssetRefState,
+  chapters: Array<{ id: string; parentId?: string | null }>,
+): Record<string, WriterAssetSummary> {
+  const summaries: Record<string, WriterAssetSummary> = {}
+
+  for (const chapter of chapters) {
+    const merged = mergeWriterAssetRefs({
+      chapterRefs: state.chapterRefs[chapter.id] || [],
+      volumeRefs: chapter.parentId ? state.volumeRefs[chapter.parentId] || [] : [],
+    })
+    summaries[chapter.id] = summarizeWriterAssetRefs(merged)
+  }
+
+  return summaries
+}
+
+export function buildWriterAssetReferenceProjection(
+  state: WriterAssetRefState,
+): Map<string, WriterAssetReferenceProjection> {
+  const projectionByKey = new Map<string, WriterAssetReferenceProjection>()
+
+  const upsertProjection = (
+    ref: WriterAssetRef,
+    scopeType: WriterAssetScopeType,
+    scopeId: string,
+    chapterId?: string,
+  ) => {
+    const key = createWriterAssetRefKey(ref.assetType, ref.assetId, ref.assetName)
+    const existing = projectionByKey.get(key)
+    const chapterIds = new Set(existing?.chapterIds || [])
+    const volumeIds = new Set(existing?.volumeIds || [])
+
+    if (scopeType === 'chapter') {
+      chapterIds.add(scopeId)
+    } else {
+      volumeIds.add(scopeId)
+      if (chapterId) {
+        chapterIds.add(chapterId)
+      }
+    }
+
+    const latestUpdatedAt =
+      !existing?.latestUpdatedAt || existing.latestUpdatedAt < ref.updatedAt
+        ? ref.updatedAt
+        : existing.latestUpdatedAt
+    const latestChapterId =
+      scopeType === 'chapter' && latestUpdatedAt === ref.updatedAt
+        ? chapterId || scopeId
+        : existing?.latestChapterId
+
+    projectionByKey.set(key, {
+      key,
+      assetType: ref.assetType,
+      assetId: ref.assetId,
+      assetName: ref.assetName,
+      totalReferenceCount: (existing?.totalReferenceCount || 0) + 1,
+      chapterReferenceCount:
+        (existing?.chapterReferenceCount || 0) + (scopeType === 'chapter' ? 1 : 0),
+      volumeReferenceCount:
+        (existing?.volumeReferenceCount || 0) + (scopeType === 'volume' ? 1 : 0),
+      latestChapterId,
+      latestUpdatedAt,
+      chapterIds: Array.from(chapterIds),
+      volumeIds: Array.from(volumeIds),
+      unresolved: existing?.unresolved ? true : Boolean(ref.unresolved),
+    })
+  }
+
+  for (const [chapterId, refs] of Object.entries(state.chapterRefs || {})) {
+    for (const ref of refs) {
+      upsertProjection(ref, 'chapter', chapterId, chapterId)
+    }
+  }
+
+  for (const [volumeId, refs] of Object.entries(state.volumeRefs || {})) {
+    for (const ref of refs) {
+      upsertProjection(ref, 'volume', volumeId)
+    }
+  }
+
+  return projectionByKey
+}
+
 const getStorageKey = (projectId: string) => `${STORAGE_PREFIX}:${projectId}`
 
 function normalizeName(value: string) {
@@ -95,7 +232,7 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-function createCandidateKey(
+export function createWriterAssetRefKey(
   assetType: WriterAssetType,
   assetId: string | undefined,
   assetName: string,
@@ -199,6 +336,13 @@ export function loadWriterAssetRefState(projectId: string): WriterAssetRefState 
 export function saveWriterAssetRefState(projectId: string, state: WriterAssetRefState) {
   if (!projectId) return
   localStorage.setItem(getStorageKey(projectId), JSON.stringify(state))
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent(WRITER_ASSET_REFS_UPDATED_EVENT, {
+        detail: { projectId },
+      }),
+    )
+  }
 }
 
 export function updateWriterAssetRefState(
@@ -236,10 +380,10 @@ export function upsertScopeAssetRef(params: {
   return updateWriterAssetRefState(projectId, (state) => {
     const refMap = scopeType === 'volume' ? state.volumeRefs : state.chapterRefs
     const currentRefs = refMap[scopeId] || []
-    const matchKey = createCandidateKey(assetType, assetId, assetName)
+    const matchKey = createWriterAssetRefKey(assetType, assetId, assetName)
     const now = new Date().toISOString()
     const existing = currentRefs.find(
-      (item) => createCandidateKey(item.assetType, item.assetId, item.assetName) === matchKey,
+      (item) => createWriterAssetRefKey(item.assetType, item.assetId, item.assetName) === matchKey,
     )
 
     const nextRef: WriterAssetRef = existing
@@ -331,11 +475,11 @@ export function replaceScopeAssetRefs(params: {
     const refMap = scopeType === 'volume' ? state.volumeRefs : state.chapterRefs
     const currentRefs = refMap[scopeId] || []
     const existingByKey = new Map(
-      currentRefs.map((ref) => [createCandidateKey(ref.assetType, ref.assetId, ref.assetName), ref]),
+      currentRefs.map((ref) => [createWriterAssetRefKey(ref.assetType, ref.assetId, ref.assetName), ref]),
     )
     const now = new Date().toISOString()
     const nextRefs = candidates.map((candidate, index) => {
-      const key = createCandidateKey(candidate.assetType, candidate.assetId, candidate.assetName)
+      const key = createWriterAssetRefKey(candidate.assetType, candidate.assetId, candidate.assetName)
       const existing = existingByKey.get(key)
       return existing
         ? {
@@ -518,7 +662,7 @@ export function extractWriterAssetCandidates(params: ExtractionParams): WriterAs
     const matched = matchEntityReference(reference)
     if (!matched) continue
     pushCandidate({
-      key: createCandidateKey(matched.assetType, matched.assetId, matched.assetName),
+      key: createWriterAssetRefKey(matched.assetType, matched.assetId, matched.assetName),
       assetType: matched.assetType,
       assetId: matched.assetId,
       assetName: matched.assetName,
@@ -537,7 +681,7 @@ export function extractWriterAssetCandidates(params: ExtractionParams): WriterAs
     const character = characterNameMap.get(normalized) || aliasMap.get(normalized)
     if (character) {
       matchedCandidates.push({
-        key: createCandidateKey('character', character.id, character.name),
+        key: createWriterAssetRefKey('character', character.id, character.name),
         assetType: 'character',
         assetId: character.id,
         assetName: character.name,
@@ -550,7 +694,7 @@ export function extractWriterAssetCandidates(params: ExtractionParams): WriterAs
     const location = locationNameMap.get(normalized)
     if (location) {
       matchedCandidates.push({
-        key: createCandidateKey('location', location.id, location.name),
+        key: createWriterAssetRefKey('location', location.id, location.name),
         assetType: 'location',
         assetId: location.id,
         assetName: location.name,
@@ -563,7 +707,7 @@ export function extractWriterAssetCandidates(params: ExtractionParams): WriterAs
     const item = itemNameMap.get(normalized) || itemAliasMap.get(normalized)
     if (item) {
       matchedCandidates.push({
-        key: createCandidateKey('item', item.id, item.name),
+        key: createWriterAssetRefKey('item', item.id, item.name),
         assetType: 'item',
         assetId: item.id,
         assetName: item.name,
@@ -576,7 +720,7 @@ export function extractWriterAssetCandidates(params: ExtractionParams): WriterAs
     const organization = organizationNameMap.get(normalized) || organizationAliasMap.get(normalized)
     if (organization) {
       matchedCandidates.push({
-        key: createCandidateKey('organization', organization.id, organization.name),
+        key: createWriterAssetRefKey('organization', organization.id, organization.name),
         assetType: 'organization',
         assetId: organization.id,
         assetName: organization.name,
@@ -589,7 +733,7 @@ export function extractWriterAssetCandidates(params: ExtractionParams): WriterAs
     const concept = conceptNameMap.get(normalized) || conceptAliasMap.get(normalized)
     if (concept) {
       matchedCandidates.push({
-        key: createCandidateKey('concept', concept.id, concept.name),
+        key: createWriterAssetRefKey('concept', concept.id, concept.name),
         assetType: 'concept',
         assetId: concept.id,
         assetName: concept.name,
@@ -601,7 +745,7 @@ export function extractWriterAssetCandidates(params: ExtractionParams): WriterAs
 
     if (matchedCandidates.length === 0) {
       matchedCandidates.push({
-        key: createCandidateKey('character', undefined, rawName),
+        key: createWriterAssetRefKey('character', undefined, rawName),
         assetType: 'character',
         assetId: undefined,
         assetName: rawName,
@@ -630,7 +774,7 @@ export function extractWriterAssetCandidates(params: ExtractionParams): WriterAs
       if (pattern.assetType === 'location') {
         const location = locationNameMap.get(normalized)
         pushCandidate({
-          key: createCandidateKey('location', location?.id, location?.name || rawName),
+          key: createWriterAssetRefKey('location', location?.id, location?.name || rawName),
           assetType: 'location',
           assetId: location?.id,
           assetName: location?.name || rawName,
@@ -643,7 +787,7 @@ export function extractWriterAssetCandidates(params: ExtractionParams): WriterAs
 
       const item = itemNameMap.get(normalized) || itemAliasMap.get(normalized)
       pushCandidate({
-        key: createCandidateKey('item', item?.id, item?.name || rawName),
+        key: createWriterAssetRefKey('item', item?.id, item?.name || rawName),
         assetType: 'item',
         assetId: item?.id,
         assetName: item?.name || rawName,
@@ -659,7 +803,7 @@ export function extractWriterAssetCandidates(params: ExtractionParams): WriterAs
   for (const character of params.characters || []) {
     if (normalizedText.includes(normalizeName(character.name))) {
       pushCandidate({
-        key: createCandidateKey('character', character.id, character.name),
+        key: createWriterAssetRefKey('character', character.id, character.name),
         assetType: 'character',
         assetId: character.id,
         assetName: character.name,
@@ -680,7 +824,7 @@ export function extractWriterAssetCandidates(params: ExtractionParams): WriterAs
 
     if (matchedAlias) {
       pushCandidate({
-        key: createCandidateKey('character', character.id, character.name),
+        key: createWriterAssetRefKey('character', character.id, character.name),
         assetType: 'character',
         assetId: character.id,
         assetName: character.name,
@@ -699,7 +843,7 @@ export function extractWriterAssetCandidates(params: ExtractionParams): WriterAs
     if (!pattern.test(text)) continue
 
     pushCandidate({
-      key: createCandidateKey('location', location.id, location.name),
+      key: createWriterAssetRefKey('location', location.id, location.name),
       assetType: 'location',
       assetId: location.id,
       assetName: location.name,
@@ -711,7 +855,7 @@ export function extractWriterAssetCandidates(params: ExtractionParams): WriterAs
   for (const item of params.items || []) {
     if (normalizedText.includes(normalizeName(item.name))) {
       pushCandidate({
-        key: createCandidateKey('item', item.id, item.name),
+        key: createWriterAssetRefKey('item', item.id, item.name),
         assetType: 'item',
         assetId: item.id,
         assetName: item.name,
@@ -732,7 +876,7 @@ export function extractWriterAssetCandidates(params: ExtractionParams): WriterAs
 
     if (matchedAlias) {
       pushCandidate({
-        key: createCandidateKey('item', item.id, item.name),
+        key: createWriterAssetRefKey('item', item.id, item.name),
         assetType: 'item',
         assetId: item.id,
         assetName: item.name,
@@ -745,7 +889,7 @@ export function extractWriterAssetCandidates(params: ExtractionParams): WriterAs
   for (const organization of params.organizations || []) {
     if (normalizedText.includes(normalizeName(organization.name))) {
       pushCandidate({
-        key: createCandidateKey('organization', organization.id, organization.name),
+        key: createWriterAssetRefKey('organization', organization.id, organization.name),
         assetType: 'organization',
         assetId: organization.id,
         assetName: organization.name,
@@ -766,7 +910,7 @@ export function extractWriterAssetCandidates(params: ExtractionParams): WriterAs
 
     if (matchedAlias) {
       pushCandidate({
-        key: createCandidateKey('organization', organization.id, organization.name),
+        key: createWriterAssetRefKey('organization', organization.id, organization.name),
         assetType: 'organization',
         assetId: organization.id,
         assetName: organization.name,
@@ -779,7 +923,7 @@ export function extractWriterAssetCandidates(params: ExtractionParams): WriterAs
   for (const concept of params.concepts || []) {
     if (normalizedText.includes(normalizeName(concept.name))) {
       pushCandidate({
-        key: createCandidateKey('concept', concept.id, concept.name),
+        key: createWriterAssetRefKey('concept', concept.id, concept.name),
         assetType: 'concept',
         assetId: concept.id,
         assetName: concept.name,
@@ -800,7 +944,7 @@ export function extractWriterAssetCandidates(params: ExtractionParams): WriterAs
 
     if (matchedAlias) {
       pushCandidate({
-        key: createCandidateKey('concept', concept.id, concept.name),
+        key: createWriterAssetRefKey('concept', concept.id, concept.name),
         assetType: 'concept',
         assetId: concept.id,
         assetName: concept.name,

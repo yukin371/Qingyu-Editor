@@ -16,6 +16,8 @@ const baseProps = {
   },
   detailFields: [
     { label: '最近章节', value: '第一章 开端' },
+    { label: '提及章节', value: '3 章' },
+    { label: '涉及卷', value: '1 卷' },
     { label: '关联结构节点', value: '2' },
   ],
   stateFields: [],
@@ -36,6 +38,7 @@ describe('AssetDetailPanel', () => {
     await wrapper.findAll('.asset-detail-panel__tab')[1].trigger('click')
 
     expect(wrapper.text()).toContain('第一章 开端')
+    expect(wrapper.text()).toContain('3 章 · 1 卷')
     expect(wrapper.text()).toContain('关联结构节点 2')
   })
 

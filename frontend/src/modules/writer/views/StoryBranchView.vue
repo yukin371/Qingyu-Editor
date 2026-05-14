@@ -14,6 +14,18 @@
           场景：{{ workflowContext.scopeLabel }}
         </span>
       </div>
+      <div v-if="visibleAssetSummaryItems.length > 0" class="story-branch-view__asset-summary">
+        <span class="story-branch-view__asset-summary-label">当前资产</span>
+        <div class="story-branch-view__asset-summary-chips">
+          <span
+            v-for="item in visibleAssetSummaryItems"
+            :key="item.key"
+            class="story-branch-view__asset-chip"
+          >
+            {{ item.label }} {{ item.count }}
+          </span>
+        </div>
+      </div>
       <div class="story-branch-view__header-actions">
         <div v-if="activeBranchId" class="branch-breadcrumb">
           <span class="branch-breadcrumb__label">当前分支：</span>
@@ -250,6 +262,8 @@ import {
   formatActiveEntitiesPrompt,
   type ActiveEntitySummary,
 } from '@/modules/writer/composables/useWorkflowContext'
+import { useWriterAssetSummary } from '@/modules/writer/composables/useWriterAssetSummary'
+import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 import SystemStatCard from '@/modules/writer/components/system-design/SystemStatCard.vue'
 import type {
   WriterWorkflowActionRequest,
@@ -274,6 +288,7 @@ const props = withDefaults(
     projectId?: string
     chapterId?: string
     chapterTitle?: string
+    chapters?: SidebarChapterSummary[]
     workflowContext?: WriterWorkflowContext
     activeEntities?: ActiveEntitySummary[]
   }>(),
@@ -281,6 +296,7 @@ const props = withDefaults(
     projectId: '',
     chapterId: '',
     chapterTitle: '',
+    chapters: () => [],
     workflowContext: undefined,
     activeEntities: () => [],
   },
@@ -308,6 +324,12 @@ const BRANCH_SEGMENT_SIZE = 50
 
 const effectiveProjectId = computed(() => props.projectId || writerStore.currentProjectId || '')
 const isLoading = computed(() => writerStore.outline.loading)
+const { visibleAssetSummaryItems } = useWriterAssetSummary({
+  projectId: effectiveProjectId,
+  chapterId: computed(() => props.chapterId),
+  chapters: computed(() => props.chapters || []),
+  activeEntities: computed(() => props.activeEntities || []),
+})
 
 /** 原始大纲根节点 */
 const rootNodes = computed<OutlineNode[]>(() => writerStore.outline.tree || [])
@@ -681,6 +703,38 @@ watch(
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+}
+
+.story-branch-view__asset-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.story-branch-view__asset-summary-label {
+  color: var(--editor-text-muted, #68799a);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.story-branch-view__asset-summary-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.story-branch-view__asset-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: rgba(77, 121, 218, 0.08);
+  border: 1px solid rgba(77, 121, 218, 0.14);
+  color: var(--editor-text-secondary, #475569);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .context-anchor {

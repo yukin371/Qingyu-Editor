@@ -77,9 +77,15 @@
       </div>
 
       <div v-else class="asset-detail-panel__content">
-        <section v-if="asset.latestChapterTitle" class="asset-detail-panel__chapter-block">
+        <section
+          v-if="asset.latestChapterTitle || chapterReferenceText || volumeReferenceText"
+          class="asset-detail-panel__chapter-block"
+        >
           <p class="asset-detail-panel__chapter-label">最近提及</p>
-          <strong>{{ asset.latestChapterTitle }}</strong>
+          <strong>{{ asset.latestChapterTitle || '暂无最近章节' }}</strong>
+          <p v-if="chapterReferenceMetaText" class="asset-detail-panel__chapter-meta">
+            {{ chapterReferenceMetaText }}
+          </p>
           <p v-if="linkedNodeCountText" class="asset-detail-panel__chapter-meta">
             {{ linkedNodeCountText }}
           </p>
@@ -135,6 +141,20 @@ const linkedNodeCountText = computed(() => {
   const field = props.detailFields.find((item) => item.label === '关联结构节点')
   return field ? `关联结构节点 ${field.value}` : ''
 })
+
+const chapterReferenceText = computed(() => {
+  const field = props.detailFields.find((item) => item.label === '提及章节')
+  return field?.value || ''
+})
+
+const volumeReferenceText = computed(() => {
+  const field = props.detailFields.find((item) => item.label === '涉及卷')
+  return field?.value || ''
+})
+
+const chapterReferenceMetaText = computed(() =>
+  [chapterReferenceText.value, volumeReferenceText.value].filter(Boolean).join(' · '),
+)
 
 watch(
   () => props.asset?.id,

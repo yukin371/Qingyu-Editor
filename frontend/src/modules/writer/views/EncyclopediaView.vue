@@ -54,7 +54,9 @@
             </div>
             <div class="asset-row__meta">
               <span v-if="asset.badge">{{ asset.badge }}</span>
-              <span>{{ asset.latestChapterTitle || '待补' }}</span>
+              <span>{{ asset.latestChapterTitle || `${asset.chapterReferenceCount} 章` }}</span>
+              <span>{{ asset.chapterReferenceCount }} 章</span>
+              <span>{{ asset.volumeReferenceCount }} 卷</span>
               <span>{{ asset.linkedNodeCount }} 节点</span>
             </div>
           </button>
