@@ -63,20 +63,20 @@ withDefaults(defineProps<Props>(), {
 :deep(.sidebar-header),
 :deep(.sidebar-toolbar),
 :deep(.sidebar-section-header) {
-  background: #fff;
+  background: var(--editor-layer-panel, #fff);
 }
 
 :deep(.sidebar-list) {
-  background: #fff;
+  background: var(--editor-layer-panel, #fff);
 }
 
 :deep(.chapter-item.is-active) {
   border-left-color: #3b82f6;
-  background: #eff6ff;
+  background: color-mix(in srgb, var(--editor-accent, #3b82f6) 14%, var(--editor-layer-panel, #0f172a) 86%);
 }
 
 :deep(.chapter-item:hover) {
-  background: #f8fafc;
+  background: var(--editor-layer-soft, #f8fafc);
 }
 
 @media (max-width: 1024px) {

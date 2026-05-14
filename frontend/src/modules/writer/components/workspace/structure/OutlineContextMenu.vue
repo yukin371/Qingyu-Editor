@@ -225,7 +225,7 @@ defineExpose({
   position: fixed;
   z-index: 9999;
   min-width: 160px;
-  background: var(--editor-bg-base, #ffffff);
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
   border: 1px solid var(--editor-border, #e2e8f0);
   border-radius: var(--editor-radius-lg, 8px);
   box-shadow: var(--editor-shadow-lg, 0 10px 25px rgba(0, 0, 0, 0.15));
@@ -290,7 +290,7 @@ defineExpose({
     color: #ef4444;
 
     &:hover:not(:disabled) {
-      background: #fef2f2;
+      background: color-mix(in srgb, #ef4444 12%, transparent);
     }
   }
 
@@ -332,7 +332,7 @@ defineExpose({
   left: 100%;
   top: 0;
   min-width: 160px;
-  background: var(--editor-bg-base, #ffffff);
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
   border: 1px solid var(--editor-border, #e2e8f0);
   border-radius: var(--editor-radius-lg, 8px);
   box-shadow: var(--editor-shadow-lg, 0 10px 25px rgba(0, 0, 0, 0.15));

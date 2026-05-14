@@ -1,7 +1,7 @@
 <template>
   <div
     data-writer-shell="top-level"
-    class="min-h-screen bg-white lg:grid lg:h-screen lg:grid-cols-[236px_minmax(0,1fr)] lg:overflow-hidden"
+    class="writer-workbench-shell min-h-screen lg:grid lg:h-screen lg:grid-cols-[236px_minmax(0,1fr)] lg:overflow-hidden"
   >
     <WorkbenchSidebar :active-nav-id="activeNavId" :navigation="navigation" />
 
@@ -46,3 +46,10 @@ const props = withDefaults(
 
 const navigation = computed(() => getWriterWorkbenchNavigation(props.lastProjectId))
 </script>
+
+<style scoped>
+.writer-workbench-shell {
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
+  color: var(--editor-text-primary, #0f172a);
+}
+</style>

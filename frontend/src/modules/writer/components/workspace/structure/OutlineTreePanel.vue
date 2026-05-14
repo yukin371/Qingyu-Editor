@@ -361,7 +361,7 @@ function handleDialogConfirm(data: CreateOutlineRequest | UpdateOutlineRequest) 
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--editor-bg-base, #fff);
+  background: var(--editor-layer-panel, #fff);
   overflow: hidden;
 }
 
@@ -405,12 +405,12 @@ function handleDialogConfirm(data: CreateOutlineRequest | UpdateOutlineRequest) 
   flex-wrap: wrap;
   padding: 8px 12px;
   border-bottom: 1px solid var(--editor-border-light, #ebeff5);
-  background: var(--editor-bg-base, #fff);
+  background: var(--editor-layer-panel, #fff);
 }
 
 .outline-tree-panel__section {
   padding: 0 12px;
-  background: var(--editor-bg-base, #fff);
+  background: var(--editor-layer-panel, #fff);
 }
 
 .outline-tree-panel__section-title {
@@ -433,7 +433,7 @@ function handleDialogConfirm(data: CreateOutlineRequest | UpdateOutlineRequest) 
 .outline-action {
   border: 1px solid var(--editor-border, #d8dee8);
   border-radius: 6px;
-  background: var(--editor-bg-base, #fff);
+  background: var(--editor-layer-panel, #fff);
   color: var(--editor-text-secondary, #4b5563);
   font-size: 12px;
   font-weight: 500;
@@ -470,7 +470,7 @@ function handleDialogConfirm(data: CreateOutlineRequest | UpdateOutlineRequest) 
   min-height: 0;
   overflow: auto;
   padding: 6px;
-  background: var(--editor-bg-base, #fff);
+  background: var(--editor-layer-panel, #fff);
 
   &::-webkit-scrollbar {
     width: 6px;
@@ -491,7 +491,7 @@ function handleDialogConfirm(data: CreateOutlineRequest | UpdateOutlineRequest) 
 .outline-tree-panel__empty {
   border-radius: 8px;
   border: 1px dashed var(--editor-border, #d8dee8);
-  background: color-mix(in srgb, var(--editor-bg-surface, #fafbfd) 92%, var(--editor-bg-base, #fff) 8%);
+  background: color-mix(in srgb, var(--editor-layer-strong, #fafbfd) 92%, var(--editor-layer-panel, #fff) 8%);
   padding: 18px;
   color: var(--editor-text-muted, #6b7280);
   font-size: 13px;
@@ -501,7 +501,7 @@ function handleDialogConfirm(data: CreateOutlineRequest | UpdateOutlineRequest) 
 .outline-tree-panel__empty--loading {
   border-style: dashed;
   border-color: color-mix(in srgb, var(--editor-accent-soft-border, #cfe0f4) 82%, transparent);
-  background: color-mix(in srgb, var(--editor-accent-soft, #f7fbff) 76%, var(--editor-bg-base, #fff) 24%);
+  background: color-mix(in srgb, var(--editor-accent-soft, #f7fbff) 76%, var(--editor-layer-panel, #fff) 24%);
   color: var(--editor-text-secondary, #45627e);
 }
 

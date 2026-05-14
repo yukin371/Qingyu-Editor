@@ -292,15 +292,15 @@ defineEmits<{
 .asset-binding-chip__status {
   font-size: 11px;
   line-height: 1;
-  color: #1f6a43;
-  background: #e8f7ef;
+  color: var(--color-success-700, #1f6a43);
+  background: color-mix(in srgb, var(--color-success-50, #e8f7ef) 92%, transparent);
   border-radius: 999px;
   padding: 4px 7px;
 }
 
 .asset-binding-chip__status.is-unresolved {
-  color: #9a5a15;
-  background: #fff4df;
+  color: var(--color-warning-700, #9a5a15);
+  background: color-mix(in srgb, var(--color-warning-50, #fff4df) 92%, transparent);
 }
 
 .asset-binding-chip__evidence {

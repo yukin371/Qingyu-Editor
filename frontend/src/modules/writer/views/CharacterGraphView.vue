@@ -2131,10 +2131,10 @@ const handleOutlineNodeClick = (node: any) => {
   gap: 8px;
   padding: 8px 12px;
   border-radius: 999px;
-  background: rgba(15, 23, 42, 0.82);
-  color: #fff;
+  background: color-mix(in srgb, var(--editor-text-primary, #0f172a) 82%, transparent);
+  color: var(--editor-text-inverse, #ffffff);
   font-size: 12px;
-  box-shadow: 0 10px 30px -18px rgba(15, 23, 42, 0.75);
+  box-shadow: var(--editor-shadow-lg, 0 10px 30px -18px rgba(15, 23, 42, 0.75));
 }
 
 // 图谱统计
@@ -2206,7 +2206,7 @@ const handleOutlineNodeClick = (node: any) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--editor-overlay-scrim, rgba(0, 0, 0, 0.5));
   display: flex;
   align-items: center;
   justify-content: center;

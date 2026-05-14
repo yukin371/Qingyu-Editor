@@ -63,25 +63,17 @@ const sizeClasses = {
 } as const
 
 const toneClasses = {
-  default:
-    'border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,250,252,0.95))] shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_20px_30px_-28px_rgba(15,23,42,0.4)] hover:border-slate-300/80',
-  error:
-    'border-rose-200/90 bg-[linear-gradient(180deg,rgba(255,241,242,0.94),rgba(255,255,255,0.97))] shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_20px_30px_-28px_rgba(225,29,72,0.26)]',
-  success:
-    'border-emerald-200/90 bg-[linear-gradient(180deg,rgba(236,253,245,0.94),rgba(255,255,255,0.97))] shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_20px_30px_-28px_rgba(5,150,105,0.24)]',
-  warning:
-    'border-amber-200/90 bg-[linear-gradient(180deg,rgba(255,251,235,0.95),rgba(255,255,255,0.97))] shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_20px_30px_-28px_rgba(217,119,6,0.24)]',
+  default: 'qy-textarea-frame--default',
+  error: 'qy-textarea-frame--error',
+  success: 'qy-textarea-frame--success',
+  warning: 'qy-textarea-frame--warning',
 } as const
 
 const focusClasses = {
-  default:
-    'border-sky-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_0_0_3px_rgba(125,211,252,0.24),0_12px_24px_-16px_rgba(56,189,248,0.22)]',
-  error:
-    'border-rose-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_0_0_3px_rgba(253,164,175,0.24),0_12px_24px_-16px_rgba(244,63,94,0.22)]',
-  success:
-    'border-emerald-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_0_0_3px_rgba(110,231,183,0.24),0_12px_24px_-16px_rgba(16,185,129,0.22)]',
-  warning:
-    'border-amber-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_0_0_3px_rgba(253,230,138,0.24),0_12px_24px_-16px_rgba(245,158,11,0.22)]',
+  default: 'qy-textarea-frame--focus-default',
+  error: 'qy-textarea-frame--focus-error',
+  success: 'qy-textarea-frame--focus-success',
+  warning: 'qy-textarea-frame--focus-warning',
 } as const
 
 const resizeClasses = {
@@ -104,30 +96,30 @@ const frameClasses = computed(() => {
   const state = computedState.value
 
   return cn(
-    'relative w-full overflow-hidden border backdrop-blur-sm transition-all duration-200 ease-out',
+    'qy-textarea-frame relative w-full overflow-hidden border backdrop-blur-sm transition-all duration-200 ease-out',
     sizeClasses[props.size].frame,
     toneClasses[state],
     isFocused.value ? focusClasses[state] : '',
-    props.disabled ? 'cursor-not-allowed opacity-65 shadow-none hover:border-slate-200/80' : '',
-    props.readonly ? 'bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(241,245,249,0.94))]' : '',
+    props.disabled ? 'qy-textarea-frame--disabled cursor-not-allowed opacity-65 shadow-none' : '',
+    props.readonly ? 'qy-textarea-frame--readonly' : '',
   )
 })
 
 const textareaClasses = computed(() => {
   return cn(
-    'block w-full border-0 bg-transparent p-0 text-slate-900 outline-none placeholder:text-slate-400 focus:outline-none',
+    'qy-textarea-control block w-full border-0 bg-transparent p-0 outline-none focus:outline-none',
     'scrollbar-thin scrollbar-thumb-slate-300/80 scrollbar-track-transparent',
     sizeClasses[props.size].textarea,
     resizeClasses[props.resize],
-    props.disabled ? 'cursor-not-allowed text-slate-400 placeholder:text-slate-300' : '',
-    props.readonly ? 'cursor-default text-slate-600' : '',
+    props.disabled ? 'cursor-not-allowed' : '',
+    props.readonly ? 'cursor-default' : '',
     props.class,
   )
 })
 
 const footerClasses = computed(() => {
   return cn(
-    'flex items-center justify-end border-t border-white/70',
+    'qy-textarea-footer flex items-center justify-end border-t',
     sizeClasses[props.size].footer,
   )
 })
@@ -136,13 +128,13 @@ const countClasses = computed(() => {
   const nearLimit = props.maxlength !== undefined && remainingChars.value <= props.maxlength * 0.12
 
   return cn(
-    'inline-flex items-center rounded-full px-2.5 py-1 font-medium transition-colors duration-200',
+    'qy-textarea-count inline-flex items-center rounded-full px-2.5 py-1 font-medium transition-colors duration-200',
     sizeClasses[props.size].counter,
     remainingChars.value < 0
-      ? 'bg-rose-50 text-rose-600'
+      ? 'qy-textarea-count--over'
       : nearLimit
-        ? 'bg-amber-50 text-amber-700'
-        : 'bg-white/80 text-slate-500 ring-1 ring-slate-200/80',
+        ? 'qy-textarea-count--near'
+        : 'qy-textarea-count--default',
   )
 })
 
@@ -235,6 +227,103 @@ defineExpose({
 </template>
 
 <style scoped>
+.qy-textarea-frame {
+  border-color: color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.4)) 72%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, rgba(15, 23, 42, 0.88)) 94%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--editor-layer-glass, rgba(255, 255, 255, 0.08)) 58%, transparent),
+    0 20px 30px -28px rgba(15, 23, 42, 0.5);
+}
+
+.qy-textarea-frame--default {
+  border-color: color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.4)) 72%, transparent);
+}
+
+.qy-textarea-frame--error {
+  border-color: color-mix(in srgb, rgba(244, 114, 182, 0.46) 78%, transparent);
+}
+
+.qy-textarea-frame--success {
+  border-color: color-mix(in srgb, rgba(16, 185, 129, 0.42) 78%, transparent);
+}
+
+.qy-textarea-frame--warning {
+  border-color: color-mix(in srgb, rgba(245, 158, 11, 0.44) 78%, transparent);
+}
+
+.qy-textarea-frame--focus-default {
+  border-color: color-mix(in srgb, var(--editor-accent, rgba(96, 165, 250, 0.72)) 72%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--editor-layer-glass, rgba(255, 255, 255, 0.12)) 62%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--editor-accent, rgba(96, 165, 250, 0.24)) 26%, transparent);
+}
+
+.qy-textarea-frame--focus-error {
+  border-color: rgba(251, 113, 133, 0.72);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, rgba(255, 255, 255, 0.12) 62%, transparent),
+    0 0 0 3px rgba(251, 113, 133, 0.18);
+}
+
+.qy-textarea-frame--focus-success {
+  border-color: rgba(52, 211, 153, 0.72);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, rgba(255, 255, 255, 0.12) 62%, transparent),
+    0 0 0 3px rgba(52, 211, 153, 0.18);
+}
+
+.qy-textarea-frame--focus-warning {
+  border-color: rgba(251, 191, 36, 0.72);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, rgba(255, 255, 255, 0.12) 62%, transparent),
+    0 0 0 3px rgba(251, 191, 36, 0.18);
+}
+
+.qy-textarea-frame--readonly {
+  background: color-mix(in srgb, var(--editor-layer-soft, rgba(15, 23, 42, 0.72)) 88%, transparent);
+}
+
+.qy-textarea-frame--disabled {
+  background: color-mix(in srgb, var(--editor-layer-soft, rgba(15, 23, 42, 0.68)) 92%, transparent);
+}
+
+.qy-textarea-control {
+  color: var(--editor-text-primary, rgba(241, 245, 249, 0.96));
+  caret-color: var(--editor-accent, rgba(96, 165, 250, 0.82));
+}
+
+.qy-textarea-control::placeholder {
+  color: var(--editor-text-tertiary, rgba(148, 163, 184, 0.78));
+}
+
+.qy-textarea-control:disabled {
+  color: var(--editor-text-tertiary, rgba(148, 163, 184, 0.7));
+}
+
+.qy-textarea-control[readonly] {
+  color: var(--editor-text-secondary, rgba(226, 232, 240, 0.88));
+}
+
+.qy-textarea-footer {
+  border-color: color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.32)) 54%, transparent);
+}
+
+.qy-textarea-count--default {
+  background: color-mix(in srgb, var(--editor-layer-glass, rgba(255, 255, 255, 0.08)) 88%, transparent);
+  color: var(--editor-text-tertiary, rgba(148, 163, 184, 0.82));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.32)) 60%, transparent);
+}
+
+.qy-textarea-count--near {
+  background: rgba(245, 158, 11, 0.16);
+  color: rgba(253, 224, 71, 0.96);
+}
+
+.qy-textarea-count--over {
+  background: rgba(244, 63, 94, 0.16);
+  color: rgba(254, 205, 211, 0.96);
+}
+
 textarea {
   resize: none !important;
 }

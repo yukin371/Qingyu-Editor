@@ -249,7 +249,7 @@ const vClickOutside = {
   top: calc(100% + 6px);
   right: 0;
   min-width: 156px;
-  background: var(--editor-bg-base, #ffffff);
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
   border: 1px solid var(--editor-border, #e2e8f0);
   border-radius: var(--editor-radius-lg, 8px);
   box-shadow: var(--editor-shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08));
@@ -287,7 +287,7 @@ const vClickOutside = {
 }
 
 .dropdown-item--featured {
-  background: rgba(236, 254, 255, 0.56);
+  background: color-mix(in srgb, var(--editor-layer-accent, rgba(236, 254, 255, 0.56)) 72%, transparent);
   color: var(--editor-accent, #06b6d4);
 }
 

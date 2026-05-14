@@ -1,10 +1,10 @@
 <template>
   <aside
-    class="flex min-h-0 min-w-[280px] max-w-[320px] flex-col gap-4 border-l border-slate-200/80 bg-slate-50/70 p-4 max-[1200px]:max-w-none max-[1200px]:border-l-0 max-[1200px]:border-t"
+    class="story-harness-panel flex min-h-0 min-w-[280px] max-w-[320px] flex-col gap-4 p-4 max-[1200px]:max-w-none"
     data-testid="story-harness-panel"
   >
     <header class="flex items-center justify-between gap-3">
-      <h3 class="text-sm font-semibold text-slate-950">Story Harness</h3>
+      <h3 class="story-harness-panel__heading text-sm font-semibold">Story Harness</h3>
       <Tag size="sm" variant="primary" effect="light">{{ harnessStore.writingStateLabel }}</Tag>
     </header>
 
@@ -13,22 +13,22 @@
         variant="glass"
         padding="sm"
         shadow="never"
-        class="space-y-3 rounded-3xl border border-white/70 bg-white/85"
+        class="story-harness-panel__card space-y-3 rounded-3xl"
       >
         <div class="space-y-1">
-          <p class="text-sm font-medium text-slate-900">
+          <p class="story-harness-panel__title text-sm font-medium">
             {{ scopeLabel || chapterTitle || '未声明场景作用域' }}
           </p>
-          <p class="text-xs leading-5 text-slate-500">
+          <p class="story-harness-panel__muted text-xs leading-5">
             {{ harnessStore.chapterProgressLabel }} · {{ harnessStore.draftLength }} 字符
           </p>
         </div>
 
-        <div class="flex flex-wrap gap-2 text-xs text-slate-600">
+        <div class="story-harness-panel__muted flex flex-wrap gap-2 text-xs">
           <span
             v-for="chip in summaryChips"
             :key="chip.key"
-            class="rounded-full bg-slate-100 px-3 py-1"
+            class="story-harness-panel__chip rounded-full px-3 py-1"
           >
             {{ chip.label }} {{ chip.count }}
           </span>
@@ -62,7 +62,7 @@
 
     <section class="flex flex-col gap-3">
       <div class="flex items-center justify-between gap-3">
-        <h4 class="text-sm font-semibold text-slate-950">Change Request</h4>
+        <h4 class="story-harness-panel__heading text-sm font-semibold">Change Request</h4>
         <Tag variant="primary" size="sm">{{ harnessStore.pendingChangeRequestCount }} 待处理</Tag>
       </div>
 
@@ -70,25 +70,25 @@
         variant="glass"
         padding="sm"
         shadow="never"
-        class="space-y-3 rounded-3xl border border-white/70 bg-white/85"
+        class="story-harness-panel__card space-y-3 rounded-3xl"
       >
         <template v-if="changeRequests.length || hasSavedBatchReceipt">
           <div
             v-if="hasSavedBatchReceipt"
-            class="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2"
+            class="story-harness-panel__receipt flex items-center justify-between gap-3 rounded-xl px-3 py-2"
           >
-            <p class="text-xs text-slate-600">{{ savedBatchReceiptStatus }}</p>
-            <span class="text-xs text-slate-500">{{ savedBatchReceiptTimestampLabel }}</span>
+            <p class="story-harness-panel__secondary text-xs">{{ savedBatchReceiptStatus }}</p>
+            <span class="story-harness-panel__muted text-xs">{{ savedBatchReceiptTimestampLabel }}</span>
           </div>
 
           <div
             v-if="primaryChangeRequest"
-            class="rounded-2xl border border-slate-200/70 bg-white/80 px-3 py-3"
+            class="story-harness-panel__request rounded-2xl px-3 py-3"
           >
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
-                <p class="text-sm font-medium text-slate-900">{{ primaryChangeRequest?.title }}</p>
-                <p class="mt-1 text-xs leading-5 text-slate-500">
+                <p class="story-harness-panel__title text-sm font-medium">{{ primaryChangeRequest?.title }}</p>
+                <p class="story-harness-panel__muted mt-1 text-xs leading-5">
                   {{ primaryChangeRequest?.summary }}
                 </p>
               </div>
@@ -109,7 +109,7 @@
                 </Tag>
               </div>
             </div>
-            <p class="mt-2 text-xs leading-5 text-slate-600">{{ primaryChangeRequest?.reason }}</p>
+            <p class="story-harness-panel__secondary mt-2 text-xs leading-5">{{ primaryChangeRequest?.reason }}</p>
           </div>
 
           <div class="grid grid-cols-2 gap-2">
@@ -144,7 +144,7 @@
         </template>
 
         <template v-else>
-          <p class="text-sm leading-6 text-slate-500">保存章节后自动生成，或手动触发索引。</p>
+          <p class="story-harness-panel__muted text-sm leading-6">保存章节后自动生成，或手动触发索引。</p>
           <QyButton
             variant="primary"
             size="sm"
@@ -347,3 +347,48 @@ watch(
   { immediate: true, deep: true },
 )
 </script>
+
+<style scoped>
+.story-harness-panel {
+  border-left: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 80%, transparent);
+  background: color-mix(in srgb, var(--editor-bg-surface, #f8fafc) 72%, transparent);
+}
+
+@media (max-width: 1200px) {
+  .story-harness-panel {
+    border-left: 0;
+    border-top: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 80%, transparent);
+  }
+}
+
+.story-harness-panel__heading,
+.story-harness-panel__title {
+  color: var(--editor-text-primary, #0f172a);
+}
+
+.story-harness-panel__secondary {
+  color: var(--editor-text-secondary, #334155);
+}
+
+.story-harness-panel__muted {
+  color: var(--editor-text-muted, #64748b);
+}
+
+.story-harness-panel__card {
+  border: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 72%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 92%, transparent);
+}
+
+.story-harness-panel__chip {
+  background: var(--editor-layer-strong, #f1f5f9);
+}
+
+.story-harness-panel__receipt {
+  background: var(--editor-layer-strong, #f1f5f9);
+}
+
+.story-harness-panel__request {
+  border: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 72%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 88%, transparent);
+}
+</style>

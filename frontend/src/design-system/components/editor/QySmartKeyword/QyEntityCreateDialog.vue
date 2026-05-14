@@ -322,7 +322,7 @@ function resetForm() {
 }
 
 .entity-create-dialog {
-  background: white;
+  background: var(--editor-layer-panel, white);
   border-radius: 12px;
   width: 400px;
   max-width: 90vw;
@@ -334,14 +334,14 @@ function resetForm() {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid color-mix(in srgb, var(--editor-border, #e5e7eb) 62%, transparent);
 }
 
 .dialog-header h3 {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: #111827;
+  color: var(--editor-text-primary, #111827);
 }
 
 .close-btn {
@@ -356,7 +356,7 @@ function resetForm() {
 }
 
 .close-btn:hover {
-  background: #f3f4f6;
+  background: var(--editor-layer-soft, #f3f4f6);
 }
 
 .dialog-body {
@@ -372,27 +372,29 @@ function resetForm() {
   margin-bottom: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: #374151;
+  color: var(--editor-text-secondary, #374151);
 }
 
 .form-input {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #d1d5db) 72%, transparent);
   border-radius: 6px;
   font-size: 14px;
+  background: var(--editor-layer-panel, #fff);
+  color: var(--editor-text-primary, #111827);
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: var(--editor-accent, #3b82f6);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--editor-accent, #3b82f6) 16%, transparent);
 }
 
 .warning-text {
   margin: 4px 0 0;
   font-size: 12px;
-  color: #f59e0b;
+  color: var(--color-warning-600, #f59e0b);
 }
 
 .type-selector {
@@ -407,20 +409,20 @@ function resetForm() {
   align-items: center;
   gap: 4px;
   padding: 12px 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #d1d5db) 72%, transparent);
   border-radius: 8px;
-  background: white;
+  background: var(--editor-layer-panel, white);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .type-btn:hover {
-  border-color: #3b82f6;
+  border-color: var(--editor-accent, #3b82f6);
 }
 
 .type-btn.active {
-  border-color: #3b82f6;
-  background: #eff6ff;
+  border-color: var(--editor-accent, #3b82f6);
+  background: color-mix(in srgb, var(--editor-accent-soft, #eff6ff) 42%, var(--editor-layer-panel, #fff) 58%);
 }
 
 .type-icon {
@@ -429,7 +431,7 @@ function resetForm() {
 
 .type-label {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--editor-text-muted, #6b7280);
 }
 
 .role-selector {
@@ -440,30 +442,32 @@ function resetForm() {
 
 .role-btn {
   padding: 6px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #d1d5db) 72%, transparent);
   border-radius: 6px;
-  background: white;
+  background: var(--editor-layer-panel, white);
   cursor: pointer;
   font-size: 13px;
   transition: all 0.2s;
 }
 
 .role-btn:hover {
-  border-color: #3b82f6;
+  border-color: var(--editor-accent, #3b82f6);
 }
 
 .role-btn.active {
-  border-color: #3b82f6;
-  background: #eff6ff;
-  color: #3b82f6;
+  border-color: var(--editor-accent, #3b82f6);
+  background: color-mix(in srgb, var(--editor-accent-soft, #eff6ff) 42%, var(--editor-layer-panel, #fff) 58%);
+  color: var(--editor-accent, #3b82f6);
 }
 
 .form-textarea {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #d1d5db) 72%, transparent);
   border-radius: 6px;
   font-size: 14px;
+  background: var(--editor-layer-panel, #fff);
+  color: var(--editor-text-primary, #111827);
   resize: vertical;
 }
 
@@ -477,7 +481,7 @@ function resetForm() {
   gap: 8px;
   cursor: pointer;
   font-size: 13px;
-  color: #374151;
+  color: var(--editor-text-secondary, #374151);
 }
 
 .dialog-footer {
@@ -485,7 +489,7 @@ function resetForm() {
   justify-content: flex-end;
   gap: 8px;
   padding: 16px 20px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid color-mix(in srgb, var(--editor-border, #e5e7eb) 62%, transparent);
 }
 
 .btn {
@@ -497,27 +501,27 @@ function resetForm() {
 }
 
 .btn-secondary {
-  border: 1px solid #d1d5db;
-  background: white;
-  color: #374151;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #d1d5db) 72%, transparent);
+  background: var(--editor-layer-panel, white);
+  color: var(--editor-text-secondary, #374151);
 }
 
 .btn-secondary:hover {
-  background: #f3f4f6;
+  background: var(--editor-layer-soft, #f3f4f6);
 }
 
 .btn-primary {
   border: none;
-  background: #3b82f6;
+  background: var(--editor-accent, #3b82f6);
   color: white;
 }
 
 .btn-primary:hover {
-  background: #2563eb;
+  background: var(--editor-accent-hover, #2563eb);
 }
 
 .btn-primary:disabled {
-  background: #93c5fd;
+  background: var(--editor-accent-soft-border, #93c5fd);
   cursor: not-allowed;
 }
 

@@ -68,7 +68,7 @@ watch(
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--editor-bg-base, #fff);
+  background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
 }
 
 .asset-detail-panel__body {

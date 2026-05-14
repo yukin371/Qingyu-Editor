@@ -223,7 +223,7 @@ const chapterReferenceMetaText = computed(() =>
   padding: 0 10px;
   border: 1px solid var(--editor-border, #d9dee6);
   border-radius: 4px;
-  background: var(--editor-bg-base, #fff);
+  background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
   color: var(--editor-text-secondary, #374151);
   font-size: 12px;
   cursor: pointer;

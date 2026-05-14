@@ -36,29 +36,29 @@ defineOptions({ name: 'QyDescriptionsItem' })
   &__label {
     padding: 14px 20px;
     font-size: 14px;
-    color: #1d1d1f;
+    color: var(--editor-text-primary, #1d1d1f);
     font-weight: 500;
-    background: #fafafa;
-    border-bottom: 1px solid #e5e5e5;
+    background: var(--editor-layer-soft, #fafafa);
+    border-bottom: 1px solid color-mix(in srgb, var(--editor-border, #e5e5e5) 62%, transparent);
     display: flex;
     align-items: center;
 
     .qy-descriptions--vertical & {
-      background: #f5f5f7;
+      background: var(--editor-layer-strong, #f5f5f7);
     }
   }
 
   &__value {
     padding: 14px 20px;
     font-size: 14px;
-    color: #424245;
-    background: #fff;
-    border-bottom: 1px solid #e5e5e5;
+    color: var(--editor-text-secondary, #424245);
+    background: var(--editor-layer-panel, #fff);
+    border-bottom: 1px solid color-mix(in srgb, var(--editor-border, #e5e5e5) 62%, transparent);
     display: flex;
     align-items: center;
 
     .qy-descriptions--vertical & {
-      background: #fafafa;
+      background: var(--editor-layer-soft, #fafafa);
     }
   }
 
@@ -98,13 +98,13 @@ defineOptions({ name: 'QyDescriptionsItem' })
   .qy-descriptions-item__label {
     background: transparent;
     padding: 8px 12px 8px 0;
-    border-bottom: 1px dashed #e5e5e5;
+    border-bottom: 1px dashed color-mix(in srgb, var(--editor-border, #e5e5e5) 62%, transparent);
   }
 
   .qy-descriptions-item__value {
     background: transparent;
     padding: 8px 0;
-    border-bottom: 1px dashed #e5e5e5;
+    border-bottom: 1px dashed color-mix(in srgb, var(--editor-border, #e5e5e5) 62%, transparent);
   }
 
   .qy-descriptions-item:last-child {

@@ -271,11 +271,15 @@ function emitStructureNodeToAI() {
   display: flex;
   flex-direction: column;
   border-radius: 24px;
-  border: 1px solid rgba(91, 72, 50, 0.14);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(91, 72, 50, 0.14)) 74%, transparent);
   background:
-    radial-gradient(circle at 100% 0%, rgba(54, 80, 107, 0.08), transparent 28%),
-    linear-gradient(180deg, rgba(255, 251, 246, 0.98), rgba(243, 233, 220, 0.95));
-  box-shadow: 0 16px 32px rgba(80, 49, 26, 0.08);
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--editor-accent, #32536a) 12%, transparent), transparent 28%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--editor-layer-panel, #fffbf6) 98%, transparent),
+      color-mix(in srgb, var(--editor-layer-strong, #f3e9dc) 92%, var(--editor-bg-base, #fff) 8%)
+    );
+  box-shadow: var(--editor-shadow-lg, 0 16px 32px rgba(80, 49, 26, 0.08));
   overflow: hidden;
 }
 
@@ -283,7 +287,11 @@ function emitStructureNodeToAI() {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16), transparent 26%);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--editor-text-inverse, #ffffff) 14%, transparent),
+    transparent 26%
+  );
   pointer-events: none;
 }
 
@@ -291,7 +299,7 @@ function emitStructureNodeToAI() {
   position: relative;
   z-index: 1;
   padding: 18px 18px 14px;
-  border-bottom: 1px solid rgba(91, 72, 50, 0.1);
+  border-bottom: 1px solid color-mix(in srgb, var(--editor-border, rgba(91, 72, 50, 0.1)) 68%, transparent);
 }
 
 .structure-inspector-panel__eyebrow {
@@ -299,14 +307,14 @@ function emitStructureNodeToAI() {
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #8f3f2f;
+  color: var(--editor-accent, #8f3f2f);
   font-weight: 800;
 }
 
 .structure-inspector-panel__title {
   margin: 6px 0 0;
   font-size: 22px;
-  color: #2e2b27;
+  color: var(--editor-text-primary, #2e2b27);
 }
 
 .structure-inspector-panel__body {
@@ -324,10 +332,10 @@ function emitStructureNodeToAI() {
   position: relative;
   border-radius: 18px;
   background: linear-gradient(135deg, rgba(143, 63, 47, 0.95), rgba(183, 109, 56, 0.92));
-  color: #fff9f3;
+  color: color-mix(in srgb, var(--editor-text-inverse, #fff9f3) 94%, var(--editor-text-secondary, #334155) 6%);
   padding: 16px;
   overflow: hidden;
-  box-shadow: 0 18px 30px rgba(99, 60, 30, 0.14);
+  box-shadow: var(--editor-shadow-lg, 0 18px 30px rgba(99, 60, 30, 0.14));
 }
 
 .inspector-hero::after {
@@ -335,8 +343,8 @@ function emitStructureNodeToAI() {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(120deg, rgba(255, 255, 255, 0.16), transparent 34%),
-    radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.18), transparent 20%);
+    linear-gradient(120deg, color-mix(in srgb, var(--editor-text-inverse, #ffffff) 14%, transparent), transparent 34%),
+    radial-gradient(circle at 82% 18%, color-mix(in srgb, var(--editor-text-inverse, #ffffff) 16%, transparent), transparent 20%);
   pointer-events: none;
 }
 
@@ -367,8 +375,8 @@ function emitStructureNodeToAI() {
 
 .inspector-stat {
   border-radius: 16px;
-  background: rgba(255, 252, 247, 0.92);
-  border: 1px solid rgba(117, 93, 67, 0.14);
+  background: color-mix(in srgb, var(--editor-layer-panel, #fffcf7) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(117, 93, 67, 0.14)) 72%, transparent);
   padding: 12px;
   transition:
     transform 0.16s ease,
@@ -378,29 +386,33 @@ function emitStructureNodeToAI() {
 
 .inspector-stat:hover {
   transform: translateY(-1px);
-  border-color: rgba(143, 63, 47, 0.18);
-  box-shadow: 0 12px 18px rgba(99, 60, 30, 0.07);
+  border-color: color-mix(in srgb, var(--editor-accent, #8f3f2f) 24%, transparent);
+  box-shadow: var(--editor-shadow-md, 0 12px 18px rgba(99, 60, 30, 0.07));
 }
 
 .inspector-stat span {
   display: block;
   font-size: 11px;
-  color: #8b7a6c;
+  color: var(--editor-text-muted, #8b7a6c);
 }
 
 .inspector-stat strong {
   display: block;
   margin-top: 6px;
   font-size: 18px;
-  color: #2d2b29;
+  color: var(--editor-text-primary, #2d2b29);
 }
 
 .inspector-outline {
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(255, 252, 248, 0.94), rgba(250, 243, 234, 0.92));
-  border: 1px solid rgba(117, 93, 67, 0.14);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--editor-layer-panel, #fffcf8) 94%, transparent),
+    color-mix(in srgb, var(--editor-layer-strong, #faf3ea) 90%, transparent)
+  );
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(117, 93, 67, 0.14)) 72%, transparent);
   padding: 14px 16px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--editor-text-inverse, #ffffff) 12%, transparent);
 }
 
 .inspector-outline__title {
@@ -408,7 +420,7 @@ function emitStructureNodeToAI() {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-weight: 800;
-  color: #8f3f2f;
+  color: var(--editor-accent, #8f3f2f);
 }
 
 .inspector-outline ul {
@@ -416,17 +428,21 @@ function emitStructureNodeToAI() {
   padding-left: 18px;
   display: grid;
   gap: 8px;
-  color: #5f5348;
+  color: var(--editor-text-secondary, #5f5348);
   font-size: 13px;
   line-height: 1.6;
 }
 
 .inspector-binding {
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(255, 252, 248, 0.94), rgba(250, 243, 234, 0.92));
-  border: 1px solid rgba(117, 93, 67, 0.14);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--editor-layer-panel, #fffcf8) 94%, transparent),
+    color-mix(in srgb, var(--editor-layer-strong, #faf3ea) 90%, transparent)
+  );
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(117, 93, 67, 0.14)) 72%, transparent);
   padding: 14px 16px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--editor-text-inverse, #ffffff) 12%, transparent);
 }
 
 .inspector-binding__title {
@@ -434,12 +450,12 @@ function emitStructureNodeToAI() {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-weight: 800;
-  color: #8f3f2f;
+  color: var(--editor-accent, #8f3f2f);
 }
 
 .inspector-binding__hint {
   margin: 8px 0 0;
-  color: #6a5d52;
+  color: var(--editor-text-muted, #6a5d52);
   font-size: 12px;
   line-height: 1.6;
 }
@@ -454,8 +470,8 @@ function emitStructureNodeToAI() {
   width: 100%;
   border-radius: 12px;
   border: 1px solid rgba(117, 93, 67, 0.16);
-  background: #fffdf9;
-  color: #2d2b29;
+  background: var(--editor-layer-panel, #fffdf9);
+  color: var(--editor-text-primary, #2d2b29);
   padding: 10px 12px;
   font-size: 13px;
   transition:
@@ -466,8 +482,8 @@ function emitStructureNodeToAI() {
 
 .inspector-binding__select:focus {
   outline: none;
-  border-color: rgba(143, 63, 47, 0.28);
-  box-shadow: 0 0 0 3px rgba(143, 63, 47, 0.08);
+  border-color: color-mix(in srgb, var(--editor-accent, #8f3f2f) 36%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--editor-accent, #8f3f2f) 12%, transparent);
 }
 
 .inspector-binding__actions {
@@ -480,7 +496,7 @@ function emitStructureNodeToAI() {
   margin: 16px;
   border-radius: 18px;
   border: 1px dashed rgba(117, 93, 67, 0.2);
-  background: rgba(255, 252, 247, 0.92);
+  background: color-mix(in srgb, var(--editor-layer-panel, #fffcf7) 92%, transparent);
   padding: 20px;
   color: #74675d;
   font-size: 13px;
@@ -521,18 +537,18 @@ function emitStructureNodeToAI() {
 .inspector-action--secondary {
   border: 1px solid rgba(117, 93, 67, 0.16);
   background: rgba(255, 252, 247, 0.92);
-  color: #453b31;
+  color: var(--editor-text-secondary, #453b31);
 }
 
 .inspector-action--ghost {
   border: 1px dashed rgba(117, 93, 67, 0.26);
   background: transparent;
-  color: #7a6250;
+  color: var(--editor-text-muted, #7a6250);
 }
 
 .inspector-action:not(:disabled):hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 16px rgba(99, 60, 30, 0.08);
+  box-shadow: var(--editor-shadow-md, 0 10px 16px rgba(99, 60, 30, 0.08));
 }
 
 .inspector-action:disabled {

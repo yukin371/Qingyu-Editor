@@ -8,12 +8,12 @@
     class="story-harness-change-request-drawer"
   >
     <div class="flex h-full min-h-0 flex-col gap-4">
-      <section class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-        <span class="rounded-full bg-slate-100 px-3 py-1">待处理 {{ harnessStore.pendingChangeRequestCount }}</span>
-        <span class="rounded-full bg-slate-100 px-3 py-1">优先 {{ focusRequestCount }}</span>
+      <section class="story-harness-change-request__muted flex flex-wrap items-center gap-2 text-xs">
+        <span class="story-harness-change-request__chip px-3 py-1">待处理 {{ harnessStore.pendingChangeRequestCount }}</span>
+        <span class="story-harness-change-request__chip px-3 py-1">优先 {{ focusRequestCount }}</span>
         <span
           v-if="savedBatchReceipt"
-          class="rounded-full bg-slate-100 px-3 py-1"
+          class="story-harness-change-request__chip px-3 py-1"
         >
           最近保存 {{ savedBatchReceiptLabel }}
         </span>
@@ -50,7 +50,7 @@
         <div v-if="changeRequests.length" class="flex h-full min-h-0 flex-col gap-4 overflow-auto pr-1">
           <div v-if="visiblePendingChangeRequests.length" class="space-y-3">
             <div class="flex items-center justify-between gap-3">
-              <h4 class="text-sm font-semibold text-slate-950">待处理队列</h4>
+              <h4 class="story-harness-change-request__heading text-sm font-semibold">待处理队列</h4>
               <Tag size="sm" variant="warning" effect="light">{{ visiblePendingChangeRequests.length }} 条</Tag>
             </div>
             <QyCard
@@ -59,7 +59,7 @@
               variant="glass"
               padding="sm"
               shadow="never"
-              class="rounded-3xl border border-slate-200/70 bg-white/90"
+              class="story-harness-change-request__card rounded-3xl"
             >
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
@@ -86,19 +86,19 @@
                       {{ changeRequest.severity === 'focus' ? '优先处理' : '轻提示' }}
                     </Tag>
                   </div>
-                  <p class="mt-3 text-base font-semibold text-slate-950">{{ changeRequest.title }}</p>
-                  <p class="mt-2 text-sm leading-6 text-slate-600">{{ changeRequest.summary }}</p>
+                  <p class="story-harness-change-request__heading mt-3 text-base font-semibold">{{ changeRequest.title }}</p>
+                  <p class="story-harness-change-request__secondary mt-2 text-sm leading-6">{{ changeRequest.summary }}</p>
                 </div>
               </div>
 
-              <div class="mt-4 rounded-2xl bg-slate-50 px-3 py-3">
-                <p class="text-[11px] uppercase tracking-[0.14em] text-slate-400">为何出现</p>
-                <p class="mt-2 text-sm leading-6 text-slate-700">{{ changeRequest.reason }}</p>
+              <div class="story-harness-change-request__reason mt-4 rounded-2xl px-3 py-3">
+                <p class="story-harness-change-request__muted text-[11px] uppercase tracking-[0.14em]">为何出现</p>
+                <p class="story-harness-change-request__secondary mt-2 text-sm leading-6">{{ changeRequest.reason }}</p>
               </div>
 
               <div
                 v-if="changeRequest.evidence"
-                class="mt-3 rounded-2xl bg-slate-950 px-3 py-3 text-sm leading-6 text-slate-100"
+                class="story-harness-change-request__code mt-3 rounded-2xl px-3 py-3 text-sm leading-6"
               >
                 {{ changeRequest.evidence }}
               </div>
@@ -140,7 +140,7 @@
 
           <div v-if="visibleResolvedChangeRequests.length" class="space-y-3">
             <div class="flex items-center justify-between gap-3">
-              <h4 class="text-sm font-semibold text-slate-950">已处理记录</h4>
+              <h4 class="story-harness-change-request__heading text-sm font-semibold">已处理记录</h4>
               <Tag size="sm" variant="success" effect="light">{{ visibleResolvedChangeRequests.length }} 条</Tag>
             </div>
             <QyCard
@@ -149,7 +149,7 @@
               variant="glass"
               padding="sm"
               shadow="never"
-              class="rounded-3xl border border-slate-200/70 bg-slate-50/80"
+              class="story-harness-change-request__card story-harness-change-request__card--muted rounded-3xl"
             >
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
@@ -176,8 +176,8 @@
                       {{ decisionLabelMap[getDecision(changeRequest.id)] }}
                     </Tag>
                   </div>
-                  <p class="mt-3 text-base font-semibold text-slate-900">{{ changeRequest.title }}</p>
-                  <p class="mt-2 text-sm leading-6 text-slate-600">{{ changeRequest.summary }}</p>
+                  <p class="story-harness-change-request__heading mt-3 text-base font-semibold">{{ changeRequest.title }}</p>
+                  <p class="story-harness-change-request__secondary mt-2 text-sm leading-6">{{ changeRequest.summary }}</p>
                 </div>
               </div>
 
@@ -201,10 +201,10 @@
             variant="glass"
             padding="sm"
             shadow="never"
-            class="rounded-3xl border border-dashed border-slate-200 bg-white/80"
+            class="story-harness-change-request__empty rounded-3xl border border-dashed"
           >
-            <p class="text-sm leading-6 text-slate-700">{{ emptyStateTitle }}</p>
-            <p class="mt-2 text-sm leading-6 text-slate-500">{{ emptyStateDescription }}</p>
+            <p class="story-harness-change-request__secondary text-sm leading-6">{{ emptyStateTitle }}</p>
+            <p class="story-harness-change-request__muted mt-2 text-sm leading-6">{{ emptyStateDescription }}</p>
           </QyCard>
         </div>
 
@@ -213,17 +213,17 @@
           variant="glass"
           padding="sm"
           shadow="never"
-          class="rounded-3xl border border-dashed border-slate-200 bg-white/80"
+          class="story-harness-change-request__empty rounded-3xl border border-dashed"
         >
-          <p class="text-sm leading-6 text-slate-700">{{ queueEmptyStateTitle }}</p>
-          <p class="mt-2 text-sm leading-6 text-slate-500">{{ queueEmptyStateDescription }}</p>
+          <p class="story-harness-change-request__secondary text-sm leading-6">{{ queueEmptyStateTitle }}</p>
+          <p class="story-harness-change-request__muted mt-2 text-sm leading-6">{{ queueEmptyStateDescription }}</p>
         </QyCard>
       </section>
     </div>
 
     <template #footer>
       <div class="flex items-center justify-between gap-3">
-        <p class="text-xs leading-5 text-slate-500">当前抽屉已消费正式建议与即时预览，后续再补证据链与全项目视图。</p>
+        <p class="story-harness-change-request__muted text-xs leading-5">当前抽屉已消费正式建议与即时预览，后续再补证据链与全项目视图。</p>
         <QyButton variant="secondary" size="sm" @click="drawerVisible = false">关闭</QyButton>
       </div>
     </template>
@@ -396,3 +396,45 @@ const handleDecision = async (
   harnessStore.setChangeRequestDecision(changeRequestId, decision)
 }
 </script>
+
+<style scoped>
+.story-harness-change-request__heading {
+  color: var(--editor-text-primary, #0f172a);
+}
+
+.story-harness-change-request__secondary {
+  color: var(--editor-text-secondary, #334155);
+}
+
+.story-harness-change-request__muted {
+  color: var(--editor-text-muted, #64748b);
+}
+
+.story-harness-change-request__chip {
+  border-radius: 999px;
+  background: var(--editor-layer-strong, #f1f5f9);
+}
+
+.story-harness-change-request__card {
+  border: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 72%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 92%, transparent);
+}
+
+.story-harness-change-request__card--muted {
+  background: color-mix(in srgb, var(--editor-bg-surface, #f8fafc) 82%, transparent);
+}
+
+.story-harness-change-request__reason {
+  background: var(--editor-layer-strong, #f1f5f9);
+}
+
+.story-harness-change-request__code {
+  background: color-mix(in srgb, var(--editor-text-primary, #0f172a) 92%, transparent);
+  color: color-mix(in srgb, var(--editor-text-inverse, #ffffff) 92%, var(--editor-text-secondary, #334155) 8%);
+}
+
+.story-harness-change-request__empty {
+  border-color: color-mix(in srgb, var(--editor-border, #e2e8f0) 76%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 84%, transparent);
+}
+</style>

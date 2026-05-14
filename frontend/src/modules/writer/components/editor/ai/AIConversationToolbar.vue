@@ -68,7 +68,11 @@ function handleChange(event: Event) {
   padding: 12px 14px 10px;
   border-bottom: 1px solid var(--ai-border, #e2e8f0);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.9));
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.98)) 98%, transparent),
+      color-mix(in srgb, var(--editor-layer-soft, rgba(248, 250, 252, 0.9)) 90%, transparent)
+    );
 
   .conversation-select {
     flex: 1;
@@ -77,10 +81,10 @@ function handleChange(event: Event) {
     border: 1px solid rgba(148, 163, 184, 0.2);
     border-radius: 10px;
     padding: 0 10px;
-    background: rgba(255, 255, 255, 0.96);
+    background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.96)) 96%, transparent);
     color: var(--ai-text, #0f172a);
     font-size: 12px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.84);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--editor-bg-elevated, #fff) 68%, transparent);
   }
 
   .conversation-new-btn {
@@ -105,7 +109,7 @@ function handleChange(event: Event) {
     height: 34px;
     border: 1px solid rgba(148, 163, 184, 0.2);
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.96);
+    background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.96)) 96%, transparent);
     color: #475569;
     display: inline-flex;
     align-items: center;
@@ -117,7 +121,11 @@ function handleChange(event: Event) {
   .conversation-action-btn--ghost {
     color: #64748b;
     background:
-      linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(241, 245, 249, 0.92));
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--editor-layer-soft, rgba(248, 250, 252, 0.96)) 96%, transparent),
+        color-mix(in srgb, var(--editor-layer-glass, rgba(241, 245, 249, 0.92)) 92%, transparent)
+      );
   }
 
   .conversation-action-btn,

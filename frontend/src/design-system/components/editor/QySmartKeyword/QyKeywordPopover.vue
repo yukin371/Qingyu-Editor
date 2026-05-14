@@ -89,10 +89,10 @@ function getTypeIcon(type: KeywordType): string {
   z-index: 4000;
   width: 280px;
   padding: 12px;
-  border: 1px solid #dcdfe6;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #dcdfe6) 62%, transparent);
   border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  background: var(--editor-layer-panel, #fff);
+  box-shadow: var(--editor-shadow-lg, 0 8px 24px rgba(15, 23, 42, 0.12));
 }
 
 .popover-header {
@@ -112,33 +112,33 @@ function getTypeIcon(type: KeywordType): string {
 }
 
 .popover-type-badge {
-  color: #409eff;
+  color: var(--editor-accent, #409eff);
   font-size: 11px;
-  background: rgba(64, 158, 255, 0.1);
+  background: color-mix(in srgb, var(--editor-accent-soft, rgba(64, 158, 255, 0.1)) 42%, var(--editor-layer-panel, #fff) 58%);
   padding: 2px 8px;
   border-radius: 10px;
 }
 
 .popover-summary {
-  color: #606266;
+  color: var(--editor-text-secondary, #606266);
   font-size: 13px;
   margin: 0 0 10px;
 }
 
 .popover-summary--empty {
-  color: #c0c4cc;
+  color: var(--editor-text-ghost, #c0c4cc);
   font-style: italic;
 }
 
 .popover-relations {
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid color-mix(in srgb, var(--editor-border, #f0f0f0) 46%, transparent);
   padding-top: 8px;
   margin-bottom: 8px;
 }
 
 .popover-section-title {
   font-size: 12px;
-  color: #909399;
+  color: var(--editor-text-ghost, #909399);
   margin: 0 0 6px;
 }
 
@@ -156,11 +156,11 @@ function getTypeIcon(type: KeywordType): string {
 }
 
 .relation-name {
-  color: #303133;
+  color: var(--editor-text-primary, #303133);
 }
 
 .relation-type {
-  color: #409eff;
+  color: var(--editor-accent, #409eff);
   font-size: 12px;
 }
 
@@ -173,17 +173,17 @@ function getTypeIcon(type: KeywordType): string {
 .popover-btn {
   flex: 1;
   padding: 6px 12px;
-  border: 1px solid #dcdfe6;
-  background: white;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #dcdfe6) 62%, transparent);
+  background: var(--editor-layer-panel, white);
   font-size: 12px;
   border-radius: 4px;
   cursor: pointer;
-  color: #606266;
+  color: var(--editor-text-secondary, #606266);
 }
 
 .popover-btn--primary {
-  background: #409eff;
-  border-color: #409eff;
+  background: var(--editor-accent, #409eff);
+  border-color: var(--editor-accent, #409eff);
   color: white;
 }
 </style>

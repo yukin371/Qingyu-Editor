@@ -613,17 +613,17 @@ function closeContextMenuOnOutsideClick() {
   justify-content: center;
   width: 28px;
   height: 28px;
-  border: 1px solid rgba(117, 93, 67, 0.16);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(117, 93, 67, 0.16)) 72%, transparent);
   border-radius: 8px;
-  background: rgba(255, 252, 247, 0.94);
-  color: #5f5348;
+  background: color-mix(in srgb, var(--editor-layer-panel, #fffcf7) 94%, transparent);
+  color: var(--editor-text-secondary, #5f5348);
   cursor: pointer;
   transition: all 0.15s;
 
   &:hover {
-    background: white;
-    border-color: rgba(143, 63, 47, 0.2);
-    color: #8f3f2f;
+    background: var(--editor-layer-soft, #ffffff);
+    border-color: color-mix(in srgb, var(--editor-accent, #8f3f2f) 26%, transparent);
+    color: var(--editor-accent, #8f3f2f);
   }
 }
 
@@ -635,7 +635,7 @@ function closeContextMenuOnOutsideClick() {
 .canvas-zoom-label {
   font-size: 12px;
   font-weight: 700;
-  color: #74675d;
+  color: var(--editor-text-muted, #74675d);
   min-width: 40px;
   text-align: center;
 }
@@ -670,11 +670,11 @@ function closeContextMenuOnOutsideClick() {
 }
 
 .canvas-connection {
-  stroke: rgba(143, 63, 47, 0.18);
+  stroke: color-mix(in srgb, var(--editor-accent, #8f3f2f) 22%, transparent);
   transition: stroke 0.2s;
 
   &--active {
-    stroke: rgba(143, 63, 47, 0.45);
+    stroke: color-mix(in srgb, var(--editor-accent, #8f3f2f) 48%, transparent);
   }
 }
 
@@ -683,9 +683,9 @@ function closeContextMenuOnOutsideClick() {
   position: absolute;
   width: 200px;
   min-height: 56px;
-  border: 1.5px solid rgba(117, 93, 67, 0.16);
+  border: 1.5px solid color-mix(in srgb, var(--editor-border, rgba(117, 93, 67, 0.16)) 72%, transparent);
   border-radius: 16px;
-  background: rgba(255, 252, 248, 0.96);
+  background: color-mix(in srgb, var(--editor-layer-panel, #fffcf8) 96%, transparent);
   padding: 10px 12px;
   display: flex;
   align-items: flex-start;
@@ -700,14 +700,18 @@ function closeContextMenuOnOutsideClick() {
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(80, 49, 26, 0.1);
-    border-color: rgba(143, 63, 47, 0.24);
+    box-shadow: var(--editor-shadow-md, 0 8px 20px rgba(80, 49, 26, 0.1));
+    border-color: color-mix(in srgb, var(--editor-accent, #8f3f2f) 28%, transparent);
   }
 
   &.is-selected {
-    border-color: rgba(143, 63, 47, 0.5);
-    background: linear-gradient(135deg, #fff7ed, #f6e0c7);
-    box-shadow: 0 12px 28px rgba(99, 60, 30, 0.12);
+    border-color: color-mix(in srgb, var(--editor-accent, #8f3f2f) 54%, transparent);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--editor-accent-soft, #fff7ed) 82%, transparent),
+      color-mix(in srgb, var(--editor-layer-strong, #f6e0c7) 88%, transparent)
+    );
+    box-shadow: var(--editor-shadow-lg, 0 12px 28px rgba(99, 60, 30, 0.12));
   }
 
   &.is-editing {
@@ -793,7 +797,7 @@ function closeContextMenuOnOutsideClick() {
 .canvas-node__title {
   font-size: 13px;
   font-weight: 700;
-  color: #2f2b26;
+  color: var(--editor-text-primary, #2f2b26);
   line-height: 1.35;
   word-break: break-word;
 }
@@ -803,10 +807,10 @@ function closeContextMenuOnOutsideClick() {
   padding: 2px 6px;
   border: 1px solid rgba(50, 83, 106, 0.3);
   border-radius: 6px;
-  background: white;
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
   font-size: 13px;
   font-weight: 700;
-  color: #2f2b26;
+  color: var(--editor-text-primary, #2f2b26);
   outline: none;
   transition: border-color 0.15s;
 
@@ -826,8 +830,8 @@ function closeContextMenuOnOutsideClick() {
   padding: 3px 6px;
   border-radius: 999px;
   border: 1px solid rgba(143, 63, 47, 0.14);
-  background: white;
-  box-shadow: 0 4px 12px rgba(80, 49, 26, 0.1);
+  background: var(--editor-layer-panel, #ffffff);
+  box-shadow: var(--editor-shadow-sm, 0 4px 12px rgba(80, 49, 26, 0.1));
   z-index: 2;
 }
 
@@ -840,13 +844,13 @@ function closeContextMenuOnOutsideClick() {
   border: none;
   border-radius: 999px;
   background: transparent;
-  color: #74675d;
+  color: var(--editor-text-muted, #74675d);
   cursor: pointer;
   transition: all 0.12s;
 
   &:hover {
     background: rgba(143, 63, 47, 0.08);
-    color: #8f3f2f;
+    color: var(--editor-accent, #8f3f2f);
   }
 
   &--primary {
@@ -874,7 +878,7 @@ function closeContextMenuOnOutsideClick() {
   transform: translate(-50%, -50%);
   border-radius: 18px;
   border: 2px dashed rgba(143, 63, 47, 0.15);
-  background: rgba(255, 251, 247, 0.6);
+  background: color-mix(in srgb, var(--editor-layer-panel, #fffbf7) 78%, transparent);
   padding: 32px;
   text-align: center;
   color: #8a7e74;
@@ -893,7 +897,7 @@ function closeContextMenuOnOutsideClick() {
   &--loading {
     border-style: solid;
     border-color: rgba(50, 83, 106, 0.18);
-    background: rgba(235, 244, 249, 0.92);
+    background: color-mix(in srgb, var(--editor-layer-soft, rgba(235, 244, 249, 0.92)) 94%, transparent);
     color: #32536a;
     font-size: 13px;
   }

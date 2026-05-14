@@ -12,37 +12,37 @@
         variant="glass"
         padding="sm"
         shadow="never"
-        class="rounded-3xl border border-slate-200/70 bg-white/90"
+        class="story-harness-review-packet__card rounded-3xl"
       >
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <p class="text-xs font-medium uppercase text-slate-400">当前审查目标</p>
-            <h3 class="mt-2 text-base font-semibold text-slate-950">
+            <p class="story-harness-review-packet__eyebrow text-xs font-medium uppercase">当前审查目标</p>
+            <h3 class="story-harness-review-packet__heading mt-2 text-base font-semibold">
               {{ chapterTitle || '未命名章节' }}
             </h3>
-            <p class="mt-1 text-sm leading-6 text-slate-500">
+            <p class="story-harness-review-packet__muted mt-1 text-sm leading-6">
               {{ scopeLabel || '未声明场景作用域' }}
             </p>
           </div>
           <Tag size="sm" variant="primary" effect="light">只读预览</Tag>
         </div>
 
-        <div class="mt-4 grid grid-cols-2 gap-2 text-sm text-slate-600">
-          <div class="rounded-2xl bg-slate-50 px-3 py-2">
-            <p class="text-xs text-slate-400">正文字符</p>
-            <p class="mt-1 font-semibold text-slate-900">{{ contentLength }}</p>
+        <div class="story-harness-review-packet__muted mt-4 grid grid-cols-2 gap-2 text-sm">
+          <div class="story-harness-review-packet__metric rounded-2xl px-3 py-2">
+            <p class="story-harness-review-packet__eyebrow text-xs">正文字符</p>
+            <p class="story-harness-review-packet__heading mt-1 font-semibold">{{ contentLength }}</p>
           </div>
-          <div class="rounded-2xl bg-slate-50 px-3 py-2">
-            <p class="text-xs text-slate-400">正文段落</p>
-            <p class="mt-1 font-semibold text-slate-900">{{ paragraphCount }}</p>
+          <div class="story-harness-review-packet__metric rounded-2xl px-3 py-2">
+            <p class="story-harness-review-packet__eyebrow text-xs">正文段落</p>
+            <p class="story-harness-review-packet__heading mt-1 font-semibold">{{ paragraphCount }}</p>
           </div>
-          <div class="rounded-2xl bg-slate-50 px-3 py-2">
-            <p class="text-xs text-slate-400">活跃实体</p>
-            <p class="mt-1 font-semibold text-slate-900">{{ totalEntityCount }}</p>
+          <div class="story-harness-review-packet__metric rounded-2xl px-3 py-2">
+            <p class="story-harness-review-packet__eyebrow text-xs">活跃实体</p>
+            <p class="story-harness-review-packet__heading mt-1 font-semibold">{{ totalEntityCount }}</p>
           </div>
-          <div class="rounded-2xl bg-slate-50 px-3 py-2">
-            <p class="text-xs text-slate-400">待处理建议</p>
-            <p class="mt-1 font-semibold text-slate-900">{{ pendingChangeRequests.length }}</p>
+          <div class="story-harness-review-packet__metric rounded-2xl px-3 py-2">
+            <p class="story-harness-review-packet__eyebrow text-xs">待处理建议</p>
+            <p class="story-harness-review-packet__heading mt-1 font-semibold">{{ pendingChangeRequests.length }}</p>
           </div>
         </div>
       </QyCard>
@@ -51,13 +51,13 @@
         variant="glass"
         padding="sm"
         shadow="never"
-        class="rounded-3xl border border-slate-200/70 bg-white/90"
+        class="story-harness-review-packet__card rounded-3xl"
       >
         <div class="flex items-center justify-between gap-3">
-          <h4 class="text-sm font-semibold text-slate-950">Workflow Gate 摘要</h4>
+          <h4 class="story-harness-review-packet__heading text-sm font-semibold">Workflow Gate 摘要</h4>
           <Tag size="sm" :variant="gateSummary.variant" effect="light">{{ gateSummary.label }}</Tag>
         </div>
-        <ul class="mt-3 space-y-2 text-sm leading-6 text-slate-600">
+        <ul class="story-harness-review-packet__secondary mt-3 space-y-2 text-sm leading-6">
           <li v-for="item in gateChecklist" :key="item.key" class="flex items-start gap-2">
             <span
               class="mt-2 h-2 w-2 shrink-0 rounded-full"
@@ -72,10 +72,10 @@
         variant="glass"
         padding="sm"
         shadow="never"
-        class="rounded-3xl border border-slate-200/70 bg-white/90"
+        class="story-harness-review-packet__card rounded-3xl"
       >
         <div class="flex items-center justify-between gap-3">
-          <h4 class="text-sm font-semibold text-slate-950">Context Lens</h4>
+          <h4 class="story-harness-review-packet__heading text-sm font-semibold">Context Lens</h4>
           <Tag size="sm" variant="info" effect="light">{{ activeCharacters.length }} 角色</Tag>
         </div>
 
@@ -83,25 +83,25 @@
           <div
             v-for="character in visibleCharacters"
             :key="character.id"
-            class="rounded-2xl bg-slate-50 px-3 py-2"
+            class="story-harness-review-packet__metric rounded-2xl px-3 py-2"
           >
-            <p class="text-sm font-medium text-slate-900">{{ character.name }}</p>
-            <p class="mt-1 text-xs leading-5 text-slate-500">
+            <p class="story-harness-review-packet__heading text-sm font-medium">{{ character.name }}</p>
+            <p class="story-harness-review-packet__muted mt-1 text-xs leading-5">
               {{ character.currentState || character.traits.join(' / ') || '暂无状态摘要' }}
             </p>
           </div>
         </div>
-        <p v-else class="mt-3 text-sm leading-6 text-slate-500">
+        <p v-else class="story-harness-review-packet__muted mt-3 text-sm leading-6">
           当前章节还没有可用的活跃角色切片。
         </p>
 
-        <div v-if="activeRelations.length" class="mt-4 border-t border-slate-100 pt-3">
-          <p class="text-xs font-medium uppercase text-slate-400">关系切片</p>
+        <div v-if="activeRelations.length" class="story-harness-review-packet__split mt-4 pt-3">
+          <p class="story-harness-review-packet__eyebrow text-xs font-medium uppercase">关系切片</p>
           <div class="mt-2 space-y-2">
             <div
               v-for="relation in visibleRelations"
               :key="relation.id"
-              class="rounded-2xl bg-slate-50 px-3 py-2 text-sm leading-6 text-slate-600"
+              class="story-harness-review-packet__metric story-harness-review-packet__secondary rounded-2xl px-3 py-2 text-sm leading-6"
             >
               {{ relation.fromName }} -> {{ relation.toName }}：{{ relation.type }}
             </div>
@@ -113,10 +113,10 @@
         variant="glass"
         padding="sm"
         shadow="never"
-        class="min-h-0 rounded-3xl border border-slate-200/70 bg-white/90"
+        class="story-harness-review-packet__card min-h-0 rounded-3xl"
       >
         <div class="flex items-center justify-between gap-3">
-          <h4 class="text-sm font-semibold text-slate-950">Change Request 证据</h4>
+          <h4 class="story-harness-review-packet__heading text-sm font-semibold">Change Request 证据</h4>
           <Tag size="sm" variant="warning" effect="light"
             >{{ visibleChangeRequests.length }} 条</Tag
           >
@@ -126,7 +126,7 @@
           <div
             v-for="changeRequest in visibleChangeRequests"
             :key="changeRequest.id"
-            class="rounded-2xl border border-slate-200/70 bg-slate-50 px-3 py-3"
+            class="story-harness-review-packet__evidence rounded-2xl px-3 py-3"
           >
             <div class="flex flex-wrap items-center gap-2">
               <Tag
@@ -143,23 +143,23 @@
                 {{ decisionLabel(changeRequest.id) }}
               </Tag>
             </div>
-            <p class="mt-3 text-sm font-semibold text-slate-950">{{ changeRequest.title }}</p>
-            <p class="mt-2 text-sm leading-6 text-slate-600">{{ changeRequest.summary }}</p>
+            <p class="story-harness-review-packet__heading mt-3 text-sm font-semibold">{{ changeRequest.title }}</p>
+            <p class="story-harness-review-packet__secondary mt-2 text-sm leading-6">{{ changeRequest.summary }}</p>
             <p
               v-if="changeRequest.evidence"
-              class="mt-2 rounded-xl bg-slate-950 px-3 py-2 text-xs leading-5 text-slate-100"
+              class="story-harness-review-packet__code mt-2 rounded-xl px-3 py-2 text-xs leading-5"
             >
               {{ changeRequest.evidence }}
             </p>
           </div>
         </div>
-        <p v-else class="mt-3 text-sm leading-6 text-slate-500">当前没有可纳入审查包的变更建议。</p>
+        <p v-else class="story-harness-review-packet__muted mt-3 text-sm leading-6">当前没有可纳入审查包的变更建议。</p>
       </QyCard>
     </div>
 
     <template #footer>
       <div class="flex items-center justify-between gap-3">
-        <p class="text-xs leading-5 text-slate-500">该预览只聚合当前前端已知上下文，不写入后端。</p>
+        <p class="story-harness-review-packet__muted text-xs leading-5">该预览只聚合当前前端已知上下文，不写入后端。</p>
         <QyButton variant="secondary" size="sm" @click="drawerVisible = false">关闭</QyButton>
       </div>
     </template>
@@ -275,3 +275,44 @@ const decisionLabel = (changeRequestId: string) =>
 const decisionVariant = (changeRequestId: string) =>
   decisionVariantMap[harnessStore.getChangeRequestDecision(changeRequestId)]
 </script>
+
+<style scoped>
+.story-harness-review-packet__card {
+  border: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 72%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 92%, transparent);
+}
+
+.story-harness-review-packet__metric {
+  background: var(--editor-layer-strong, #f1f5f9);
+}
+
+.story-harness-review-packet__evidence {
+  border: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 72%, transparent);
+  background: color-mix(in srgb, var(--editor-bg-surface, #f8fafc) 88%, transparent);
+}
+
+.story-harness-review-packet__split {
+  border-top: 1px solid color-mix(in srgb, var(--editor-border-light, #f1f5f9) 82%, transparent);
+}
+
+.story-harness-review-packet__eyebrow {
+  color: var(--editor-text-ghost, #94a3b8);
+}
+
+.story-harness-review-packet__heading {
+  color: var(--editor-text-primary, #0f172a);
+}
+
+.story-harness-review-packet__secondary {
+  color: var(--editor-text-secondary, #334155);
+}
+
+.story-harness-review-packet__muted {
+  color: var(--editor-text-muted, #64748b);
+}
+
+.story-harness-review-packet__code {
+  background: color-mix(in srgb, var(--editor-text-primary, #0f172a) 92%, transparent);
+  color: color-mix(in srgb, var(--editor-text-inverse, #ffffff) 92%, var(--editor-text-secondary, #334155) 8%);
+}
+</style>

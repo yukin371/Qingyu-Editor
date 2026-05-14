@@ -202,12 +202,12 @@ defineOptions({ name: 'QyTree' })
   user-select: none;
 
   &:hover:not(.qy-tree-node--disabled) {
-    background: #f5f5f7;
+    background: var(--editor-layer-soft, #f5f5f7);
   }
 
   &--selected {
-    background: rgba(0, 122, 255, 0.1) !important;
-    color: #007aff;
+    background: color-mix(in srgb, var(--editor-accent, #007aff) 12%, var(--editor-layer-panel, #fff) 88%) !important;
+    color: var(--editor-accent, #007aff);
   }
 
   &--disabled {

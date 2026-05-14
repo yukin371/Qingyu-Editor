@@ -37,28 +37,33 @@ defineProps<{
 .inspiration-gate-summary__card {
   padding: 12px 14px;
   border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.2)) 42%, transparent);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.82)) 88%, transparent);
 
   &.is-ready {
-    border-color: rgba(34, 197, 94, 0.35);
-    background: rgba(240, 253, 244, 0.86);
+    border-color: color-mix(in srgb, var(--color-success-500, rgba(34, 197, 94, 0.35)) 30%, transparent);
+    background: color-mix(in srgb, var(--editor-layer-accent, rgba(240, 253, 244, 0.86)) 38%, var(--editor-layer-panel, rgba(255, 255, 255, 0.82)) 62%);
   }
 
   &.is-blocked {
-    border-color: rgba(245, 158, 11, 0.3);
-    background: rgba(255, 251, 235, 0.9);
+    border-color: color-mix(in srgb, var(--color-warning-500, rgba(245, 158, 11, 0.3)) 28%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--editor-layer-accent, rgba(255, 251, 235, 0.9)) 34%,
+      var(--editor-layer-panel, rgba(255, 255, 255, 0.82)) 66%
+    );
   }
 }
 
 .inspiration-gate-summary__pill {
   padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(15, 23, 42, 0.08);
-  color: #92400e;
+  background: color-mix(in srgb, var(--editor-bg-elevated, rgba(15, 23, 42, 0.08)) 52%, transparent);
+  color: var(--color-warning-700, #92400e);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -76,14 +81,14 @@ defineProps<{
   gap: 8px;
   padding: 6px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(248, 250, 252, 0.78);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.18)) 42%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-glass, rgba(248, 250, 252, 0.78)) 88%, transparent);
   color: var(--editor-text-secondary, #475569);
 
   &.is-done {
-    border-color: rgba(34, 197, 94, 0.24);
-    background: rgba(240, 253, 244, 0.86);
-    color: #166534;
+    border-color: color-mix(in srgb, var(--color-success-500, rgba(34, 197, 94, 0.24)) 24%, transparent);
+    background: color-mix(in srgb, var(--editor-layer-accent, rgba(240, 253, 244, 0.86)) 34%, var(--editor-layer-glass, rgba(248, 250, 252, 0.78)) 66%);
+    color: var(--color-success-700, #166534);
   }
 
   span {

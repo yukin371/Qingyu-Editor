@@ -47,10 +47,14 @@ function getToolLabel(toolId: RightToolType) {
   padding: 10px 0 12px;
   width: 56px;
   min-width: 56px;
-  background: linear-gradient(180deg, rgba(250, 252, 255, 0.98), rgba(244, 247, 251, 0.98));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--editor-layer-panel, rgba(250, 252, 255, 0.98)) 98%, transparent),
+    color-mix(in srgb, var(--editor-layer-soft, rgba(244, 247, 251, 0.98)) 98%, transparent)
+  );
   border-left: 1px solid var(--editor-border, #e2e8f0);
   gap: 6px;
-  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.85);
+  box-shadow: inset 1px 0 0 color-mix(in srgb, var(--editor-bg-elevated, #fff) 72%, transparent);
 
   &__item {
     display: flex;
@@ -63,7 +67,7 @@ function getToolLabel(toolId: RightToolType) {
     padding: 6px 0;
     border-radius: 12px;
     border: 1px solid transparent;
-    background: rgba(255, 255, 255, 0.56);
+    background: color-mix(in srgb, var(--editor-layer-glass, rgba(255, 255, 255, 0.56)) 84%, transparent);
     color: var(--editor-actbar-icon, #475569);
     cursor: pointer;
     transition:
@@ -74,7 +78,7 @@ function getToolLabel(toolId: RightToolType) {
       box-shadow 160ms ease-out;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.92);
+      background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.92)) 94%, transparent);
       color: var(--editor-text-primary, #0f172a);
       border-color: rgba(148, 163, 184, 0.24);
     }
@@ -82,11 +86,15 @@ function getToolLabel(toolId: RightToolType) {
     &.active {
       transform: translateX(-1px);
       background:
-        linear-gradient(180deg, rgba(37, 99, 235, 0.12), rgba(59, 130, 246, 0.08)),
-        rgba(255, 255, 255, 0.98);
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--editor-accent, rgba(37, 99, 235, 0.12)) 12%, transparent),
+          color-mix(in srgb, var(--editor-accent, rgba(59, 130, 246, 0.08)) 8%, transparent)
+        ),
+        color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.98)) 98%, transparent);
       color: #0284c7;
       border-color: rgba(59, 130, 246, 0.18);
-      box-shadow: 0 8px 18px rgba(59, 130, 246, 0.14);
+      box-shadow: var(--editor-shadow-md, 0 8px 18px rgba(59, 130, 246, 0.14));
     }
   }
 

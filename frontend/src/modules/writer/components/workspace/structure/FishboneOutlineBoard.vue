@@ -483,7 +483,11 @@ function isStatusActive(node: OutlineNode, status: StructureStatusValue): boolea
   width: 34px;
   height: 4px;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(183, 109, 56, 0.22), rgba(143, 63, 47, 0.5));
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--editor-accent, #b76d38) 24%, transparent),
+    color-mix(in srgb, var(--editor-accent, #8f3f2f) 54%, transparent)
+  );
   transform: translateY(-50%);
 }
 
@@ -492,9 +496,13 @@ function isStatusActive(node: OutlineNode, status: StructureStatusValue): boolea
 }
 
 .fishbone-outline-board__segment.is-selected .fishbone-spine-node {
-  border-color: rgba(143, 63, 47, 0.42);
-  background: linear-gradient(135deg, #fff7ed, #f6e0c7);
-  box-shadow: 0 18px 30px rgba(99, 60, 30, 0.12);
+  border-color: color-mix(in srgb, var(--editor-accent, #8f3f2f) 46%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--editor-accent-soft, #fff7ed) 82%, transparent),
+    color-mix(in srgb, var(--editor-layer-strong, #f6e0c7) 88%, transparent)
+  );
+  box-shadow: var(--editor-shadow-lg, 0 18px 30px rgba(99, 60, 30, 0.12));
 }
 
 .fishbone-outline-board__top,
@@ -517,9 +525,9 @@ function isStatusActive(node: OutlineNode, status: StructureStatusValue): boolea
 .fishbone-spine-node {
   width: 100%;
   min-height: 74px;
-  border: 1px solid rgba(117, 93, 67, 0.16);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(117, 93, 67, 0.16)) 72%, transparent);
   border-radius: 22px;
-  background: rgba(255, 252, 248, 0.92);
+  background: color-mix(in srgb, var(--editor-layer-panel, #fffcf8) 92%, transparent);
   padding: 14px 16px;
   display: grid;
   gap: 8px;
@@ -534,21 +542,21 @@ function isStatusActive(node: OutlineNode, status: StructureStatusValue): boolea
 
 .fishbone-spine-node:hover {
   transform: translateY(-1px);
-  border-color: rgba(143, 63, 47, 0.2);
-  box-shadow: 0 18px 28px rgba(99, 60, 30, 0.08);
+  border-color: color-mix(in srgb, var(--editor-accent, #8f3f2f) 24%, transparent);
+  box-shadow: var(--editor-shadow-lg, 0 18px 28px rgba(99, 60, 30, 0.08));
 }
 
 .fishbone-spine-node__index {
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.12em;
-  color: #8f3f2f;
+  color: var(--editor-accent, #8f3f2f);
 }
 
 .fishbone-spine-node__title {
   font-size: 15px;
   font-weight: 700;
-  color: #2f2b26;
+  color: var(--editor-text-primary, #2f2b26);
 }
 
 .fishbone-spine-node__meta {
@@ -589,17 +597,21 @@ function isStatusActive(node: OutlineNode, status: StructureStatusValue): boolea
   width: 2px;
   height: 26px;
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(183, 109, 56, 0.18), rgba(143, 63, 47, 0.5));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--editor-accent, #b76d38) 18%, transparent),
+    color-mix(in srgb, var(--editor-accent, #8f3f2f) 52%, transparent)
+  );
 }
 
 .fishbone-leaf__card {
-  border: 1px solid rgba(117, 93, 67, 0.14);
-  background: rgba(255, 253, 249, 0.96);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(117, 93, 67, 0.14)) 72%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #fffdf9) 96%, transparent);
   cursor: pointer;
   max-width: 112px;
   border-radius: 14px;
   padding: 8px 10px;
-  color: #5a4d40;
+  color: var(--editor-text-secondary, #5a4d40);
   font-size: 12px;
   line-height: 1.45;
   text-align: center;
@@ -613,8 +625,8 @@ function isStatusActive(node: OutlineNode, status: StructureStatusValue): boolea
 
 .fishbone-leaf__card:hover {
   transform: translateY(-1px);
-  border-color: rgba(143, 63, 47, 0.2);
-  box-shadow: 0 12px 18px rgba(99, 60, 30, 0.08);
+  border-color: color-mix(in srgb, var(--editor-accent, #8f3f2f) 24%, transparent);
+  box-shadow: var(--editor-shadow-md, 0 12px 18px rgba(99, 60, 30, 0.08));
 }
 
 .fishbone-leaf__card strong,
@@ -631,11 +643,11 @@ function isStatusActive(node: OutlineNode, status: StructureStatusValue): boolea
   margin-top: 4px;
   font-size: 10px;
   line-height: 1.4;
-  color: #8b7a6c;
+  color: var(--editor-text-muted, #8b7a6c);
 }
 
 .fishbone-leaf__asset {
-  color: #41613a !important;
+  color: var(--color-success-700, #41613a) !important;
 }
 
 .fishbone-leaf__graph {

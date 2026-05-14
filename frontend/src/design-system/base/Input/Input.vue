@@ -35,13 +35,11 @@ const sizeClasses = {
 }
 
 const baseClasses = `
-  w-full rounded-xl border border-slate-200/80 bg-white/80
-  font-medium text-slate-900 placeholder:text-slate-400
+  qy-input-surface w-full rounded-xl border
+  font-medium
   transition-all duration-200
-  focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-400
+  focus:outline-none
   disabled:opacity-50 disabled:cursor-not-allowed
-  dark:bg-slate-800/80 dark:border-slate-700/60 dark:text-slate-100
-  dark:placeholder:text-slate-500 dark:focus:ring-sky-400/30 dark:focus:border-sky-500
 `
 
 const actualType = computed(() => {
@@ -98,7 +96,7 @@ defineExpose({ focus })
 <template>
   <div class="relative inline-flex items-center w-full">
     <!-- Prefix slot -->
-    <div v-if="$slots.prefix" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+    <div v-if="$slots.prefix" class="qy-input-affix absolute left-3 top-1/2 -translate-y-1/2">
       <slot name="prefix" />
     </div>
 
@@ -120,7 +118,7 @@ defineExpose({ focus })
     <button
       v-if="type === 'password' && showPassword"
       type="button"
-      class="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-slate-400"
+      class="qy-input-action absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 transition-colors"
       aria-label="切换密码可见性"
       @click="togglePassword"
     >
@@ -138,7 +136,7 @@ defineExpose({ focus })
     <button
       v-else-if="clearable && modelValue"
       type="button"
-      class="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+      class="qy-input-action absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 transition-colors"
       aria-label="清空"
       @click="clear"
     >
@@ -148,8 +146,49 @@ defineExpose({ focus })
     </button>
 
     <!-- Suffix slot -->
-    <div v-if="$slots.suffix && !showPassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+    <div v-if="$slots.suffix && !showPassword" class="qy-input-affix absolute right-3 top-1/2 -translate-y-1/2">
       <slot name="suffix" />
     </div>
   </div>
 </template>
+
+<style scoped>
+.qy-input-surface {
+  border-color: color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.42)) 72%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, rgba(15, 23, 42, 0.88)) 94%, transparent);
+  color: var(--editor-text-primary, rgba(241, 245, 249, 0.96));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--editor-layer-glass, rgba(255, 255, 255, 0.08)) 56%, transparent),
+    0 10px 24px -20px rgba(15, 23, 42, 0.55);
+}
+
+.qy-input-surface::placeholder {
+  color: var(--editor-text-tertiary, rgba(148, 163, 184, 0.78));
+}
+
+.qy-input-surface:focus {
+  border-color: color-mix(in srgb, var(--editor-accent, rgba(96, 165, 250, 0.72)) 72%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--editor-layer-glass, rgba(255, 255, 255, 0.12)) 62%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--editor-accent, rgba(96, 165, 250, 0.24)) 26%, transparent);
+}
+
+.qy-input-surface:disabled {
+  background: color-mix(in srgb, var(--editor-layer-soft, rgba(15, 23, 42, 0.68)) 92%, transparent);
+  color: var(--editor-text-tertiary, rgba(148, 163, 184, 0.7));
+  box-shadow: none;
+}
+
+.qy-input-surface[readonly] {
+  background: color-mix(in srgb, var(--editor-layer-soft, rgba(15, 23, 42, 0.72)) 88%, transparent);
+}
+
+.qy-input-affix,
+.qy-input-action {
+  color: var(--editor-text-tertiary, rgba(148, 163, 184, 0.8));
+}
+
+.qy-input-action:hover {
+  background: color-mix(in srgb, var(--editor-layer-glass, rgba(255, 255, 255, 0.08)) 82%, transparent);
+}
+</style>

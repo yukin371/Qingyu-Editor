@@ -157,9 +157,9 @@ const getValue = (event: Event) =>
     height: 34px;
     padding: 0 12px;
     border-radius: 12px;
-    border: 1px solid rgba(251, 191, 36, 0.28);
-    background: rgba(255, 255, 255, 0.94);
-    color: #b45309;
+    border: 1px solid color-mix(in srgb, var(--color-warning-400, #fbbf24) 34%, transparent);
+    background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
+    color: var(--color-warning-700, #b45309);
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
@@ -171,12 +171,12 @@ const getValue = (event: Event) =>
 .inspiration-anchors-editor__block textarea,
 .inspiration-anchors-editor__token-entry input {
   width: 100%;
-  border: 1px solid rgba(148, 163, 184, 0.22);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.22)) 72%, transparent);
   border-radius: 12px;
   padding: 10px 12px;
   outline: none;
   resize: vertical;
-  background: rgba(255, 255, 255, 0.94);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
   color: var(--editor-text-primary, #0f172a);
   font: inherit;
 }
@@ -193,8 +193,8 @@ const getValue = (event: Event) =>
   gap: 6px;
   padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(255, 247, 237, 0.94);
-  color: #9a3412;
+  background: color-mix(in srgb, var(--color-warning-50, #fff7ed) 94%, transparent);
+  color: var(--color-warning-800, #9a3412);
   font-size: 12px;
   font-weight: 600;
 
@@ -208,8 +208,8 @@ const getValue = (event: Event) =>
 }
 
 .inspiration-anchors-editor__token--promise {
-  background: rgba(254, 242, 242, 0.94);
-  color: #b91c1c;
+  background: color-mix(in srgb, var(--color-danger-50, #fef2f2) 94%, transparent);
+  color: var(--color-danger-700, #b91c1c);
 }
 
 @media (max-width: 1200px) {

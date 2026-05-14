@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full min-h-0 flex-col bg-[var(--editor-bg-surface)] text-[var(--editor-text-primary)]">
+  <div class="document-tree flex h-full min-h-0 flex-col bg-[var(--editor-bg-surface)] text-[var(--editor-text-primary)]">
     <div class="border-b border-[var(--editor-border)] px-3 pb-2 pt-3">
       <div class="mb-2 flex items-center justify-between gap-3">
         <span class="text-sm font-semibold tracking-[0.01em] text-[var(--editor-text-primary)]">
@@ -11,7 +11,7 @@
             v-if="!isMultiSelectMode"
             type="button"
             title="多选模式"
-            class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+            class="document-tree__icon-btn inline-flex h-8 w-8 items-center justify-center rounded-xl border transition"
             @click="toggleMultiSelectMode"
           >
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -27,7 +27,7 @@
             v-else
             type="button"
             title="退出多选"
-            class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-blue-600 transition hover:border-blue-300 hover:bg-blue-100"
+            class="document-tree__icon-btn document-tree__icon-btn--active inline-flex h-8 w-8 items-center justify-center rounded-xl border transition"
             @click="toggleMultiSelectMode"
           >
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -43,7 +43,7 @@
           <button
             type="button"
             title="展开/折叠全部"
-            class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+            class="document-tree__icon-btn inline-flex h-8 w-8 items-center justify-center rounded-xl border transition"
             @click="toggleExpand"
           >
             <QyIcon name="Sort" />
@@ -52,7 +52,7 @@
           <button
             type="button"
             title="新建文档"
-            class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-600 transition hover:border-amber-300 hover:bg-amber-100"
+            class="document-tree__icon-btn document-tree__icon-btn--create inline-flex h-8 w-8 items-center justify-center rounded-xl border transition"
             @click="emit('add')"
           >
             <QyIcon name="Plus" />
@@ -65,9 +65,9 @@
 
     <div
       v-if="isMultiSelectMode"
-      class="flex items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-3 py-2"
+      class="document-tree__multi-bar flex items-center justify-between gap-3 px-3 py-2"
     >
-      <div class="flex items-center gap-1.5 text-xs text-slate-500">
+      <div class="document-tree__muted flex items-center gap-1.5 text-xs">
         <span>已选择</span>
         <span
           class="inline-flex min-w-5 items-center justify-center rounded-full bg-blue-100 px-1.5 py-0.5 text-[11px] font-semibold text-blue-700"
@@ -81,7 +81,7 @@
         <button
           v-if="hasSelection"
           type="button"
-          class="rounded-lg bg-rose-500 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-rose-600"
+          class="document-tree__danger-btn rounded-lg px-2.5 py-1 text-xs font-medium transition"
           @click="handleBatchDelete"
         >
           批量删除
@@ -89,7 +89,7 @@
         <button
           v-if="hasSelection"
           type="button"
-          class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+          class="document-tree__ghost-btn rounded-lg border px-2.5 py-1 text-xs font-medium transition"
           @click="clearSelection"
         >
           取消选择
@@ -129,7 +129,7 @@
             <button
               v-if="node.hasChildren"
               type="button"
-              class="inline-flex h-5 w-5 flex-none items-center justify-center rounded-md text-slate-400 transition hover:bg-white/80 hover:text-slate-600"
+              class="document-tree__expand-btn inline-flex h-5 w-5 flex-none items-center justify-center rounded-md transition"
               :aria-label="node.expanded ? '折叠节点' : '展开节点'"
               @click.stop="toggleNodeExpand(node.doc.id)"
             >
@@ -204,7 +204,7 @@
 
       <div
         v-else
-        class="flex min-h-32 items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-4 text-center text-sm text-slate-400"
+        class="document-tree__empty flex min-h-32 items-center justify-center rounded-2xl border border-dashed px-4 text-center text-sm"
       >
         {{ filterText.trim() ? '没有匹配的文档' : '暂无文档，点击右上角新建' }}
       </div>
@@ -226,13 +226,13 @@
     <teleport to="body">
       <div
         v-show="contextMenu.visible"
-        class="fixed z-[9999] min-w-36 rounded-xl border border-slate-200 bg-white/95 py-1.5 shadow-xl shadow-slate-900/10 backdrop-blur"
+        class="document-tree__menu fixed z-[9999] min-w-36 rounded-xl py-1.5 backdrop-blur"
         :style="{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }"
         @click.stop
       >
         <button
           type="button"
-          class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+          class="document-tree__menu-item flex w-full items-center gap-2 px-4 py-2 text-left text-sm transition"
           @click="handleMenuAction('add')"
         >
           <QyIcon name="Plus" />
@@ -240,16 +240,16 @@
         </button>
         <button
           type="button"
-          class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+          class="document-tree__menu-item flex w-full items-center gap-2 px-4 py-2 text-left text-sm transition"
           @click="handleMenuAction('rename')"
         >
           <QyIcon name="Edit" />
           <span>重命名</span>
         </button>
-        <div class="my-1 h-px bg-slate-100"></div>
+        <div class="document-tree__menu-sep my-1 h-px"></div>
         <button
           type="button"
-          class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-rose-500 transition hover:bg-rose-50"
+          class="document-tree__menu-item document-tree__menu-item--danger flex w-full items-center gap-2 px-4 py-2 text-left text-sm transition"
           @click="handleMenuAction('delete')"
         >
           <QyIcon name="Delete" />
@@ -506,11 +506,11 @@ function getTreeNodeClasses(node: VisibleTreeNode): Record<string, boolean> {
   const indicator = dropIndicator.value
 
   return {
-    'bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900':
+    'document-tree__row':
       !isTreeNodeSelected(node.doc.id) && props.currentDocumentId !== node.doc.id,
-    'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-100':
+    'document-tree__row document-tree__row--current':
       props.currentDocumentId === node.doc.id && !isMultiSelectMode.value,
-    'bg-blue-50/80 text-blue-700 ring-1 ring-inset ring-blue-100':
+    'document-tree__row document-tree__row--selected':
       isMultiSelectMode.value && isSelected(node.doc.id),
     'tree-node-row--drop-before':
       indicator?.targetId === node.doc.id && indicator.type === 'before',
@@ -845,6 +845,120 @@ function formatCount(count: number): string | number {
   return count > 0 ? count : ''
 }
 </script>
+
+<style scoped>
+.document-tree__icon-btn {
+  border-color: color-mix(in srgb, var(--editor-border, #e2e8f0) 78%, transparent);
+  background: var(--editor-layer-panel, #ffffff);
+  color: var(--editor-text-muted, #64748b);
+}
+
+.document-tree__icon-btn:hover {
+  border-color: var(--editor-border-light, #cbd5e1);
+  background: var(--editor-layer-soft, #f8fafc);
+  color: var(--editor-text-primary, #0f172a);
+}
+
+.document-tree__icon-btn--active {
+  border-color: color-mix(in srgb, var(--editor-accent, #2563eb) 34%, transparent);
+  background: color-mix(in srgb, var(--editor-accent-soft, #dbeafe) 78%, transparent);
+  color: var(--editor-accent, #2563eb);
+}
+
+.document-tree__icon-btn--create {
+  border-color: color-mix(in srgb, var(--color-warning-400, #f59e0b) 42%, transparent);
+  background: color-mix(in srgb, var(--color-warning-50, #fffbeb) 86%, transparent);
+  color: var(--color-warning-600, #d97706);
+}
+
+.document-tree__multi-bar {
+  border-bottom: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 76%, transparent);
+  background: color-mix(in srgb, var(--editor-bg-surface, #f8fafc) 82%, transparent);
+}
+
+.document-tree__muted {
+  color: var(--editor-text-muted, #64748b);
+}
+
+.document-tree__danger-btn {
+  background: var(--color-danger-500, #ef4444);
+  color: #fff;
+}
+
+.document-tree__danger-btn:hover {
+  background: var(--color-danger-600, #dc2626);
+}
+
+.document-tree__ghost-btn {
+  border-color: color-mix(in srgb, var(--editor-border, #e2e8f0) 78%, transparent);
+  background: var(--editor-layer-panel, #ffffff);
+  color: var(--editor-text-secondary, #334155);
+}
+
+.document-tree__ghost-btn:hover {
+  border-color: var(--editor-border-light, #cbd5e1);
+  background: var(--editor-layer-soft, #f8fafc);
+}
+
+.document-tree__expand-btn {
+  color: var(--editor-text-ghost, #94a3b8);
+}
+
+.document-tree__expand-btn:hover {
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 88%, transparent);
+  color: var(--editor-text-secondary, #334155);
+}
+
+.document-tree__empty {
+  border-color: color-mix(in srgb, var(--editor-border, #e2e8f0) 76%, transparent);
+  background: color-mix(in srgb, var(--editor-bg-surface, #f8fafc) 74%, transparent);
+  color: var(--editor-text-ghost, #94a3b8);
+}
+
+.document-tree__menu {
+  border: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 78%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 96%, transparent);
+  box-shadow: var(--editor-shadow-lg, 0 18px 38px -24px rgba(15, 23, 42, 0.45));
+}
+
+.document-tree__menu-item {
+  color: var(--editor-text-secondary, #334155);
+}
+
+.document-tree__menu-item:hover {
+  background: var(--editor-layer-soft, #f8fafc);
+  color: var(--editor-text-primary, #0f172a);
+}
+
+.document-tree__menu-item--danger {
+  color: var(--color-danger-500, #ef4444);
+}
+
+.document-tree__menu-item--danger:hover {
+  background: color-mix(in srgb, var(--color-danger-50, #fef2f2) 84%, transparent);
+}
+
+.document-tree__menu-sep {
+  background: color-mix(in srgb, var(--editor-border-light, #f1f5f9) 84%, transparent);
+}
+
+.document-tree__row {
+  background: var(--editor-layer-panel, #ffffff);
+  color: var(--editor-text-secondary, #334155);
+}
+
+.document-tree__row:hover {
+  background: var(--editor-layer-soft, #f8fafc);
+  color: var(--editor-text-primary, #0f172a);
+}
+
+.document-tree__row--current,
+.document-tree__row--selected {
+  background: color-mix(in srgb, var(--editor-accent-soft, #dbeafe) 80%, transparent);
+  color: var(--editor-accent, #2563eb);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--editor-accent, #2563eb) 16%, transparent);
+}
+</style>
 
 <style scoped lang="scss">
 .tree-node-row {

@@ -85,14 +85,16 @@ function onDrop(event: DragEvent) {
 .qy-tree__list { list-style: none; padding: 0; margin: 0; }
 .qy-tree__list--child { padding-left: 16px; }
 .qy-tree-node__label { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 6px; }
-.qy-tree-node__label.selected { background: #ecf5ff; }
+.qy-tree-node__label.selected {
+  background: color-mix(in srgb, var(--editor-accent-soft, #ecf5ff) 42%, var(--editor-layer-panel, #fff) 58%);
+}
 .qy-tree-node__toggle, .qy-tree-node__text {
   border: 0;
   background: transparent;
   cursor: pointer;
   padding: 0;
 }
-.qy-tree-node__toggle { width: 16px; color: #606266; }
-.qy-tree-node__text { text-align: left; flex: 1; color: #303133; }
+.qy-tree-node__toggle { width: 16px; color: var(--editor-text-muted, #606266); }
+.qy-tree-node__text { text-align: left; flex: 1; color: var(--editor-text-primary, #303133); }
 .qy-tree-node__placeholder { width: 16px; display: inline-block; }
 </style>

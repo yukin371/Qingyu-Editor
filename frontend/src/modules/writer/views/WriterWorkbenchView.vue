@@ -20,8 +20,8 @@
     <section class="space-y-4">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h2 class="text-lg font-semibold text-slate-950">五阶段创作流程</h2>
-          <p class="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
+          <h2 class="writer-workbench-heading text-lg font-semibold">五阶段创作流程</h2>
+          <p class="writer-workbench-muted mt-1 max-w-3xl text-sm leading-6">
             先收灵感，再搭地基，接着绘蓝图，最后落到逐章施工和复盘成长。每个阶段都能直接进入对应的工作面。
           </p>
         </div>
@@ -39,26 +39,26 @@
           v-for="stage in creativeFlowStages"
           :key="stage.id"
           type="button"
-          class="rounded-2xl border border-slate-200 bg-white/85 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+          class="writer-stage-card rounded-2xl p-4 text-left transition hover:-translate-y-0.5"
           @click="openStage(stage.id)"
         >
           <div class="flex items-start justify-between gap-3">
             <div>
-              <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+              <div class="writer-workbench-ghost text-xs font-semibold uppercase tracking-[0.16em]">
                 Stage {{ stage.order }}
               </div>
-              <div class="mt-2 text-base font-semibold text-slate-950">{{ stage.title }}</div>
+              <div class="writer-workbench-heading mt-2 text-base font-semibold">{{ stage.title }}</div>
             </div>
-            <QyIcon name="ArrowRight" :size="16" class="shrink-0 text-slate-400" />
+            <QyIcon name="ArrowRight" :size="16" class="writer-workbench-ghost shrink-0" />
           </div>
-          <p class="mt-3 text-sm leading-6 text-slate-500">{{ stage.subtitle }}</p>
+          <p class="writer-workbench-muted mt-3 text-sm leading-6">{{ stage.subtitle }}</p>
         </button>
       </div>
     </section>
 
     <section class="space-y-5">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <h2 class="text-lg font-semibold text-slate-950">最近项目</h2>
+        <h2 class="writer-workbench-heading text-lg font-semibold">最近项目</h2>
         <QyButton
           size="sm"
           variant="ghost"
@@ -96,13 +96,13 @@
           <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-center gap-3">
               <div
-                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-500"
+                class="writer-workbench-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
               >
                 <QyIcon name="BookOpen" :size="18" />
               </div>
               <div class="min-w-0">
-                <div class="text-sm font-semibold text-slate-950">还没有项目</div>
-                <p class="mt-1 text-sm text-slate-500">新建一个项目，或者先导入现有稿件。</p>
+                <div class="writer-workbench-heading text-sm font-semibold">还没有项目</div>
+                <p class="writer-workbench-muted mt-1 text-sm">新建一个项目，或者先导入现有稿件。</p>
               </div>
             </div>
 
@@ -125,8 +125,8 @@
         >
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="min-w-0 flex-1 space-y-2">
-              <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                <span class="rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-700">
+              <div class="writer-workbench-muted flex flex-wrap items-center gap-2 text-xs">
+                <span class="writer-workbench-chip px-2 py-1 font-medium">
                   {{ project.category }}
                 </span>
                 <span>{{ project.statusLabel }}</span>
@@ -134,13 +134,13 @@
               </div>
 
               <button type="button" class="block text-left" @click="continueProject(project)">
-                <div class="text-base font-semibold text-slate-950">{{ project.title }}</div>
-                <div class="mt-1 text-sm text-slate-500">
+                <div class="writer-workbench-heading text-base font-semibold">{{ project.title }}</div>
+                <div class="writer-workbench-muted mt-1 text-sm">
                   {{ project.lastChapterTitle || '从项目入口继续创作' }}
                 </div>
               </button>
 
-              <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+              <div class="writer-workbench-muted flex flex-wrap items-center gap-3 text-xs">
                 <span>{{ project.chapterCount }} 章</span>
                 <span>{{ formatNumber(project.totalWords) }} 字</span>
               </div>
@@ -288,3 +288,39 @@ async function openStage(stageId: string) {
 
 onMounted(refreshWorkbench)
 </script>
+
+<style scoped>
+.writer-workbench-heading {
+  color: var(--editor-text-primary, #0f172a);
+}
+
+.writer-workbench-muted {
+  color: var(--editor-text-muted, #64748b);
+}
+
+.writer-workbench-ghost {
+  color: var(--editor-text-ghost, #94a3b8);
+}
+
+.writer-stage-card {
+  border: 1px solid var(--editor-border, #e2e8f0);
+  background: var(--editor-layer-panel, #ffffff);
+  box-shadow: var(--editor-shadow-sm, 0 1px 3px rgba(15, 23, 42, 0.08));
+}
+
+.writer-stage-card:hover {
+  border-color: var(--editor-border-light, #cbd5e1);
+  box-shadow: var(--editor-shadow-md, 0 4px 12px rgba(15, 23, 42, 0.08));
+}
+
+.writer-workbench-icon {
+  background: var(--editor-layer-strong, #f1f5f9);
+  color: var(--editor-text-muted, #64748b);
+}
+
+.writer-workbench-chip {
+  border-radius: 999px;
+  background: var(--editor-layer-strong, #f1f5f9);
+  color: var(--editor-text-secondary, #334155);
+}
+</style>

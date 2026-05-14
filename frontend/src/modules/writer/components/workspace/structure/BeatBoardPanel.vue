@@ -382,8 +382,8 @@ function handleDrop(beat: OutlineNode, laneId: string, event: DragEvent) {
 .beat-lane {
   min-height: 0;
   border-radius: 18px;
-  background: rgba(255, 252, 248, 0.88);
-  border: 1px solid rgba(117, 93, 67, 0.14);
+  background: color-mix(in srgb, var(--editor-layer-panel, #fffcf8) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(117, 93, 67, 0.14)) 72%, transparent);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -401,11 +401,11 @@ function handleDrop(beat: OutlineNode, laneId: string, event: DragEvent) {
 
 .beat-lane__head {
   padding: 12px 14px;
-  border-bottom: 1px solid rgba(117, 93, 67, 0.12);
+  border-bottom: 1px solid color-mix(in srgb, var(--editor-border, rgba(117, 93, 67, 0.12)) 68%, transparent);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #5c5045;
+  color: var(--editor-text-secondary, #5c5045);
   font-size: 13px;
 }
 
@@ -420,9 +420,9 @@ function handleDrop(beat: OutlineNode, laneId: string, event: DragEvent) {
 
 .beat-card {
   position: relative;
-  border: 1px solid rgba(117, 93, 67, 0.14);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(117, 93, 67, 0.14)) 72%, transparent);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.92);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 92%, transparent);
   padding: 12px;
   display: grid;
   gap: 8px;
@@ -437,14 +437,18 @@ function handleDrop(beat: OutlineNode, laneId: string, event: DragEvent) {
 
 .beat-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(143, 63, 47, 0.18);
-  box-shadow: 0 16px 24px rgba(99, 60, 30, 0.08);
+  border-color: color-mix(in srgb, var(--editor-accent, #8f3f2f) 24%, transparent);
+  box-shadow: var(--editor-shadow-md, 0 16px 24px rgba(99, 60, 30, 0.08));
 }
 
 .beat-card.is-selected {
-  border-color: rgba(143, 63, 47, 0.34);
-  background: linear-gradient(135deg, #fff7ed, #f6e0c7);
-  box-shadow: 0 14px 24px rgba(99, 60, 30, 0.1);
+  border-color: color-mix(in srgb, var(--editor-accent, #8f3f2f) 38%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--editor-accent-soft, #fff7ed) 82%, transparent),
+    color-mix(in srgb, var(--editor-layer-strong, #f6e0c7) 88%, transparent)
+  );
+  box-shadow: var(--editor-shadow-lg, 0 14px 24px rgba(99, 60, 30, 0.1));
 }
 
 .beat-card.is-dragging {
@@ -475,17 +479,17 @@ function handleDrop(beat: OutlineNode, laneId: string, event: DragEvent) {
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.08em;
-  color: #8f3f2f;
+  color: var(--editor-accent, #8f3f2f);
 }
 
 .beat-card__title {
-  color: #2f2b26;
+  color: var(--editor-text-primary, #2f2b26);
   font-size: 14px;
   font-weight: 700;
 }
 
 .beat-card__desc {
-  color: #6c5f54;
+  color: var(--editor-text-secondary, #6c5f54);
   font-size: 12px;
   line-height: 1.55;
 }
@@ -495,9 +499,9 @@ function handleDrop(beat: OutlineNode, laneId: string, event: DragEvent) {
   align-items: center;
   width: fit-content;
   border-radius: 999px;
-  border: 1px solid rgba(117, 93, 67, 0.16);
-  background: rgba(246, 239, 230, 0.9);
-  color: #7a6250;
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(117, 93, 67, 0.16)) 72%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-strong, #f6efe6) 92%, transparent);
+  color: var(--editor-text-muted, #7a6250);
   font-size: 11px;
   font-weight: 700;
   padding: 4px 8px;
@@ -526,8 +530,8 @@ function handleDrop(beat: OutlineNode, laneId: string, event: DragEvent) {
   width: fit-content;
   border-radius: 999px;
   border: 1px solid rgba(117, 93, 67, 0.14);
-  background: rgba(255, 251, 246, 0.92);
-  color: #6e6155;
+  background: color-mix(in srgb, var(--editor-layer-panel, #fffbf6) 92%, transparent);
+  color: var(--editor-text-secondary, #6e6155);
   font-size: 11px;
   font-weight: 700;
   padding: 4px 8px;

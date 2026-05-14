@@ -1,16 +1,16 @@
 <template>
-  <div class="flex flex-col border-t border-slate-200 bg-white">
+  <div class="timeline-bar flex flex-col">
     <div
-      class="flex h-10 items-center justify-between border-b border-slate-200 bg-slate-50/90 px-4"
+      class="timeline-bar__header flex h-10 items-center justify-between px-4"
     >
       <button
         type="button"
-        class="flex items-center gap-2 text-sm font-medium text-slate-700 transition-colors hover:text-blue-700"
+        class="timeline-bar__toggle flex items-center gap-2 text-sm font-medium transition-colors"
         data-testid="timeline-toggle"
         @click="toggleExpand"
       >
         <span
-          class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-blue-600"
+          class="timeline-bar__badge inline-flex h-7 w-7 items-center justify-center rounded-full"
         >
           <QyIcon name="Timer" :size="16" />
         </span>
@@ -31,7 +31,7 @@
           type="button"
           title="添加事件"
           data-testid="timeline-add-event"
-          class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-all duration-150 hover:-translate-y-px hover:bg-blue-50 hover:text-blue-700"
+          class="timeline-bar__icon-btn inline-flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-150 hover:-translate-y-px"
           @click.stop="handleAddEvent"
         >
           <QyIcon name="Plus" :size="16" />
@@ -39,7 +39,7 @@
         <button
           type="button"
           :title="isExpanded ? '收起时间线' : '展开时间线'"
-          class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-all duration-150 hover:-translate-y-px hover:bg-slate-200/80 hover:text-slate-700"
+          class="timeline-bar__icon-btn inline-flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-150 hover:-translate-y-px"
           @click.stop="toggleExpand"
         >
           <QyIcon :name="isExpanded ? 'ArrowDown' : 'ArrowUp'" :size="16" />
@@ -47,7 +47,7 @@
       </div>
     </div>
 
-    <div v-show="isExpanded" class="h-[180px] overflow-hidden bg-slate-100/70" @wheel.prevent="handleWheel">
+    <div v-show="isExpanded" class="timeline-bar__body h-[180px] overflow-hidden" @wheel.prevent="handleWheel">
       <QyScrollbar ref="scrollbarRef" class="h-full">
         <div class="relative flex h-full min-w-full items-center px-8">
           <div class="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 bg-slate-300" />
@@ -60,11 +60,11 @@
               @click="handleAddEvent"
             >
               <span
-                class="inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-dashed border-slate-400 bg-white text-slate-500 transition-all duration-150 group-hover:border-blue-500 group-hover:bg-blue-50 group-hover:text-blue-700"
+                class="timeline-bar__create inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-dashed transition-all duration-150"
               >
                 <QyIcon name="Plus" :size="16" />
               </span>
-              <span class="mt-2 text-xs text-slate-500">新建</span>
+              <span class="timeline-bar__muted mt-2 text-xs">新建</span>
             </button>
 
             <div
@@ -74,7 +74,7 @@
               @click="handleEventClick(event)"
             >
               <div class="mb-2 flex h-10 flex-col items-center justify-end">
-                <span class="max-w-[110px] truncate text-xs text-slate-500">
+                <span class="timeline-bar__muted max-w-[110px] truncate text-xs">
                   {{ formatStoryTime(event.storyTime) || '待定时间' }}
                 </span>
                 <QyRate
@@ -118,15 +118,15 @@
                   <button
                     type="button"
                     title="编辑"
-                    class="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-700"
-                    @click.stop="handleEditEvent(event)"
-                  >
+                  class="timeline-bar__action inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors"
+                  @click.stop="handleEditEvent(event)"
+                >
                     <QyIcon name="Edit" :size="14" />
                   </button>
                   <button
                     type="button"
                     title="删除"
-                    class="inline-flex h-7 w-7 items-center justify-center rounded-md text-rose-500 transition-colors hover:bg-rose-50 hover:text-rose-600"
+                    class="timeline-bar__danger inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors"
                     @click.stop="handleDeleteEvent(event)"
                   >
                     <QyIcon name="Delete" :size="14" />
@@ -142,14 +142,14 @@
     <QyDialog v-model:visible="dialogVisible" :title="dialogTitle" size="lg">
       <div class="space-y-5">
         <div class="space-y-2">
-          <label class="text-sm font-medium text-slate-700">标题</label>
+          <label class="timeline-bar__field-label text-sm font-medium">标题</label>
           <QyInput v-model="eventForm.title" placeholder="事件概要 (如: 决战前夕)" />
           <p v-if="formErrors.title" class="text-xs text-rose-500">{{ formErrors.title }}</p>
         </div>
 
         <div class="grid gap-4 md:grid-cols-2">
           <div class="space-y-2">
-            <label class="text-sm font-medium text-slate-700">类型</label>
+            <label class="timeline-bar__field-label text-sm font-medium">类型</label>
             <QySelect
               v-model="eventForm.eventType"
               :options="eventTypeOptions"
@@ -158,8 +158,8 @@
             <p v-if="formErrors.eventType" class="text-xs text-rose-500">{{ formErrors.eventType }}</p>
           </div>
           <div class="space-y-2">
-            <label class="text-sm font-medium text-slate-700">重要性</label>
-            <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <label class="timeline-bar__field-label text-sm font-medium">重要性</label>
+            <div class="timeline-bar__field-box rounded-2xl px-4 py-3">
               <QyRate v-model="eventForm.importance" :max="10" />
             </div>
           </div>
@@ -167,11 +167,11 @@
 
         <div class="grid gap-3 md:grid-cols-4">
           <div class="space-y-2 md:col-span-2">
-            <label class="text-sm font-medium text-slate-700">纪元</label>
+            <label class="timeline-bar__field-label text-sm font-medium">纪元</label>
             <QyInput v-model="eventForm.era" placeholder="如: 新历" />
           </div>
           <div class="space-y-2">
-            <label class="text-sm font-medium text-slate-700">年份</label>
+            <label class="timeline-bar__field-label text-sm font-medium">年份</label>
             <QyInputNumber
               v-model="eventForm.year"
               :min="0"
@@ -181,7 +181,7 @@
             />
           </div>
           <div class="space-y-2">
-            <label class="text-sm font-medium text-slate-700">月份</label>
+            <label class="timeline-bar__field-label text-sm font-medium">月份</label>
             <QyInputNumber
               v-model="eventForm.month"
               :min="1"
@@ -194,7 +194,7 @@
 
         <div class="grid gap-4 md:grid-cols-2">
           <div class="space-y-2">
-            <label class="text-sm font-medium text-slate-700">日期</label>
+            <label class="timeline-bar__field-label text-sm font-medium">日期</label>
             <QyInputNumber
               v-model="eventForm.day"
               :min="1"
@@ -204,7 +204,7 @@
             />
           </div>
           <div class="space-y-2">
-            <label class="text-sm font-medium text-slate-700">时间描述</label>
+            <label class="timeline-bar__field-label text-sm font-medium">时间描述</label>
             <QyInput
               v-model="eventForm.storyTimeDescription"
               placeholder="如: 第三天清晨 (可选补充)"
@@ -213,7 +213,7 @@
         </div>
 
         <div class="space-y-2">
-          <label class="text-sm font-medium text-slate-700">详情</label>
+          <label class="timeline-bar__field-label text-sm font-medium">详情</label>
           <QyTextarea
             v-model="eventForm.description"
             :rows="3"
@@ -525,3 +525,84 @@ const getEventIconName = (type: EventType) => {
   }
 }
 </script>
+
+<style scoped>
+.timeline-bar {
+  border-top: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 76%, transparent);
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
+}
+
+.timeline-bar__header {
+  border-bottom: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 76%, transparent);
+  background: color-mix(in srgb, var(--editor-bg-surface, #f8fafc) 90%, transparent);
+}
+
+.timeline-bar__toggle {
+  color: var(--editor-text-secondary, #334155);
+}
+
+.timeline-bar__toggle:hover {
+  color: var(--editor-accent, #2563eb);
+}
+
+.timeline-bar__badge {
+  background: color-mix(in srgb, var(--editor-accent-soft, #dbeafe) 82%, transparent);
+  color: var(--editor-accent, #2563eb);
+}
+
+.timeline-bar__icon-btn {
+  color: var(--editor-text-muted, #64748b);
+}
+
+.timeline-bar__icon-btn:hover {
+  background: color-mix(in srgb, var(--editor-bg-elevated, #e2e8f0) 88%, transparent);
+  color: var(--editor-text-primary, #0f172a);
+}
+
+.timeline-bar__body {
+  background: color-mix(in srgb, var(--editor-bg-surface, #f1f5f9) 78%, transparent);
+}
+
+.timeline-bar__create {
+  border-color: var(--editor-text-ghost, #94a3b8);
+  background: var(--editor-layer-panel, #ffffff);
+  color: var(--editor-text-muted, #64748b);
+}
+
+.group:hover .timeline-bar__create {
+  border-color: var(--editor-accent, #2563eb);
+  background: color-mix(in srgb, var(--editor-accent-soft, #dbeafe) 78%, transparent);
+  color: var(--editor-accent, #2563eb);
+}
+
+.timeline-bar__muted {
+  color: var(--editor-text-muted, #64748b);
+}
+
+.timeline-bar__action {
+  color: var(--editor-text-muted, #64748b);
+}
+
+.timeline-bar__action:hover {
+  background: color-mix(in srgb, var(--editor-accent-soft, #dbeafe) 78%, transparent);
+  color: var(--editor-accent, #2563eb);
+}
+
+.timeline-bar__danger {
+  color: var(--color-danger-500, #ef4444);
+}
+
+.timeline-bar__danger:hover {
+  background: color-mix(in srgb, var(--color-danger-50, #fef2f2) 84%, transparent);
+  color: var(--color-danger-600, #dc2626);
+}
+
+.timeline-bar__field-label {
+  color: var(--editor-text-secondary, #334155);
+}
+
+.timeline-bar__field-box {
+  border: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 76%, transparent);
+  background: color-mix(in srgb, var(--editor-bg-surface, #f8fafc) 84%, transparent);
+}
+</style>

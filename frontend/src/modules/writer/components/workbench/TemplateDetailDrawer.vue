@@ -6,50 +6,50 @@
     size="520px"
   >
     <div v-if="template" class="space-y-4">
-      <div class="space-y-2 border-b border-slate-100 pb-4">
-        <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-          <span class="rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-700">
+      <div class="template-detail-drawer__head space-y-2 pb-4">
+        <div class="template-detail-drawer__muted flex flex-wrap items-center gap-2 text-xs">
+          <span class="template-detail-drawer__chip px-2 py-1 font-medium">
             {{ template.category }}
           </span>
           <span>{{ template.templateType }}</span>
           <span>{{ template.emotionCurve }}</span>
         </div>
-        <h2 class="text-xl font-semibold text-slate-950">{{ template.name }}</h2>
-        <p class="text-sm leading-6 text-slate-500">{{ template.tagline }}</p>
+        <h2 class="template-detail-drawer__heading text-xl font-semibold">{{ template.name }}</h2>
+        <p class="template-detail-drawer__muted text-sm leading-6">{{ template.tagline }}</p>
       </div>
 
       <Tabs v-model="activeTab" type="card">
         <TabPane name="outline" label="大纲">
-          <ul class="divide-y divide-slate-100 border-y border-slate-100">
+          <ul class="template-detail-drawer__list divide-y border-y">
             <li
               v-for="chapter in template.previewTabs.outline"
               :key="chapter.order"
               class="space-y-2 py-4"
             >
-              <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+              <div class="template-detail-drawer__muted flex flex-wrap items-center gap-2 text-xs">
                 <span>第 {{ chapter.order }} 章</span>
                 <span>{{ chapter.title }}</span>
               </div>
-              <p class="text-sm leading-6 text-slate-600">{{ chapter.summary }}</p>
-              <p class="text-sm text-slate-500">{{ chapter.hook }}</p>
+              <p class="template-detail-drawer__secondary text-sm leading-6">{{ chapter.summary }}</p>
+              <p class="template-detail-drawer__muted text-sm">{{ chapter.hook }}</p>
             </li>
           </ul>
         </TabPane>
 
         <TabPane name="characters" label="角色">
-          <ul class="divide-y divide-slate-100 border-y border-slate-100">
+          <ul class="template-detail-drawer__list divide-y border-y">
             <li
               v-for="section in template.previewTabs.characters"
               :key="section.id"
               class="space-y-2 py-4"
             >
-              <h3 class="text-sm font-medium text-slate-900">{{ section.title }}</h3>
-              <p class="text-sm leading-6 text-slate-600">{{ section.summary }}</p>
-              <ul class="flex flex-wrap gap-2 text-xs text-slate-500">
+              <h3 class="template-detail-drawer__heading text-sm font-medium">{{ section.title }}</h3>
+              <p class="template-detail-drawer__secondary text-sm leading-6">{{ section.summary }}</p>
+              <ul class="template-detail-drawer__muted flex flex-wrap gap-2 text-xs">
                 <li
                   v-for="bullet in section.bullets.slice(0, 2)"
                   :key="bullet"
-                  class="rounded-full bg-slate-100 px-2 py-1"
+                  class="template-detail-drawer__chip px-2 py-1"
                 >
                   {{ bullet }}
                 </li>
@@ -59,19 +59,19 @@
         </TabPane>
 
         <TabPane name="settings" label="设定">
-          <ul class="divide-y divide-slate-100 border-y border-slate-100">
+          <ul class="template-detail-drawer__list divide-y border-y">
             <li
               v-for="section in template.previewTabs.settings"
               :key="section.id"
               class="space-y-2 py-4"
             >
-              <h3 class="text-sm font-medium text-slate-900">{{ section.title }}</h3>
-              <p class="text-sm leading-6 text-slate-600">{{ section.summary }}</p>
-              <ul class="flex flex-wrap gap-2 text-xs text-slate-500">
+              <h3 class="template-detail-drawer__heading text-sm font-medium">{{ section.title }}</h3>
+              <p class="template-detail-drawer__secondary text-sm leading-6">{{ section.summary }}</p>
+              <ul class="template-detail-drawer__muted flex flex-wrap gap-2 text-xs">
                 <li
                   v-for="bullet in section.bullets.slice(0, 2)"
                   :key="bullet"
-                  class="rounded-full bg-slate-100 px-2 py-1"
+                  class="template-detail-drawer__chip px-2 py-1"
                 >
                   {{ bullet }}
                 </li>
@@ -88,10 +88,10 @@
         class="flex w-full flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
       >
         <div>
-          <strong class="block text-sm font-medium text-slate-900">
+          <strong class="template-detail-drawer__heading block text-sm font-medium">
             {{ template.seed.volumeTitle }}
           </strong>
-          <p class="mt-1 text-sm text-slate-500">
+          <p class="template-detail-drawer__muted mt-1 text-sm">
             应用后会创建 1 个卷骨架与 {{ template.previewTabs.outline.length }} 个起始章节。
           </p>
         </div>
@@ -136,3 +136,28 @@ watch(
   },
 )
 </script>
+
+<style scoped>
+.template-detail-drawer__head,
+.template-detail-drawer__list {
+  border-color: color-mix(in srgb, var(--editor-border-light, #f1f5f9) 80%, transparent);
+}
+
+.template-detail-drawer__heading {
+  color: var(--editor-text-primary, #0f172a);
+}
+
+.template-detail-drawer__secondary {
+  color: var(--editor-text-secondary, #334155);
+}
+
+.template-detail-drawer__muted {
+  color: var(--editor-text-muted, #64748b);
+}
+
+.template-detail-drawer__chip {
+  border-radius: 999px;
+  background: var(--editor-layer-strong, #f1f5f9);
+  color: var(--editor-text-secondary, #334155);
+}
+</style>

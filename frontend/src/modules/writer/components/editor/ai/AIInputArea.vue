@@ -157,7 +157,7 @@ defineExpose({
     margin-bottom: 8px;
     padding: 4px;
     border-radius: 999px;
-    background: #e2e8f0;
+    background: color-mix(in srgb, var(--editor-border, #e2e8f0) 28%, transparent);
   }
 
   .interaction-mode__option {
@@ -171,9 +171,9 @@ defineExpose({
     cursor: pointer;
 
     &.is-active {
-      background: #ffffff;
-      color: #0f172a;
-      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+      background: var(--editor-layer-panel, #ffffff);
+      color: var(--editor-text-primary, #0f172a);
+      box-shadow: var(--editor-shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.12));
     }
 
     &:disabled {
@@ -184,9 +184,9 @@ defineExpose({
 
   .chat-context-chip {
     margin-bottom: 8px;
-    border: 1px solid #bfdbfe;
-    background: #eff6ff;
-    color: #1e3a8a;
+    border: 1px solid var(--editor-accent-soft-border, #bfdbfe);
+    background: var(--editor-layer-accent, #eff6ff);
+    color: var(--editor-accent, #1e3a8a);
     border-radius: 10px;
     padding: 6px 8px;
     display: flex;
@@ -215,7 +215,7 @@ defineExpose({
 
     .context-status {
       flex-shrink: 0;
-      color: #1d4ed8;
+      color: var(--editor-accent, #1d4ed8);
       font-size: 11px;
     }
 
@@ -227,7 +227,7 @@ defineExpose({
     }
 
     .context-extra {
-      color: #1e293b;
+      color: var(--editor-text-primary, #1e293b);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -237,7 +237,7 @@ defineExpose({
       flex-shrink: 0;
       border: none;
       background: transparent;
-      color: #1d4ed8;
+      color: var(--editor-accent, #1d4ed8);
       cursor: pointer;
       font-size: 12px;
       padding: 0;
@@ -250,9 +250,9 @@ defineExpose({
     gap: 6px;
     margin-bottom: 8px;
     padding: 6px 8px;
-    border: 1px solid #dbeafe;
-    background: #f8fafc;
-    color: #334155;
+    border: 1px solid color-mix(in srgb, var(--editor-border, #dbeafe) 42%, transparent);
+    background: var(--editor-layer-soft, #f8fafc);
+    color: var(--editor-text-secondary, #334155);
     border-radius: 8px;
     font-size: 12px;
     min-width: 0;
@@ -260,13 +260,13 @@ defineExpose({
 
   .target-scope-bar__label {
     flex-shrink: 0;
-    color: #64748b;
+    color: var(--editor-text-muted, #64748b);
     font-weight: 600;
   }
 
   .target-scope-bar__value {
     min-width: 0;
-    color: #0f172a;
+    color: var(--editor-text-primary, #0f172a);
     font-weight: 700;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -275,7 +275,7 @@ defineExpose({
 
   .target-scope-bar__detail {
     flex-shrink: 0;
-    color: #2563eb;
+    color: var(--editor-accent, #2563eb);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -285,15 +285,15 @@ defineExpose({
     display: flex;
     gap: 8px;
     align-items: flex-end;
-    background: #ffffff;
+    background: var(--editor-layer-panel, #ffffff);
     border: 1px solid var(--ai-border-strong, #cbd5e1);
     border-radius: 12px;
     padding: 8px;
     transition: border-color 0.2s ease;
 
     &:focus-within {
-      border-color: #60a5fa;
-      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.16);
+      border-color: var(--editor-border-focus, #60a5fa);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--editor-accent, #60a5fa) 16%, transparent);
     }
 
     .message-input {

@@ -114,12 +114,12 @@ defineEmits<{
 .inspiration-notes-panel__composer input,
 .inspiration-notes-panel__composer textarea {
   width: 100%;
-  border: 1px solid rgba(148, 163, 184, 0.22);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.22)) 72%, transparent);
   border-radius: 12px;
   padding: 10px 12px;
   outline: none;
   resize: vertical;
-  background: rgba(255, 255, 255, 0.94);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
   color: var(--editor-text-primary, #0f172a);
   font: inherit;
 }
@@ -127,8 +127,8 @@ defineEmits<{
 .inspiration-notes-panel__composer button,
 .inspiration-notes-panel__card-head button {
   border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.22)) 72%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
   color: var(--editor-text-secondary, #475569);
   font-size: 12px;
   font-weight: 600;
@@ -139,7 +139,7 @@ defineEmits<{
   height: 34px;
   padding: 0 12px;
   border-color: rgba(251, 191, 36, 0.28);
-  color: #b45309;
+  color: var(--color-warning-700, #b45309);
 }
 
 .inspiration-notes-panel__empty {
@@ -149,8 +149,8 @@ defineEmits<{
   gap: 10px;
   min-height: 72px;
   border-radius: 14px;
-  border: 1px dashed rgba(148, 163, 184, 0.4);
-  background: rgba(255, 255, 255, 0.66);
+  border: 1px dashed color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.4)) 76%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 66%, transparent);
   color: var(--editor-text-secondary, #475569);
   font-size: 12px;
 }
@@ -167,8 +167,8 @@ defineEmits<{
   gap: 10px;
   padding: 14px;
   border-radius: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.18)) 72%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 86%, transparent);
 }
 
 .inspiration-notes-panel__card-head {

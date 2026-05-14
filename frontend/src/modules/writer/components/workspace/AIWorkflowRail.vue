@@ -251,7 +251,11 @@ function resultPromoteActionText(candidate: WriterResultCandidate) {
 .workflow-rail {
   padding: 12px;
   border-bottom: 1px solid var(--editor-border, rgba(0, 0, 0, 0.06));
-  background: linear-gradient(180deg, rgba(246, 250, 255, 0.92), rgba(255, 255, 255, 0.82));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--editor-bg-surface, #f8fafc) 92%, transparent),
+    color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent)
+  );
   display: grid;
   gap: 10px;
 }
@@ -282,12 +286,16 @@ function resultPromoteActionText(candidate: WriterResultCandidate) {
   justify-content: space-between;
   gap: 12px;
   padding: 11px 12px;
-  border: 1px solid rgba(148, 163, 184, 0.14);
+  border: 1px solid color-mix(in srgb, var(--editor-border, #94a3b8) 72%, transparent);
   border-radius: 14px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.92));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--editor-layer-panel, #ffffff) 98%, transparent),
+    color-mix(in srgb, var(--editor-layer-glass, #f8fafc) 96%, transparent)
+  );
   box-shadow:
-    0 10px 24px rgba(15, 23, 42, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    var(--editor-shadow-sm, 0 10px 24px rgba(15, 23, 42, 0.05)),
+    inset 0 1px 0 color-mix(in srgb, var(--editor-text-inverse, #ffffff) 12%, transparent);
 
   strong {
     display: block;
@@ -317,7 +325,7 @@ function resultPromoteActionText(candidate: WriterResultCandidate) {
 }
 
 .proposal-card {
-  border-color: rgba(14, 165, 233, 0.14);
+  border-color: color-mix(in srgb, var(--editor-accent, #0891b2) 24%, transparent);
 }
 
 .proposal-card--condensed {
@@ -345,8 +353,8 @@ function resultPromoteActionText(candidate: WriterResultCandidate) {
   gap: 12px;
   padding: 10px 12px;
   border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid color-mix(in srgb, var(--editor-border, #94a3b8) 66%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
 
   strong,
   p {
@@ -355,19 +363,19 @@ function resultPromoteActionText(candidate: WriterResultCandidate) {
 }
 
 .apply-feedback--applied {
-  border-color: rgba(34, 197, 94, 0.18);
+  border-color: color-mix(in srgb, var(--color-success-500, #22c55e) 26%, transparent);
 }
 
 .apply-feedback--error {
-  border-color: rgba(239, 68, 68, 0.2);
+  border-color: color-mix(in srgb, var(--color-danger-500, #ef4444) 28%, transparent);
 }
 
 .proposal-feedback--selected {
-  border-color: rgba(14, 165, 233, 0.18);
+  border-color: color-mix(in srgb, var(--editor-accent, #0891b2) 28%, transparent);
 }
 
 .proposal-feedback--discarded {
-  border-color: rgba(148, 163, 184, 0.18);
+  border-color: color-mix(in srgb, var(--editor-border, #94a3b8) 72%, transparent);
 }
 
 .apply-feedback__content {
@@ -394,20 +402,20 @@ function resultPromoteActionText(candidate: WriterResultCandidate) {
   min-height: 20px;
   padding: 0 8px;
   border-radius: 999px;
-  background: rgba(241, 245, 249, 0.9);
-  color: #475569;
+  background: color-mix(in srgb, var(--editor-layer-strong, #f1f5f9) 92%, transparent);
+  color: var(--editor-text-secondary, #475569);
   font-size: 11px;
   font-weight: 700;
 }
 
 .workflow-chip--accent {
-  background: rgba(236, 254, 255, 0.95);
-  color: #0891b2;
+  background: color-mix(in srgb, var(--editor-accent-soft, #ecfeff) 88%, transparent);
+  color: var(--editor-accent, #0891b2);
 }
 
 .workflow-chip--status {
-  background: rgba(224, 242, 254, 0.95);
-  color: #0369a1;
+  background: color-mix(in srgb, var(--editor-accent-soft, #e0f2fe) 78%, var(--editor-bg-base, #fff) 22%);
+  color: var(--editor-accent, #0369a1);
 }
 
 .proposal-card__meta {
@@ -415,8 +423,8 @@ function resultPromoteActionText(candidate: WriterResultCandidate) {
 }
 
 .proposal-card__action--ghost {
-  background: rgba(241, 245, 249, 0.9);
-  color: #475569;
+  background: color-mix(in srgb, var(--editor-layer-strong, #f1f5f9) 90%, transparent);
+  color: var(--editor-text-secondary, #475569);
 }
 
 .workflow-diff-card {
@@ -424,13 +432,17 @@ function resultPromoteActionText(candidate: WriterResultCandidate) {
   gap: 10px;
   padding: 11px 12px;
   border-radius: 14px;
-  border: 1px solid rgba(14, 165, 233, 0.16);
+  border: 1px solid color-mix(in srgb, var(--editor-accent, #0891b2) 26%, transparent);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(240, 249, 255, 0.92)),
-    rgba(255, 255, 255, 0.94);
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--editor-layer-panel, #ffffff) 98%, transparent),
+      color-mix(in srgb, var(--editor-accent-soft, #f0f9ff) 62%, var(--editor-bg-base, #fff) 38%)
+    ),
+    color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
   box-shadow:
-    0 10px 24px rgba(14, 165, 233, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+    0 10px 24px color-mix(in srgb, var(--editor-accent, #0891b2) 10%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--editor-text-inverse, #ffffff) 12%, transparent);
 }
 
 .workflow-diff-card__hint {
@@ -450,15 +462,19 @@ function resultPromoteActionText(candidate: WriterResultCandidate) {
   padding: 0 12px;
   border-radius: 999px;
   border: none;
-  background: rgba(224, 242, 254, 0.95);
-  color: #0369a1;
+  background: color-mix(in srgb, var(--editor-accent-soft, #e0f2fe) 84%, transparent);
+  color: var(--editor-accent, #0369a1);
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
 }
 
 .workflow-diff-card__action--primary {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.18), rgba(34, 211, 238, 0.1));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--editor-accent, #0891b2) 22%, transparent),
+    color-mix(in srgb, var(--editor-accent-soft, #22d3ee) 54%, transparent)
+  );
 }
 
 @media (max-width: 920px) {

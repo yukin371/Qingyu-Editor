@@ -289,8 +289,12 @@ watch(
   gap: 16px;
   padding: 18px;
   background:
-    radial-gradient(circle at top right, rgba(251, 191, 36, 0.16), transparent 28%),
-    linear-gradient(180deg, #fffef6, #f5f7fb 100%);
+    radial-gradient(circle at top right, color-mix(in srgb, var(--color-warning-400, #fbbf24) 18%, transparent), transparent 28%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--editor-layer-panel, #fffef6) 96%, transparent),
+      color-mix(in srgb, var(--editor-bg-surface, #f5f7fb) 92%, transparent) 100%
+    );
 }
 
 .inspiration-panel__header,
@@ -337,8 +341,8 @@ watch(
 
 .inspiration-panel__expand {
   border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.22)) 72%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
   color: var(--editor-text-secondary, #475569);
   font-size: 12px;
   font-weight: 600;
@@ -349,7 +353,7 @@ watch(
   height: 34px;
   padding: 0 12px;
   border-color: rgba(251, 191, 36, 0.28);
-  color: #b45309;
+  color: var(--color-warning-700, #b45309);
 }
 
 .inspiration-panel__section {
@@ -357,9 +361,9 @@ watch(
   gap: 12px;
   padding: 14px;
   border-radius: 18px;
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.04);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.14)) 70%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 82%, transparent);
+  box-shadow: var(--editor-shadow-md, 0 8px 30px rgba(15, 23, 42, 0.04));
 }
 
 .inspiration-panel__section h4,
@@ -370,8 +374,12 @@ watch(
 
 .inspiration-panel__section--gate {
   background:
-    linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(255, 255, 255, 0.92)),
-    rgba(255, 255, 255, 0.82);
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-warning-500, #f59e0b) 14%, transparent),
+      color-mix(in srgb, var(--editor-layer-panel, #ffffff) 92%, transparent)
+    ),
+    color-mix(in srgb, var(--editor-layer-panel, #ffffff) 82%, transparent);
 }
 
 .inspiration-panel__hint-list {
@@ -383,8 +391,8 @@ watch(
 
 .inspiration-panel__section--hint {
   background:
-    radial-gradient(circle at top left, rgba(249, 115, 22, 0.08), transparent 28%),
-    rgba(255, 255, 255, 0.84);
+    radial-gradient(circle at top left, color-mix(in srgb, var(--color-warning-600, #f97316) 10%, transparent), transparent 28%),
+    color-mix(in srgb, var(--editor-layer-panel, #ffffff) 84%, transparent);
 }
 
 </style>

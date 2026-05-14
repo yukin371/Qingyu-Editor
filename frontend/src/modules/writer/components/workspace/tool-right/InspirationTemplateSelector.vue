@@ -108,7 +108,7 @@ defineEmits<{
   padding: 0 12px;
   border-radius: 12px;
   border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(255, 255, 255, 0.94);
+  background: color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #fff)) 94%, transparent);
   cursor: pointer;
   transition:
     border-color 0.18s ease,
@@ -121,13 +121,17 @@ defineEmits<{
   }
 
   &.is-active {
-    border-color: rgba(245, 158, 11, 0.42);
-    background: linear-gradient(135deg, rgba(255, 251, 235, 0.95), rgba(255, 255, 255, 0.96));
-    box-shadow: 0 10px 28px rgba(245, 158, 11, 0.12);
+    border-color: var(--editor-accent-soft-border, rgba(245, 158, 11, 0.42));
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--editor-layer-accent, var(--editor-accent-soft, #fff)) 82%, transparent),
+      color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #fff)) 96%, transparent)
+    );
+    box-shadow: var(--editor-shadow-md, 0 10px 28px rgba(245, 158, 11, 0.12));
     transform: translateY(-1px);
 
     strong {
-      color: #92400e;
+      color: var(--editor-accent, #92400e);
     }
   }
 }

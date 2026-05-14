@@ -121,56 +121,56 @@ defineOptions({ name: 'QyInputNumber' })
 .qy-input-number {
   display: inline-flex;
   align-items: center;
-  background: #fff;
-  border: 1px solid #d1d1d6;
+  background: var(--editor-layer-panel, #fff);
+  border: 1px solid color-mix(in srgb, var(--editor-border, #d1d1d6) 72%, transparent);
   border-radius: 10px;
   overflow: hidden;
   transition: all 0.2s ease;
 
   &:hover:not(.qy-input-number--disabled) {
-    border-color: #007aff;
+    border-color: var(--editor-border-focus, #007aff);
   }
 
   &:focus-within:not(.qy-input-number--disabled) {
-    border-color: #007aff;
-    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+    border-color: var(--editor-border-focus, #007aff);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--editor-accent, #007aff) 15%, transparent);
   }
 
   &--disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    background: #f5f5f5;
+    background: var(--editor-layer-soft, #f5f5f5);
   }
 
   &__stepper {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #f5f5f7;
+    background: var(--editor-layer-soft, #f5f5f7);
     border: none;
-    color: #007aff;
+    color: var(--editor-accent, #007aff);
     cursor: pointer;
     transition: all 0.15s ease;
 
     &:hover:not(:disabled) {
-      background: #e8e8ed;
+      background: var(--editor-layer-strong, #e8e8ed);
     }
 
     &:active:not(:disabled) {
-      background: #d8d8de;
+      background: color-mix(in srgb, var(--editor-layer-strong, #d8d8de) 88%, black 12%);
     }
 
     &:disabled {
-      color: #c7c7cc;
+      color: var(--editor-text-ghost, #c7c7cc);
       cursor: not-allowed;
     }
 
     &--minus {
-      border-right: 1px solid #d1d1d6;
+      border-right: 1px solid color-mix(in srgb, var(--editor-border, #d1d1d6) 72%, transparent);
     }
 
     &--plus {
-      border-left: 1px solid #d1d1d6;
+      border-left: 1px solid color-mix(in srgb, var(--editor-border, #d1d1d6) 72%, transparent);
     }
   }
 
@@ -181,7 +181,7 @@ defineOptions({ name: 'QyInputNumber' })
     outline: none;
     text-align: center;
     font-size: 14px;
-    color: #1d1d1f;
+    color: var(--editor-text-primary, #1d1d1f);
     background: transparent;
     -moz-appearance: textfield;
 
@@ -192,7 +192,7 @@ defineOptions({ name: 'QyInputNumber' })
     }
 
     &::placeholder {
-      color: #c7c7cc;
+      color: var(--editor-text-ghost, #c7c7cc);
     }
 
     &:focus {

@@ -15,8 +15,8 @@
     <section class="space-y-4">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div class="space-y-1">
-          <h2 class="text-lg font-semibold text-slate-950">模板列表</h2>
-          <p class="text-sm text-slate-500">{{ filteredTemplates.length }} 个模板</p>
+          <h2 class="writer-template-heading text-lg font-semibold">模板列表</h2>
+          <p class="writer-template-muted text-sm">{{ filteredTemplates.length }} 个模板</p>
         </div>
 
         <div class="w-full lg:w-[280px]">
@@ -29,13 +29,13 @@
           <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-center gap-3">
               <div
-                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-500"
+                class="writer-template-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
               >
                 <QyIcon name="Collection" :size="18" />
               </div>
               <div class="min-w-0">
-                <div class="text-sm font-semibold text-slate-950">当前分类没有模板</div>
-                <p class="mt-1 text-sm text-slate-500">切换分类后再试。</p>
+                <div class="writer-template-heading text-sm font-semibold">当前分类没有模板</div>
+                <p class="writer-template-muted mt-1 text-sm">切换分类后再试。</p>
               </div>
             </div>
 
@@ -48,12 +48,12 @@
         <article
           v-for="template in filteredTemplates"
           :key="template.id"
-          class="rounded-3xl border border-slate-100 bg-white px-4 py-4"
+          class="writer-template-card rounded-3xl px-4 py-4"
         >
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="min-w-0 flex-1 space-y-2">
-              <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                <span class="rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-700">
+              <div class="writer-template-muted flex flex-wrap items-center gap-2 text-xs">
+                <span class="writer-template-chip px-2 py-1 font-medium">
                   {{ template.category }}
                 </span>
                 <span>{{ template.templateType }}</span>
@@ -61,11 +61,11 @@
               </div>
 
               <button type="button" class="block text-left" @click="openTemplateDetail(template.id)">
-                <div class="text-base font-semibold text-slate-950">{{ template.name }}</div>
-                <div class="mt-1 text-sm text-slate-500">{{ template.tagline }}</div>
+                <div class="writer-template-heading text-base font-semibold">{{ template.name }}</div>
+                <div class="writer-template-muted mt-1 text-sm">{{ template.tagline }}</div>
               </button>
 
-              <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+              <div class="writer-template-muted flex flex-wrap items-center gap-3 text-xs">
                 <span>{{ template.recommendedLabel }}</span>
                 <span>{{ template.applicableTo.slice(0, 2).join(' / ') }}</span>
               </div>
@@ -195,3 +195,30 @@ async function handleCreateFromTemplate(payload: { title: string; summary: strin
   }
 }
 </script>
+
+<style scoped>
+.writer-template-heading {
+  color: var(--editor-text-primary, #0f172a);
+}
+
+.writer-template-muted {
+  color: var(--editor-text-muted, #64748b);
+}
+
+.writer-template-icon {
+  background: var(--editor-layer-strong, #f1f5f9);
+  color: var(--editor-text-muted, #64748b);
+}
+
+.writer-template-card {
+  border: 1px solid var(--editor-border, #e2e8f0);
+  background: var(--editor-layer-panel, #ffffff);
+  box-shadow: var(--editor-shadow-sm, 0 1px 3px rgba(15, 23, 42, 0.08));
+}
+
+.writer-template-chip {
+  border-radius: 999px;
+  background: var(--editor-layer-strong, #f1f5f9);
+  color: var(--editor-text-secondary, #334155);
+}
+</style>

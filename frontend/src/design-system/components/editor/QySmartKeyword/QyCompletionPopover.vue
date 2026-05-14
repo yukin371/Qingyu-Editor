@@ -134,10 +134,10 @@ function handleSelect(item: KeywordInfo) {
   z-index: 3900;
   width: 280px;
   max-height: 320px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #e5e7eb) 62%, transparent);
   border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  background: var(--editor-layer-panel, #fff);
+  box-shadow: var(--editor-shadow-lg, 0 10px 30px rgba(0, 0, 0, 0.12));
   overflow: hidden;
 }
 
@@ -146,25 +146,25 @@ function handleSelect(item: KeywordInfo) {
   align-items: center;
   gap: 6px;
   padding: 10px 12px;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--editor-layer-soft, #f9fafb);
+  border-bottom: 1px solid color-mix(in srgb, var(--editor-border, #e5e7eb) 62%, transparent);
 }
 
 .completion-icon {
   font-size: 14px;
-  color: #3b82f6;
+  color: var(--editor-accent, #3b82f6);
 }
 
 .completion-title {
   font-size: 12px;
   font-weight: 600;
-  color: #374151;
+  color: var(--editor-text-secondary, #374151);
 }
 
 .completion-count {
   margin-left: auto;
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--editor-text-ghost, #9ca3af);
 }
 
 .completion-list {
@@ -187,7 +187,7 @@ function handleSelect(item: KeywordInfo) {
 
 .completion-item:hover,
 .completion-item.is-active {
-  background: #f3f4f6;
+  background: var(--editor-layer-soft, #f3f4f6);
 }
 
 .completion-item.type-character {
@@ -207,19 +207,19 @@ function handleSelect(item: KeywordInfo) {
 }
 
 .completion-item.is-active.type-character {
-  background: #eff6ff;
+  background: color-mix(in srgb, var(--editor-accent-soft, #eff6ff) 42%, var(--editor-layer-panel, #fff) 58%);
 }
 
 .completion-item.is-active.type-location {
-  background: #ecfdf5;
+  background: color-mix(in srgb, var(--color-success-50, #ecfdf5) 42%, var(--editor-layer-panel, #fff) 58%);
 }
 
 .completion-item.is-active.type-item {
-  background: #fffbeb;
+  background: color-mix(in srgb, var(--color-warning-50, #fffbeb) 42%, var(--editor-layer-panel, #fff) 58%);
 }
 
 .completion-item.is-active.type-organization {
-  background: #ecfeff;
+  background: color-mix(in srgb, var(--color-secondary-50, #ecfeff) 42%, var(--editor-layer-panel, #fff) 58%);
 }
 
 .item-icon {
@@ -230,7 +230,7 @@ function handleSelect(item: KeywordInfo) {
 .item-name {
   flex: 1;
   font-size: 13px;
-  color: #111827;
+  color: var(--editor-text-primary, #111827);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -238,27 +238,27 @@ function handleSelect(item: KeywordInfo) {
 
 .item-type {
   font-size: 10px;
-  color: #9ca3af;
-  background: #f3f4f6;
+  color: var(--editor-text-ghost, #9ca3af);
+  background: var(--editor-layer-soft, #f3f4f6);
   padding: 2px 6px;
   border-radius: 4px;
 }
 
 .completion-footer {
   padding: 8px 12px;
-  background: #f9fafb;
-  border-top: 1px solid #e5e7eb;
+  background: var(--editor-layer-soft, #f9fafb);
+  border-top: 1px solid color-mix(in srgb, var(--editor-border, #e5e7eb) 62%, transparent);
 }
 
 .create-hint {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--editor-text-muted, #6b7280);
 }
 
 .create-btn {
   background: transparent;
   border: none;
-  color: #3b82f6;
+  color: var(--editor-accent, #3b82f6);
   font-size: 12px;
   cursor: pointer;
   padding: 0;
@@ -272,7 +272,7 @@ function handleSelect(item: KeywordInfo) {
 .completion-empty {
   padding: 16px;
   text-align: center;
-  color: #94a3b8;
+  color: var(--editor-text-ghost, #94a3b8);
 }
 
 .completion-empty .empty-icon {
@@ -289,7 +289,7 @@ function handleSelect(item: KeywordInfo) {
 .completion-empty .create-btn-inline {
   margin-top: 8px;
   padding: 6px 14px;
-  background: #3b82f6;
+  background: var(--editor-accent, #3b82f6);
   color: white;
   border: none;
   border-radius: 6px;
@@ -298,17 +298,17 @@ function handleSelect(item: KeywordInfo) {
 }
 
 .completion-empty .create-btn-inline:hover {
-  background: #2563eb;
+  background: var(--editor-accent-hover, #2563eb);
 }
 
 .completion-item--create {
   border-left-color: #3b82f6 !important;
-  color: #3b82f6;
+  color: var(--editor-accent, #3b82f6);
   cursor: pointer;
 }
 
 .completion-item--create:hover {
-  background: #eff6ff;
+  background: color-mix(in srgb, var(--editor-accent-soft, #eff6ff) 42%, var(--editor-layer-panel, #fff) 58%);
 }
 
 /* 过渡动画 */

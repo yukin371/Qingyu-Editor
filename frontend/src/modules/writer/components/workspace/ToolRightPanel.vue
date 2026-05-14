@@ -178,7 +178,7 @@ const handleOpenInspirationFullscreen = () => {
   flex-direction: column;
   width: 100%;
   min-width: 0;
-  background: var(--editor-bg-base, #fff);
+  background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
 }
 
 .tool-right-panel__topbar {

@@ -72,6 +72,35 @@
   --editor-transition-base: 200ms ease-out;
   --editor-transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
 
+  --editor-layer-soft: color-mix(
+    in srgb,
+    var(--editor-bg-base) 84%,
+    var(--editor-bg-surface) 16%
+  );
+  --editor-layer-panel: color-mix(in srgb, var(--editor-bg-base) 92%, transparent);
+  --editor-layer-glass: color-mix(
+    in srgb,
+    var(--editor-bg-base) 76%,
+    var(--editor-bg-surface) 24%
+  );
+  --editor-layer-strong: color-mix(
+    in srgb,
+    var(--editor-bg-elevated) 84%,
+    var(--editor-bg-base) 16%
+  );
+  --editor-layer-accent: color-mix(
+    in srgb,
+    var(--editor-accent-soft) 78%,
+    var(--editor-bg-base) 22%
+  );
+  --editor-canvas-bg: color-mix(
+    in srgb,
+    var(--editor-bg-surface) 88%,
+    var(--editor-bg-base) 12%
+  );
+  --editor-grid-dot: color-mix(in srgb, var(--editor-border) 68%, transparent);
+  --editor-overlay-scrim: color-mix(in srgb, var(--editor-text-primary) 38%, transparent);
+
   --empty-ill-bg: color-mix(in srgb, var(--editor-bg-elevated) 92%, white 8%);
   --empty-ill-stroke: color-mix(in srgb, var(--editor-border) 86%, transparent);
   --empty-ill-fill: color-mix(in srgb, var(--editor-bg-surface) 96%, white 4%);

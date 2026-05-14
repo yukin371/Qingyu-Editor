@@ -191,8 +191,12 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   gap: 12px;
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--editor-bg-base, #ffffff) 92%, white 8%),
-    color-mix(in srgb, var(--editor-bg-surface, #f5f7fa) 92%, var(--editor-bg-base, #ffffff) 8%)
+    color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #ffffff)) 96%, transparent),
+    color-mix(
+      in srgb,
+      var(--editor-layer-soft, var(--editor-bg-surface, #f5f7fa)) 92%,
+      var(--editor-layer-panel, var(--editor-bg-base, #ffffff)) 8%
+    )
   );
   border-bottom: 1px solid var(--editor-border, #e2e8f0);
   flex-shrink: 0;
@@ -230,7 +234,7 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   padding: 0 10px;
   border: 1px solid color-mix(in srgb, var(--editor-border, #cbd5e1) 88%, transparent);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--editor-bg-base, #ffffff) 84%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #ffffff)) 88%, transparent);
   color: var(--editor-text-secondary, #475569);
   font-size: 12px;
   font-weight: 600;
@@ -245,7 +249,7 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   text-overflow: ellipsis;
 
   &:hover {
-    background: var(--editor-bg-base, #ffffff);
+    background: var(--editor-bg-elevated, var(--editor-bg-base, #ffffff));
     border-color: var(--editor-accent-soft-border, #93c5fd);
     color: var(--editor-text-primary, #0f172a);
   }
@@ -311,7 +315,7 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   padding: 2px;
   border: 1px solid color-mix(in srgb, var(--editor-border, #cbd5e1) 88%, transparent);
   border-radius: 10px;
-  background: color-mix(in srgb, var(--editor-bg-base, #ffffff) 84%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-glass, var(--editor-bg-base, #ffffff)) 90%, transparent);
 }
 
 .topbar-icon-btn {
@@ -343,7 +347,7 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   padding: 0 10px;
   border: 1px solid color-mix(in srgb, var(--editor-border, #cbd5e1) 88%, transparent);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--editor-bg-base, #ffffff) 92%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #ffffff)) 94%, transparent);
   color: var(--editor-text-secondary, #475569);
   font-size: 12px;
   font-weight: 600;
@@ -352,7 +356,7 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   white-space: nowrap;
 
   &:hover {
-    background: var(--editor-bg-base, #ffffff);
+    background: var(--editor-bg-elevated, var(--editor-bg-base, #ffffff));
     border-color: var(--editor-accent-soft-border, #93c5fd);
     color: var(--editor-text-primary, #0f172a);
   }
@@ -395,10 +399,10 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  background: var(--editor-bg-base, #ffffff);
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
   border: 1px solid color-mix(in srgb, var(--editor-border, #cbd5e1) 88%, transparent);
   border-radius: 10px;
-  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.1);
+  box-shadow: var(--editor-shadow-lg, 0 16px 32px rgba(15, 23, 42, 0.1));
   padding: 6px;
   z-index: 100;
   min-width: 160px;

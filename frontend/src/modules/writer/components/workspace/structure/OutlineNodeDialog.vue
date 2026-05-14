@@ -359,7 +359,7 @@ function handleConfirm() {
   padding: 8px 12px;
   border: 1px solid var(--editor-border, #e2e8f0);
   border-radius: var(--editor-radius-md, 6px);
-  background: var(--editor-bg-base, #ffffff);
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
   color: var(--editor-text-primary, #0f172a);
   font-size: 13px;
   font-family: inherit;
@@ -407,7 +407,7 @@ function handleConfirm() {
   padding: 0 14px;
   border-radius: 10px;
   border: 1px solid var(--editor-border, #e2e8f0);
-  background: var(--editor-bg-base, #fff);
+  background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
   color: var(--editor-text-secondary, #334155);
   font-size: 13px;
   font-weight: 600;
@@ -419,7 +419,11 @@ function handleConfirm() {
 
   &:hover {
     border-color: var(--editor-border-focus, #06b6d4);
-    background: color-mix(in srgb, var(--editor-bg-base, #fff) 90%, var(--editor-bg-surface, #f8fafc) 10%);
+    background: color-mix(
+      in srgb,
+      var(--editor-layer-panel, var(--editor-bg-base, #fff)) 90%,
+      var(--editor-layer-soft, var(--editor-bg-surface, #f8fafc)) 10%
+    );
   }
 }
 

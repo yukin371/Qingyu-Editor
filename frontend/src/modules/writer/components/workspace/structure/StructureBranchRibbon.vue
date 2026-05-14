@@ -60,7 +60,7 @@ const emit = defineEmits<{
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--editor-bg-base, #ffffff);
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
   border-radius: var(--editor-radius-lg, 8px);
   border: 1px solid var(--editor-border, #e2e8f0);
   overflow: hidden;
@@ -101,7 +101,7 @@ const emit = defineEmits<{
   padding: 20px;
   border-radius: 18px;
   border: 1px solid color-mix(in srgb, var(--editor-border, #8f3f2f) 36%, transparent);
-  background: var(--editor-bg-base, white);
+  background: var(--editor-layer-panel, #ffffff);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -111,14 +111,14 @@ const emit = defineEmits<{
 
   &:hover {
     transform: translateY(-4px);
-    box-shadow: 0 16px 32px color-mix(in srgb, var(--editor-accent, #8f3f2f) 16%, transparent);
+    box-shadow: var(--editor-shadow-lg, 0 16px 32px color-mix(in srgb, var(--editor-accent, #8f3f2f) 16%, transparent));
     border-color: var(--editor-border-focus, rgba(143, 63, 47, 0.2));
   }
 
   &.is-selected {
     background: color-mix(in srgb, var(--editor-accent-soft, rgba(143, 63, 47, 0.03)) 56%, transparent);
     border-color: var(--editor-accent, #8f3f2f);
-    box-shadow: 0 8px 24px color-mix(in srgb, var(--editor-accent, #8f3f2f) 18%, transparent);
+    box-shadow: var(--editor-shadow-md, 0 8px 24px color-mix(in srgb, var(--editor-accent, #8f3f2f) 18%, transparent));
   }
 }
 
@@ -148,7 +148,7 @@ const emit = defineEmits<{
   span {
     font-size: 12px;
     color: var(--editor-text-secondary, #6f6257);
-    background: color-mix(in srgb, var(--editor-bg-surface, #f5efe7) 88%, transparent);
+    background: color-mix(in srgb, var(--editor-layer-strong, #f5efe7) 88%, transparent);
     border-radius: 999px;
     padding: 4px 10px;
   }
@@ -165,7 +165,7 @@ const emit = defineEmits<{
   color: var(--editor-text-secondary, #65574d);
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--editor-border, #755d43) 28%, transparent);
-  background: color-mix(in srgb, var(--editor-bg-base, #fffbf7) 88%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #fffbf7) 88%, transparent);
   padding: 4px 10px;
 }
 

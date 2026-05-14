@@ -222,7 +222,7 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--editor-bg-base, #fff);
+  background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
   border-left: 1px solid var(--editor-border, #e5e7eb);
   border-right: 1px solid var(--editor-border, #e5e7eb);
 }
@@ -257,7 +257,7 @@ defineExpose({
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  background: var(--editor-bg-base, #fff);
+  background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
 }
 
 .workspace-writing-surface__header {
@@ -267,8 +267,8 @@ defineExpose({
   border-bottom: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 88%, transparent);
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--editor-bg-surface, #f8fafc) 96%, transparent),
-    color-mix(in srgb, var(--editor-bg-base, #ffffff) 96%, transparent)
+    color-mix(in srgb, var(--editor-layer-soft, var(--editor-bg-surface, #f8fafc)) 96%, transparent),
+    color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #ffffff)) 96%, transparent)
   );
 }
 

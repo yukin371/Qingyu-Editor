@@ -6,12 +6,12 @@
     @update:visible="handleVisibilityChange"
   >
     <div class="space-y-4">
-      <div v-if="templateName" class="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-500">
+      <div v-if="templateName" class="project-create-dialog__hint rounded-2xl px-4 py-3 text-sm">
         模板来源：{{ templateName }}
       </div>
 
       <label class="block space-y-2">
-        <span class="text-sm font-medium text-slate-700">项目名称</span>
+        <span class="project-create-dialog__label text-sm font-medium">项目名称</span>
         <QyInput
           v-model="title"
           :maxlength="80"
@@ -29,7 +29,7 @@
       </QyButton>
 
       <label v-if="summaryVisible" class="block space-y-2">
-        <span class="text-sm font-medium text-slate-700">一句话摘要</span>
+        <span class="project-create-dialog__label text-sm font-medium">一句话摘要</span>
         <QyTextarea
           v-model="summary"
           :rows="3"
@@ -113,3 +113,14 @@ function handleSubmit() {
   })
 }
 </script>
+
+<style scoped>
+.project-create-dialog__hint {
+  background: color-mix(in srgb, var(--editor-bg-surface, #f8fafc) 84%, transparent);
+  color: var(--editor-text-muted, #64748b);
+}
+
+.project-create-dialog__label {
+  color: var(--editor-text-secondary, #334155);
+}
+</style>

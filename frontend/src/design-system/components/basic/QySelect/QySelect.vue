@@ -412,16 +412,16 @@ defineExpose({
 }
 
 :deep(.overflow-y-auto)::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--editor-layer-soft, #f1f5f9);
   border-radius: 3px;
 }
 
 :deep(.overflow-y-auto)::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: color-mix(in srgb, var(--editor-border, #cbd5e1) 82%, transparent);
   border-radius: 3px;
 }
 
 :deep(.overflow-y-auto)::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: color-mix(in srgb, var(--editor-text-ghost, #94a3b8) 82%, transparent);
 }
 </style>

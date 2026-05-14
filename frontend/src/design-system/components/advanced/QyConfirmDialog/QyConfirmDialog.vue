@@ -168,12 +168,12 @@ const handleClose = () => {
 .qy-confirm-dialog__message {
   margin: 0 0 16px 0;
   font-size: 14px;
-  color: #606266;
+  color: var(--editor-text-secondary, #606266);
   line-height: 1.6;
 }
 
 .qy-confirm-dialog__details {
-  background: #f5f7fa;
+  background: var(--editor-layer-soft, #f5f7fa);
   border-radius: 8px;
   padding: 12px 16px;
   margin-top: 12px;
@@ -193,16 +193,16 @@ const handleClose = () => {
   font-size: 14px;
 
   &:not(:last-child) {
-    border-bottom: 1px solid #ebeef5;
+    border-bottom: 1px solid color-mix(in srgb, var(--editor-border, #ebeef5) 62%, transparent);
   }
 
   .detail-label {
-    color: #909399;
+    color: var(--editor-text-ghost, #909399);
     font-weight: 500;
   }
 
   .detail-value {
-    color: #303133;
+    color: var(--editor-text-primary, #303133);
     font-weight: 600;
   }
 }

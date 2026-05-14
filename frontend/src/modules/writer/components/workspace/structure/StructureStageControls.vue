@@ -245,7 +245,7 @@ const emit = defineEmits<{
   padding: 0 12px;
   border: 1px solid var(--editor-border, #e2e8f0);
   border-radius: 999px;
-  background: var(--editor-bg-base, #fff);
+  background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
   color: var(--editor-text-secondary, #334155);
   font-size: 12px;
   font-weight: 600;
@@ -271,7 +271,7 @@ const emit = defineEmits<{
   padding: 6px 14px;
   border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--editor-border, #8f3f2f) 44%, transparent);
-  background: var(--editor-bg-base, white);
+  background: var(--editor-layer-panel, var(--editor-bg-base, white));
   color: var(--editor-text-secondary, #5f4e40);
   font-size: 13px;
   font-weight: 600;
@@ -279,7 +279,7 @@ const emit = defineEmits<{
   transition: all 0.2s;
 
   &:hover:not(:disabled) {
-    background: var(--editor-bg-surface, #fffcf9);
+    background: var(--editor-layer-soft, var(--editor-bg-surface, #fffcf9));
     border-color: var(--editor-border-focus, #8f3f2f);
     color: var(--editor-accent, #8f3f2f);
     transform: translateY(-1px);
@@ -353,7 +353,7 @@ const emit = defineEmits<{
   }
 
   &.is-active {
-    background: var(--editor-bg-base, #ffffff);
+    background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
     color: var(--editor-accent, #06b6d4);
     border-color: var(--editor-accent-soft-border, #a5f3fc);
 
@@ -406,14 +406,14 @@ const emit = defineEmits<{
     padding: 0 12px 0 38px;
     border-radius: 12px;
     border: 1px solid color-mix(in srgb, var(--editor-border, #8f3f2f) 42%, transparent);
-    background: color-mix(in srgb, var(--editor-bg-base, #fff) 70%, transparent);
+    background: color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #fff)) 88%, transparent);
     color: var(--editor-text-primary, #0f172a);
     font-size: 13px;
     outline: none;
     transition: all 0.2s;
 
     &:focus {
-      background: var(--editor-bg-base, white);
+      background: var(--editor-bg-elevated, var(--editor-bg-base, white));
       border-color: var(--editor-border-focus, #8f3f2f);
       box-shadow: 0 0 0 3px color-mix(in srgb, var(--editor-accent, #8f3f2f) 12%, transparent);
     }
@@ -456,7 +456,7 @@ const emit = defineEmits<{
   padding: 0 12px;
   border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--editor-border, #8f3f2f) 42%, transparent);
-  background: color-mix(in srgb, var(--editor-bg-base, #fff) 82%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #fff)) 92%, transparent);
 }
 
 .structure-filter-select__label {
@@ -479,7 +479,7 @@ const emit = defineEmits<{
 .mini-metrics {
   display: flex;
   gap: 20px;
-  background: color-mix(in srgb, var(--editor-bg-base, #fff) 50%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-glass, var(--editor-bg-base, #fff)) 92%, transparent);
   padding: 6px 16px;
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--editor-border, #8f3f2f) 32%, transparent);
@@ -516,7 +516,11 @@ const emit = defineEmits<{
   padding: 16px 18px;
   border-radius: var(--editor-radius-lg, 8px);
   border: 1px solid color-mix(in srgb, var(--color-warning-700, #8f3f2f) 22%, transparent);
-  background: color-mix(in srgb, var(--color-warning-50, #fff2e7) 72%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--editor-layer-accent, var(--editor-accent-soft, #fff2e7)) 68%,
+    transparent
+  );
 
   h3,
   p {

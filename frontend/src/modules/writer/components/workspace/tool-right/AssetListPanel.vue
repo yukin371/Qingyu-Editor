@@ -69,7 +69,7 @@ defineEmits<{
   display: flex;
   flex-direction: column;
   padding: 10px 0 0;
-  background: var(--editor-bg-base, #fff);
+  background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
 }
 
 .asset-list-panel__toolbar {
@@ -106,7 +106,7 @@ defineEmits<{
   padding: 0 10px;
   border: 1px solid var(--editor-border, #d9dee6);
   border-radius: 4px;
-  background: var(--editor-bg-base, #fff);
+  background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
   color: var(--editor-text-secondary, #374151);
   font-size: 12px;
   font-weight: 600;

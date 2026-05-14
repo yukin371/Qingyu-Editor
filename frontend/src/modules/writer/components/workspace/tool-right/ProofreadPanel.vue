@@ -53,8 +53,12 @@ const { isRunning, issues, hasSourceText, groupedIssues, dismissIssue, runProofr
   gap: 16px;
   padding: 18px;
   background:
-    radial-gradient(circle at top right, rgba(250, 204, 21, 0.12), transparent 28%),
-    linear-gradient(180deg, #fffdf5, #f8fafc 100%);
+    radial-gradient(circle at top right, color-mix(in srgb, var(--color-warning-400, #facc15) 14%, transparent), transparent 28%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--editor-layer-panel, #fffdf5) 96%, transparent),
+      color-mix(in srgb, var(--editor-bg-surface, #f8fafc) 92%, transparent) 100%
+    );
 }
 
 .proofread-panel__header {
@@ -76,7 +80,7 @@ const { isRunning, issues, hasSourceText, groupedIssues, dismissIssue, runProofr
 
 .proofread-panel__eyebrow {
   margin: 0 0 6px;
-  color: #b45309;
+  color: var(--color-warning-700, #b45309);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -87,8 +91,8 @@ const { isRunning, issues, hasSourceText, groupedIssues, dismissIssue, runProofr
   height: 32px;
   padding: 0 12px;
   border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.22)) 72%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 92%, transparent);
   color: var(--editor-text-secondary, #475569);
   font-size: 12px;
   font-weight: 600;
@@ -97,7 +101,7 @@ const { isRunning, issues, hasSourceText, groupedIssues, dismissIssue, runProofr
 
 .proofread-panel__primary {
   border-color: rgba(234, 179, 8, 0.24);
-  color: #a16207;
+  color: var(--color-warning-700, #a16207);
 }
 
 .proofread-panel__empty {
@@ -107,8 +111,8 @@ const { isRunning, issues, hasSourceText, groupedIssues, dismissIssue, runProofr
   justify-content: center;
   gap: 10px;
   border-radius: 18px;
-  border: 1px dashed rgba(148, 163, 184, 0.4);
-  background: rgba(255, 255, 255, 0.66);
+  border: 1px dashed color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.4)) 76%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 66%, transparent);
   color: var(--editor-text-secondary, #475569);
 }
 

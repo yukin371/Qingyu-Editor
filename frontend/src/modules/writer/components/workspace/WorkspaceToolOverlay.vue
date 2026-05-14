@@ -321,7 +321,12 @@ watch(
     gap: 12px;
     padding: 10px 20px;
     border-bottom: 1px solid var(--editor-border);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 248, 255, 0.96));
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--editor-layer-panel, rgba(15, 23, 42, 0.9)) 96%, transparent),
+        color-mix(in srgb, var(--editor-layer-soft, rgba(15, 23, 42, 0.82)) 94%, transparent)
+      );
   }
 
   &__context-label {
@@ -347,8 +352,8 @@ watch(
     min-width: 0;
     padding: 5px 10px;
     border-radius: 999px;
-    border: 1px solid rgba(72, 94, 144, 0.14);
-    background: rgba(248, 251, 255, 0.95);
+    border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.34)) 52%, transparent);
+    background: color-mix(in srgb, var(--editor-layer-panel, rgba(15, 23, 42, 0.88)) 90%, transparent);
     color: var(--editor-text-primary);
     font-size: 12px;
     line-height: 1.2;
@@ -361,39 +366,39 @@ watch(
     }
 
     &.is-neutral {
-      background: rgba(240, 246, 255, 0.96);
-      color: #365072;
+      background: color-mix(in srgb, var(--editor-layer-soft, rgba(15, 23, 42, 0.78)) 90%, transparent);
+      color: var(--editor-text-secondary, rgba(226, 232, 240, 0.86));
     }
 
     &.is-scope {
-      border-color: rgba(62, 99, 146, 0.18);
+      border-color: color-mix(in srgb, var(--editor-accent, rgba(96, 165, 250, 0.32)) 36%, transparent);
     }
 
     &.is-character {
-      border-color: rgba(70, 110, 196, 0.22);
-      background: rgba(238, 244, 255, 0.98);
+      border-color: rgba(96, 165, 250, 0.28);
+      background: rgba(37, 99, 235, 0.16);
     }
 
     &.is-item {
-      border-color: rgba(178, 132, 43, 0.22);
-      background: rgba(255, 248, 231, 0.98);
+      border-color: rgba(245, 158, 11, 0.24);
+      background: rgba(180, 83, 9, 0.16);
     }
 
     &.is-location {
-      border-color: rgba(48, 132, 109, 0.22);
-      background: rgba(236, 249, 243, 0.98);
+      border-color: rgba(52, 211, 153, 0.24);
+      background: rgba(5, 150, 105, 0.16);
     }
 
     &.is-organization,
     &.is-concept,
     &.is-foreshadowing {
-      border-color: rgba(114, 92, 178, 0.18);
-      background: rgba(245, 240, 255, 0.98);
+      border-color: rgba(167, 139, 250, 0.24);
+      background: rgba(109, 40, 217, 0.14);
     }
 
     &.is-overflow {
-      background: rgba(241, 244, 249, 0.96);
-      color: var(--editor-text-secondary);
+      background: color-mix(in srgb, var(--editor-layer-soft, rgba(15, 23, 42, 0.78)) 92%, transparent);
+      color: var(--editor-text-secondary, rgba(226, 232, 240, 0.84));
     }
   }
 

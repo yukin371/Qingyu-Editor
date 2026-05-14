@@ -164,9 +164,13 @@ const {
   flex-direction: column;
   min-height: 0;
   background:
-    radial-gradient(circle at top, rgba(34, 211, 238, 0.08), transparent 28%),
-    linear-gradient(180deg, rgba(253, 254, 255, 0.98), rgba(247, 250, 252, 0.95));
-  color: #1f2430;
+    radial-gradient(circle at top, color-mix(in srgb, var(--editor-accent, #22d3ee) 10%, transparent), transparent 28%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #fff)) 98%, transparent),
+      color-mix(in srgb, var(--editor-layer-soft, var(--editor-bg-surface, #f8fafc)) 95%, transparent)
+    );
+  color: var(--editor-text-primary, #1f2430);
 }
 
 .ai-workbench__tabs {
@@ -174,15 +178,19 @@ const {
   gap: 6px;
   padding: 12px 14px 10px;
   border-bottom: 1px solid var(--editor-border, rgba(0, 0, 0, 0.06));
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(248, 250, 252, 0.72));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #fff)) 90%, transparent),
+    color-mix(in srgb, var(--editor-layer-soft, var(--editor-bg-surface, #f8fafc)) 76%, transparent)
+  );
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--editor-bg-elevated, #fff) 64%, transparent);
 }
 
 .ai-workbench__tab {
   flex: 1;
   text-align: center;
   border: 1px solid rgba(148, 163, 184, 0.12);
-  background: rgba(255, 255, 255, 0.56);
+  background: color-mix(in srgb, var(--editor-layer-glass, var(--editor-bg-base, #fff)) 82%, transparent);
   border-radius: 999px;
   padding: 7px 10px;
   cursor: pointer;
@@ -191,29 +199,37 @@ const {
   color: var(--editor-text-muted, #64748b);
   transition: all 0.18s ease;
   white-space: nowrap;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--editor-bg-elevated, #fff) 52%, transparent);
 }
 
 .ai-workbench__tab:hover {
-  background: rgba(255, 255, 255, 0.94);
+  background: color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #fff)) 96%, transparent);
   color: var(--editor-text-primary, #0f172a);
   transform: translateY(-1px);
 }
 
 .ai-workbench__tab.active {
   background:
-    linear-gradient(135deg, rgba(14, 165, 233, 0.16), rgba(34, 211, 238, 0.08)),
-    rgba(255, 255, 255, 0.96);
-  border-color: rgba(14, 165, 233, 0.22);
-  color: #0369a1;
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--editor-accent, #0ea5e9) 16%, transparent),
+      color-mix(in srgb, var(--editor-accent, #22d3ee) 8%, transparent)
+    ),
+    color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #fff)) 96%, transparent);
+  border-color: color-mix(in srgb, var(--editor-accent, #0ea5e9) 22%, transparent);
+  color: var(--editor-accent, #0369a1);
   font-weight: 800;
-  box-shadow: 0 10px 20px rgba(14, 165, 233, 0.12);
+  box-shadow: var(--editor-shadow-md, 0 10px 20px rgba(14, 165, 233, 0.12));
 }
 
 .workflow-rail {
   padding: 12px;
   border-bottom: 1px solid var(--editor-border, rgba(0, 0, 0, 0.06));
-  background: linear-gradient(180deg, rgba(246, 250, 255, 0.92), rgba(255, 255, 255, 0.82));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--editor-layer-soft, var(--editor-bg-surface, #f8fafc)) 92%, transparent),
+    color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #fff)) 84%, transparent)
+  );
   display: grid;
   gap: 10px;
 }
@@ -244,12 +260,16 @@ const {
   justify-content: space-between;
   gap: 12px;
   padding: 11px 12px;
-  border: 1px solid rgba(148, 163, 184, 0.14);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.14)) 42%, transparent);
   border-radius: 14px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.92));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #fff)) 98%, transparent),
+    color-mix(in srgb, var(--editor-layer-soft, var(--editor-bg-surface, #f8fafc)) 92%, transparent)
+  );
   box-shadow:
-    0 10px 24px rgba(15, 23, 42, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    var(--editor-shadow-md, 0 10px 24px rgba(15, 23, 42, 0.05)),
+    inset 0 1px 0 color-mix(in srgb, var(--editor-bg-elevated, #fff) 62%, transparent);
 
   strong {
     display: block;
@@ -266,7 +286,7 @@ const {
 }
 
 .workflow-result-card--secondary {
-  background: rgba(250, 252, 255, 0.7);
+  background: color-mix(in srgb, var(--editor-layer-soft, rgba(250, 252, 255, 0.7)) 88%, transparent);
 }
 
 .workflow-result-card--condensed {
@@ -312,7 +332,7 @@ const {
   min-height: 20px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(148, 163, 184, 0.12);
+  background: color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.12)) 22%, transparent);
   color: var(--editor-text-muted, #64748b);
   font-size: 10px;
   font-weight: 700;
@@ -341,16 +361,20 @@ const {
 
 .workflow-diff-card {
   padding: 12px;
-  border: 1px solid rgba(14, 165, 233, 0.14);
+  border: 1px solid color-mix(in srgb, var(--editor-accent, rgba(14, 165, 233, 0.14)) 18%, transparent);
   border-radius: 16px;
   background:
-    radial-gradient(circle at top right, rgba(34, 211, 238, 0.12), transparent 26%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(243, 248, 252, 0.95));
+    radial-gradient(circle at top right, color-mix(in srgb, var(--editor-accent, #22d3ee) 12%, transparent), transparent 26%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #fff)) 99%, transparent),
+      color-mix(in srgb, var(--editor-layer-soft, var(--editor-bg-surface, #f8fafc)) 95%, transparent)
+    );
   display: grid;
   gap: 10px;
   box-shadow:
-    0 16px 34px rgba(8, 47, 73, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    var(--editor-shadow-lg, 0 16px 34px rgba(8, 47, 73, 0.08)),
+    inset 0 1px 0 color-mix(in srgb, var(--editor-bg-elevated, #fff) 68%, transparent);
 }
 
 .workflow-diff-card__hint {
@@ -380,7 +404,7 @@ const {
   min-width: 0;
   border-radius: 12px;
   border: 1px solid rgba(148, 163, 184, 0.16);
-  background: rgba(248, 250, 252, 0.95);
+  background: color-mix(in srgb, var(--editor-layer-soft, rgba(248, 250, 252, 0.95)) 94%, transparent);
   padding: 10px;
 }
 
@@ -410,14 +434,14 @@ const {
 
 .workflow-diff-card__action {
   border: 1px solid rgba(14, 165, 233, 0.16);
-  background: rgba(255, 255, 255, 0.96);
+  background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.96)) 96%, transparent);
   color: var(--editor-text-primary, #0f172a);
   border-radius: 999px;
   padding: 8px 14px;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 8px 18px rgba(14, 165, 233, 0.08);
+  box-shadow: var(--editor-shadow-sm, 0 8px 18px rgba(14, 165, 233, 0.08));
 }
 
 .workflow-diff-card__action--primary {
@@ -431,7 +455,11 @@ const {
   min-height: 0;
   overflow: hidden;
   padding: 14px 16px 18px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(248, 250, 252, 0.12));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--editor-layer-glass, rgba(255, 255, 255, 0.52)) 78%, transparent),
+    color-mix(in srgb, var(--editor-layer-soft, rgba(248, 250, 252, 0.12)) 38%, transparent)
+  );
 }
 
 .apply-feedback {
@@ -439,7 +467,7 @@ const {
   padding: 7px 10px;
   border-radius: 999px;
   border: 1px solid rgba(117, 93, 67, 0.2);
-  background: rgba(255, 251, 245, 0.94);
+  background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 251, 245, 0.94)) 94%, transparent);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -455,14 +483,14 @@ const {
 
 .apply-feedback strong {
   display: inline;
-  color: #241f19;
+  color: var(--editor-text-primary, #241f19);
   font-size: 11px;
   line-height: 1.2;
 }
 
 .apply-feedback p {
   margin: 0;
-  color: #6e6358;
+  color: var(--editor-text-muted, #6e6358);
   font-size: 11px;
   line-height: 1.3;
   white-space: nowrap;
@@ -496,8 +524,8 @@ const {
   align-items: center;
   border-radius: 999px;
   border: 1px solid rgba(117, 93, 67, 0.2);
-  background: rgba(255, 255, 255, 0.72);
-  color: #5f4e40;
+  background: color-mix(in srgb, var(--editor-layer-glass, rgba(255, 255, 255, 0.72)) 90%, transparent);
+  color: var(--editor-text-secondary, #5f4e40);
   font-size: 10px;
   font-weight: 800;
   padding: 3px 8px;

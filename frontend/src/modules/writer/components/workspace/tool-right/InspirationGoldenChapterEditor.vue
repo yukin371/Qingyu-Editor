@@ -136,13 +136,13 @@ const emitUpdate = (
   text-align: left;
   padding: 10px 12px;
   border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.18)) 72%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 90%, transparent);
   color: var(--editor-text-secondary, #475569);
   cursor: pointer;
 
   span {
-    color: #b45309;
+    color: var(--color-warning-700, #b45309);
     font-size: 11px;
     font-weight: 700;
   }
@@ -153,9 +153,9 @@ const emitUpdate = (
   }
 
   &.is-active {
-    border-color: rgba(245, 158, 11, 0.34);
-    background: rgba(255, 251, 235, 0.92);
-    box-shadow: 0 8px 22px rgba(245, 158, 11, 0.1);
+    border-color: color-mix(in srgb, var(--color-warning-500, #f59e0b) 38%, transparent);
+    background: color-mix(in srgb, var(--color-warning-50, #fffbeb) 92%, transparent);
+    box-shadow: var(--editor-shadow-md, 0 8px 22px rgba(245, 158, 11, 0.1));
   }
 }
 
@@ -164,20 +164,24 @@ const emitUpdate = (
   gap: 10px;
   padding: 14px;
   border-radius: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.16);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.16)) 72%, transparent);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.86)),
-    rgba(255, 255, 255, 0.86);
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--editor-layer-panel, #ffffff) 98%, transparent),
+      color-mix(in srgb, var(--editor-layer-strong, #f8fafc) 86%, transparent)
+    ),
+    color-mix(in srgb, var(--editor-layer-panel, #ffffff) 86%, transparent);
 
   input,
   textarea {
     width: 100%;
-    border: 1px solid rgba(148, 163, 184, 0.22);
+    border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.22)) 72%, transparent);
     border-radius: 12px;
     padding: 10px 12px;
     outline: none;
     resize: vertical;
-    background: rgba(255, 255, 255, 0.94);
+    background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
     color: var(--editor-text-primary, #0f172a);
     font: inherit;
   }
@@ -192,7 +196,7 @@ const emitUpdate = (
   }
 
   span {
-    color: #b45309;
+    color: var(--color-warning-700, #b45309);
     font-size: 12px;
     font-weight: 700;
   }

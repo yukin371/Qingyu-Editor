@@ -451,7 +451,7 @@ const emit = defineEmits<{
     padding: 0 10px;
     border-radius: 999px;
     border: 1px solid color-mix(in srgb, var(--editor-border, #94a3b8) 38%, transparent);
-    background: color-mix(in srgb, var(--editor-bg-base, #fff) 86%, transparent);
+      background: color-mix(in srgb, var(--editor-layer-panel, #fff) 86%, transparent);
     color: var(--editor-text-secondary, #475569);
     font-size: 12px;
     font-weight: 700;
@@ -472,7 +472,7 @@ const emit = defineEmits<{
   padding: 10px 12px;
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--editor-border, #94a3b8) 40%, transparent);
-  background: color-mix(in srgb, var(--editor-bg-base, #fff) 88%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #fff) 88%, transparent);
   color: var(--editor-text-secondary, #475569);
   text-align: left;
   cursor: pointer;
@@ -524,9 +524,9 @@ const emit = defineEmits<{
       linear-gradient(
         90deg,
         color-mix(in srgb, var(--color-warning-200, #fbbf24) 22%, transparent),
-        color-mix(in srgb, var(--editor-bg-base, #fff) 92%, transparent)
+      color-mix(in srgb, var(--editor-layer-panel, #fff) 92%, transparent)
       ),
-      var(--editor-bg-base, #fff);
+      var(--editor-layer-panel, #fff);
   }
 }
 
@@ -554,7 +554,7 @@ const emit = defineEmits<{
   padding: 0 12px;
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--editor-border, #94a3b8) 42%, transparent);
-  background: color-mix(in srgb, var(--editor-bg-base, #fff) 90%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #fff) 90%, transparent);
   color: var(--editor-text-muted, #64748b);
 
   input {
@@ -573,7 +573,7 @@ const emit = defineEmits<{
   padding: 0 11px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--editor-border, #94a3b8) 42%, transparent);
-  background: color-mix(in srgb, var(--editor-bg-base, #fff) 92%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #fff) 92%, transparent);
   color: var(--editor-text-secondary, #475569);
   font-size: 12px;
   font-weight: 800;
@@ -592,8 +592,8 @@ const emit = defineEmits<{
 
 .structure-stage-view__window-filter.is-active {
   border-color: var(--editor-accent-soft-border, #8f3f2f);
-  background: var(--editor-accent-soft, #fff7ed);
-  color: var(--editor-accent, #8f3f2f);
+  background: color-mix(in srgb, var(--editor-accent-soft, rgba(59, 130, 246, 0.18)) 38%, var(--editor-layer-soft, rgba(15, 23, 42, 0.86)) 62%);
+  color: color-mix(in srgb, var(--editor-accent, #60a5fa) 86%, white 14%);
 }
 
 .structure-stage-view__window-range {
@@ -608,7 +608,7 @@ const emit = defineEmits<{
   overflow: auto;
   border: 1px solid color-mix(in srgb, var(--editor-border, #94a3b8) 32%, transparent);
   border-radius: 16px;
-  background: color-mix(in srgb, var(--editor-bg-base, #fff) 90%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, rgba(15, 23, 42, 0.9)) 94%, transparent);
 }
 
 .structure-stage-view__rhythm-table {
@@ -628,7 +628,7 @@ const emit = defineEmits<{
     position: sticky;
     top: 0;
     z-index: 1;
-    background: var(--editor-bg-surface, #f8fafc);
+    background: color-mix(in srgb, var(--editor-layer-soft, rgba(15, 23, 42, 0.84)) 96%, transparent);
     color: var(--editor-text-muted, #64748b);
     font-size: 11px;
     font-weight: 800;
@@ -639,14 +639,31 @@ const emit = defineEmits<{
 
 .structure-stage-view__rhythm-row {
   cursor: pointer;
-  transition: background-color 120ms ease-out;
+  transition:
+    background-color 120ms ease-out,
+    box-shadow 120ms ease-out;
+
+  td {
+    background: transparent;
+  }
 
   &:hover {
-    background: color-mix(in srgb, var(--editor-bg-surface, #f8fafc) 86%, transparent);
+    background: color-mix(in srgb, var(--editor-layer-soft, rgba(15, 23, 42, 0.78)) 84%, transparent);
   }
 
   &.is-selected {
-    background: color-mix(in srgb, var(--editor-accent-soft, #fff7ed) 72%, transparent);
+    background:
+      linear-gradient(
+        90deg,
+        rgba(96, 165, 250, 0.14),
+        rgba(96, 165, 250, 0.08) 24%,
+        color-mix(in srgb, var(--editor-layer-soft, rgba(15, 23, 42, 0.88)) 96%, transparent) 24%
+      );
+    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--editor-accent, rgba(96, 165, 250, 0.72)) 82%, transparent);
+
+    td {
+      background: transparent;
+    }
   }
 }
 
@@ -663,24 +680,24 @@ const emit = defineEmits<{
 }
 
 .structure-stage-view__rhythm-order {
-  background: color-mix(in srgb, var(--editor-bg-elevated, #e2e8f0) 86%, transparent);
-  color: var(--editor-text-secondary, #334155);
+  background: color-mix(in srgb, var(--editor-layer-glass, rgba(255, 255, 255, 0.08)) 88%, transparent);
+  color: var(--editor-text-secondary, rgba(226, 232, 240, 0.84));
 }
 
 .structure-stage-view__rhythm-status {
   &.is-draft {
-    background: color-mix(in srgb, var(--editor-bg-elevated, #e2e8f0) 90%, transparent);
-    color: var(--editor-text-secondary, #475569);
+    background: color-mix(in srgb, var(--editor-layer-soft, rgba(15, 23, 42, 0.76)) 92%, transparent);
+    color: var(--editor-text-secondary, rgba(226, 232, 240, 0.82));
   }
 
   &.is-writing {
-    background: color-mix(in srgb, var(--editor-accent-soft, #ecfeff) 90%, transparent);
-    color: var(--editor-accent, #0891b2);
+    background: color-mix(in srgb, var(--editor-accent-soft, rgba(59, 130, 246, 0.18)) 82%, transparent);
+    color: color-mix(in srgb, var(--editor-accent, #60a5fa) 88%, white 12%);
   }
 
   &.is-completed {
-    background: color-mix(in srgb, var(--color-success-50, #f0fdf4) 94%, transparent);
-    color: var(--color-success-700, #15803d);
+    background: rgba(16, 185, 129, 0.16);
+    color: rgba(167, 243, 208, 0.96);
   }
 }
 
@@ -718,7 +735,7 @@ const emit = defineEmits<{
   padding: 0 10px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--editor-border, #94a3b8) 40%, transparent);
-  background: color-mix(in srgb, var(--editor-bg-base, #fff) 92%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #fff) 92%, transparent);
   color: var(--editor-accent, #06b6d4);
   font-size: 12px;
   font-weight: 700;
@@ -726,8 +743,8 @@ const emit = defineEmits<{
 }
 
 .structure-stage-view__rhythm-wordcount {
-  background: color-mix(in srgb, var(--editor-bg-surface, #f8fafc) 96%, transparent);
-  color: var(--editor-text-secondary, #475569);
+  background: color-mix(in srgb, var(--editor-layer-glass, rgba(255, 255, 255, 0.08)) 88%, transparent);
+  color: var(--editor-text-secondary, rgba(226, 232, 240, 0.82));
   border: 1px solid color-mix(in srgb, var(--editor-border, #94a3b8) 32%, transparent);
 }
 
@@ -742,7 +759,7 @@ const emit = defineEmits<{
   padding: 0 12px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--editor-border, #94a3b8) 44%, transparent);
-  background: color-mix(in srgb, var(--editor-bg-base, #fff) 96%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #fff) 96%, transparent);
   color: var(--editor-text-secondary, #475569);
   font-size: 12px;
   font-weight: 800;
@@ -832,7 +849,7 @@ const emit = defineEmits<{
 
   &--ghost {
     border-color: var(--editor-border, #e2e8f0);
-    background: var(--editor-bg-base, #fff);
+    background: var(--editor-layer-panel, #fff);
     color: var(--editor-text-secondary, #334155);
   }
 }
@@ -843,7 +860,7 @@ const emit = defineEmits<{
   padding: 16px;
   border-radius: var(--editor-radius-lg, 8px);
   border: 1px solid color-mix(in srgb, var(--color-warning-300, #bf8d4f) 24%, var(--editor-border, #e2e8f0));
-  background: color-mix(in srgb, var(--color-warning-50, #fffcf6) 64%, var(--editor-bg-base, #fff) 36%);
+  background: color-mix(in srgb, var(--color-warning-50, #fffcf6) 64%, var(--editor-layer-panel, #fff) 36%);
   box-shadow: none;
 }
 
@@ -877,7 +894,7 @@ const emit = defineEmits<{
   padding: 0 14px;
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--color-warning-300, #5b4832) 24%, var(--editor-border, #e2e8f0));
-  background: color-mix(in srgb, var(--editor-bg-base, #fff) 94%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #fff) 94%, transparent);
   color: var(--editor-text-secondary, #6b4f35);
   font-size: 12px;
   font-weight: 700;
@@ -903,7 +920,7 @@ const emit = defineEmits<{
   padding: 0 12px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--color-warning-300, #bf8d4f) 22%, var(--editor-border, #e2e8f0));
-  background: color-mix(in srgb, var(--editor-bg-base, #fff) 82%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #fff) 82%, transparent);
 
   strong {
     color: var(--color-warning-700, #a17648);
@@ -958,7 +975,7 @@ const emit = defineEmits<{
   padding: 0 12px;
   border: 1px solid color-mix(in srgb, var(--color-warning-300, #bf8d4f) 30%, var(--editor-border, #e2e8f0));
   border-radius: 12px;
-  background: color-mix(in srgb, var(--editor-bg-base, #fff) 92%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #fff) 92%, transparent);
   color: var(--editor-text-secondary, #5b4632);
   font-size: 13px;
 }
@@ -975,7 +992,7 @@ const emit = defineEmits<{
   align-items: center;
   padding: 5px 10px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--editor-bg-base, #fff) 88%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #fff) 88%, transparent);
   color: var(--color-warning-800, #8b5e34);
   font-size: 12px;
   font-weight: 600;
@@ -985,7 +1002,7 @@ const emit = defineEmits<{
   overflow: auto;
   border: 1px solid color-mix(in srgb, var(--color-warning-300, #bf8d4f) 22%, var(--editor-border, #e2e8f0));
   border-radius: 16px;
-  background: color-mix(in srgb, var(--editor-bg-base, #fff) 90%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #fff) 90%, transparent);
 }
 
 .structure-stage-view__blueprint-table {
@@ -1005,7 +1022,7 @@ const emit = defineEmits<{
     position: sticky;
     top: 0;
     z-index: 1;
-    background: color-mix(in srgb, var(--color-warning-50, #fff8eb) 96%, var(--editor-bg-base, #fff) 4%);
+    background: color-mix(in srgb, var(--color-warning-50, #fff8eb) 96%, var(--editor-layer-panel, #fff) 4%);
     color: var(--editor-text-muted, #8b6b4b);
     font-size: 11px;
     font-weight: 800;
@@ -1017,7 +1034,7 @@ const emit = defineEmits<{
     color: var(--editor-text-secondary, #5b4632);
     font-size: 13px;
     line-height: 1.65;
-    background: color-mix(in srgb, var(--editor-bg-base, #fff) 92%, transparent);
+    background: color-mix(in srgb, var(--editor-layer-panel, #fff) 92%, transparent);
   }
 
   tbody tr:last-child td {

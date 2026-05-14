@@ -108,7 +108,7 @@ defineEmits<{
 }
 
 .view-mode-tab.is-active {
-  background: var(--editor-bg-base, #ffffff);
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
   color: var(--editor-accent, #2563eb);
   font-weight: 500;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -140,7 +140,7 @@ defineEmits<{
   }
 
   &.is-active {
-    background: var(--editor-bg-base, #ffffff);
+    background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
     color: var(--editor-accent, #2563eb);
     font-weight: 500;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);

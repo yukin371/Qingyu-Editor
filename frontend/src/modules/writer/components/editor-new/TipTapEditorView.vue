@@ -416,7 +416,7 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
   display: flex;
   gap: 0;
   padding: 0;
-  background: #fff;
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
 }
 
 .tiptap-editor-view--without-ref {
@@ -425,7 +425,7 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
   height: 100%;
   gap: 0;
   padding: 0;
-  background: #fff;
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
 }
 
 .tiptap-editor-view__body {
@@ -441,7 +441,7 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
 
 .editor-toolbar {
   border-bottom: 1px solid var(--editor-border);
-  background: #fff;
+  background: var(--editor-layer-panel, #ffffff);
   padding: 8px 16px;
   display: flex;
   justify-content: flex-end;
@@ -489,7 +489,7 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
   min-height: 0;
   overflow: hidden;
   padding: 0;
-  background: #fff;
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
   position: relative;
   display: flex;
   flex-direction: column;
@@ -503,9 +503,9 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
   gap: 6px;
   padding: 6px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 96%, transparent);
+  border: 1px solid color-mix(in srgb, var(--editor-border, #94a3b8) 72%, transparent);
+  box-shadow: var(--editor-shadow-md, 0 10px 24px rgba(15, 23, 42, 0.12));
   backdrop-filter: blur(14px);
 }
 
@@ -516,9 +516,9 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
   bottom: -7px;
   width: 14px;
   height: 14px;
-  background: rgba(255, 255, 255, 0.96);
-  border-right: 1px solid rgba(148, 163, 184, 0.18);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 96%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--editor-border, #94a3b8) 68%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--editor-border, #94a3b8) 68%, transparent);
   transform: translateX(-50%) rotate(45deg);
 }
 
@@ -555,9 +555,9 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
 
 .selection-toolbar__action:hover {
   transform: translateY(-1px);
-  background: rgba(15, 23, 42, 0.035);
-  border-color: rgba(148, 163, 184, 0.24);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.64);
+  background: color-mix(in srgb, var(--editor-bg-elevated, #f1f5f9) 82%, transparent);
+  border-color: color-mix(in srgb, var(--editor-border, #94a3b8) 74%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--editor-text-inverse, #ffffff) 14%, transparent);
 }
 
 .selection-toolbar__action:focus-visible {
@@ -604,7 +604,7 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
   border-left: 1px solid var(--editor-border);
   padding: 14px 14px 18px;
   overflow: auto;
-  background: #fff;
+  background: var(--editor-layer-panel, #ffffff);
 }
 
 .ref-header {
@@ -643,8 +643,8 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
 .stat {
   border-radius: 6px;
   padding: 8px;
-  border: 1px solid #e5e7eb;
-  background: #f8fafc;
+  border: 1px solid var(--editor-border, #e5e7eb);
+  background: var(--editor-layer-strong, #f8fafc);
   text-align: center;
 }
 
@@ -761,7 +761,7 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
   border: none;
   border-bottom: 1px solid var(--editor-border);
   border-radius: 0;
-  background: #fff;
+  background: var(--editor-layer-panel, #ffffff);
   padding: 8px 18px 6px;
   gap: 4px;
   display: flex;
@@ -784,8 +784,8 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
 }
 
 :deep(.qy-tiptap-toolbar button:hover) {
-  background: #f3f4f6;
-  border-color: #e5e7eb;
+  background: var(--editor-layer-strong, #f3f4f6);
+  border-color: var(--editor-border, #e5e7eb);
   color: var(--editor-text-primary);
 }
 
@@ -802,7 +802,7 @@ function handleEntityScan(refs: Array<{ id?: string; name: string; type: string 
 
 :deep(.qy-tiptap-editor__content) {
   padding: 0;
-  background: #fff;
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
 }
 
 :deep(.ProseMirror) {

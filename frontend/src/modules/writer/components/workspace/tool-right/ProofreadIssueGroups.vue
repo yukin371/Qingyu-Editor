@@ -86,7 +86,7 @@ defineEmits<{
   padding: 14px;
   border-radius: 16px;
   border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(255, 255, 255, 0.82);
+  background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.82)) 88%, transparent);
 }
 
 .proofread-issue-groups__issue-copy {
@@ -116,7 +116,7 @@ defineEmits<{
     padding: 0 12px;
     border-radius: 10px;
     border: 1px solid rgba(148, 163, 184, 0.22);
-    background: rgba(255, 255, 255, 0.92);
+    background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.92)) 94%, transparent);
     color: var(--editor-text-secondary, #475569);
     font-size: 12px;
     font-weight: 600;

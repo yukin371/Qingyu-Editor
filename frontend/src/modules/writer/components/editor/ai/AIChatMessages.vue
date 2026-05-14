@@ -705,7 +705,7 @@ watch(
   padding: 10px 12px;
   border: 1px solid rgba(203, 213, 225, 0.9);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.86);
+  background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.86)) 88%, transparent);
 
   &.is-selected {
     border-color: rgba(59, 130, 246, 0.5);
@@ -758,7 +758,7 @@ watch(
     min-width: 0;
     padding: 8px 10px;
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.82);
+    background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.82)) 86%, transparent);
     border: 1px solid rgba(203, 213, 225, 0.8);
   }
 
@@ -836,7 +836,7 @@ watch(
 .message-tool-block {
   padding: 10px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.84);
+  background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.84)) 88%, transparent);
   border: 1px solid rgba(203, 213, 225, 0.9);
 }
 

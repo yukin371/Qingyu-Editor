@@ -476,7 +476,7 @@ watch(
 
   &--ghost {
     border-color: var(--editor-border, #e2e8f0);
-    background: var(--editor-bg-base, #fff);
+    background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
     color: var(--editor-text-secondary, #334155);
   }
 }
@@ -496,7 +496,7 @@ watch(
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--editor-bg-surface, #f8fafc);
+  background: var(--editor-layer-soft, var(--editor-bg-surface, #f8fafc));
   border-radius: var(--editor-radius-lg, 8px);
   border: 1px solid var(--editor-border, #e2e8f0);
   overflow: hidden;
@@ -517,7 +517,7 @@ watch(
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--editor-bg-base, #ffffff);
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
   border-radius: var(--editor-radius-lg, 8px);
   border: 1px solid var(--editor-border, #e2e8f0);
   overflow: hidden;

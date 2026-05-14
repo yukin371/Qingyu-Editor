@@ -169,9 +169,9 @@ const illustrations: Record<QyEmptyType, string> = {
   width: min(360px, 100%);
   padding: 2rem 2rem 1.5rem;
   border-radius: 32px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15);
+  background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.9)) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(255, 255, 255, 0.8)) 42%, transparent);
+  box-shadow: var(--editor-shadow-lg, 0 20px 50px rgba(15, 23, 42, 0.15));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -183,11 +183,15 @@ const illustrations: Record<QyEmptyType, string> = {
   width: 120px;
   height: 120px;
   border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.65);
-  background: linear-gradient(145deg, rgba(59, 130, 246, 0.1), rgba(255, 255, 255, 0.6));
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(255, 255, 255, 0.65)) 42%, transparent);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--editor-accent, rgba(59, 130, 246, 0.1)) 10%, transparent),
+    color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.6)) 78%, transparent)
+  );
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.8),
-    0 15px 30px rgba(15, 23, 42, 0.15);
+    inset 0 1px 0 color-mix(in srgb, var(--editor-bg-elevated, rgba(255, 255, 255, 0.8)) 72%, transparent),
+    var(--editor-shadow-md, 0 15px 30px rgba(15, 23, 42, 0.15));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -200,7 +204,7 @@ const illustrations: Record<QyEmptyType, string> = {
   position: absolute;
   inset: 6px;
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(255, 255, 255, 0.4)) 36%, transparent);
   pointer-events: none;
 }
 
@@ -270,7 +274,7 @@ const illustrations: Record<QyEmptyType, string> = {
 .qy-empty__title {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--editor-text-primary, #0f172a);
   margin: 0;
   line-height: 1.4;
   text-transform: uppercase;
@@ -280,7 +284,7 @@ const illustrations: Record<QyEmptyType, string> = {
 .qy-empty__description {
   margin: 0;
   font-size: 0.95rem;
-  color: #475569;
+  color: var(--editor-text-secondary, #475569);
   line-height: 1.6;
 }
 
@@ -292,12 +296,16 @@ const illustrations: Record<QyEmptyType, string> = {
   padding: 0.65rem 1.5rem;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #0f172a;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(59, 130, 246, 0.2));
-  border: 1px solid rgba(14, 165, 233, 0.35);
+  color: var(--editor-text-primary, #0f172a);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--editor-accent, rgba(14, 165, 233, 0.15)) 15%, transparent),
+    color-mix(in srgb, var(--editor-accent, rgba(59, 130, 246, 0.2)) 20%, transparent)
+  );
+  border: 1px solid color-mix(in srgb, var(--editor-accent, rgba(14, 165, 233, 0.35)) 35%, transparent);
   border-radius: 999px;
   cursor: pointer;
-  box-shadow: 0 10px 30px rgba(37, 99, 235, 0.25);
+  box-shadow: var(--editor-shadow-md, 0 10px 30px rgba(37, 99, 235, 0.25));
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
@@ -305,12 +313,12 @@ const illustrations: Record<QyEmptyType, string> = {
 
 .qy-empty__btn:hover {
   transform: translateY(-1px) scale(1.01);
-  box-shadow: 0 15px 35px rgba(37, 99, 235, 0.3);
+  box-shadow: var(--editor-shadow-lg, 0 15px 35px rgba(37, 99, 235, 0.3));
 }
 
 .qy-empty__btn:active {
   transform: translateY(0) scale(1);
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+  box-shadow: var(--editor-shadow-md, 0 8px 20px rgba(37, 99, 235, 0.25));
 }
 
 @media (max-width: 640px) {

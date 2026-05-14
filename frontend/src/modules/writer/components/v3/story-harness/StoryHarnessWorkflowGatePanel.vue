@@ -3,17 +3,17 @@
     variant="glass"
     padding="sm"
     shadow="never"
-    class="space-y-3 rounded-3xl border border-white/70 bg-white/85"
+    class="story-harness-gate space-y-3 rounded-3xl"
     data-testid="story-harness-workflow-gate-panel"
   >
     <div class="flex items-center justify-between gap-3">
-      <h4 class="text-sm font-semibold text-slate-950">Workflow Gate</h4>
+      <h4 class="story-harness-gate__heading text-sm font-semibold">Workflow Gate</h4>
       <Tag size="sm" :variant="gateState.summary.variant" effect="light">
         {{ gateState.summary.label }}
       </Tag>
     </div>
 
-    <p class="text-xs leading-5 text-slate-500" data-testid="story-harness-gate-next-action">
+    <p class="story-harness-gate__muted text-xs leading-5" data-testid="story-harness-gate-next-action">
       {{ gateState.nextAction }}
     </p>
 
@@ -21,7 +21,7 @@
       <div
         v-for="gate in gateState.gates"
         :key="gate.key"
-        class="flex items-start gap-2 rounded-2xl bg-slate-50 px-3 py-2"
+        class="story-harness-gate__item flex items-start gap-2 rounded-2xl px-3 py-2"
         :data-testid="`story-harness-gate-${gate.key}`"
       >
         <span
@@ -29,8 +29,8 @@
           :class="gateStatusClassMap[gate.status]"
         />
         <div class="min-w-0">
-          <p class="text-xs font-medium text-slate-900">{{ gate.title }}</p>
-          <p class="mt-1 text-xs leading-5 text-slate-500">{{ gate.text }}</p>
+          <p class="story-harness-gate__heading text-xs font-medium">{{ gate.title }}</p>
+          <p class="story-harness-gate__muted mt-1 text-xs leading-5">{{ gate.text }}</p>
         </div>
       </div>
     </div>
@@ -122,3 +122,22 @@ const gateStatusClassMap: Record<StoryHarnessWorkflowGateStatus, string> = {
   info: 'bg-sky-500',
 }
 </script>
+
+<style scoped>
+.story-harness-gate {
+  border: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 72%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 92%, transparent);
+}
+
+.story-harness-gate__heading {
+  color: var(--editor-text-primary, #0f172a);
+}
+
+.story-harness-gate__muted {
+  color: var(--editor-text-muted, #64748b);
+}
+
+.story-harness-gate__item {
+  background: var(--editor-layer-strong, #f1f5f9);
+}
+</style>

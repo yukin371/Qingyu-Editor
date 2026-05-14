@@ -42,19 +42,19 @@ defineOptions({ name: 'QyDescriptions' })
   &__title {
     font-size: 17px;
     font-weight: 600;
-    color: #1d1d1f;
+    color: var(--editor-text-primary, #1d1d1f);
     margin-bottom: 16px;
     padding: 0 4px;
   }
 
   &__header {
     display: flex;
-    background: #f5f5f7;
+    background: var(--editor-layer-soft, #f5f5f7);
     border-radius: 12px 12px 0 0;
     padding: 12px 20px;
     font-size: 13px;
     font-weight: 600;
-    color: #6e6e73;
+    color: var(--editor-text-muted, #6e6e73);
     text-transform: uppercase;
     letter-spacing: 0.02em;
 
@@ -68,7 +68,7 @@ defineOptions({ name: 'QyDescriptions' })
   }
 
   &__body {
-    background: #fff;
+    background: var(--editor-layer-panel, #fff);
     border-radius: 0 0 12px 12px;
     overflow: hidden;
   }

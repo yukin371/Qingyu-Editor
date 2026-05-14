@@ -81,9 +81,9 @@ function getTypeIcon(type: KeywordType): string {
 
 <style scoped>
 .entity-scan-panel {
-  background: white;
+  background: var(--editor-layer-panel, white);
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #e5e7eb) 62%, transparent);
   overflow: hidden;
 }
 
@@ -92,8 +92,8 @@ function getTypeIcon(type: KeywordType): string {
   justify-content: space-between;
   align-items: center;
   padding: 12px 14px;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--editor-layer-soft, #f9fafb);
+  border-bottom: 1px solid color-mix(in srgb, var(--editor-border, #e5e7eb) 62%, transparent);
 }
 
 .header-content {
@@ -109,11 +109,11 @@ function getTypeIcon(type: KeywordType): string {
 .header-title {
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
+  color: var(--editor-text-secondary, #374151);
 }
 
 .entity-count {
-  background: #3b82f6;
+  background: var(--editor-accent, #3b82f6);
   color: white;
   font-size: 11px;
   font-weight: 600;
@@ -123,14 +123,14 @@ function getTypeIcon(type: KeywordType): string {
 
 .action-btn {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--editor-text-muted, #6b7280);
   background: transparent;
   border: none;
   cursor: pointer;
 }
 
 .action-btn:hover {
-  color: #374151;
+  color: var(--editor-text-secondary, #374151);
 }
 
 .scanning-indicator {
@@ -146,8 +146,8 @@ function getTypeIcon(type: KeywordType): string {
 .spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid #e5e7eb;
-  border-top-color: #3b82f6;
+  border: 2px solid color-mix(in srgb, var(--editor-border, #e5e7eb) 72%, transparent);
+  border-top-color: var(--editor-accent, #3b82f6);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -159,7 +159,7 @@ function getTypeIcon(type: KeywordType): string {
 .empty-state {
   padding: 24px;
   text-align: center;
-  color: #6b7280;
+  color: var(--editor-text-muted, #6b7280);
 }
 
 .empty-icon {
@@ -176,7 +176,7 @@ function getTypeIcon(type: KeywordType): string {
 .empty-hint {
   margin-top: 4px !important;
   font-size: 12px !important;
-  color: #9ca3af;
+  color: var(--editor-text-ghost, #9ca3af);
 }
 
 .entity-list {
@@ -192,12 +192,12 @@ function getTypeIcon(type: KeywordType): string {
   justify-content: space-between;
   align-items: center;
   padding: 10px 14px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid color-mix(in srgb, var(--editor-border, #f3f4f6) 42%, transparent);
   transition: background 0.2s;
 }
 
 .entity-item:hover {
-  background: #f9fafb;
+  background: var(--editor-layer-soft, #f9fafb);
 }
 
 .entity-info {
@@ -220,13 +220,13 @@ function getTypeIcon(type: KeywordType): string {
   display: block;
   font-size: 13px;
   font-weight: 500;
-  color: #111827;
+  color: var(--editor-text-primary, #111827);
 }
 
 .entity-context {
   display: block;
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--editor-text-ghost, #9ca3af);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -249,23 +249,23 @@ function getTypeIcon(type: KeywordType): string {
 }
 
 .create-btn {
-  background: #3b82f6;
+  background: var(--editor-accent, #3b82f6);
   color: white;
   border: none;
 }
 
 .create-btn:hover {
-  background: #2563eb;
+  background: var(--editor-accent-hover, #2563eb);
 }
 
 .ignore-btn {
   background: transparent;
-  color: #9ca3af;
-  border: 1px solid #e5e7eb;
+  color: var(--editor-text-ghost, #9ca3af);
+  border: 1px solid color-mix(in srgb, var(--editor-border, #e5e7eb) 62%, transparent);
 }
 
 .ignore-btn:hover {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--editor-layer-soft, #f3f4f6);
+  color: var(--editor-text-muted, #6b7280);
 }
 </style>

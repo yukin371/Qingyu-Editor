@@ -83,9 +83,9 @@ const activeEntityCount = computed(() => props.activeEntities.length)
   display: grid;
   gap: 4px;
   padding: 10px 12px;
-  border: 1px solid rgba(148, 163, 184, 0.14);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.14)) 42%, transparent);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.9);
+  background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.9)) 92%, transparent);
 }
 
 .workspace-panel-card__label {
@@ -110,8 +110,8 @@ const activeEntityCount = computed(() => props.activeEntities.length)
   gap: 6px;
   padding: 5px 10px;
   border-radius: 999px;
-  background: rgba(248, 251, 255, 0.95);
-  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: color-mix(in srgb, var(--editor-layer-soft, rgba(248, 251, 255, 0.95)) 95%, transparent);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.14)) 42%, transparent);
   font-size: 12px;
   color: var(--editor-text-secondary, #334155);
 }

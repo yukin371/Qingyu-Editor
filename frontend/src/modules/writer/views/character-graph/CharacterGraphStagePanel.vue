@@ -78,7 +78,7 @@ withDefaults(
 }
 
 .graph-stage-panel__header.is-global .graph-stage-panel__title {
-  color: var(--editor-bg-base, #ffffff);
+  color: var(--editor-text-inverse, #ffffff);
 }
 
 .graph-stage-panel__tag {
@@ -89,9 +89,9 @@ withDefaults(
 
 .graph-stage-panel__header.is-global .graph-stage-panel__tag {
   :deep(.qy-tag) {
-    background: rgba(255, 255, 255, 0.2);
+    background: color-mix(in srgb, var(--editor-text-inverse, #ffffff) 20%, transparent);
     border-color: rgba(255, 255, 255, 0.3);
-    color: var(--editor-bg-base, #ffffff);
+    color: var(--editor-text-inverse, #ffffff);
   }
 }
 

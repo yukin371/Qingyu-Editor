@@ -145,7 +145,7 @@ const appearanceStore = useEditorAppearanceStore()
   padding: 0 12px;
   border: 1px solid var(--editor-border, #dbe3ee);
   border-radius: 8px;
-  background: var(--editor-bg-base, #ffffff);
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
   color: var(--editor-text-secondary, #334155);
   font-size: 12px;
   font-weight: 600;
@@ -192,7 +192,7 @@ const appearanceStore = useEditorAppearanceStore()
   padding: 16px;
   border: 1px solid var(--editor-border, #e2e8f0);
   border-radius: 14px;
-  background: var(--editor-bg-base, #ffffff);
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
 }
 
 .workspace-settings-panel__section-title {
@@ -214,7 +214,7 @@ const appearanceStore = useEditorAppearanceStore()
   padding: 12px;
   border: 1px solid var(--editor-border, #e2e8f0);
   border-radius: 12px;
-  background: var(--editor-bg-base, #fff);
+  background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
   text-align: left;
   cursor: pointer;
   transition:
@@ -224,7 +224,11 @@ const appearanceStore = useEditorAppearanceStore()
 
   &:hover {
     border-color: var(--editor-accent-soft-border, #a5f3fc);
-    background: color-mix(in srgb, var(--editor-bg-base, #fff) 92%, var(--editor-accent-soft, #ecfeff) 8%);
+    background: color-mix(
+      in srgb,
+      var(--editor-layer-panel, var(--editor-bg-base, #fff)) 92%,
+      var(--editor-accent-soft, #ecfeff) 8%
+    );
   }
 
   &.is-active {
@@ -286,7 +290,7 @@ const appearanceStore = useEditorAppearanceStore()
     padding: 0 10px;
     border: 1px solid var(--editor-border, #dbe3ee);
     border-radius: 10px;
-    background: var(--editor-bg-base, #ffffff);
+    background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
     color: var(--editor-text-primary, #0f172a);
   }
 }

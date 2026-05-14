@@ -88,8 +88,8 @@ defineExpose<QyTagInstance>({
   height: 1.05rem;
   border-radius: 9999px;
   border: 1px solid rgba(148, 163, 184, 0.14);
-  background: rgba(255, 255, 255, 0.58);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  background: color-mix(in srgb, var(--editor-layer-glass, rgba(255, 255, 255, 0.58)) 86%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--editor-bg-elevated, #fff) 68%, transparent);
   color: currentColor;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -98,7 +98,7 @@ defineExpose<QyTagInstance>({
 }
 
 .qy-tag__close:hover {
-  background: rgba(255, 255, 255, 0.8);
+  background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.8)) 92%, transparent);
   transform: scale(1.1);
 }
 
@@ -115,15 +115,15 @@ defineExpose<QyTagInstance>({
 
 .qy-tag[data-effect='dark'] .qy-tag__close {
   border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.14);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  background: color-mix(in srgb, var(--editor-text-inverse, rgba(255, 255, 255, 0.14)) 14%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--editor-text-inverse, rgba(255, 255, 255, 0.16)) 16%, transparent);
 }
 
 .qy-tag[data-effect='dark'] .qy-tag__close:hover {
-  background: rgba(255, 255, 255, 0.24);
+  background: color-mix(in srgb, var(--editor-text-inverse, rgba(255, 255, 255, 0.24)) 24%, transparent);
 }
 
 .qy-tag[data-effect='plain'] .qy-tag__close {
-  background: rgba(248, 250, 252, 0.9);
+  background: color-mix(in srgb, var(--editor-layer-panel, rgba(248, 250, 252, 0.9)) 90%, transparent);
 }
 </style>

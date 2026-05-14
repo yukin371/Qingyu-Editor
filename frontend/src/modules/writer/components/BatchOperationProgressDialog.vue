@@ -11,32 +11,32 @@
   <Transition name="zoom">
     <div
       v-if="visible"
-      class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-white rounded-lg shadow-xl w-[500px] max-w-[90vw] max-h-[90vh] overflow-hidden flex flex-col"
+      class="batch-op-dialog fixed top-1/2 left-1/2 z-50 flex max-h-[90vh] w-[500px] max-w-[90vw] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-lg"
     >
       <!-- 标题栏 -->
-      <div class="px-6 py-4 border-b border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-900">批量操作执行中</h3>
+      <div class="batch-op-dialog__header px-6 py-4">
+        <h3 class="batch-op-dialog__title text-lg font-semibold">批量操作执行中</h3>
       </div>
 
       <!-- 内容区 -->
       <div class="px-6 py-4 flex-1 overflow-y-auto">
         <!-- 进度条 -->
-        <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+        <div class="batch-op-dialog__progress-track h-2 w-full overflow-hidden rounded-full">
           <div
-            class="h-full bg-secondary-500 transition-all duration-300"
+            class="batch-op-dialog__progress-fill h-full transition-all duration-300"
             :style="{ width: progressPercentage + '%' }"
           />
         </div>
 
         <!-- 进度信息 -->
         <div class="mt-4 space-y-2">
-          <p class="text-sm text-gray-700">
+          <p class="batch-op-dialog__body text-sm">
             <span class="font-medium">状态：</span>{{ statusLabel }}
           </p>
-          <p class="text-sm text-gray-700">
+          <p class="batch-op-dialog__body text-sm">
             <span class="font-medium">进度：</span>{{ progress?.completedItems || 0 }} / {{ progress?.totalItems || 0 }}
           </p>
-          <p v-if="progress && progress.failedItems > 0" class="text-sm text-red-600">
+          <p v-if="progress && progress.failedItems > 0" class="batch-op-dialog__danger text-sm">
             <span class="font-medium">失败：</span>{{ progress.failedItems }}
           </p>
         </div>
@@ -46,14 +46,14 @@
           <button
             v-if="canUndo"
             type="button"
-            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm font-medium"
+            class="batch-op-dialog__ghost-btn px-4 py-2 text-sm font-medium transition-colors"
             @click="handleUndo"
           >
             撤销操作
           </button>
           <button
             type="button"
-            class="px-4 py-2 bg-secondary-500 text-white rounded-lg hover:bg-secondary-600 transition-colors text-sm font-medium"
+            class="batch-op-dialog__primary-btn px-4 py-2 text-sm font-medium transition-colors"
             @click="handleClose"
           >
             关闭
@@ -219,5 +219,55 @@ onUnmounted(() => {
 .zoom-leave-to {
   opacity: 0;
   transform: translate(-50%, -50%) scale(0.9);
+}
+
+.batch-op-dialog {
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
+  box-shadow: var(--editor-shadow-lg, 0 20px 30px rgba(15, 23, 42, 0.18));
+}
+
+.batch-op-dialog__header {
+  border-bottom: 1px solid var(--editor-border, #e5e7eb);
+}
+
+.batch-op-dialog__title {
+  color: var(--editor-text-primary, #111827);
+}
+
+.batch-op-dialog__progress-track {
+  background: var(--editor-layer-strong, #e5e7eb);
+}
+
+.batch-op-dialog__progress-fill {
+  background: var(--editor-accent, #6366f1);
+}
+
+.batch-op-dialog__body {
+  color: var(--editor-text-secondary, #374151);
+}
+
+.batch-op-dialog__danger {
+  color: var(--color-danger-600, #dc2626);
+}
+
+.batch-op-dialog__ghost-btn {
+  border: 1px solid var(--editor-border, #d1d5db);
+  border-radius: 8px;
+  background: var(--editor-layer-panel, #ffffff);
+  color: var(--editor-text-secondary, #374151);
+}
+
+.batch-op-dialog__ghost-btn:hover {
+  background: var(--editor-layer-soft, #f8fafc);
+}
+
+.batch-op-dialog__primary-btn {
+  border-radius: 8px;
+  background: var(--editor-accent, #6366f1);
+  color: var(--editor-text-inverse, #ffffff);
+}
+
+.batch-op-dialog__primary-btn:hover {
+  background: var(--editor-accent-hover, #4f46e5);
 }
 </style>

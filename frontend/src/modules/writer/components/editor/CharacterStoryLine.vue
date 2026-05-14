@@ -459,7 +459,7 @@ function getRelationTagType(type: string): 'success' | 'info' | 'warning' | 'dan
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: #ffffff;
+  background: var(--editor-layer-panel, #ffffff);
   border-bottom: 1px solid #e5e7eb;
   flex-shrink: 0;
 }
@@ -536,7 +536,7 @@ function getRelationTagType(type: string): 'success' | 'info' | 'warning' | 'dan
 
 /* Chapter section */
 .chapter-section {
-  background: #ffffff;
+  background: var(--editor-layer-panel, #ffffff);
   border: 1px solid #e6ebf5;
   border-radius: 8px;
   overflow: hidden;

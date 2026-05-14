@@ -17,7 +17,7 @@
       <input
         ref="inputRef"
         :type="currentType"
-        :class="inputClasses"
+        :class="['qy-input__field', inputClasses]"
         :placeholder="placeholder"
         :disabled="disabled"
         :readonly="readonly"
@@ -251,10 +251,14 @@ defineExpose({
   display: inline-flex;
   align-items: center;
   padding: 0 1rem;
-  background: linear-gradient(180deg, rgb(248 250 252 / 0.94) 0%, rgb(241 245 249 / 0.98) 100%);
-  border: 1px solid rgb(226 232 240 / 0.95);
-  color: rgb(100 116 139);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.8);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--editor-layer-soft, rgb(248 250 252 / 0.94)) 94%, transparent) 0%,
+    color-mix(in srgb, var(--editor-layer-panel, rgb(241 245 249 / 0.98)) 98%, transparent) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgb(226 232 240 / 0.95)) 82%, transparent);
+  color: var(--editor-text-muted, rgb(100 116 139));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--editor-bg-elevated, #fff) 80%, transparent);
   font-size: 0.875rem;
   white-space: nowrap;
 }
@@ -277,7 +281,7 @@ defineExpose({
   align-items: center;
   width: 1rem;
   height: 1rem;
-  color: rgb(148 163 184);
+  color: var(--editor-text-ghost, rgb(148 163 184));
   pointer-events: none;
   transition: color 180ms ease;
 }
@@ -293,6 +297,25 @@ defineExpose({
 .qy-input__icon :deep(svg) {
   width: 100%;
   height: 100%;
+}
+
+.qy-input__field {
+  background: var(--editor-layer-panel, rgb(255 255 255 / 0.9)) !important;
+  color: var(--editor-text-primary, rgb(15 23 42)) !important;
+  border-color: color-mix(in srgb, var(--editor-border, rgb(226 232 240)) 82%, transparent) !important;
+  box-shadow: var(--editor-shadow-sm, 0 8px 30px -20px rgb(15 23 42 / 0.5)) !important;
+}
+
+.qy-input__field::placeholder {
+  color: var(--editor-text-ghost, rgb(148 163 184)) !important;
+}
+
+.qy-input__field:focus,
+.qy-input__field:focus-visible {
+  border-color: var(--editor-border-focus, rgb(37 99 235)) !important;
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--editor-accent, rgb(37 99 235)) 20%, transparent),
+    var(--editor-shadow-sm, 0 8px 30px -20px rgb(15 23 42 / 0.5)) !important;
 }
 
 .qy-input__suffix {
@@ -312,14 +335,14 @@ defineExpose({
   justify-content: center;
   width: 1.5rem;
   height: 1.5rem;
-  color: rgb(148 163 184);
+  color: var(--editor-text-ghost, rgb(148 163 184));
   cursor: pointer;
   transition:
     color 150ms ease,
     background-color 150ms ease,
     transform 150ms ease;
-  background: rgb(255 255 255 / 0.86);
-  border: 1px solid rgb(226 232 240 / 0.8);
+  background: color-mix(in srgb, var(--editor-layer-panel, rgb(255 255 255 / 0.86)) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgb(226 232 240 / 0.8)) 72%, transparent);
   border-radius: 9999px;
   padding: 0;
   box-shadow: 0 4px 10px -8px rgb(15 23 42 / 0.4);
@@ -327,8 +350,8 @@ defineExpose({
 
 .qy-input__clear:hover,
 .qy-input__password-toggle:hover {
-  color: rgb(100 116 139);
-  background: rgb(248 250 252 / 1);
+  color: var(--editor-text-muted, rgb(100 116 139));
+  background: var(--editor-layer-soft, rgb(248 250 252 / 1));
   transform: translateY(-1px);
 }
 
@@ -337,6 +360,6 @@ defineExpose({
 }
 
 .qy-input-wrapper--focused .qy-input__icon {
-  color: rgb(37 99 235 / 0.78);
+  color: color-mix(in srgb, var(--editor-accent, rgb(37 99 235)) 78%, transparent);
 }
 </style>

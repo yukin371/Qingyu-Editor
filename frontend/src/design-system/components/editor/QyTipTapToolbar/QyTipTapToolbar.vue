@@ -47,25 +47,26 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
   align-items: center;
   gap: 6px;
   padding: 8px;
-  border-bottom: 1px solid #ebeef5;
-  background: #fafafa;
+  border-bottom: 1px solid color-mix(in srgb, var(--editor-border, #ebeef5) 62%, transparent);
+  background: var(--editor-layer-soft, #fafafa);
 }
 .qy-tiptap-toolbar button {
-  border: 1px solid #dcdfe6;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #dcdfe6) 72%, transparent);
   border-radius: 6px;
-  background: #fff;
+  background: var(--editor-layer-panel, #fff);
   padding: 4px 8px;
   font-size: 12px;
   cursor: pointer;
+  color: var(--editor-text-secondary, #303133);
 }
 .qy-tiptap-toolbar button.active {
   color: #fff;
-  background: #409eff;
-  border-color: #409eff;
+  background: var(--editor-accent, #409eff);
+  border-color: var(--editor-accent, #409eff);
 }
 .sep {
   width: 1px;
   height: 20px;
-  background: #e4e7ed;
+  background: color-mix(in srgb, var(--editor-border, #e4e7ed) 72%, transparent);
 }
 </style>

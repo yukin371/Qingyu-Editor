@@ -236,20 +236,20 @@ defineOptions({ name: 'QyDatePicker' })
     gap: 8px;
     padding: 0 14px;
     height: 40px;
-    background: #fff;
-    border: 1px solid #d1d1d6;
+    background: var(--editor-layer-panel, #fff);
+    border: 1px solid color-mix(in srgb, var(--editor-border, #d1d1d6) 72%, transparent);
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-      border-color: #007aff;
+      border-color: var(--editor-border-focus, #007aff);
     }
   }
 
   &__icon {
     display: flex;
-    color: #6e6e73;
+    color: var(--editor-text-muted, #6e6e73);
   }
 
   &__input {
@@ -257,12 +257,12 @@ defineOptions({ name: 'QyDatePicker' })
     border: none;
     outline: none;
     font-size: 14px;
-    color: #1d1d1f;
+    color: var(--editor-text-primary, #1d1d1f);
     background: transparent;
     cursor: pointer;
 
     &::placeholder {
-      color: #c7c7cc;
+      color: var(--editor-text-ghost, #c7c7cc);
     }
   }
 
@@ -272,7 +272,7 @@ defineOptions({ name: 'QyDatePicker' })
     left: 0;
     z-index: 1000;
     width: 300px;
-    background: #fff;
+    background: var(--editor-layer-panel, #fff);
     border-radius: 16px;
     box-shadow:
       0 10px 40px rgba(0, 0, 0, 0.15),
@@ -301,7 +301,7 @@ defineOptions({ name: 'QyDatePicker' })
     transition: background 0.15s ease;
 
     &:hover {
-      background: #f5f5f7;
+      background: var(--editor-layer-soft, #f5f5f7);
     }
   }
 
@@ -346,21 +346,21 @@ defineOptions({ name: 'QyDatePicker' })
     transition: all 0.15s ease;
 
     &:hover:not(:disabled):not(.qy-date-picker__day--selected) {
-      background: #f5f5f7;
+      background: var(--editor-layer-soft, #f5f5f7);
     }
 
     &--selected {
-      background: #007aff !important;
+      background: var(--editor-accent, #007aff) !important;
       color: #fff !important;
     }
 
     &--today {
       font-weight: 600;
-      color: #007aff;
+      color: var(--editor-accent, #007aff);
     }
 
     &--disabled {
-      color: #c7c7cc;
+      color: var(--editor-text-ghost, #c7c7cc);
       cursor: not-allowed;
     }
 
@@ -377,13 +377,13 @@ defineOptions({ name: 'QyDatePicker' })
     &-input {
       width: 100%;
       padding: 8px 12px;
-      border: 1px solid #d1d1d6;
+      border: 1px solid color-mix(in srgb, var(--editor-border, #d1d1d6) 72%, transparent);
       border-radius: 8px;
       font-size: 14px;
       outline: none;
 
       &:focus {
-        border-color: #007aff;
+        border-color: var(--editor-border-focus, #007aff);
       }
     }
   }
@@ -406,20 +406,20 @@ defineOptions({ name: 'QyDatePicker' })
     transition: all 0.15s ease;
 
     &--today {
-      background: #007aff;
+      background: var(--editor-accent, #007aff);
       color: #fff;
 
       &:hover {
-        background: #0071e3;
+        background: var(--editor-accent-hover, #0071e3);
       }
     }
 
     &--clear {
-      background: #f5f5f7;
-      color: #6e6e73;
+      background: var(--editor-layer-soft, #f5f5f7);
+      color: var(--editor-text-muted, #6e6e73);
 
       &:hover {
-        background: #e8e8ed;
+        background: var(--editor-layer-strong, #e8e8ed);
       }
     }
   }

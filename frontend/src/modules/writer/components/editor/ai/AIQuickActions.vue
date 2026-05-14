@@ -36,7 +36,7 @@ defineEmits<{
   padding: 0 16px 16px;
 
   .quick-action-card {
-    background: #ffffff;
+    background: var(--editor-layer-panel, #ffffff);
     border: 1px solid var(--ai-border, #e2e8f0);
     border-radius: 12px;
     padding: 12px 16px;
@@ -49,8 +49,8 @@ defineEmits<{
     text-align: left;
 
     &:hover {
-      background: #eff6ff;
-      border-color: #93c5fd;
+      background: var(--editor-layer-accent, #eff6ff);
+      border-color: var(--editor-accent-soft-border, #93c5fd);
       transform: translateX(4px);
     }
 

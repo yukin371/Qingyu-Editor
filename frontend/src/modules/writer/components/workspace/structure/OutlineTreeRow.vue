@@ -208,12 +208,12 @@ function handleContextMenu(event: MouseEvent) {
 }
 
 .outline-tree-row__main.is-volume {
-  background: color-mix(in srgb, var(--color-warning-50, #fff8e8) 82%, var(--editor-bg-base, #fff) 18%);
+  background: color-mix(in srgb, var(--color-warning-50, #fff8e8) 82%, var(--editor-layer-panel, #fff) 18%);
   border-left-color: var(--color-warning-500, #d4a72c);
 }
 
 .outline-tree-row__main.is-volume:hover {
-  background: color-mix(in srgb, var(--color-warning-100, #fff3d6) 82%, var(--editor-bg-base, #fff) 18%);
+  background: color-mix(in srgb, var(--color-warning-100, #fff3d6) 82%, var(--editor-layer-panel, #fff) 18%);
   border-left-color: var(--color-warning-600, #c99514);
 }
 

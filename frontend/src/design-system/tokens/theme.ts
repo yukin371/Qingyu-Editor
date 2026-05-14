@@ -578,9 +578,15 @@ function hexToRgb(hex: string): string | null {
 
 function applyDOMThemeState(themeName: ThemeName) {
   const root = document.documentElement
+  const body = document.body
   const option = THEME_OPTIONS_MAP[themeName]
   root.dataset.theme = themeName
+  root.setAttribute('data-editor-theme', option.editorAlias)
   root.style.setProperty('color-scheme', themeName === 'graphite' ? 'dark' : 'light')
+  if (body) {
+    body.dataset.theme = themeName
+    body.setAttribute('data-editor-theme', option.editorAlias)
+  }
 
   const workspaceTargets = document.querySelectorAll('.workspace-studio, .writer-editor-shell')
   workspaceTargets.forEach((element) => {

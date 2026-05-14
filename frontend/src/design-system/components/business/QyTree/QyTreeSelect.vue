@@ -135,33 +135,33 @@ defineOptions({ name: 'QyTreeSelect' })
     gap: 8px;
     padding: 0 14px;
     height: 40px;
-    background: #fff;
-    border: 1px solid #d1d1d6;
+    background: var(--editor-layer-panel, #fff);
+    border: 1px solid color-mix(in srgb, var(--editor-border, #d1d1d6) 72%, transparent);
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-      border-color: #007aff;
+      border-color: var(--editor-border-focus, #007aff);
     }
   }
 
   &__value {
     flex: 1;
     font-size: 14px;
-    color: #1d1d1f;
+    color: var(--editor-text-primary, #1d1d1f);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 
     &::placeholder {
-      color: #c7c7cc;
+      color: var(--editor-text-ghost, #c7c7cc);
     }
   }
 
   &__icon {
     display: flex;
-    color: #6e6e73;
+    color: var(--editor-text-muted, #6e6e73);
   }
 
   &__arrow {
@@ -181,7 +181,7 @@ defineOptions({ name: 'QyTreeSelect' })
     min-width: 240px;
     max-height: 320px;
     overflow-y: auto;
-    background: #fff;
+    background: var(--editor-layer-panel, #fff);
     border-radius: 12px;
     box-shadow:
       0 10px 40px rgba(0, 0, 0, 0.15),

@@ -200,7 +200,7 @@ watch(
 .qy-form-modal__label {
   font-size: 13px;
   font-weight: 500;
-  color: #374151;
+  color: var(--editor-text-secondary, rgba(226, 232, 240, 0.88));
 }
 
 .qy-form-modal__required {
@@ -214,20 +214,21 @@ watch(
   width: 100%;
   padding: 10px 12px;
   font-size: 14px;
-  border: 1px solid #d1d5db;
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.42)) 72%, transparent);
   border-radius: 8px;
-  background: #fff;
-  color: #1f2937;
+  background: color-mix(in srgb, var(--editor-layer-panel, rgba(15, 23, 42, 0.88)) 94%, transparent);
+  color: var(--editor-text-primary, rgba(241, 245, 249, 0.96));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--editor-layer-glass, rgba(255, 255, 255, 0.08)) 56%, transparent);
   transition: all 0.2s;
 
   &:focus {
     outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: color-mix(in srgb, var(--editor-accent, rgba(96, 165, 250, 0.72)) 72%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--editor-accent, rgba(96, 165, 250, 0.24)) 26%, transparent);
   }
 
   &::placeholder {
-    color: #9ca3af;
+    color: var(--editor-text-tertiary, rgba(148, 163, 184, 0.78));
   }
 }
 
@@ -239,7 +240,7 @@ watch(
 .qy-form-modal__select {
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   background-position: right 10px center;
   background-repeat: no-repeat;
   background-size: 16px;
