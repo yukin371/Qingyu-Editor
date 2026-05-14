@@ -177,6 +177,11 @@ import Image from '@tiptap/extension-image'
 import QyKeywordPopover from '../QySmartKeyword/QyKeywordPopover.vue'
 import QyCompletionPopover from '../QySmartKeyword/QyCompletionPopover.vue'
 import QyEntityCreateDialog from '../QySmartKeyword/QyEntityCreateDialog.vue'
+import {
+  getCompletionOptionCount,
+  getDefaultCompletionActiveIndex,
+  shouldShowCompletionCreateAction,
+} from '../QySmartKeyword/completionCreateOption'
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
 import { SmartKeyword, type KeywordInfo } from '../QySmartKeyword/extensions/SmartKeyword'
 import { ParagraphWithId } from '../QySmartKeyword/extensions/ParagraphWithId'
@@ -482,32 +487,36 @@ const editor = useEditor({
 })
 
 function handleCompletionKeydown(event: KeyboardEvent): boolean {
-  // 补全列表可见且有匹配项时，处理导航
-  if (completion.visible && completion.items.length > 0) {
-    if (event.key === 'ArrowDown') {
+  if (completion.visible) {
+    const optionCount = getCompletionOptionCount(completion.query, completion.items)
+    const showCreateAction = shouldShowCompletionCreateAction(completion.query, completion.items)
+
+    if (optionCount > 0 && event.key === 'ArrowDown') {
       event.preventDefault()
-      completion.activeIndex = (completion.activeIndex + 1) % completion.items.length
+      completion.activeIndex = (completion.activeIndex + 1) % optionCount
       return true
     }
-    if (event.key === 'ArrowUp') {
+    if (optionCount > 0 && event.key === 'ArrowUp') {
       event.preventDefault()
-      completion.activeIndex =
-        (completion.activeIndex - 1 + completion.items.length) % completion.items.length
+      completion.activeIndex = (completion.activeIndex - 1 + optionCount) % optionCount
       return true
     }
-    if (event.key === 'Enter' || event.key === 'Tab') {
+    if (optionCount > 0 && (event.key === 'Enter' || event.key === 'Tab')) {
       event.preventDefault()
-      insertCompletion(completion.items[completion.activeIndex])
+      if (showCreateAction && completion.activeIndex >= completion.items.length) {
+        handleCompletionCreate(completion.query)
+      } else if (completion.items[completion.activeIndex]) {
+        insertCompletion(completion.items[completion.activeIndex])
+      }
       return true
     }
     if (event.key === 'Escape') {
       completion.visible = false
       return true
     }
-    return false
   }
 
-  // 补全列表可见但无匹配项时，检查是否在@上下文中按Enter
+  // 兼容旧逻辑：补全列表可见但未进入可导航状态时，按 Enter 仍可从 @query 直接建档
   if (completion.visible && event.key === 'Enter') {
     const editorInstance = editor.value
     if (!editorInstance) return false
@@ -518,7 +527,6 @@ function handleCompletionKeydown(event: KeyboardEvent): boolean {
       event.preventDefault()
       entityCreateDialog.initialName = match[1] || ''
       entityCreateDialog.visible = true
-      // 保存 @query 的位置，以便创建后替换
       entityCreateRange.from = from - match[0].length + (match[0].startsWith(' ') ? 1 : 0)
       entityCreateRange.to = from
       completion.visible = false
@@ -625,7 +633,7 @@ async function updateCompletionFromSelection(currentEditor: CoreEditor) {
   // 搜索所有类型的实体
   const items = await searchAllEntities(completion.query)
   completion.items = items
-  completion.activeIndex = 0
+  completion.activeIndex = getDefaultCompletionActiveIndex(completion.query, items)
   completion.visible = true // 始终显示，包括无匹配时
 }
 

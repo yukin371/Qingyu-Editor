@@ -39,7 +39,13 @@
           </li>
 
           <!-- 列表底部创建入口 -->
-          <li v-if="query && !items.some(item => item.name === query)" class="completion-item completion-item--create" @click="$emit('create', query)">
+          <li
+            v-if="showCreateAction"
+            class="completion-item completion-item--create"
+            :class="{ 'is-active': activeIndex === items.length }"
+            @click="$emit('create', query || '')"
+            @mouseenter="$emit('update:activeIndex', items.length)"
+          >
             <span class="item-icon">➕</span>
             <span class="item-name">创建「{{ query }}」</span>
           </li>
@@ -60,6 +66,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { shouldShowCompletionCreateAction } from './completionCreateOption'
 import type { KeywordInfo, KeywordType } from './extensions/SmartKeyword'
 
 const props = defineProps<{
@@ -82,11 +89,11 @@ const popoverStyle = computed(() => ({
   top: `${props.y}px`,
 }))
 
-const showCreateHint = computed(() => {
-  return props.query && props.query.length > 0 && !props.items.some(
-    item => item.name === props.query
-  )
-})
+const showCreateAction = computed(() =>
+  shouldShowCompletionCreateAction(props.query || '', props.items),
+)
+
+const showCreateHint = computed(() => showCreateAction.value)
 
 function getTypeIcon(type: KeywordType): string {
   const icons: Record<KeywordType, string> = {
