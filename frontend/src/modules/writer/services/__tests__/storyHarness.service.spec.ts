@@ -38,6 +38,11 @@ describe('storyHarnessService', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     localStorage.clear()
+    window.history.replaceState({}, '', '/?remote=true')
+  })
+
+  afterEach(() => {
+    window.history.replaceState({}, '', '/')
   })
 
   it('远端保存失败时应回退到本地持久化，并生成 receipt', async () => {
@@ -182,5 +187,83 @@ describe('storyHarnessService', () => {
     expect(result?.receipt.source).toBe('remote')
     expect(result?.receipt.count).toBe(1)
     expect(result?.changeRequests[0].id).toContain('save-batch:batch-remote')
+  })
+
+  it('默认 standalone-local 宿主保存 Story Harness 批次时不应请求远端', async () => {
+    window.history.replaceState({}, '', '/')
+
+    const result = await storyHarnessService.persistBatch({
+      projectId: 'project-local',
+      chapterId: 'chapter-local',
+      chapterTitle: '本地章节',
+      changeRequests: [
+        {
+          id: 'cr-local-1',
+          source: 'live',
+          type: 'state',
+          title: '正文指令建议：更新 本地角色',
+          summary: '本地宿主应直接落本地缓存。',
+          reason: '独立编辑器默认不依赖原后端。',
+          severity: 'focus',
+        },
+      ],
+    })
+
+    expect(mockCreateStoryHarnessBatch).not.toHaveBeenCalled()
+    expect(result.receipt.source).toBe('local_fallback')
+
+    const hydrated = await storyHarnessService.getLatestBatch('project-local', 'chapter-local')
+    expect(mockGetLatestStoryHarnessBatch).not.toHaveBeenCalled()
+    expect(hydrated?.receipt.chapterId).toBe('chapter-local')
+    expect(hydrated?.changeRequests[0].id).toContain('save-batch:')
+  })
+
+  it('standalone-local 下应基于本地批次返回 pending 建议，并支持本地决策刷新', async () => {
+    window.history.replaceState({}, '', '/')
+
+    await storyHarnessService.persistBatch({
+      projectId: 'project-local',
+      chapterId: 'chapter-local',
+      chapterTitle: '本地章节',
+      changeRequests: [
+        {
+          id: 'cr-local-1',
+          source: 'live',
+          type: 'state',
+          title: '正文指令建议：更新 本地角色',
+          summary: '本地宿主应直接落本地缓存。',
+          reason: '独立编辑器默认不依赖原后端。',
+          severity: 'focus',
+        },
+      ],
+    })
+
+    const pendingBefore = await storyHarnessService.fetchChangeRequests(
+      'project-local',
+      'chapter-local',
+      'pending',
+    )
+    expect(pendingBefore).toHaveLength(1)
+    expect(pendingBefore[0]?.status).toBe('pending')
+
+    const requestId = pendingBefore[0]?.id as string
+    await expect(storyHarnessService.processChangeRequest(requestId, 'ignored')).resolves.toBe(true)
+
+    const pendingAfter = await storyHarnessService.fetchChangeRequests(
+      'project-local',
+      'chapter-local',
+      'pending',
+    )
+    const ignored = await storyHarnessService.fetchChangeRequests(
+      'project-local',
+      'chapter-local',
+      'ignored',
+    )
+
+    expect(pendingAfter).toHaveLength(0)
+    expect(ignored).toHaveLength(1)
+    expect(ignored[0]?.id).toBe(requestId)
+    expect(mockCreateStoryHarnessBatch).not.toHaveBeenCalled()
+    expect(mockGetLatestStoryHarnessBatch).not.toHaveBeenCalled()
   })
 })

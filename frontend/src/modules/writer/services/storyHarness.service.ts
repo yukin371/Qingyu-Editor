@@ -1,5 +1,6 @@
 import storage from '@/utils/storage'
 import {
+  isStandaloneLocalWriterAvailable,
   isStandaloneWriterRuntime,
   isWailsWriterAvailable,
   wailsWriterBridge,
@@ -12,9 +13,11 @@ import {
   type StoryHarnessBatchSyncSource,
 } from '@/modules/writer/api/story-harness'
 import type {
+  StoryHarnessChangeRequestDecision,
   StoryHarnessChangeRequestPreview,
   StoryHarnessSavedBatchReceipt,
 } from '@/modules/writer/stores/v3/storyHarnessStore'
+import type { BackendChangeRequestDTO } from '@/modules/writer/api/story-harness'
 
 interface PersistStoryHarnessBatchPayload {
   projectId: string
@@ -33,6 +36,11 @@ type StoryHarnessBatchRecordLike = Partial<StoryHarnessBatchRecord> | null | und
 const buildStorageKey = (projectId: string, chapterId: string) =>
   `writer_story_harness_batch:${projectId}:${chapterId}`
 
+const buildDecisionStorageKey = (projectId: string, chapterId: string) =>
+  `writer_story_harness_decisions:${projectId}:${chapterId}`
+
+const LOCAL_BATCH_STORAGE_PREFIX = 'qingyu_writer_story_harness_batch:'
+
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === 'string' && value.trim().length > 0
 
@@ -41,6 +49,11 @@ const isValidTimestamp = (value: unknown): value is number =>
 
 const isBatchSyncSource = (value: unknown): value is StoryHarnessBatchSyncSource =>
   value === 'remote' || value === 'local_fallback'
+
+const isResolvedChangeRequestDecision = (
+  value: unknown,
+): value is Exclude<StoryHarnessChangeRequestDecision, 'pending'> =>
+  value === 'accepted' || value === 'ignored' || value === 'deferred'
 
 const normalizeChangeRequests = (
   changeRequests: unknown,
@@ -100,6 +113,23 @@ const createLocalFallbackRecord = (
   }
 }
 
+const mapPreviewTypeToBackendCategory = (
+  type: StoryHarnessChangeRequestPreview['type'],
+): BackendChangeRequestDTO['category'] => {
+  switch (type) {
+    case 'relation':
+      return 'relation'
+    case 'scene_scope':
+      return 'scene_scope'
+    default:
+      return 'state'
+  }
+}
+
+const mapPreviewSeverityToBackendPriority = (
+  severity: StoryHarnessChangeRequestPreview['severity'],
+): BackendChangeRequestDTO['priority'] => (severity === 'focus' ? 'high' : 'medium')
+
 const mergeBatchRecord = (
   record: StoryHarnessBatchRecordLike,
   fallbackRecord: StoryHarnessBatchRecord | null,
@@ -143,8 +173,17 @@ const mergeBatchRecord = (
 }
 
 class StoryHarnessService {
-  private readonly useWailsBridge = isWailsWriterAvailable()
-  private readonly isStandaloneMode = isStandaloneWriterRuntime() && !this.useWailsBridge
+  private get useWailsBridge() {
+    return isWailsWriterAvailable()
+  }
+
+  private get useStandaloneLocalBridge() {
+    return isStandaloneLocalWriterAvailable()
+  }
+
+  private get isStandaloneMode() {
+    return isStandaloneWriterRuntime() && !this.useWailsBridge
+  }
 
   private readLocalBatchRecord(
     projectId: string,
@@ -170,6 +209,124 @@ class StoryHarnessService {
     return normalizeBatchRecord(record)
   }
 
+  private readLocalDecisionMap(
+    projectId: string,
+    chapterId: string,
+  ): Record<string, Exclude<StoryHarnessChangeRequestDecision, 'pending'>> {
+    const raw = storage.get<Record<string, unknown> | null>(
+      buildDecisionStorageKey(projectId, chapterId),
+      null,
+    )
+
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      return {}
+    }
+
+    return Object.fromEntries(
+      Object.entries(raw).filter(([, value]) => isResolvedChangeRequestDecision(value)),
+    ) as Record<string, Exclude<StoryHarnessChangeRequestDecision, 'pending'>>
+  }
+
+  private writeLocalDecisionMap(
+    projectId: string,
+    chapterId: string,
+    decisionMap: Record<string, Exclude<StoryHarnessChangeRequestDecision, 'pending'>>,
+  ) {
+    storage.set(buildDecisionStorageKey(projectId, chapterId), decisionMap)
+  }
+
+  private clearLocalDecisionMap(projectId: string, chapterId: string) {
+    storage.remove(buildDecisionStorageKey(projectId, chapterId))
+  }
+
+  private getLocalChangeRequestStatus(
+    projectId: string,
+    chapterId: string,
+    changeRequestId: string,
+  ): StoryHarnessChangeRequestDecision {
+    return this.readLocalDecisionMap(projectId, chapterId)[changeRequestId] ?? 'pending'
+  }
+
+  private mapLocalBatchToBackendChangeRequests(
+    projectId: string,
+    chapterId: string,
+    status = 'pending',
+  ): BackendChangeRequestDTO[] {
+    const localBatch = this.readLocalBatch(projectId, chapterId)
+    if (!localBatch?.receipt) {
+      return []
+    }
+
+    const wantedStatus = status.trim().toLowerCase() || 'pending'
+    const batchId =
+      localBatch.receipt.batchId ||
+      `story-harness:${chapterId}:${localBatch.receipt.committedAt}`
+
+    return localBatch.changeRequests
+      .map((changeRequest) => {
+        const currentStatus = this.getLocalChangeRequestStatus(projectId, chapterId, changeRequest.id)
+        return {
+          id: changeRequest.id,
+          batchId,
+          chapterId,
+          category: mapPreviewTypeToBackendCategory(changeRequest.type),
+          priority: mapPreviewSeverityToBackendPriority(changeRequest.severity),
+          status: currentStatus,
+          title: changeRequest.title,
+          description: changeRequest.summary || changeRequest.reason,
+          evidence: changeRequest.evidence?.trim()
+            ? [
+                {
+                  documentId: chapterId,
+                  paragraphIdx: 0,
+                  quoteText: changeRequest.evidence.trim(),
+                },
+              ]
+            : [],
+          source: localBatch.receipt.source === 'remote' ? 'save_batch_remote' : 'save_batch_local',
+          createdAt: new Date(
+            changeRequest.sourceTimestamp ?? localBatch.receipt.committedAt,
+          ).toISOString(),
+          updatedAt: undefined,
+        } satisfies BackendChangeRequestDTO
+      })
+      .filter((changeRequest) =>
+        wantedStatus === 'all' ? true : changeRequest.status === wantedStatus,
+      )
+  }
+
+  private getLocalPendingChangeRequestCount(projectId: string, chapterId: string): number {
+    return this.mapLocalBatchToBackendChangeRequests(projectId, chapterId, 'pending').length
+  }
+
+  private findLocalBatchOwnerByChangeRequestId(requestId: string) {
+    if (typeof localStorage === 'undefined') {
+      return null
+    }
+
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const storageKey = localStorage.key(index)
+      if (!storageKey?.startsWith(LOCAL_BATCH_STORAGE_PREFIX)) {
+        continue
+      }
+
+      const suffix = storageKey.slice(LOCAL_BATCH_STORAGE_PREFIX.length)
+      const separatorIndex = suffix.indexOf(':')
+      if (separatorIndex <= 0 || separatorIndex >= suffix.length - 1) {
+        continue
+      }
+
+      const projectId = suffix.slice(0, separatorIndex)
+      const chapterId = suffix.slice(separatorIndex + 1)
+      const localBatch = this.readLocalBatch(projectId, chapterId)
+      if (localBatch?.changeRequests.some((changeRequest) => changeRequest.id === requestId)) {
+        return { projectId, chapterId }
+      }
+    }
+
+    return null
+  }
+
   async getLatestBatch(
     projectId: string,
     chapterId: string,
@@ -182,6 +339,9 @@ class StoryHarnessService {
       if (this.useWailsBridge) {
         const payload = await wailsWriterBridge.storyHarness.getLatestBatch(projectId, chapterId)
         return payload ? normalizeBatchRecord(payload as StoryHarnessBatchRecord) : null
+      }
+      if (this.useStandaloneLocalBridge) {
+        return this.readLocalBatch(projectId, chapterId)
       }
       const localRecord = this.readLocalBatchRecord(projectId, chapterId)
       const response = await getLatestStoryHarnessBatch(projectId, chapterId)
@@ -218,6 +378,7 @@ class StoryHarnessService {
     payload: PersistStoryHarnessBatchPayload,
   ): Promise<StoryHarnessPersistedBatchResult> {
     const fallbackRecord = createLocalFallbackRecord(payload, 'local_fallback')
+    this.clearLocalDecisionMap(payload.projectId, payload.chapterId)
 
     try {
       if (this.useWailsBridge) {
@@ -228,6 +389,9 @@ class StoryHarnessService {
           changeRequests: payload.changeRequests as unknown as Array<Record<string, unknown>>,
         })
         return this.writeLocalBatch((remoteRecord as StoryHarnessBatchRecord) ?? fallbackRecord)
+      }
+      if (this.useStandaloneLocalBridge) {
+        return this.writeLocalBatch(fallbackRecord)
       }
       const response = await createStoryHarnessBatch(payload.projectId, payload.chapterId, {
         chapterTitle: payload.chapterTitle,
@@ -265,6 +429,9 @@ class StoryHarnessService {
         return null
       }
     }
+    if (this.useStandaloneLocalBridge) {
+      return null
+    }
     if (this.isStandaloneMode) {
       return null
     }
@@ -291,6 +458,9 @@ class StoryHarnessService {
         }
         return []
       }
+    }
+    if (this.useStandaloneLocalBridge) {
+      return this.mapLocalBatchToBackendChangeRequests(projectId, chapterId, status)
     }
     if (this.isStandaloneMode) {
       return []
@@ -320,6 +490,17 @@ class StoryHarnessService {
         return false
       }
     }
+    if (this.useStandaloneLocalBridge) {
+      const owner = this.findLocalBatchOwnerByChangeRequestId(requestId)
+      if (!owner) {
+        return false
+      }
+
+      const decisionMap = this.readLocalDecisionMap(owner.projectId, owner.chapterId)
+      decisionMap[requestId] = status
+      this.writeLocalDecisionMap(owner.projectId, owner.chapterId, decisionMap)
+      return true
+    }
     if (this.isStandaloneMode) {
       return false
     }
@@ -345,6 +526,22 @@ class StoryHarnessService {
           console.warn('[storyHarnessService] triggerIndex via Wails failed:', error)
         }
         return null
+      }
+    }
+    if (this.useStandaloneLocalBridge) {
+      const localBatch = this.readLocalBatch(projectId, chapterId)
+      if (!localBatch?.receipt) {
+        return null
+      }
+
+      return {
+        batchId:
+          localBatch.receipt.batchId ||
+          `story-harness:${chapterId}:${localBatch.receipt.committedAt}`,
+        generated: localBatch.receipt.count,
+        pending: this.getLocalPendingChangeRequestCount(projectId, chapterId),
+        deduplicated: 0,
+        source: 'standalone_local',
       }
     }
     if (this.isStandaloneMode) {
@@ -379,6 +576,14 @@ class StoryHarnessService {
           console.warn('[storyHarnessService] rebuildProjection via Wails failed:', error)
         }
         return null
+      }
+    }
+    if (this.useStandaloneLocalBridge) {
+      return {
+        projectId,
+        chapterId,
+        replayedCount: this.getLocalPendingChangeRequestCount(projectId, chapterId),
+        lastRequestId: undefined,
       }
     }
     if (this.isStandaloneMode) {
