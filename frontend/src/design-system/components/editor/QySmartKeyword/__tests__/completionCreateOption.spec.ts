@@ -33,8 +33,8 @@ describe('completionCreateOption', () => {
 
   it('does not show create action for empty query', () => {
     const items = buildItems('林舟')
-    expect(shouldShowCompletionCreateAction('', items)).toBe(false)
-    expect(getCompletionOptionCount('', items)).toBe(1)
-    expect(getDefaultCompletionActiveIndex('', items)).toBe(0)
+    expect(shouldShowCompletionCreateAction('', items)).toBe(true)
+    expect(getCompletionOptionCount('', items)).toBe(2)
+    expect(getDefaultCompletionActiveIndex('', items)).toBe(1)
   })
 })

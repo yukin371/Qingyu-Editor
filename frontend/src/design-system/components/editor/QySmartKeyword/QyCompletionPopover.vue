@@ -47,7 +47,7 @@
             @mouseenter="$emit('update:activeIndex', items.length)"
           >
             <span class="item-icon">➕</span>
-            <span class="item-name">创建「{{ query }}」</span>
+            <span class="item-name">{{ createActionLabel }}</span>
           </li>
         </ul>
 
@@ -55,7 +55,7 @@
           <span class="create-hint">
             未找到？
             <button type="button" class="create-btn" @click.stop="$emit('create', query || '')">
-              创建新实体
+              {{ createButtonLabel }}
             </button>
           </span>
         </div>
@@ -94,6 +94,12 @@ const showCreateAction = computed(() =>
 )
 
 const showCreateHint = computed(() => showCreateAction.value)
+
+const createActionLabel = computed(() =>
+  props.query?.trim() ? `创建「${props.query}」` : '新建实体',
+)
+
+const createButtonLabel = computed(() => (props.query?.trim() ? '创建新实体' : '新建实体'))
 
 function getTypeIcon(type: KeywordType): string {
   const icons: Record<KeywordType, string> = {

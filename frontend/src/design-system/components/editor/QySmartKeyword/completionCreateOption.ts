@@ -7,7 +7,9 @@ export function hasExactCompletionMatch(query: string, items: KeywordInfo[]): bo
 }
 
 export function shouldShowCompletionCreateAction(query: string, items: KeywordInfo[]): boolean {
-  return query.trim().length > 0 && !hasExactCompletionMatch(query, items)
+  const normalized = query.trim()
+  if (!normalized) return true
+  return !hasExactCompletionMatch(normalized, items)
 }
 
 export function getCompletionOptionCount(query: string, items: KeywordInfo[]): number {

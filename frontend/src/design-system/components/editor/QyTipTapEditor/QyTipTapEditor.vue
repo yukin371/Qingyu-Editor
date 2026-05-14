@@ -182,6 +182,7 @@ import {
   getDefaultCompletionActiveIndex,
   shouldShowCompletionCreateAction,
 } from '../QySmartKeyword/completionCreateOption'
+import { extractMentionDraft } from '../QySmartKeyword/mentionDraft'
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
 import { SmartKeyword, type KeywordInfo } from '../QySmartKeyword/extensions/SmartKeyword'
 import { ParagraphWithId } from '../QySmartKeyword/extensions/ParagraphWithId'
@@ -193,6 +194,7 @@ import { createLocalEntity } from '@/modules/writer/api/entities'
 import { locationApi } from '@/modules/writer/api/location'
 import { createEmbeddedEditorImage } from '@/modules/writer/services/editorImageAsset.service'
 import { extractEntitiesFromTipTapContent } from '@/modules/writer/utils/entityParser'
+import { cleanParagraphLeadingSpaces } from './cleanParagraphLeadingSpaces'
 
 const props = withDefaults(
   defineProps<{
@@ -487,6 +489,25 @@ const editor = useEditor({
 })
 
 function handleCompletionKeydown(event: KeyboardEvent): boolean {
+  const editorInstance = editor.value
+  const mentionDraft =
+    editorInstance && (event.key === 'Enter' || event.key === 'Tab')
+      ? extractMentionDraft(
+          editorInstance.state.doc.textBetween(
+            Math.max(0, editorInstance.state.selection.from - 64),
+            editorInstance.state.selection.from,
+            ' ',
+          ),
+          editorInstance.state.selection.from,
+        )
+      : null
+
+  if (!completion.visible && event.key === 'Enter' && mentionDraft?.query === '') {
+    event.preventDefault()
+    handleCompletionCreate('', mentionDraft)
+    return true
+  }
+
   if (completion.visible) {
     const optionCount = getCompletionOptionCount(completion.query, completion.items)
     const showCreateAction = shouldShowCompletionCreateAction(completion.query, completion.items)
@@ -518,17 +539,12 @@ function handleCompletionKeydown(event: KeyboardEvent): boolean {
 
   // 兼容旧逻辑：补全列表可见但未进入可导航状态时，按 Enter 仍可从 @query 直接建档
   if (completion.visible && event.key === 'Enter') {
-    const editorInstance = editor.value
-    if (!editorInstance) return false
-    const { from } = editorInstance.state.selection
-    const textBefore = editorInstance.state.doc.textBetween(Math.max(0, from - 64), from, ' ')
-    const match = textBefore.match(/@([\u4e00-\u9fa5\w-]{0,30})$/)
-    if (match) {
+    if (mentionDraft) {
       event.preventDefault()
-      entityCreateDialog.initialName = match[1] || ''
+      entityCreateDialog.initialName = mentionDraft.query
       entityCreateDialog.visible = true
-      entityCreateRange.from = from - match[0].length + (match[0].startsWith(' ') ? 1 : 0)
-      entityCreateRange.to = from
+      entityCreateRange.from = mentionDraft.from
+      entityCreateRange.to = mentionDraft.to
       completion.visible = false
       return true
     }
@@ -793,43 +809,6 @@ function extractParagraphs(doc: unknown): ParagraphContent[] {
   ]
 }
 
-/**
- * 清理段落开头的多余空格
- * 问题：用户输入的空格 + CSS text-indent 会导致双重缩进
- * 解决：去除段落开头的空格字符，让 text-indent 单独处理首行缩进
- */
-function cleanParagraphLeadingSpaces(doc: unknown): unknown {
-  if (!doc || typeof doc !== 'object') return doc
-
-  const docObj = doc as { type?: string; content?: unknown[]; text?: string; marks?: unknown[] }
-
-  // 如果是文本节点，去除开头空格
-  if (docObj.type === 'text' && typeof docObj.text === 'string') {
-    return {
-      ...docObj,
-      text: docObj.text.replace(/^ +/, ''),
-    }
-  }
-
-  // 如果是段落节点，递归处理其内容
-  if (docObj.type === 'paragraph' && Array.isArray(docObj.content)) {
-    return {
-      ...docObj,
-      content: docObj.content.map(cleanParagraphLeadingSpaces),
-    }
-  }
-
-  // 如果是文档节点，处理所有子节点
-  if (Array.isArray(docObj.content)) {
-    return {
-      ...docObj,
-      content: docObj.content.map(cleanParagraphLeadingSpaces),
-    }
-  }
-
-  return doc
-}
-
 async function scanAndNotifyEntities(doc: unknown) {
   try {
     const refs = extractEntitiesFromTipTapContent(doc)
@@ -847,10 +826,13 @@ function getSelectedText(): string {
 }
 
 // 处理补全中的创建请求
-function handleCompletionCreate(query: string) {
+function handleCompletionCreate(
+  query: string,
+  draft?: { from: number; to: number },
+) {
   // 保存 @query 的位置，以便创建后替换
-  entityCreateRange.from = completion.from
-  entityCreateRange.to = completion.to
+  entityCreateRange.from = draft?.from ?? completion.from
+  entityCreateRange.to = draft?.to ?? completion.to
   completion.visible = false
   entityCreateDialog.initialName = query
   entityCreateDialog.visible = true
