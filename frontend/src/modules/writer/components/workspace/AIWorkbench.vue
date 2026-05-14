@@ -14,163 +14,21 @@
       </button>
     </nav>
 
-    <section
-      v-if="hasWorkflowRail"
-      class="workflow-rail"
-      data-testid="workflow-state-rail"
-      aria-live="polite"
-      aria-atomic="true"
-    >
-      <div
-        v-if="visibleApplyFeedback"
-        class="apply-feedback workflow-feedback-strip"
-        :class="`apply-feedback--${visibleApplyFeedback.status}`"
-        data-testid="workflow-feedback-strip"
-      >
-        <div class="apply-feedback__content">
-          <strong>{{ visibleApplyFeedback.title }}</strong>
-          <p>{{ visibleApplyFeedback.detail }}</p>
-        </div>
-        <span class="apply-feedback__mode">
-          {{
-            visibleApplyFeedback.mode
-              ? `模式 ${applyModeText(visibleApplyFeedback.mode)}`
-              : '已更新正文'
-          }}
-        </span>
-      </div>
-
-      <div
-        v-if="visibleProposalLifecycleFeedback"
-        class="proposal-feedback workflow-feedback-strip"
-        :class="`proposal-feedback--${visibleProposalLifecycleFeedback.status}`"
-        data-testid="proposal-feedback-strip"
-      >
-        <div class="apply-feedback__content">
-          <strong>{{ visibleProposalLifecycleFeedback.title }}</strong>
-          <p>{{ visibleProposalLifecycleFeedback.detail }}</p>
-        </div>
-        <span class="apply-feedback__mode">
-          {{ visibleProposalLifecycleFeedback.source }}
-        </span>
-      </div>
-
-      <section
-        v-if="primaryDraftProposal"
-        class="proposal-card workflow-proposal-card"
-        :class="{ 'proposal-card--condensed': shouldCondensePrimaryProposal }"
-        data-testid="proposal-card"
-      >
-        <div class="proposal-card__content">
-          <div class="workflow-card__meta proposal-card__meta" data-testid="proposal-card-meta">
-            <span class="workflow-chip workflow-chip--status">
-              {{ proposalStatusText(primaryDraftProposal.status) }}
-            </span>
-            <span class="workflow-chip">{{ proposalKindText(primaryDraftProposal.kind) }}</span>
-            <span class="workflow-chip">{{ proposalSourceText(primaryDraftProposal.source) }}</span>
-          </div>
-          <div class="proposal-card__header">
-            <div>
-              <strong>{{ primaryDraftProposal.title }}</strong>
-              <p v-if="!shouldCondensePrimaryProposal" data-testid="proposal-card-summary">
-                {{ primaryDraftProposal.summary }}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div class="proposal-card__actions">
-          <button
-            v-if="primaryDraftProposal.status === 'draft'"
-            type="button"
-            class="proposal-card__action"
-            :aria-label="`将 ${primaryDraftProposal.title} 定为当前${proposalKindText(primaryDraftProposal.kind)}`"
-            @click="
-              emit('proposalStatusChange', {
-                proposalId: primaryDraftProposal.id,
-                status: 'selected',
-              })
-            "
-          >
-            {{ proposalSelectActionText(primaryDraftProposal.kind) }}
-          </button>
-          <button
-            v-if="primaryDraftProposal.status !== 'discarded'"
-            type="button"
-            class="proposal-card__action proposal-card__action--ghost"
-            :aria-label="proposalDismissAriaLabelText(primaryDraftProposal)"
-            @click="
-              emit('proposalStatusChange', {
-                proposalId: primaryDraftProposal.id,
-                status: 'discarded',
-              })
-            "
-          >
-            {{ proposalDismissActionText(primaryDraftProposal.status) }}
-          </button>
-        </div>
-      </section>
-
-      <section
-        v-if="visibleResultCandidate"
-        class="workflow-result-card workflow-result-candidate"
-        :class="{
-          'workflow-result-card--secondary': !!primaryDraftProposal,
-          'workflow-result-card--condensed': shouldCondenseResultCandidate,
-        }"
-        data-testid="workflow-result-card"
-      >
-        <div class="workflow-result-card__content">
-          <div class="workflow-card__meta" data-testid="workflow-result-meta">
-            <span class="workflow-chip workflow-chip--accent">候选</span>
-            <span class="workflow-chip">{{ resultSourceText(visibleResultCandidate.source) }}</span>
-            <span class="workflow-chip">{{ resultKindText(visibleResultCandidate) }}</span>
-          </div>
-          <div>
-            <strong>{{ visibleResultCandidate.title }}</strong>
-            <p v-if="!shouldCondenseResultCandidate" data-testid="workflow-result-summary">
-              {{ visibleResultCandidate.summary }}
-            </p>
-          </div>
-        </div>
-        <button
-          type="button"
-          class="workflow-result-card__action workflow-result-action"
-          data-testid="workflow-result-action"
-          :aria-label="`将 ${visibleResultCandidate.title} 存为${resultKindText(visibleResultCandidate)}提案`"
-          @click="handlePromoteToProposal"
-        >
-          {{ resultPromoteActionText(visibleResultCandidate) }}
-        </button>
-      </section>
-
-      <section
-        v-if="showEditorDiffStatus"
-        class="workflow-diff-card"
-        data-testid="workflow-diff-card"
-      >
-        <div class="workflow-card__meta">
-          <span class="workflow-chip workflow-chip--accent">正文已挂起</span>
-          <span class="workflow-chip">{{ diffModeText }}</span>
-        </div>
-        <p class="workflow-diff-card__hint">
-          改动已同步到正文编辑器。请直接在正文区域接受或放弃，本侧栏不再重复展示前后对比。
-        </p>
-        <div
-          v-if="pendingApplyPayload"
-          class="workflow-diff-card__actions"
-          data-testid="workflow-diff-actions"
-        >
-          <button
-            type="button"
-            class="workflow-diff-card__action workflow-diff-card__action--primary"
-            data-testid="workflow-revise-action"
-            @click="handleContinueRevision"
-          >
-            继续修改
-          </button>
-        </div>
-      </section>
-    </section>
+    <AIWorkflowRail
+      :has-workflow-rail="hasWorkflowRail"
+      :visible-apply-feedback="visibleApplyFeedback"
+      :visible-proposal-lifecycle-feedback="visibleProposalLifecycleFeedback"
+      :primary-draft-proposal="primaryDraftProposal"
+      :should-condense-primary-proposal="shouldCondensePrimaryProposal"
+      :visible-result-candidate="visibleResultCandidate"
+      :should-condense-result-candidate="shouldCondenseResultCandidate"
+      :show-editor-diff-status="showEditorDiffStatus"
+      :diff-mode-text="diffModeText"
+      :has-pending-apply-payload="!!pendingApplyPayload"
+      @proposal-status-change="emit('proposalStatusChange', $event)"
+      @promote-result="handlePromoteToProposal"
+      @continue-revision="handleContinueRevision"
+    />
 
     <div class="ai-workbench__panel">
       <RewriteWorkbenchTool
@@ -221,26 +79,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { ref, toRef } from 'vue'
 import AIPanel from '@/modules/writer/components/editor/AIPanel.vue'
+import AIWorkflowRail from '@/modules/writer/components/workspace/AIWorkflowRail.vue'
 import RewriteWorkbenchTool from '@/modules/writer/components/workspace/ai-tools/RewriteWorkbenchTool.vue'
 import SummaryWorkbenchTool from '@/modules/writer/components/workspace/ai-tools/SummaryWorkbenchTool.vue'
 import ReviewWorkbenchTool from '@/modules/writer/components/workspace/ai-tools/ReviewWorkbenchTool.vue'
+import { useAIWorkbenchRail } from '@/modules/writer/composables/useAIWorkbenchRail'
 import type {
   WriterAIActionTrigger,
   WriterAIApplyFeedback,
   WriterAIApplyPayload,
   WriterDraftProposal,
-  WriterDraftProposalKind,
-  WriterDraftProposalSource,
   WriterDraftProposalStatus,
-  WriterRevisionSeed,
   WriterResultCandidate,
   WriterStructurePlanPayload,
   WriterWorkbenchTab,
   WriterWorkflowContext,
 } from '@/modules/writer/types/workflow'
-import { resolveWriterWorkflowTab } from '@/modules/writer/types/workflow'
 
 const props = defineProps<{
   projectId: string
@@ -264,9 +120,6 @@ const emit = defineEmits<{
 }>()
 
 const activeTab = ref<WriterWorkbenchTab>('chat')
-const latestResultCandidate = ref<WriterResultCandidate | null>(null)
-const pendingApplyPayload = ref<WriterAIApplyPayload | null>(null)
-const revisionSeed = ref<WriterRevisionSeed | null>(null)
 
 const tabs: Array<{ id: WriterWorkbenchTab; label: string; description: string }> = [
   { id: 'rewrite', label: '改写', description: '续写 / 润色 / 扩写' },
@@ -275,267 +128,33 @@ const tabs: Array<{ id: WriterWorkbenchTab; label: string; description: string }
   { id: 'chat', label: '对话协作', description: '开放式协作' },
 ]
 
-const actionDrivenTab = computed<WriterWorkbenchTab | null>(() =>
-  resolveWriterWorkflowTab(props.actionTrigger?.action),
-)
-
-const primaryDraftProposal = computed<WriterDraftProposal | null>(() => {
-  const selectedProposal = props.draftProposals.find((proposal) => proposal.status === 'selected')
-  if (selectedProposal) {
-    return selectedProposal
-  }
-
-  return props.draftProposals.find((proposal) => proposal.status === 'draft') || null
+const {
+  revisionSeed,
+  pendingApplyPayload,
+  primaryDraftProposal,
+  shouldCondensePrimaryProposal,
+  visibleResultCandidate,
+  shouldCondenseResultCandidate,
+  visibleApplyFeedback,
+  visibleProposalLifecycleFeedback,
+  hasWorkflowRail,
+  showEditorDiffStatus,
+  diffModeText,
+  handleResultCandidate,
+  handleApplyPayload,
+  handleContinueRevision,
+  handlePromoteToProposal,
+} = useAIWorkbenchRail({
+  projectId: toRef(props, 'projectId'),
+  chapterId: toRef(props, 'chapterId'),
+  actionTrigger: toRef(props, 'actionTrigger'),
+  aiApplyFeedback: toRef(props, 'aiApplyFeedback'),
+  draftProposals: toRef(props, 'draftProposals'),
+  activeTab,
+  onApplyGeneratedText: (payload) => emit('applyGeneratedText', payload),
+  onProposalDraft: (payload) => emit('proposalDraft', payload),
 })
 
-const shouldCondensePrimaryProposal = computed(
-  () => !!primaryDraftProposal.value && !!visibleResultCandidate.value,
-)
-
-const shouldCondenseResultCandidate = computed(
-  () => !!visibleResultCandidate.value && !!primaryDraftProposal.value,
-)
-
-const visibleResultCandidate = computed(() =>
-  pendingApplyPayload.value ? null : latestResultCandidate.value,
-)
-
-const shouldShowApplyFeedback = computed(
-  () =>
-    !!props.aiApplyFeedback &&
-    !(primaryDraftProposal.value?.status === 'selected' && !!visibleResultCandidate.value),
-)
-
-const visibleApplyFeedback = computed(() =>
-  shouldShowApplyFeedback.value ? props.aiApplyFeedback : null,
-)
-
-const hasWorkflowRail = computed(
-  () =>
-    !!shouldShowApplyFeedback.value ||
-    !!shouldShowProposalLifecycleFeedback.value ||
-    !!visibleResultCandidate.value ||
-    !!primaryDraftProposal.value ||
-    !!pendingApplyPayload.value,
-)
-
-const proposalLifecycleFeedback = computed<{
-  status: 'selected' | 'discarded'
-  title: string
-  detail: string
-  source: string
-} | null>(() => {
-  if (props.draftProposals.length === 0) {
-    return null
-  }
-
-  const latestProposal = [...props.draftProposals].sort(
-    (left, right) => right.updatedAt - left.updatedAt,
-  )[0]
-  if (!latestProposal) {
-    return null
-  }
-
-  const latestStatus = latestProposal.status
-  if (latestStatus !== 'selected' && latestStatus !== 'discarded') {
-    return null
-  }
-
-  return {
-    status: latestStatus,
-    title:
-      latestStatus === 'selected'
-        ? `${proposalKindText(latestProposal.kind)}提案已保留`
-        : `${proposalKindText(latestProposal.kind)}提案已移出`,
-    detail:
-      latestStatus === 'selected'
-        ? `当前保留：${latestProposal.title}`
-        : `已从 rail 中移除：${latestProposal.title}`,
-    source: proposalSourceText(latestProposal.source),
-  }
-})
-
-const shouldShowProposalLifecycleFeedback = computed(() => {
-  if (!proposalLifecycleFeedback.value) {
-    return false
-  }
-
-  if (props.aiApplyFeedback || visibleResultCandidate.value) {
-    return false
-  }
-  return proposalLifecycleFeedback.value.status === 'discarded'
-})
-
-const visibleProposalLifecycleFeedback = computed(() =>
-  shouldShowProposalLifecycleFeedback.value ? proposalLifecycleFeedback.value : null,
-)
-
-const showEditorDiffStatus = computed(() => !!pendingApplyPayload.value)
-
-const diffModeText = computed(() => {
-  const mode = pendingApplyPayload.value?.applyMode || props.actionTrigger?.applyMode
-  if (mode === 'replace_document') return '整章改写'
-  if (mode === 'insert_after_selection') return '插入选区后'
-  if (mode === 'replace_selection') return '替换选区'
-  if (mode === 'append_paragraph') return '追加段落'
-  return '正文改写'
-})
-
-watch(
-  [() => props.projectId, () => props.chapterId, () => props.actionTrigger?.id],
-  (
-    [projectId, chapterId, actionTriggerId],
-    [prevProjectId, prevChapterId, prevActionTriggerId],
-  ) => {
-    if (
-      projectId !== prevProjectId ||
-      chapterId !== prevChapterId ||
-      actionTriggerId !== prevActionTriggerId
-    ) {
-      latestResultCandidate.value = null
-      pendingApplyPayload.value = null
-      revisionSeed.value = null
-    }
-
-    if (actionTriggerId !== prevActionTriggerId && actionDrivenTab.value) {
-      activeTab.value = actionDrivenTab.value
-    }
-  },
-)
-
-watch(
-  () => props.aiApplyFeedback?.updatedAt,
-  (updatedAt, previousUpdatedAt) => {
-    if (!updatedAt || updatedAt === previousUpdatedAt) {
-      return
-    }
-
-    pendingApplyPayload.value = null
-    latestResultCandidate.value = null
-    revisionSeed.value = null
-  },
-)
-
-function applyModeText(mode: NonNullable<WriterAIActionTrigger['applyMode']>) {
-  if (mode === 'replace_selection') return '替换选区'
-  if (mode === 'insert_after_selection') return '插入后方'
-  if (mode === 'replace_document') return '替换全文'
-  return '追加段落'
-}
-
-function handleResultCandidate(payload: WriterResultCandidate) {
-  latestResultCandidate.value = payload
-}
-
-function buildCandidateFromPayload(payload: WriterAIApplyPayload): WriterResultCandidate {
-  const resolvedTab = resolveWriterWorkflowTab(payload.action)
-  const title =
-    payload.applyMode === 'replace_document'
-      ? 'AI 整章改写结果'
-      : payload.applyMode === 'replace_selection'
-        ? 'AI 选区替换结果'
-        : payload.applyMode === 'insert_after_selection'
-          ? 'AI 续写结果'
-          : 'AI 正文结果'
-
-  return {
-    source:
-      resolvedTab === 'summary' || resolvedTab === 'review' || resolvedTab === 'rewrite'
-        ? resolvedTab
-        : 'chat',
-    action: payload.action,
-    title,
-    summary: payload.generatedText.slice(0, 72) || '已生成新的正文结果。',
-    generatedText: payload.generatedText,
-    sourceText: payload.sourceText,
-  }
-}
-
-function handleApplyPayload(payload: WriterAIApplyPayload) {
-  pendingApplyPayload.value = payload
-  revisionSeed.value = null
-  emit('applyGeneratedText', payload)
-
-  const currentCandidate = latestResultCandidate.value
-  if (
-    !currentCandidate ||
-    currentCandidate.generatedText.trim() !== payload.generatedText.trim() ||
-    currentCandidate.sourceText.trim() !== payload.sourceText.trim()
-  ) {
-    latestResultCandidate.value = buildCandidateFromPayload(payload)
-  }
-}
-
-function handleContinueRevision() {
-  const revisionText = pendingApplyPayload.value?.generatedText?.trim() || ''
-  if (!pendingApplyPayload.value || !revisionText) {
-    return
-  }
-
-  revisionSeed.value = {
-    id: Date.now(),
-    text: revisionText,
-    instructions: `基于当前候选继续修改，目标模式：${diffModeText.value}。`,
-    applyMode: pendingApplyPayload.value.applyMode,
-  }
-  activeTab.value = 'chat'
-}
-
-function handlePromoteToProposal() {
-  if (!visibleResultCandidate.value) {
-    return
-  }
-
-  emit('proposalDraft', visibleResultCandidate.value)
-  latestResultCandidate.value = null
-}
-
-function proposalStatusText(status: WriterDraftProposalStatus) {
-  if (status === 'selected') return '保留'
-  if (status === 'discarded') return '丢弃'
-  return '草稿'
-}
-
-function proposalSelectActionText(kind: WriterDraftProposalKind) {
-  return kind === 'chapter-direction' ? '定为方向' : '定为正文'
-}
-
-function proposalDismissActionText(status: WriterDraftProposalStatus) {
-  return status === 'selected' ? '移出' : '丢弃'
-}
-
-function proposalDismissAriaLabelText(proposal: WriterDraftProposal) {
-  const action = proposal.status === 'selected' ? '移出提案' : '丢弃提案'
-  return `${action} ${proposal.title}`
-}
-
-function proposalKindText(kind: WriterDraftProposalKind) {
-  return kind === 'chapter-direction' ? '方向' : '正文'
-}
-
-function proposalSourceText(source: WriterDraftProposalSource) {
-  if (source === 'summary-workbench') return '总结'
-  if (source === 'review-workbench') return '审校'
-  if (source === 'rewrite-workbench') return '改写'
-  return '对话'
-}
-
-function resultSourceText(source: WriterResultCandidate['source']) {
-  if (source === 'summary') return '总结'
-  if (source === 'review') return '审校'
-  if (source === 'rewrite') return '改写'
-  return '对话'
-}
-
-function resultKindText(candidate: WriterResultCandidate) {
-  const tab = resolveWriterWorkflowTab(candidate.action)
-  if (tab === 'summary') return '方向'
-  return '正文'
-}
-
-function resultPromoteActionText(candidate: WriterResultCandidate) {
-  return resultKindText(candidate) === '方向' ? '存为方向' : '存为正文'
-}
 </script>
 
 <style scoped lang="scss">

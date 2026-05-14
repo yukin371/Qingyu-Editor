@@ -88,4 +88,36 @@ describe('InspirationPanel', () => {
     expect(secondWrapper.text()).toContain('第一份成果')
     expect(secondWrapper.find('textarea').element.value).toContain('第一座工坊翻盘')
   })
+
+  it('keeps golden chapter switching and edits working after the panel split', async () => {
+    const wrapper = mountPanel()
+    await nextTick()
+
+    await wrapper.get('[data-testid="template-mystery"]').trigger('click')
+    await nextTick()
+    await flushPromises()
+
+    await wrapper.get('[data-testid="golden-chapter-tab-2"]').trigger('click')
+    await nextTick()
+
+    const titleInput = wrapper.get('[data-testid="golden-chapter-title"]')
+    await titleInput.setValue('第二章·错误献祭')
+    await nextTick()
+    await flushPromises()
+
+    expect((titleInput.element as HTMLInputElement).value).toBe('第二章·错误献祭')
+
+    wrapper.unmount()
+
+    const secondWrapper = mountPanel()
+    await nextTick()
+    await flushPromises()
+
+    await secondWrapper.get('[data-testid="golden-chapter-tab-2"]').trigger('click')
+    await nextTick()
+
+    expect(
+      (secondWrapper.get('[data-testid="golden-chapter-title"]').element as HTMLInputElement).value,
+    ).toBe('第二章·错误献祭')
+  })
 })

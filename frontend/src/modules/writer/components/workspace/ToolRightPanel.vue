@@ -15,14 +15,8 @@
       <template v-if="showListPanel">
         <aside class="tool-right-panel__list" :style="{ width: `${listWidth}px` }">
           <AssetListPanel
-            :loading="loading"
-            :search-keyword="searchKeyword"
-            :active-category="assetCategory"
-            :category-options="categoryOptions"
-            :empty-message="emptyMessage"
-            :assets="filteredAssets"
-            :selected-asset-id="selectedAsset?.id"
-            @update:search-keyword="searchKeyword = $event"
+            v-bind="assetListPanelProps"
+            @update:search-keyword="handleAssetSearchKeywordChange"
             @select-category="handleAssetCategoryChange"
             @select-asset="handleAssetSelect"
             @create-asset="handleCreateAsset"
@@ -57,10 +51,7 @@
 
         <AssetDetailPanel
           v-else-if="activeTool === 'assets'"
-          :asset="selectedAsset"
-          :detail-fields="selectedDetailFields"
-          :state-fields="selectedStateFields"
-          :data-hint="selectedDataHint"
+          v-bind="assetDetailPanelProps"
           @edit="handleEditAsset"
           @delete="handleDeleteAsset"
           @open-graph="handleOpenAssetGraph"
@@ -92,8 +83,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, type ComponentPublicInstance } from 'vue'
-import { message, messageBox } from '@/design-system/services'
+import { computed, type ComponentPublicInstance } from 'vue'
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
 import AIChatPanel from '@/modules/writer/components/workspace/tool-right/AIChatPanel.vue'
 import AssetDetailPanel from '@/modules/writer/components/workspace/tool-right/AssetDetailPanel.vue'
@@ -102,12 +92,9 @@ import AssetQuickEditorDialog from '@/modules/writer/components/workspace/tool-r
 import InspirationPanel from '@/modules/writer/components/workspace/tool-right/InspirationPanel.vue'
 import ProofreadPanel from '@/modules/writer/components/workspace/tool-right/ProofreadPanel.vue'
 import { useToolOverlay } from '@/modules/writer/composables/useToolOverlay'
+import { useToolRightAssets } from '@/modules/writer/composables/useToolRightAssets'
 import { useToolRightPanel } from '@/modules/writer/composables/useToolRightPanel'
-import {
-  useWriterAssetCatalog,
-  type WriterAssetMutationInput,
-} from '@/modules/writer/composables/useWriterAssetCatalog'
-import type { EncyclopediaCategory, SidebarChapterSummary } from '@/modules/writer/composables/types'
+import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 import type {
   WriterAIActionTrigger,
   WriterAIApplyFeedback,
@@ -145,116 +132,37 @@ defineEmits<{
   (e: 'close'): void
 }>()
 
-const searchKeyword = ref('')
-const assetCategory = ref<EncyclopediaCategory>('characters')
 const toolOverlay = useToolOverlay()
 const activeToolRef = computed(() => props.activeTool)
 const { activeConfig, showListPanel, listWidth, isResizingList, attachDetailPanel, startListResize } =
   useToolRightPanel(activeToolRef)
 const {
-  loading,
-  categoryOptions,
-  filteredAssets,
-  emptyMessage,
+  assetCategory,
+  handleAssetSearchKeywordChange,
+  handleAssetCategoryChange,
+  assetListPanelProps,
+  assetDetailPanelProps,
   selectedAsset,
-  selectedDetailFields,
-  selectedStateFields,
-  selectedDataHint,
-  selectAsset,
-  buildGraphFocusTarget,
-  createAsset,
-  updateAsset,
-  deleteAsset,
-} = useWriterAssetCatalog({
+  assetEditorVisible,
+  assetEditorMode,
+  assetEditorSubmitting,
+  assetEditorCategory,
+  handleAssetSelect,
+  handleCreateAsset,
+  handleEditAsset,
+  handleDeleteAsset,
+  handleAssetEditorSubmit,
+  handleOpenAssetsFullscreen,
+  handleOpenAssetGraph,
+} = useToolRightAssets({
   projectId: computed(() => props.projectId),
   chapters: computed(() => props.chapters),
-  activeCategory: assetCategory,
-  searchKeyword,
 })
-const assetEditorVisible = ref(false)
-const assetEditorMode = ref<'create' | 'edit'>('create')
-const assetEditorSubmitting = ref(false)
-const assetEditorCategory = computed(() => assetCategory.value)
 const setDetailPanelRef = (
   value: Element | ComponentPublicInstance | null,
   _refs?: Record<string, unknown>,
 ) => {
   attachDetailPanel(value instanceof HTMLElement ? value : null)
-}
-
-const handleAssetCategoryChange = (category: EncyclopediaCategory) => {
-  assetCategory.value = category
-}
-
-const handleAssetSelect = (assetId: string) => {
-  const nextAsset = filteredAssets.value.find((asset) => asset.id === assetId) || null
-  selectAsset(nextAsset)
-}
-
-const handleCreateAsset = () => {
-  assetEditorMode.value = 'create'
-  assetEditorVisible.value = true
-}
-
-const handleEditAsset = () => {
-  if (!selectedAsset.value) return
-  assetEditorMode.value = 'edit'
-  assetEditorVisible.value = true
-}
-
-const handleDeleteAsset = async () => {
-  if (!selectedAsset.value) return
-  const chapterImpact = selectedAsset.value.chapterReferenceCount
-    ? `将影响 ${selectedAsset.value.chapterReferenceCount} 个章节引用`
-    : '当前没有章节引用记录'
-  const volumeImpact = selectedAsset.value.volumeReferenceCount
-    ? `，涉及 ${selectedAsset.value.volumeReferenceCount} 个卷级投影`
-    : ''
-  try {
-    await messageBox.confirm(
-      `确定删除资产「${selectedAsset.value.name}」吗？${chapterImpact}${volumeImpact}。此操作不可恢复。`,
-      '删除资产',
-      {
-        type: 'warning',
-      },
-    )
-    await deleteAsset(selectedAsset.value)
-    message.success('资产已删除')
-  } catch {
-    // 取消或失败都保持原状
-  }
-}
-
-const handleAssetEditorSubmit = async (payload: WriterAssetMutationInput) => {
-  assetEditorSubmitting.value = true
-  try {
-    if (assetEditorMode.value === 'edit' && selectedAsset.value) {
-      await updateAsset(selectedAsset.value, payload)
-      message.success('资产已更新')
-    } else {
-      await createAsset(payload)
-      message.success('资产已创建')
-    }
-    assetEditorVisible.value = false
-  } catch (error) {
-    message.error((error as Error).message || '保存资产失败')
-  } finally {
-    assetEditorSubmitting.value = false
-  }
-}
-
-const handleOpenAssetsFullscreen = () => {
-  toolOverlay.openFromRightPanel('assets', {
-    assetsCategory: assetCategory.value,
-    assetId: selectedAsset.value?.id,
-  })
-}
-
-const handleOpenAssetGraph = () => {
-  if (!selectedAsset.value) return
-  toolOverlay.openFromRightPanel('relations', {
-    focusedAsset: buildGraphFocusTarget(selectedAsset.value),
-  })
 }
 
 const handleOpenInspirationFullscreen = () => {
@@ -270,7 +178,7 @@ const handleOpenInspirationFullscreen = () => {
   flex-direction: column;
   width: 100%;
   min-width: 0;
-  background: #fff;
+  background: var(--editor-bg-base, #fff);
 }
 
 .tool-right-panel__topbar {
@@ -280,7 +188,7 @@ const handleOpenInspirationFullscreen = () => {
   justify-content: space-between;
   gap: 8px;
   padding: 0 12px;
-  border-bottom: 1px solid #eceff3;
+  border-bottom: 1px solid var(--editor-border, #eceff3);
 }
 
 .tool-right-panel__icon-btn {
@@ -288,15 +196,15 @@ const handleOpenInspirationFullscreen = () => {
   height: 26px;
   border: none;
   background: transparent;
-  color: #6b7280;
+  color: var(--editor-text-muted, #6b7280);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    color: #111827;
-    background: #f3f4f6;
+    color: var(--editor-text-primary, #111827);
+    background: var(--editor-bg-elevated, #f3f4f6);
   }
 
   &:disabled {
@@ -341,7 +249,7 @@ const handleOpenInspirationFullscreen = () => {
     left: 50%;
     width: 1px;
     transform: translateX(-50%);
-    background: #eceff3;
+    background: var(--editor-border, #eceff3);
     transition:
       background-color var(--transition-fast, 100ms) ease-out,
       width var(--transition-fast, 100ms) ease-out;
@@ -349,12 +257,12 @@ const handleOpenInspirationFullscreen = () => {
 
   &:hover::before {
     width: 2px;
-    background: var(--drag-handle-hover-bg, #007fd4);
+    background: var(--drag-handle-hover-bg, var(--editor-accent, #007fd4));
   }
 }
 
 .tool-right-panel__divider--active::before {
   width: 3px;
-  background: var(--drag-handle-hover-bg, #007fd4);
+  background: var(--drag-handle-hover-bg, var(--editor-accent, #007fd4));
 }
 </style>
