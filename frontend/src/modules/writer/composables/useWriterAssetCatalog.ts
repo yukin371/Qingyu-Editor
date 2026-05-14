@@ -616,8 +616,18 @@ export function useWriterAssetCatalog(options: {
       selectedAsset.value = null
       return
     }
-    if (selectedAsset.value && !assets.some((asset) => asset.id === selectedAsset.value?.id)) {
+    if (!selectedAsset.value) {
+      return
+    }
+
+    const latestSelectedAsset = assets.find((asset) => asset.id === selectedAsset.value?.id)
+    if (!latestSelectedAsset) {
       selectedAsset.value = null
+      return
+    }
+
+    if (latestSelectedAsset !== selectedAsset.value) {
+      selectedAsset.value = latestSelectedAsset
     }
   })
 
