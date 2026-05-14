@@ -143,182 +143,214 @@
           class="structure-stage-view__default-stage"
           data-testid="structure-stage-default"
         >
-          <section class="structure-stage-view__default-hero">
-            <div class="structure-stage-view__default-hero-head">
+          <section class="structure-stage-view__rhythm-board" data-testid="structure-rhythm-board">
+            <div class="structure-stage-view__rhythm-head">
               <div>
-                <p class="structure-stage-view__default-eyebrow">当前工作位</p>
-                <h3>先把这一章落到结构上</h3>
+                <h3>全书节奏表</h3>
               </div>
-              <div class="structure-stage-view__default-meta">
-                <span>{{ `章节 ${currentChapterTitle || '未锁定'}` }}</span>
-                <span>{{ `动作 ${defaultStageActionText}` }}</span>
+              <div class="structure-stage-view__rhythm-summary">
+                <span>{{
+                  `章节 ${rhythmBoardSummary.boundChapters}/${chapterOptions.length}`
+                }}</span>
+                <span>{{ `当前 ${activeRhythmSegment?.title || '未分段'}` }}</span>
+                <span>{{ `推进中 ${rhythmBoardSummary.writing}` }}</span>
+                <span>{{ `待绑定 ${rhythmBoardSummary.unbound}` }}</span>
+                <span>{{ `资产引用 ${rhythmBoardSummary.assets}` }}</span>
               </div>
             </div>
-            <div class="structure-stage-view__default-focus-table-wrap">
-              <table class="structure-stage-view__default-focus-table">
-                <tbody>
-                  <tr>
-                    <th scope="row">当前节点</th>
-                    <td>{{ selectedNode?.title || '还没有可用节点' }}</td>
-                    <th scope="row">当前章节</th>
-                    <td>{{ boundChapter?.title || currentChapterTitle || '未绑定章节' }}</td>
-                    <th scope="row">状态</th>
-                    <td>{{ selectedNodeStatusText || '等待节点选择' }}</td>
-                    <th scope="row">下一步</th>
-                    <td>{{ defaultStagePrimaryHint }}</td>
-                  </tr>
-                  <tr>
-                    <th scope="row">节点说明</th>
-                    <td colspan="7" class="structure-stage-view__default-focus-description">
-                      {{
-                        selectedNode?.description ||
-                        '默认层先处理节点推进、章节绑定与进入写作，复杂筛选和结构检视按需进入高级视图。'
-                      }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="structure-stage-view__default-work-actions">
-              <button
-                type="button"
-                class="focus-card__action focus-card__action--primary"
-                :disabled="!boundChapter"
-                @click="boundChapter && emit('jumpToChapter', boundChapter.id)"
-              >
-                进入当前章节写作
-              </button>
-              <button
-                type="button"
-                class="focus-card__action focus-card__action--secondary"
-                :disabled="!selectedNode || !currentChapterId"
-                @click="selectedNode && currentChapterId && bindCurrentChapterForNode(selectedNode)"
-              >
-                把当前章节绑定到节点
-              </button>
-            </div>
-          </section>
 
-          <section class="structure-stage-view__default-queue">
-            <div class="structure-stage-view__default-queue-header">
-              <div>
-                <p class="structure-stage-view__default-eyebrow">推进清单</p>
-                <h4>从这里决定下一章写什么</h4>
+            <div class="structure-stage-view__segment-map" aria-label="全书节奏区段">
+              <button
+                v-for="segment in rhythmSegments"
+                :key="segment.id"
+                type="button"
+                class="structure-stage-view__segment-node"
+                :class="{
+                  'is-active': segment.id === activeSegmentId,
+                  'has-warnings': segment.unbound > 0 || segment.assetMissing > 0,
+                }"
+                @click="activateRhythmSegment(segment.id)"
+              >
+                <strong>{{ segment.title }}</strong>
+                <span>{{ segment.total }} 节点</span>
+                <em v-if="segment.unbound > 0">{{ segment.unbound }} 待绑定</em>
+              </button>
+              <div v-if="!rhythmSegments.length" class="structure-stage-view__timeline-empty">
+                {{ isOutlineLoading ? '正在整理区段...' : '还没有可展示的结构节点' }}
               </div>
-              <div class="structure-stage-view__default-queue-meta">
-                <span class="structure-stage-view__default-count">
-                  {{ defaultStageNodes.length }} 个节点
-                </span>
-                <span
-                  v-if="defaultStageOverflowCount > 0"
-                  class="structure-stage-view__default-overflow"
+            </div>
+
+            <div class="structure-stage-view__locator-bar">
+              <label class="structure-stage-view__locator-input">
+                <QyIcon name="Search" :size="14" />
+                <input
+                  v-model.trim="rhythmLocatorQuery"
+                  type="text"
+                  placeholder="跳转章节号、章节名或结构节点"
+                  @keyup.enter="handleRhythmLocate"
+                />
+              </label>
+              <button
+                type="button"
+                class="structure-stage-view__locator-action"
+                @click="handleRhythmLocate"
+              >
+                定位
+              </button>
+              <div class="structure-stage-view__window-filters">
+                <button
+                  v-for="option in rhythmFilterOptions"
+                  :key="option.value"
+                  type="button"
+                  class="structure-stage-view__window-filter"
+                  :class="{ 'is-active': rhythmFilterMode === option.value }"
+                  @click="rhythmFilterMode = option.value"
                 >
-                  其余 {{ defaultStageOverflowCount }} 个节点已下沉到高级控制
-                </span>
+                  {{ option.label }}
+                </button>
               </div>
+              <span class="structure-stage-view__window-range">{{ rhythmWindowRangeLabel }}</span>
             </div>
 
             <div
-              v-if="defaultStageNodes.length"
-              class="structure-stage-view__default-list"
+              class="structure-stage-view__rhythm-table-wrap"
               data-testid="structure-stage-default-list"
             >
-              <table class="structure-stage-view__default-table">
+              <table v-if="rhythmWindowRows.length" class="structure-stage-view__rhythm-table">
                 <thead>
                   <tr>
-                    <th scope="col">顺位</th>
-                    <th scope="col">结构节点</th>
-                    <th scope="col">对应章节</th>
-                    <th scope="col">下一步</th>
-                    <th scope="col">进度</th>
-                    <th scope="col">补充信息</th>
+                    <th scope="col">节奏位</th>
+                    <th scope="col">章节/情节点</th>
+                    <th scope="col">状态</th>
+                    <th scope="col">钩子/兑现</th>
+                    <th scope="col">时间线</th>
+                    <th scope="col">资产摘要</th>
+                    <th scope="col">字数</th>
                     <th scope="col">动作</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr
-                    v-for="(node, index) in defaultStageNodes"
-                    :key="node.id"
-                    class="structure-stage-view__default-row"
-                    :class="{ 'is-selected': selectedNodeId === node.id }"
-                    @click="selectNode(node)"
+                    v-for="row in rhythmWindowRows"
+                    :key="row.id"
+                    class="structure-stage-view__rhythm-row"
+                    :class="{ 'is-selected': selectedNodeId === row.id }"
+                    @click="selectNode(row.node)"
                   >
                     <td>
-                      <span class="structure-stage-view__default-rank">
-                        {{ index + 1 }}
-                      </span>
+                      <span class="structure-stage-view__rhythm-order">{{ row.orderLabel }}</span>
                     </td>
                     <td>
-                      <div class="structure-stage-view__default-node">
-                        <strong class="structure-stage-view__default-node-title">
-                          {{ node.title || '未命名节点' }}
-                        </strong>
-                        <p class="structure-stage-view__default-node-copy">
-                          {{ node.description || '还没有补充节点摘要，先绑定章节或补充一句目标说明。' }}
+                      <div class="structure-stage-view__rhythm-title">
+                        <strong>{{ row.title }}</strong>
+                        <p>
+                          {{ row.description }}
                         </p>
                       </div>
                     </td>
                     <td>
-                      <span class="structure-stage-view__default-node-binding">
-                        {{ getDefaultNodeBindingLabel(node) }}
-                      </span>
-                    </td>
-                    <td>
-                      {{ getDefaultNodeNextStep(node) }}
-                    </td>
-                    <td>
                       <span
-                        class="structure-stage-view__default-node-status"
-                        :class="`is-${getStructureNodeLane(node)}`"
+                        class="structure-stage-view__rhythm-status"
+                        :class="`is-${row.statusTone}`"
                       >
-                        {{ getStructureNodeStatusText(node) }}
+                        {{ row.statusLabel }}
                       </span>
                     </td>
                     <td>
-                      <div class="structure-stage-view__default-node-meta">
-                        <span>{{ `L${node.level || 1}` }}</span>
-                        <span>{{ `子节点 ${node.children?.length || 0}` }}</span>
-                        <span class="structure-stage-view__default-node-assets">
-                          {{
-                            getNodeAssetCount(node) > 0
-                              ? `资产 ${getNodeAssetCount(node)}`
-                              : '资产待补'
-                          }}
-                        </span>
-                      </div>
+                      <span class="structure-stage-view__rhythm-hook">{{ row.hookLabel }}</span>
                     </td>
                     <td>
-                      <div class="structure-stage-view__default-node-actions">
+                      <button
+                        type="button"
+                        class="structure-stage-view__rhythm-link"
+                        @click.stop="emit('switch-tool', 'timeline')"
+                      >
+                        {{ row.timelineLabel }}
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        class="structure-stage-view__rhythm-link"
+                        @click.stop="
+                          emit('switch-tool', row.assetCount > 0 ? 'assets' : 'relations')
+                        "
+                      >
+                        {{ row.assetLabel }}
+                      </button>
+                    </td>
+                    <td>
+                      <span class="structure-stage-view__rhythm-wordcount">
+                        {{ row.wordCountLabel }}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="structure-stage-view__rhythm-actions">
                         <button
-                          v-if="getBoundChapterId(node)"
+                          v-if="row.chapterId"
                           type="button"
-                          class="structure-stage-view__default-node-action is-primary"
-                          @click.stop="emit('jumpToChapter', getBoundChapterId(node))"
+                          class="structure-stage-view__rhythm-action is-primary"
+                          @click.stop="emit('jumpToChapter', row.chapterId)"
                         >
-                          进入写作
+                          写作
                         </button>
                         <button
                           v-else
                           type="button"
-                          class="structure-stage-view__default-node-action"
+                          class="structure-stage-view__rhythm-action"
                           :disabled="!currentChapterId"
-                          @click.stop="bindCurrentChapterForNode(node)"
+                          @click.stop="bindCurrentChapterForNode(row.node)"
                         >
-                          绑定当前章节
+                          绑定
                         </button>
                       </div>
                     </td>
                   </tr>
                 </tbody>
               </table>
+
+              <div v-else class="structure-stage-view__default-empty">
+                {{
+                  isOutlineLoading
+                    ? '正在准备全书节奏表...'
+                    : '当前没有可推进的结构节点，先创建主线节点或导入黄金三章草案。'
+                }}
+              </div>
             </div>
 
-            <div v-else class="structure-stage-view__default-empty">
-              {{
-                isOutlineLoading
-                  ? '正在准备当前推进队列...'
-                  : '当前没有可推进的结构节点，先创建主线节点或从左侧选择节点。'
-              }}
+            <div class="structure-stage-view__selected-strip">
+              <div>
+                <span>当前聚焦</span>
+                <strong>{{ selectedNode?.title || '未选择结构节点' }}</strong>
+                <p>{{ defaultStagePrimaryHint }}</p>
+              </div>
+              <div class="structure-stage-view__selected-actions">
+                <button
+                  type="button"
+                  class="focus-card__action focus-card__action--primary"
+                  :disabled="!boundChapter"
+                  @click="boundChapter && emit('jumpToChapter', boundChapter.id)"
+                >
+                  进入写作
+                </button>
+                <button
+                  type="button"
+                  class="focus-card__action focus-card__action--secondary"
+                  :disabled="!selectedNode || !currentChapterId"
+                  @click="
+                    selectedNode && currentChapterId && bindCurrentChapterForNode(selectedNode)
+                  "
+                >
+                  绑定当前章节
+                </button>
+                <button
+                  type="button"
+                  class="focus-card__action focus-card__action--ghost"
+                  @click="emit('switch-tool', 'assets')"
+                >
+                  深看资产
+                </button>
+              </div>
             </div>
           </section>
 
@@ -675,6 +707,7 @@ type StructureFilterMode =
   | 'graph-ready'
   | 'graph-inherit'
 type StageViewMode = 'overview' | 'fishbone' | 'canvas' | 'beats'
+type RhythmFilterMode = 'all' | 'nearby' | 'unlinked' | 'asset-missing' | 'writing' | 'completed'
 
 type TreeDropPosition = 'before' | 'after'
 
@@ -859,35 +892,22 @@ const selectedNode = computed(
   () => filteredFlattenedNodes.value.find((node) => node.id === selectedNodeId.value) || null,
 )
 const boundChapter = computed(() => findBoundChapter(selectedNode.value, chapterOptions.value))
-const STRUCTURE_DEFAULT_STAGE_LIMIT = 5
-const structureNodePriority = (node: OutlineNode) => {
-  const chapterId = getBoundChapterId(node)
-  const statusLane = getStructureNodeLane(node)
-
-  if (selectedNodeId.value && node.id === selectedNodeId.value) return 0
-  if (props.currentChapterId && chapterId === props.currentChapterId) return 1
-  if (statusLane === 'writing') return 2
-  if (chapterId) return 3
-  if (statusLane === 'draft') return 4
-  return 5
-}
-const defaultStageNodes = computed(() =>
-  [...filteredFlattenedNodes.value]
-    .sort((left, right) => {
-      const priorityGap = structureNodePriority(left) - structureNodePriority(right)
-      if (priorityGap !== 0) return priorityGap
-
-      const levelGap = (left.level || 1) - (right.level || 1)
-      if (levelGap !== 0) return levelGap
-
-      return (left.order ?? 0) - (right.order ?? 0)
-    })
-    .slice(0, STRUCTURE_DEFAULT_STAGE_LIMIT),
-)
-const defaultStageOverflowCount = computed(() =>
-  Math.max(filteredFlattenedNodes.value.length - defaultStageNodes.value.length, 0),
-)
-const selectedNodeStatusText = computed(() => getStructureNodeStatusText(selectedNode.value))
+const RHYTHM_SEGMENT_SIZE = 50
+const RHYTHM_WINDOW_BEFORE_COUNT = 20
+const RHYTHM_WINDOW_AFTER_COUNT = 20
+const RHYTHM_SEGMENT_INITIAL_LIMIT = 40
+const RHYTHM_FILTERED_ROW_LIMIT = 80
+const activeSegmentId = ref('')
+const rhythmLocatorQuery = ref('')
+const rhythmFilterMode = ref<RhythmFilterMode>('nearby')
+const rhythmFilterOptions: Array<{ value: RhythmFilterMode; label: string }> = [
+  { value: 'nearby', label: '当前窗口' },
+  { value: 'all', label: '本区段' },
+  { value: 'unlinked', label: '未绑定正文' },
+  { value: 'asset-missing', label: '资产待补' },
+  { value: 'writing', label: '推进中' },
+  { value: 'completed', label: '已完成' },
+]
 const selectedNodeAssetCount = computed(() => {
   const chapterId = getBoundChapterId(selectedNode.value)
   if (!chapterId) return 0
@@ -917,16 +937,189 @@ const defaultStageActionText = computed(() => {
   }
   return '先选节点'
 })
+const rhythmBoardSummary = computed(() => {
+  const chaptersWithBinding = filteredFlattenedNodes.value.filter(
+    (node) => !!getBoundChapterId(node),
+  )
+  const writingNodes = filteredFlattenedNodes.value.filter(
+    (node) => getStructureNodeLane(node) === 'writing',
+  )
+  const unboundNodes = filteredFlattenedNodes.value.filter((node) => !getBoundChapterId(node))
+
+  return {
+    boundChapters: chaptersWithBinding.length,
+    writing: writingNodes.length,
+    unbound: unboundNodes.length,
+    assets: filteredFlattenedNodes.value.reduce(
+      (total, node) => total + getNodeAssetCount(node),
+      0,
+    ),
+  }
+})
+const volumeTitleById = computed(() => {
+  const result: Record<string, string> = {}
+  for (const chapter of props.chapters) {
+    if (chapter.nodeType === 'directory') {
+      result[chapter.id] = chapter.title || '未命名卷'
+    }
+  }
+  return result
+})
+const hasVolumeSegments = computed(() => Object.keys(volumeTitleById.value).length > 0)
+const rhythmAllRows = computed(() =>
+  filteredFlattenedNodes.value.map((node, index) => {
+    const chapterId = getBoundChapterId(node)
+    const boundChapter = findBoundChapter(node, chapterOptions.value)
+    const assetCount = getNodeAssetCount(node)
+    const statusTone = getStructureNodeLane(node)
+    const chapterTitle = boundChapter?.title || props.currentChapterTitle || '未绑定章节'
+    const shortDescription =
+      node.description || '以章节推进、节点绑定和节奏节拍为主，复杂信息交给下层工具。'
+    const segmentId =
+      hasVolumeSegments.value &&
+      boundChapter?.parentId &&
+      volumeTitleById.value[boundChapter.parentId]
+        ? `volume:${boundChapter.parentId}`
+        : `auto:${Math.floor(index / RHYTHM_SEGMENT_SIZE)}`
+
+    return {
+      id: node.id,
+      node,
+      index,
+      segmentId,
+      title: node.title || '未命名节点',
+      shortTitle: node.title || `节点 ${index + 1}`,
+      description: shortDescription,
+      chapterId,
+      orderLabel: `#${index + 1}`,
+      statusTone,
+      statusLabel: getStructureNodeStatusText(node),
+      hookLabel: shortDescription.slice(0, 24) || '待补节拍',
+      timelineLabel: chapterId ? `时间线 · ${chapterTitle}` : '时间线 · 待绑定',
+      assetCount,
+      assetLabel: assetCount > 0 ? `资产 ${assetCount}` : '资产待补',
+      wordCountLabel: `${boundChapter?.wordCount || node.wordCount || 0} 字`,
+    }
+  }),
+)
+const rhythmSegments = computed(() => {
+  const segments = new Map<
+    string,
+    {
+      id: string
+      title: string
+      startIndex: number
+      endIndex: number
+      total: number
+      writing: number
+      unbound: number
+      assetMissing: number
+      completed: number
+    }
+  >()
+
+  for (const row of rhythmAllRows.value) {
+    const autoSegmentIndex = Math.floor(row.index / RHYTHM_SEGMENT_SIZE)
+    const title = row.segmentId.startsWith('volume:')
+      ? volumeTitleById.value[row.segmentId.replace('volume:', '')] || '未命名卷'
+      : `第 ${autoSegmentIndex * RHYTHM_SEGMENT_SIZE + 1}-${Math.min(
+          (autoSegmentIndex + 1) * RHYTHM_SEGMENT_SIZE,
+          rhythmAllRows.value.length,
+        )} 节点`
+    const segment = segments.get(row.segmentId) || {
+      id: row.segmentId,
+      title,
+      startIndex: row.index,
+      endIndex: row.index,
+      total: 0,
+      writing: 0,
+      unbound: 0,
+      assetMissing: 0,
+      completed: 0,
+    }
+
+    segment.endIndex = row.index
+    segment.total += 1
+    if (row.statusTone === 'writing') segment.writing += 1
+    if (row.statusTone === 'completed') segment.completed += 1
+    if (!row.chapterId) segment.unbound += 1
+    if (row.assetCount === 0) segment.assetMissing += 1
+    segments.set(row.segmentId, segment)
+  }
+
+  return [...segments.values()]
+})
+const activeRhythmSegment = computed(
+  () => rhythmSegments.value.find((segment) => segment.id === activeSegmentId.value) || null,
+)
+const activeSegmentRows = computed(() =>
+  rhythmAllRows.value.filter((row) => row.segmentId === activeSegmentId.value),
+)
+const selectedRhythmRow = computed(
+  () => rhythmAllRows.value.find((row) => row.id === selectedNodeId.value) || null,
+)
+const currentChapterRhythmRow = computed(() =>
+  props.currentChapterId
+    ? rhythmAllRows.value.find((row) => row.chapterId === props.currentChapterId) || null
+    : null,
+)
+const baseWindowAnchorIndex = computed(() => {
+  if (selectedRhythmRow.value?.segmentId === activeSegmentId.value) {
+    return selectedRhythmRow.value.index
+  }
+  if (currentChapterRhythmRow.value?.segmentId === activeSegmentId.value) {
+    return currentChapterRhythmRow.value.index
+  }
+  return activeRhythmSegment.value?.startIndex ?? 0
+})
+const rhythmWindowRows = computed(() => {
+  let rows = activeSegmentRows.value
+
+  if (rhythmFilterMode.value === 'nearby') {
+    const segment = activeRhythmSegment.value
+    if (!segment) return []
+    const hasAnchor =
+      selectedRhythmRow.value?.segmentId === activeSegmentId.value ||
+      currentChapterRhythmRow.value?.segmentId === activeSegmentId.value
+    const start = hasAnchor
+      ? Math.max(segment.startIndex, baseWindowAnchorIndex.value - RHYTHM_WINDOW_BEFORE_COUNT)
+      : segment.startIndex
+    const end = hasAnchor
+      ? Math.min(segment.endIndex, baseWindowAnchorIndex.value + RHYTHM_WINDOW_AFTER_COUNT)
+      : Math.min(segment.endIndex, segment.startIndex + RHYTHM_SEGMENT_INITIAL_LIMIT - 1)
+    rows = rows.filter((row) => row.index >= start && row.index <= end)
+  }
+  if (rhythmFilterMode.value === 'unlinked') {
+    rows = rows.filter((row) => !row.chapterId)
+  }
+  if (rhythmFilterMode.value === 'asset-missing') {
+    rows = rows.filter((row) => row.assetCount === 0)
+  }
+  if (rhythmFilterMode.value === 'writing') {
+    rows = rows.filter((row) => row.statusTone === 'writing')
+  }
+  if (rhythmFilterMode.value === 'completed') {
+    rows = rows.filter((row) => row.statusTone === 'completed')
+  }
+
+  return rows.slice(0, RHYTHM_FILTERED_ROW_LIMIT)
+})
+const rhythmWindowRangeLabel = computed(() => {
+  if (!activeRhythmSegment.value) return '无可用区段'
+  if (!rhythmWindowRows.value.length) return `${activeRhythmSegment.value.title} · 无匹配`
+  const first = rhythmWindowRows.value[0]
+  const last = rhythmWindowRows.value[rhythmWindowRows.value.length - 1]
+  return `${activeRhythmSegment.value.title} · ${first.orderLabel}-${last.orderLabel}`
+})
 const creativeWorkflowTemplate = computed(() =>
   getCreativeWorkflowTemplate(creativeWorkflow.value?.templateId),
 )
-const hasCreativeWorkflowBlueprint = computed(
-  () =>
-    Boolean(
-      creativeWorkflow.value?.templateId ||
-        creativeWorkflow.value?.pitchLine ||
-        creativeWorkflow.value?.corePromises.length,
-    ),
+const hasCreativeWorkflowBlueprint = computed(() =>
+  Boolean(
+    creativeWorkflow.value?.templateId ||
+    creativeWorkflow.value?.pitchLine ||
+    creativeWorkflow.value?.corePromises.length,
+  ),
 )
 const creativeWorkflowTemplateName = computed(() => creativeWorkflowTemplate.value?.name || '')
 const creativeWorkflowPitch = computed(() => creativeWorkflow.value?.pitchLine || '')
@@ -952,8 +1145,7 @@ const currentVolumeDirectory = computed(() => {
 })
 const creativeWorkflowImportTarget = ref<WriterStructureImportTarget>('project-root')
 const creativeWorkflowImportTargetTouched = ref(false)
-const creativeWorkflowDuplicateStrategy =
-  ref<WriterStructureDuplicateStrategy>('skip_existing')
+const creativeWorkflowDuplicateStrategy = ref<WriterStructureDuplicateStrategy>('skip_existing')
 const creativeWorkflowImportTargetLabel = computed(() =>
   creativeWorkflowImportTarget.value === 'current-volume' && currentVolumeDirectory.value
     ? `当前卷：${currentVolumeDirectory.value}`
@@ -975,28 +1167,6 @@ function getNodeAssetCount(node: OutlineNode | null | undefined): number {
   const chapterId = getBoundChapterId(node)
   if (!chapterId) return 0
   return assetSummaryByChapterId.value[chapterId]?.total || 0
-}
-
-function getDefaultNodeBindingLabel(node: OutlineNode): string {
-  return findBoundChapter(node, chapterOptions.value)?.title || '未绑定章节'
-}
-
-function getDefaultNodeNextStep(node: OutlineNode): string {
-  const chapterId = getBoundChapterId(node)
-
-  if (props.currentChapterId && chapterId === props.currentChapterId) {
-    return '直接进入当前章节写作'
-  }
-  if (chapterId) {
-    return '切到已绑定章节继续推进'
-  }
-  if (props.currentChapterId) {
-    return '把当前章节绑定到这里'
-  }
-  if (getNodeAssetCount(node) === 0) {
-    return '先补一句目标或关键资产'
-  }
-  return '补章节绑定后再进入写作'
 }
 
 function emitCreativeWorkflowToAI() {
@@ -1053,7 +1223,10 @@ function emitCreativeWorkflowStructurePlan() {
     items: creativeWorkflowGoldenChapters.value.map((chapter) => ({
       title: chapter.title,
       summary: chapter.summary,
-      reason: [chapter.hook ? `钩子：${chapter.hook}` : '', chapter.payoff ? `兑现：${chapter.payoff}` : '']
+      reason: [
+        chapter.hook ? `钩子：${chapter.hook}` : '',
+        chapter.payoff ? `兑现：${chapter.payoff}` : '',
+      ]
         .filter(Boolean)
         .join('；'),
     })),
@@ -1085,6 +1258,48 @@ function expandRootNodes() {
 function handleSecondaryFilterChange(value: string) {
   if (!value) return
   activeFilter.value = value as StructureFilterMode
+}
+
+function activateRhythmSegment(segmentId: string) {
+  activeSegmentId.value = segmentId
+  rhythmFilterMode.value = 'nearby'
+  const firstRow = rhythmAllRows.value.find((row) => row.segmentId === segmentId)
+  if (firstRow) {
+    selectNode(firstRow.node)
+  }
+}
+
+function normalizeLocatorText(value: string) {
+  return value.trim().toLowerCase()
+}
+
+function handleRhythmLocate() {
+  const query = normalizeLocatorText(rhythmLocatorQuery.value)
+  if (!query) return
+
+  const chapterNumberMatch = query.match(/\d+/)
+  const chapterNumber = chapterNumberMatch ? Number(chapterNumberMatch[0]) : 0
+  const matchedRow = rhythmAllRows.value.find((row) => {
+    const chapter = row.chapterId
+      ? chapterOptions.value.find((item) => item.id === row.chapterId)
+      : null
+    if (chapterNumber > 0 && chapter?.chapterNum === chapterNumber) return true
+    if (chapterNumber > 0 && row.index + 1 === chapterNumber) return true
+    return (
+      row.title.toLowerCase().includes(query) ||
+      row.description.toLowerCase().includes(query) ||
+      chapter?.title.toLowerCase().includes(query)
+    )
+  })
+
+  if (!matchedRow) {
+    message.warning('没有找到匹配的章节或结构节点')
+    return
+  }
+
+  activeSegmentId.value = matchedRow.segmentId
+  rhythmFilterMode.value = 'nearby'
+  selectNode(matchedRow.node)
 }
 
 function matchesNodeFilter(node: OutlineNode): boolean {
@@ -1434,6 +1649,39 @@ watch(
 
 watch(
   () => [
+    rhythmSegments.value.map((segment) => segment.id).join('|'),
+    props.currentChapterId,
+    selectedNodeId.value,
+  ],
+  () => {
+    if (
+      activeSegmentId.value &&
+      rhythmSegments.value.some((segment) => segment.id === activeSegmentId.value)
+    ) {
+      return
+    }
+
+    const targetSegmentId =
+      currentChapterRhythmRow.value?.segmentId ||
+      selectedRhythmRow.value?.segmentId ||
+      rhythmSegments.value[0]?.id ||
+      ''
+    activeSegmentId.value = targetSegmentId
+  },
+  { immediate: true },
+)
+
+watch(
+  () => props.currentChapterId,
+  () => {
+    if (currentChapterRhythmRow.value) {
+      activeSegmentId.value = currentChapterRhythmRow.value.segmentId
+    }
+  },
+)
+
+watch(
+  () => [
     filterText.value,
     activeFilter.value,
     filteredFlattenedNodes.value.map((node) => node.id).join('|'),
@@ -1608,9 +1856,422 @@ watch(
 .structure-stage-view__default-stage {
   flex: 1;
   min-height: 0;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
+}
+
+.structure-stage-view__rhythm-board {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 14px;
+  padding: 16px;
+  border-radius: var(--editor-radius-lg, 8px);
+  border: 1px solid var(--editor-border, #e2e8f0);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.94)),
+    radial-gradient(circle at top left, rgba(143, 63, 47, 0.06), transparent 34%);
+  overflow: hidden;
+}
+
+.structure-stage-view__rhythm-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+
+  h3 {
+    margin: 4px 0 4px;
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 18px;
+    font-weight: 800;
+  }
+
+  p {
+    margin: 0;
+    max-width: 640px;
+    color: var(--editor-text-secondary, #475569);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+}
+
+.structure-stage-view__rhythm-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    background: rgba(255, 255, 255, 0.82);
+    color: var(--editor-text-secondary, #475569);
+    font-size: 12px;
+    font-weight: 700;
+  }
+}
+
+.structure-stage-view__segment-map {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  min-height: 72px;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+}
+
+.structure-stage-view__segment-node {
+  min-width: 156px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--editor-text-secondary, #475569);
+  text-align: left;
+  cursor: pointer;
+  transition: all 120ms ease-out;
+
+  span,
+  strong,
+  em {
+    display: block;
+  }
+
+  span {
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  em {
+    margin-top: 4px;
+    color: #b45309;
+    font-size: 11px;
+    font-style: normal;
+    font-weight: 800;
+  }
+
+  strong {
+    margin-top: 4px;
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 12px;
+    font-weight: 800;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    border-color: rgba(143, 63, 47, 0.2);
+  }
+
+  &.is-active {
+    border-color: rgba(143, 63, 47, 0.26);
+    background: rgba(255, 247, 237, 0.88);
+    box-shadow: inset 0 0 0 1px rgba(143, 63, 47, 0.16);
+  }
+
+  &.has-warnings {
+    background: linear-gradient(90deg, rgba(251, 191, 36, 0.12), rgba(255, 255, 255, 0.9)), #fff;
+  }
+}
+
+.structure-stage-view__timeline-empty {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  color: var(--editor-text-muted, #64748b);
+  font-size: 13px;
+}
+
+.structure-stage-view__locator-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.structure-stage-view__locator-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 260px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--editor-text-muted, #64748b);
+
+  input {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 13px;
+  }
+}
+
+.structure-stage-view__locator-action,
+.structure-stage-view__window-filter {
+  min-height: 34px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--editor-text-secondary, #475569);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.structure-stage-view__locator-action {
+  color: var(--editor-accent, #06b6d4);
+}
+
+.structure-stage-view__window-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.structure-stage-view__window-filter.is-active {
+  border-color: rgba(143, 63, 47, 0.22);
+  background: rgba(255, 247, 237, 0.92);
+  color: var(--structure-warm);
+}
+
+.structure-stage-view__window-range {
+  margin-left: auto;
+  color: var(--editor-text-muted, #64748b);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.structure-stage-view__rhythm-table-wrap {
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.structure-stage-view__rhythm-table {
+  width: 100%;
+  min-width: 1040px;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 12px 14px;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  }
+
+  th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+}
+
+.structure-stage-view__rhythm-row {
+  cursor: pointer;
+  transition: background-color 120ms ease-out;
+
+  &:hover {
+    background: rgba(248, 250, 252, 0.86);
+  }
+
+  &.is-selected {
+    background: rgba(255, 247, 237, 0.72);
+  }
+}
+
+.structure-stage-view__rhythm-order,
+.structure-stage-view__rhythm-status,
+.structure-stage-view__rhythm-wordcount {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.structure-stage-view__rhythm-order {
+  background: rgba(226, 232, 240, 0.86);
+  color: #334155;
+}
+
+.structure-stage-view__rhythm-status {
+  &.is-draft {
+    background: rgba(226, 232, 240, 0.9);
+    color: #475569;
+  }
+
+  &.is-writing {
+    background: rgba(236, 254, 255, 0.9);
+    color: #0891b2;
+  }
+
+  &.is-completed {
+    background: rgba(240, 253, 244, 0.94);
+    color: #15803d;
+  }
+}
+
+.structure-stage-view__rhythm-title {
+  display: grid;
+  gap: 5px;
+  max-width: 320px;
+
+  strong {
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  p {
+    margin: 0;
+    color: var(--editor-text-secondary, #475569);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+}
+
+.structure-stage-view__rhythm-hook {
+  display: block;
+  max-width: 220px;
+  color: var(--editor-text-secondary, #475569);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.structure-stage-view__rhythm-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--editor-accent, #06b6d4);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.structure-stage-view__rhythm-wordcount {
+  background: rgba(248, 250, 252, 0.96);
+  color: var(--editor-text-secondary, #475569);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.structure-stage-view__rhythm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.structure-stage-view__rhythm-action {
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--editor-text-secondary, #475569);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+
+  &.is-primary {
+    border-color: rgba(14, 116, 144, 0.16);
+    background: rgba(236, 254, 255, 0.96);
+    color: #0f766e;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.56;
+  }
+}
+
+.structure-stage-view__selected-strip,
+.structure-stage-view__rhythm-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(248, 250, 252, 0.76);
+}
+
+.structure-stage-view__selected-strip {
+  span {
+    display: block;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  strong {
+    display: block;
+    margin-top: 3px;
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  p {
+    margin: 3px 0 0;
+    color: var(--editor-text-secondary, #475569);
+    font-size: 12px;
+  }
+}
+
+.structure-stage-view__selected-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.structure-stage-view__rhythm-note {
+  flex-shrink: 0;
+  color: var(--editor-text-secondary, #475569);
+  font-size: 12px;
+  line-height: 1.6;
+
+  button {
+    border: none;
+    background: transparent;
+    color: var(--editor-accent, #06b6d4);
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+  }
 }
 
 .structure-stage-view__blueprint-card {

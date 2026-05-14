@@ -3,7 +3,6 @@
     <header class="timeline-outline-view__header">
       <div class="timeline-outline-view__title-wrap">
         <h2 class="timeline-outline-view__title">时间线大纲</h2>
-        <p class="timeline-outline-view__subtitle">聚焦关键事件与节奏推进，辅助主线与支线校准。</p>
       </div>
       <div class="timeline-outline-view__context-anchors">
         <span v-if="chapterTitle" class="context-anchor">
@@ -64,9 +63,52 @@
       </aside>
 
       <section class="timeline-events">
-        <div class="timeline-events__title">事件轴</div>
+        <div class="timeline-events__title">
+          <span>事件轴</span>
+          <strong>{{ timelineWindowRangeLabel }}</strong>
+        </div>
+        <div class="timeline-events__segment-map">
+          <button
+            v-for="segment in eventSegments"
+            :key="segment.id"
+            type="button"
+            class="timeline-events__segment"
+            :class="{ 'is-active': segment.id === activeEventSegmentId }"
+            @click="activateEventSegment(segment.id)"
+          >
+            <strong>{{ segment.title }}</strong>
+            <span>{{ segment.total }} 事件</span>
+          </button>
+        </div>
+        <div class="timeline-events__locator">
+          <label>
+            <QyIcon name="Search" :size="14" />
+            <input
+              v-model.trim="eventLocatorQuery"
+              type="text"
+              placeholder="定位事件标题、类型或时间"
+              @keyup.enter="handleEventLocate"
+            />
+          </label>
+          <button type="button" @click="handleEventLocate">定位</button>
+          <button
+            v-for="option in eventFilterOptions"
+            :key="option.value"
+            type="button"
+            class="timeline-events__filter"
+            :class="{ 'is-active': eventFilterMode === option.value }"
+            @click="eventFilterMode = option.value"
+          >
+            {{ option.label }}
+          </button>
+        </div>
         <div class="timeline-events__content">
-          <article v-for="event in orderedEvents" :key="event.id" class="timeline-event">
+          <article
+            v-for="event in timelineWindowEvents"
+            :key="event.id"
+            class="timeline-event"
+            :class="{ 'is-selected': event.id === selectedEventId }"
+          >
             <div class="timeline-event__dot" />
             <div class="timeline-event__card">
               <div class="timeline-event__head">
@@ -98,7 +140,7 @@
             </div>
           </article>
           <Empty
-            v-if="orderedEvents.length === 0"
+            v-if="timelineWindowEvents.length === 0"
             description="当前时间线暂无事件"
             iconSize="medium"
           />
@@ -109,7 +151,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { QyButton, QyIcon, QyTag } from '@/design-system/components'
 import { Empty } from '@/design-system/base'
 import { useWriterStore } from '@/modules/writer/stores/writerStore'
@@ -154,6 +196,21 @@ const emit = defineEmits<{
 }>()
 
 const writerStore = useWriterStore()
+type EventFilterMode = 'all' | 'nearby' | 'high-priority' | 'current-chapter'
+const EVENT_SEGMENT_SIZE = 50
+const EVENT_WINDOW_BEFORE_COUNT = 20
+const EVENT_WINDOW_AFTER_COUNT = 20
+const EVENT_SEGMENT_INITIAL_LIMIT = 40
+const activeEventSegmentId = ref('')
+const selectedEventId = ref('')
+const eventLocatorQuery = ref('')
+const eventFilterMode = ref<EventFilterMode>('nearby')
+const eventFilterOptions: Array<{ value: EventFilterMode; label: string }> = [
+  { value: 'nearby', label: '当前窗口' },
+  { value: 'all', label: '本区段' },
+  { value: 'high-priority', label: '高优先级' },
+  { value: 'current-chapter', label: '当前章节' },
+]
 
 const effectiveProjectId = computed(() => props.projectId || writerStore.currentProjectId || '')
 const timelines = computed<Timeline[]>(() => writerStore.timeline.list || [])
@@ -177,6 +234,96 @@ const orderedEvents = computed(() =>
 const highPriorityEvents = computed(
   () => events.value.filter((event) => (event.importance || 0) >= 8).length,
 )
+const orderedEventRows = computed(() =>
+  orderedEvents.value.map((event, index) => ({
+    event,
+    index,
+    segmentId: `segment:${Math.floor(index / EVENT_SEGMENT_SIZE)}`,
+  })),
+)
+const eventSegments = computed(() => {
+  const segments = new Map<
+    string,
+    { id: string; title: string; startIndex: number; endIndex: number; total: number }
+  >()
+
+  for (const row of orderedEventRows.value) {
+    const segmentIndex = Math.floor(row.index / EVENT_SEGMENT_SIZE)
+    const segment =
+      segments.get(row.segmentId) ||
+      ({
+        id: row.segmentId,
+        title: `第 ${segmentIndex * EVENT_SEGMENT_SIZE + 1}-${Math.min(
+          (segmentIndex + 1) * EVENT_SEGMENT_SIZE,
+          orderedEventRows.value.length,
+        )} 事件`,
+        startIndex: row.index,
+        endIndex: row.index,
+        total: 0,
+      } as { id: string; title: string; startIndex: number; endIndex: number; total: number })
+
+    segment.endIndex = row.index
+    segment.total += 1
+    segments.set(row.segmentId, segment)
+  }
+
+  return [...segments.values()]
+})
+const activeEventSegment = computed(
+  () => eventSegments.value.find((segment) => segment.id === activeEventSegmentId.value) || null,
+)
+const selectedEventRow = computed(
+  () => orderedEventRows.value.find((row) => row.event.id === selectedEventId.value) || null,
+)
+const currentChapterEventRow = computed(() =>
+  props.chapterId
+    ? orderedEventRows.value.find((row) => row.event.chapterIds?.includes(props.chapterId)) || null
+    : null,
+)
+const timelineWindowEvents = computed(() => {
+  const segment = activeEventSegment.value
+  if (!segment) return []
+
+  let rows = orderedEventRows.value.filter((row) => row.segmentId === segment.id)
+  if (eventFilterMode.value === 'nearby') {
+    const anchor =
+      selectedEventRow.value?.segmentId === segment.id
+        ? selectedEventRow.value.index
+        : currentChapterEventRow.value?.segmentId === segment.id
+          ? currentChapterEventRow.value.index
+          : segment.startIndex
+    const hasAnchor =
+      selectedEventRow.value?.segmentId === segment.id ||
+      currentChapterEventRow.value?.segmentId === segment.id
+    const start = hasAnchor
+      ? Math.max(segment.startIndex, anchor - EVENT_WINDOW_BEFORE_COUNT)
+      : segment.startIndex
+    const end = hasAnchor
+      ? Math.min(segment.endIndex, anchor + EVENT_WINDOW_AFTER_COUNT)
+      : Math.min(segment.endIndex, segment.startIndex + EVENT_SEGMENT_INITIAL_LIMIT - 1)
+    rows = rows.filter((row) => row.index >= start && row.index <= end)
+  }
+  if (eventFilterMode.value === 'high-priority') {
+    rows = rows.filter((row) => (row.event.importance || 0) >= 8)
+  }
+  if (eventFilterMode.value === 'current-chapter') {
+    rows = rows.filter(
+      (row) => !!props.chapterId && row.event.chapterIds?.includes(props.chapterId),
+    )
+  }
+  return rows.map((row) => row.event)
+})
+const timelineWindowRangeLabel = computed(() => {
+  if (!activeEventSegment.value) return '无事件'
+  if (!timelineWindowEvents.value.length) return `${activeEventSegment.value.title} · 无匹配`
+  const first = orderedEventRows.value.find(
+    (row) => row.event.id === timelineWindowEvents.value[0].id,
+  )
+  const last = orderedEventRows.value.find(
+    (row) => row.event.id === timelineWindowEvents.value[timelineWindowEvents.value.length - 1].id,
+  )
+  return `${activeEventSegment.value.title} · #${(first?.index ?? 0) + 1}-#${(last?.index ?? 0) + 1}`
+})
 
 const formatStoryTime = (storyTime?: TimelineStoryTime) => {
   if (!storyTime) return '未设置时间'
@@ -218,6 +365,31 @@ const handleSendEventToAI = (event: TimelineEvent) => {
   })
 }
 
+const activateEventSegment = (segmentId: string) => {
+  activeEventSegmentId.value = segmentId
+  eventFilterMode.value = 'nearby'
+  const firstRow = orderedEventRows.value.find((row) => row.segmentId === segmentId)
+  selectedEventId.value = firstRow?.event.id || ''
+}
+
+const handleEventLocate = () => {
+  const query = eventLocatorQuery.value.trim().toLowerCase()
+  if (!query) return
+  const matchedRow = orderedEventRows.value.find((row) => {
+    const storyTime = formatStoryTime(row.event.storyTime).toLowerCase()
+    return (
+      row.event.title.toLowerCase().includes(query) ||
+      row.event.description?.toLowerCase().includes(query) ||
+      row.event.eventType.toLowerCase().includes(query) ||
+      storyTime.includes(query)
+    )
+  })
+  if (!matchedRow) return
+  activeEventSegmentId.value = matchedRow.segmentId
+  selectedEventId.value = matchedRow.event.id
+  eventFilterMode.value = 'nearby'
+}
+
 const selectTimeline = (timelineId: string) => {
   const target = timelines.value.find((item) => item.id === timelineId)
   if (!target) return
@@ -238,6 +410,21 @@ watch(
   async (projectId) => {
     if (!projectId) return
     await handleRefresh()
+  },
+  { immediate: true },
+)
+
+watch(
+  () => [eventSegments.value.map((segment) => segment.id).join('|'), props.chapterId] as const,
+  () => {
+    if (
+      activeEventSegmentId.value &&
+      eventSegments.value.some((segment) => segment.id === activeEventSegmentId.value)
+    ) {
+      return
+    }
+    activeEventSegmentId.value =
+      currentChapterEventRow.value?.segmentId || eventSegments.value[0]?.id || ''
   },
   { immediate: true },
 )
@@ -338,6 +525,108 @@ watch(
   border-bottom: 1px solid var(--editor-border, #e1e9f6);
 }
 
+.timeline-events__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  strong {
+    color: var(--editor-text-secondary, #475569);
+    font-size: 11px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+}
+
+.timeline-events__segment-map {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--editor-border, #e1e9f6);
+}
+
+.timeline-events__segment {
+  min-width: 136px;
+  padding: 9px 11px;
+  border-radius: 12px;
+  border: 1px solid var(--editor-border, #dbe5f5);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--editor-text-secondary, #475569);
+  text-align: left;
+  cursor: pointer;
+
+  strong,
+  span {
+    display: block;
+  }
+
+  strong {
+    color: var(--editor-text-primary, #21365c);
+    font-size: 12px;
+  }
+
+  span {
+    margin-top: 3px;
+    color: var(--editor-text-muted, #7485a3);
+    font-size: 11px;
+  }
+
+  &.is-active {
+    border-color: rgba(6, 182, 212, 0.24);
+    background: rgba(236, 254, 255, 0.72);
+  }
+}
+
+.timeline-events__locator {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--editor-border, #e1e9f6);
+
+  label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 240px;
+    min-height: 34px;
+    padding: 0 10px;
+    border-radius: 12px;
+    border: 1px solid var(--editor-border, #dbe5f5);
+    background: rgba(255, 255, 255, 0.92);
+  }
+
+  input {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--editor-text-primary, #21365c);
+    font-size: 12px;
+  }
+
+  button {
+    min-height: 32px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid var(--editor-border, #dbe5f5);
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--editor-text-secondary, #475569);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+}
+
+.timeline-events__filter.is-active {
+  border-color: rgba(6, 182, 212, 0.24);
+  background: rgba(236, 254, 255, 0.72);
+  color: var(--editor-accent, #06b6d4);
+}
+
 .timeline-list__content,
 .timeline-events__content {
   flex: 1;
@@ -382,6 +671,11 @@ watch(
   position: relative;
   padding-left: 20px;
   margin-bottom: 10px;
+
+  &.is-selected .timeline-event__card {
+    border-color: rgba(6, 182, 212, 0.28);
+    background: rgba(236, 254, 255, 0.42);
+  }
 }
 
 .timeline-event__dot {

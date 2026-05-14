@@ -132,7 +132,7 @@ describe('StructureStageView', () => {
     mockWriterStore.setCurrentOutlineNode.mockClear()
   })
 
-  it('默认层应折叠高级视图', async () => {
+  it('默认层应展示全书节奏表并折叠高级视图', async () => {
     const wrapper = mount(StructureStageView, {
       props: {
         projectId: 'project-1',
@@ -166,17 +166,19 @@ describe('StructureStageView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('结构舞台')
+    expect(wrapper.text()).toContain('全书节奏表')
+    expect(wrapper.text()).not.toContain('大多数规划都在这里完成')
+    expect(wrapper.text()).not.toContain('用章节/情节点做主行')
     expect(wrapper.text()).toContain('蓝图输入')
     expect(wrapper.text()).toContain('逆袭打脸')
     expect(wrapper.text()).toContain('首次打脸')
     expect(wrapper.text()).toContain('进入写作')
     expect(wrapper.find('[data-testid="structure-stage-default"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="structure-rhythm-board"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="structure-stage-default-list"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="structure-stage-advanced"]').exists()).toBe(false)
     expect(wrapper.find('.structure-search__input').exists()).toBe(false)
-    expect(wrapper.find('.structure-stage-view__default-node-action.is-primary').text()).toContain(
-      '进入写作',
-    )
+    expect(wrapper.find('.structure-stage-view__rhythm-action.is-primary').text()).toContain('写作')
 
     await wrapper.get('.stage-secondary-action').trigger('click')
 
@@ -246,7 +248,9 @@ describe('StructureStageView', () => {
       action: 'add_to_chat',
       title: '蓝图接力：逆袭打脸',
     })
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain('核心承诺：第三章先打脸一次')
+    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain(
+      '核心承诺：第三章先打脸一次',
+    )
     expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain('第3章：首次打脸')
   })
 
@@ -354,7 +358,7 @@ describe('StructureStageView', () => {
     })
   })
 
-  it('当前节点已绑定章节时，当前工作位主动作应跳转到写作章节', async () => {
+  it('当前节点已绑定章节时，当前聚焦主动作应跳转到写作章节', async () => {
     const wrapper = mount(StructureStageView, {
       props: {
         projectId: 'project-1',
@@ -387,7 +391,7 @@ describe('StructureStageView', () => {
 
     await flushPromises()
     await wrapper
-      .get('.structure-stage-view__default-work-actions .focus-card__action--primary')
+      .get('.structure-stage-view__selected-actions .focus-card__action--primary')
       .trigger('click')
 
     expect(wrapper.emitted('jumpToChapter')?.[0]).toEqual(['chapter-1'])
@@ -440,12 +444,10 @@ describe('StructureStageView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('绑定当前章节')
-    expect(wrapper.find('.structure-stage-view__default-node-action.is-primary').exists()).toBe(
-      false,
-    )
+    expect(wrapper.find('.structure-stage-view__rhythm-action.is-primary').exists()).toBe(false)
   })
 
-  it('默认推进队列应优先展示高优先级节点，并把剩余节点下沉到高级控制', async () => {
+  it('全书节奏表应保持大纲原始顺序，选中节点不应跳到首行', async () => {
     mockWriterStore.outline.tree = [
       {
         id: 'node-1',
@@ -561,11 +563,145 @@ describe('StructureStageView', () => {
 
     await flushPromises()
 
-    const queueNodes = wrapper.findAll('.structure-stage-view__default-node')
-    expect(queueNodes).toHaveLength(5)
-    expect(wrapper.text()).toContain('其余 1 个节点已下沉到高级控制')
+    const queueNodes = wrapper.findAll('.structure-stage-view__rhythm-title')
+    expect(queueNodes).toHaveLength(6)
     expect(wrapper.text()).toContain('当前章节节点')
-    expect(wrapper.text()).not.toContain('草稿节点 B')
+    expect(queueNodes.map((node) => node.text())).toEqual([
+      expect.stringContaining('当前章节节点'),
+      expect.stringContaining('推进中节点'),
+      expect.stringContaining('已绑定节点 A'),
+      expect.stringContaining('已绑定节点 B'),
+      expect.stringContaining('草稿节点 A'),
+      expect.stringContaining('草稿节点 B'),
+    ])
+
+    await wrapper.findAll('.structure-stage-view__rhythm-row')[1].trigger('click')
+
+    expect(
+      wrapper.findAll('.structure-stage-view__rhythm-title').map((node) => node.text()),
+    ).toEqual([
+      expect.stringContaining('当前章节节点'),
+      expect.stringContaining('推进中节点'),
+      expect.stringContaining('已绑定节点 A'),
+      expect.stringContaining('已绑定节点 B'),
+      expect.stringContaining('草稿节点 A'),
+      expect.stringContaining('草稿节点 B'),
+    ])
+  })
+
+  it('长篇默认按 50 节点分段，并只展示当前章节附近窗口', async () => {
+    mockWriterStore.outline.tree = Array.from({ length: 120 }, (_, index) => ({
+      id: `node-${index + 1}`,
+      projectId: 'project-1',
+      title: `第${index + 1}章节点`,
+      level: 1,
+      order: index,
+      status: index === 79 ? 'writing' : 'planned',
+      description: `第${index + 1}章节奏`,
+      documentId: `chapter-${index + 1}`,
+      children: [],
+    }))
+
+    const wrapper = mount(StructureStageView, {
+      props: {
+        projectId: 'project-1',
+        currentChapterId: 'chapter-80',
+        currentChapterTitle: '第80章',
+        chapters: Array.from({ length: 120 }, (_, index) => ({
+          id: `chapter-${index + 1}`,
+          projectId: 'project-1',
+          chapterNum: index + 1,
+          title: `第${index + 1}章`,
+          nodeType: 'chapter' as const,
+          wordCount: 1000,
+          updatedAt: '2026-04-13T00:00:00.000Z',
+          status: 'draft' as const,
+        })),
+      },
+      global: {
+        stubs: {
+          QyIcon: { template: '<span />' },
+          FishboneOutlineBoard: { template: '<div />' },
+          CanvasOutlineBoard: { template: '<div />' },
+          BeatBoardPanel: { template: '<div />' },
+          StructureInspectorPanel: { template: '<div />' },
+          StructureNodeEditorDialog: { template: '<div />' },
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(
+      wrapper.findAll('.structure-stage-view__segment-node').map((node) => node.text()),
+    ).toEqual([
+      expect.stringContaining('第 1-50 节点'),
+      expect.stringContaining('第 51-100 节点'),
+      expect.stringContaining('第 101-120 节点'),
+    ])
+    expect(wrapper.text()).toContain('第 51-100 节点')
+    expect(wrapper.text()).toContain('#60-#100')
+    expect(wrapper.text()).toContain('第60章节点')
+    expect(wrapper.text()).toContain('第100章节点')
+    expect(wrapper.text()).not.toContain('第59章节点')
+    expect(wrapper.text()).not.toContain('第101章节点')
+
+    await wrapper.findAll('.structure-stage-view__segment-node')[2].trigger('click')
+
+    expect(wrapper.text()).toContain('#101-#120')
+    expect(wrapper.text()).toContain('第101章节点')
+    expect(wrapper.text()).toContain('第120章节点')
+  })
+
+  it('定位章节号时应切换到命中区段并选中目标行', async () => {
+    mockWriterStore.outline.tree = Array.from({ length: 120 }, (_, index) => ({
+      id: `node-${index + 1}`,
+      projectId: 'project-1',
+      title: `第${index + 1}章节点`,
+      level: 1,
+      order: index,
+      status: 'planned',
+      description: `第${index + 1}章节奏`,
+      documentId: `chapter-${index + 1}`,
+      children: [],
+    }))
+
+    const wrapper = mount(StructureStageView, {
+      props: {
+        projectId: 'project-1',
+        currentChapterId: 'chapter-1',
+        currentChapterTitle: '第1章',
+        chapters: Array.from({ length: 120 }, (_, index) => ({
+          id: `chapter-${index + 1}`,
+          projectId: 'project-1',
+          chapterNum: index + 1,
+          title: `第${index + 1}章`,
+          nodeType: 'chapter' as const,
+          wordCount: 1000,
+          updatedAt: '2026-04-13T00:00:00.000Z',
+          status: 'draft' as const,
+        })),
+      },
+      global: {
+        stubs: {
+          QyIcon: { template: '<span />' },
+          FishboneOutlineBoard: { template: '<div />' },
+          CanvasOutlineBoard: { template: '<div />' },
+          BeatBoardPanel: { template: '<div />' },
+          StructureInspectorPanel: { template: '<div />' },
+          StructureNodeEditorDialog: { template: '<div />' },
+        },
+      },
+    })
+
+    await flushPromises()
+    await wrapper.get('.structure-stage-view__locator-input input').setValue('115')
+    await wrapper.get('.structure-stage-view__locator-action').trigger('click')
+
+    expect(wrapper.text()).toContain('#101-#120')
+    expect(wrapper.find('.structure-stage-view__rhythm-row.is-selected').text()).toContain(
+      '第115章节点',
+    )
   })
 
   it('结构检视里的全局资产入口应透传到 overlay 工具切换', async () => {

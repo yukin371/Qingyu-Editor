@@ -3,11 +3,6 @@
     <header class="story-branch-view__header">
       <div class="story-branch-view__title-wrap">
         <h2 class="story-branch-view__title">故事分支</h2>
-        <p class="story-branch-view__subtitle">
-          {{
-            isLinearMode ? '普通小说模式 — 线性叙事流程' : '以组织结构图查看主线、支线与多结局分支'
-          }}
-        </p>
       </div>
       <div class="story-branch-view__context-anchors">
         <span v-if="chapterTitle" class="context-anchor">
@@ -40,6 +35,35 @@
       <SystemStatCard label="分支点" :value="branchPointCount" hint="多子节点" tone="warning" />
       <SystemStatCard label="结局数" :value="endingCount" hint="叶子节点" tone="success" />
     </div>
+
+    <section class="story-branch-view__navigator">
+      <div class="story-branch-view__segment-map">
+        <button
+          v-for="segment in branchSegments"
+          :key="segment.id"
+          type="button"
+          class="story-branch-view__segment"
+          :class="{ 'is-active': segment.id === activeBranchSegmentId }"
+          @click="activateBranchSegment(segment.id)"
+        >
+          <strong>{{ segment.title }}</strong>
+          <span>{{ segment.total }} 节点</span>
+        </button>
+      </div>
+      <div class="story-branch-view__locator">
+        <label>
+          <QyIcon name="Search" :size="14" />
+          <input
+            v-model.trim="branchLocatorQuery"
+            type="text"
+            placeholder="定位章节号、节点标题或分支关键词"
+            @keyup.enter="handleBranchLocate"
+          />
+        </label>
+        <button type="button" @click="handleBranchLocate">定位</button>
+        <span>{{ activeBranchSegment?.title || '无可用区段' }}</span>
+      </div>
+    </section>
 
     <div class="story-branch-view__canvas-area">
       <!-- 画布 -->
@@ -273,7 +297,10 @@ const emit = defineEmits<{
 const writerStore = useWriterStore()
 const selectedNodeId = ref('')
 const activeBranchId = ref('')
+const activeBranchSegmentId = ref('')
+const branchLocatorQuery = ref('')
 const canvasCoreRef = ref<InstanceType<typeof CanvasCore>>()
+const BRANCH_SEGMENT_SIZE = 50
 
 // ---------------------------------------------------------------------------
 // 数据源
@@ -284,6 +311,37 @@ const isLoading = computed(() => writerStore.outline.loading)
 
 /** 原始大纲根节点 */
 const rootNodes = computed<OutlineNode[]>(() => writerStore.outline.tree || [])
+const flatOutlineNodes = computed(() => flattenOutlineNodes(rootNodes.value))
+const branchSegments = computed(() => {
+  const segments = new Map<string, { id: string; title: string; total: number }>()
+  flatOutlineNodes.value.forEach((_, index) => {
+    const segmentIndex = Math.floor(index / BRANCH_SEGMENT_SIZE)
+    const id = `segment:${segmentIndex}`
+    const segment =
+      segments.get(id) ||
+      ({
+        id,
+        title: `第 ${segmentIndex * BRANCH_SEGMENT_SIZE + 1}-${Math.min(
+          (segmentIndex + 1) * BRANCH_SEGMENT_SIZE,
+          flatOutlineNodes.value.length,
+        )} 节点`,
+        total: 0,
+      } as { id: string; title: string; total: number })
+    segment.total += 1
+    segments.set(id, segment)
+  })
+  return [...segments.values()]
+})
+const activeBranchSegment = computed(
+  () => branchSegments.value.find((segment) => segment.id === activeBranchSegmentId.value) || null,
+)
+const activeSegmentNodeIds = computed(() => {
+  if (!activeBranchSegmentId.value) return new Set<string>()
+  const segmentIndex = Number(activeBranchSegmentId.value.replace('segment:', '')) || 0
+  const start = segmentIndex * BRANCH_SEGMENT_SIZE
+  const end = start + BRANCH_SEGMENT_SIZE
+  return new Set(flatOutlineNodes.value.slice(start, end).map((node) => node.id))
+})
 
 /** 当前活跃分支的子树根节点列表 */
 const activeBranchSubtree = computed<OutlineNode[]>(() => {
@@ -297,14 +355,17 @@ const activeBranchSubtree = computed<OutlineNode[]>(() => {
 })
 
 /** 传给布局 composable 的根节点 */
-const layoutInput = computed(() => activeBranchSubtree.value)
+const layoutInput = computed(() => {
+  if (activeBranchId.value) return activeBranchSubtree.value
+  if (!activeSegmentNodeIds.value.size) return activeBranchSubtree.value
+  return pruneOutlineTreeByIds(activeBranchSubtree.value, activeSegmentNodeIds.value)
+})
 
 // ---------------------------------------------------------------------------
 // 布局
 // ---------------------------------------------------------------------------
 
-const { flatNodes, edges, contentWidth, contentHeight, isLinearMode, findNode } =
-  useOrgTreeLayout(layoutInput)
+const { flatNodes, edges, contentWidth, contentHeight, findNode } = useOrgTreeLayout(layoutInput)
 
 // ---------------------------------------------------------------------------
 // 统计
@@ -351,6 +412,43 @@ function enterBranch(node: OrgTreeNode) {
   activeBranchId.value = node.id
   selectedNodeId.value = ''
   // 重新适配视图
+  requestAnimationFrame(() => {
+    handleZoomToFit()
+  })
+}
+
+function activateBranchSegment(segmentId: string) {
+  activeBranchSegmentId.value = segmentId
+  activeBranchId.value = ''
+  const firstNode = flatOutlineNodes.value.find((node) => activeSegmentNodeIds.value.has(node.id))
+  if (firstNode) {
+    selectedNodeId.value = firstNode.id
+    writerStore.setCurrentOutlineNode(firstNode)
+  }
+  requestAnimationFrame(() => {
+    handleZoomToFit()
+  })
+}
+
+function handleBranchLocate() {
+  const query = branchLocatorQuery.value.trim().toLowerCase()
+  if (!query) return
+  const numberMatch = query.match(/\d+/)
+  const number = numberMatch ? Number(numberMatch[0]) : 0
+  const matchedIndex = flatOutlineNodes.value.findIndex((node, index) => {
+    if (number > 0 && index + 1 === number) return true
+    return (
+      node.title.toLowerCase().includes(query) ||
+      node.description?.toLowerCase().includes(query) ||
+      node.type?.toLowerCase().includes(query)
+    )
+  })
+  if (matchedIndex < 0) return
+  const matchedNode = flatOutlineNodes.value[matchedIndex]
+  activeBranchId.value = ''
+  activeBranchSegmentId.value = `segment:${Math.floor(matchedIndex / BRANCH_SEGMENT_SIZE)}`
+  selectedNodeId.value = matchedNode.id
+  writerStore.setCurrentOutlineNode(matchedNode)
   requestAnimationFrame(() => {
     handleZoomToFit()
   })
@@ -472,6 +570,32 @@ function findOutlineNode(nodes: OutlineNode[], id: string): OutlineNode | null {
   return null
 }
 
+function flattenOutlineNodes(nodes: OutlineNode[]): OutlineNode[] {
+  const result: OutlineNode[] = []
+  const walk = (nodeList: OutlineNode[]) => {
+    for (const node of nodeList) {
+      result.push(node)
+      if (node.children?.length) walk(node.children)
+    }
+  }
+  walk(nodes)
+  return result
+}
+
+function pruneOutlineTreeByIds(nodes: OutlineNode[], allowedIds: Set<string>): OutlineNode[] {
+  const result: OutlineNode[] = []
+  for (const node of nodes) {
+    const children = pruneOutlineTreeByIds(node.children || [], allowedIds)
+    if (allowedIds.has(node.id) || children.length) {
+      result.push({
+        ...node,
+        children,
+      })
+    }
+  }
+  return result
+}
+
 // ---------------------------------------------------------------------------
 // 数据加载
 // ---------------------------------------------------------------------------
@@ -492,6 +616,20 @@ watch(
   async (projectId) => {
     if (!projectId) return
     await refreshOutline()
+  },
+  { immediate: true },
+)
+
+watch(
+  () => branchSegments.value.map((segment) => segment.id).join('|'),
+  () => {
+    if (
+      activeBranchSegmentId.value &&
+      branchSegments.value.some((segment) => segment.id === activeBranchSegmentId.value)
+    ) {
+      return
+    }
+    activeBranchSegmentId.value = branchSegments.value[0]?.id || ''
   },
   { immediate: true },
 )
@@ -631,6 +769,97 @@ watch(
   gap: 10px;
   padding: 12px 16px;
   flex-shrink: 0;
+}
+
+.story-branch-view__navigator {
+  display: grid;
+  gap: 8px;
+  padding: 0 16px 12px;
+}
+
+.story-branch-view__segment-map {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.story-branch-view__segment {
+  min-width: 148px;
+  padding: 9px 11px;
+  border-radius: 12px;
+  border: 1px solid var(--editor-border, #d6dff2);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--editor-text-secondary, #475569);
+  text-align: left;
+  cursor: pointer;
+
+  strong,
+  span {
+    display: block;
+  }
+
+  strong {
+    color: var(--editor-text-primary, #24365d);
+    font-size: 12px;
+  }
+
+  span {
+    margin-top: 3px;
+    color: var(--editor-text-muted, #68799a);
+    font-size: 11px;
+  }
+
+  &.is-active {
+    border-color: rgba(77, 121, 218, 0.28);
+    background: rgba(236, 243, 255, 0.9);
+  }
+}
+
+.story-branch-view__locator {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+
+  label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 280px;
+    min-height: 34px;
+    padding: 0 10px;
+    border-radius: 12px;
+    border: 1px solid var(--editor-border, #d6dff2);
+    background: rgba(255, 255, 255, 0.92);
+  }
+
+  input {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--editor-text-primary, #24365d);
+    font-size: 12px;
+  }
+
+  button {
+    min-height: 32px;
+    padding: 0 11px;
+    border-radius: 999px;
+    border: 1px solid var(--editor-border, #d6dff2);
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--branch-main);
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  span {
+    margin-left: auto;
+    color: var(--editor-text-muted, #68799a);
+    font-size: 12px;
+    font-weight: 800;
+  }
 }
 
 // ---------------------------------------------------------------------------

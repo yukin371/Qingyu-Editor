@@ -67,7 +67,6 @@
             :change-requests="storyHarnessChangeRequests"
             :workflow-context="workflowContext"
             :active-entities="activeEntities"
-            :initial-stage="initialCreativeStage"
             :handle-change-request-decision="handleChangeRequestDecision"
             :handle-trigger-index="handleStoryHarnessTriggerIndex"
             :is-triggering-index="isStoryHarnessTriggering"
@@ -80,8 +79,6 @@
             @rename-title="handleRenameCurrentDocument"
             @create-structure-plan="handleCreateStructurePlan"
             @status-change="handleWorkspaceStatusChange"
-            @open-right-tool="handleOpenRightTool"
-            @open-bottom-panel="handleOpenBottomPanel"
           />
         </template>
 
@@ -252,7 +249,6 @@ import type {
   WorkspacePanelId,
 } from '@/modules/writer/types/workspaceLayout'
 import { useWorkspaceLayoutStore } from '@/modules/writer/stores/workspaceLayoutStore'
-import type { CreativeFlowStageId } from '@/modules/writer/config/creativeFlow'
 
 // =======================
 // Props 定义
@@ -279,19 +275,6 @@ const workspaceLayoutStore = useWorkspaceLayoutStore()
 // 计算属性
 // =======================
 const isTestMode = computed(() => route.query.test === 'true')
-const creativeStageIds: CreativeFlowStageId[] = [
-  'inspiration',
-  'foundation',
-  'blueprint',
-  'drafting',
-  'review',
-]
-const initialCreativeStage = computed<CreativeFlowStageId>(() => {
-  const stage = route.query.stage
-  return typeof stage === 'string' && creativeStageIds.includes(stage as CreativeFlowStageId)
-    ? (stage as CreativeFlowStageId)
-    : 'drafting'
-})
 const mockProject = computed(() =>
   isTestMode.value ? getWorkspaceMockProject(currentProjectId.value) : null,
 )
@@ -362,11 +345,6 @@ const handleToggleImmersive = () => {
 
 const handleBottomPanelSelect = (panelId: WorkspacePanelId) => {
   workspaceLayoutStore.setAreaActivePanel('bottom', panelId)
-}
-
-const handleOpenBottomPanel = (panelId: 'status' | 'context' | 'harness') => {
-  workspaceLayoutStore.setAreaActivePanel('bottom', panelId)
-  workspaceLayoutStore.setAreaVisibility('bottom', true)
 }
 
 const applyLayoutPreset = (preset: WorkspaceLayoutPreset) => {

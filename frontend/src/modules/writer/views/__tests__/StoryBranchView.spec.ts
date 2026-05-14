@@ -67,6 +67,7 @@ const CanvasCoreStub = defineComponent({
 
 describe('StoryBranchView', () => {
   beforeEach(() => {
+    writerStoreState.outline.tree = [selectedNode.outlineNode]
     loadOutlineTree.mockClear()
     setCurrentOutlineNode.mockClear()
     vi.stubGlobal('requestAnimationFrame', () => 0)
@@ -121,6 +122,52 @@ describe('StoryBranchView', () => {
     )
     expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain(
       '节点描述：主角决定是否接受任务',
+    )
+  })
+
+  it('长篇分支视图应按 50 节点分段，并提供定位入口', async () => {
+    writerStoreState.outline.tree = Array.from({ length: 120 }, (_, index) => ({
+      id: `node-${index + 1}`,
+      title: `第${index + 1}章节点`,
+      description: `第${index + 1}章分支`,
+      level: 1,
+      order: index,
+      status: 'draft',
+      children: [],
+    }))
+
+    const wrapper = mount(StoryBranchView, {
+      props: {
+        projectId: 'project-1',
+        chapterId: 'chapter-1',
+        chapterTitle: '第一章',
+      },
+      global: {
+        stubs: {
+          QyButton: { template: '<button><slot /></button>' },
+          QyIcon: { template: '<span />' },
+          Empty: { template: '<div />' },
+          CanvasCore: CanvasCoreStub,
+          SystemStatCard: { template: '<div />' },
+        },
+      },
+    })
+
+    expect(wrapper.text()).not.toContain('普通小说模式')
+    expect(wrapper.findAll('.story-branch-view__segment').map((segment) => segment.text())).toEqual(
+      [
+        expect.stringContaining('第 1-50 节点'),
+        expect.stringContaining('第 51-100 节点'),
+        expect.stringContaining('第 101-120 节点'),
+      ],
+    )
+
+    await wrapper.get('.story-branch-view__locator input').setValue('第115章节点')
+    await wrapper.get('.story-branch-view__locator button').trigger('click')
+
+    expect(wrapper.text()).toContain('第 101-120 节点')
+    expect(setCurrentOutlineNode).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'node-115', title: '第115章节点' }),
     )
   })
 })

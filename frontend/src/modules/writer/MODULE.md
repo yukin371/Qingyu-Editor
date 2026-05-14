@@ -25,7 +25,7 @@
 - **工具唯一入口**：`relations / timeline / branches / structure` 只允许通过 `WorkspaceToolOverlay` 承载；不要再让 `WorkspaceEditorContent` 主内容区直接切成工具页。
 - **工作台是默认首页，编辑器是项目内主工作区**：独立编辑器的 `/` 与 `/writer` 现在应先进入作者工作台，继续创作、项目列表、模板中心都从这里分流；真正的正文编辑只允许落到 `writer-project`，不要再把工作台页面做回第二个编辑器宿主。
 - **五阶段流程配置 owner 是 `config/creativeFlow.ts`**：灵感捕捉、地基构建、蓝图绘制、逐章施工、复盘成长的阶段名称、任务、产出和入口动作统一从该配置读取；工作台首页和项目内阶段导航不得各自复制一套流程文案。
-- **项目内阶段导航只做流程编排，不接管事实 owner**：`CreativeStageTabs` 和 `WorkspaceEditorContent` 的阶段面板可以打开右栏、overlay、底栏或新建章节，但不得直接写创作流 sidecar、实体库、章节树或 Story Harness 状态。
+- **编辑器内不再展示五阶段步骤提示**：五阶段流程只保留在工作台首页和项目入口分流层，正文编辑面保持纯写作壳，不在主编辑区再渲染阶段 tab、说明卡或任务面板。
 - **项目列表与模板中心必须保持独立页职责**：工作台首页只展示最近项目和快捷动作；完整项目筛选、模板浏览与模板详情预览分别落到独立项目页与模板中心，不要把这些控件重新塞回首页。
 - **入口动作 owner 是 `useWriterProjectEntryActions`**：工作台、项目列表、模板中心涉及“进入项目 / 继续创作 / 新建后进入 / 导入后进入”时，应复用这个 composable；不要在页面里各自拼 `writer-project` 路由或复制 ZIP 导入成功跳转逻辑。
 - **模板中心的 owner 是“新建项目工具”，不是模板后台**：模板页允许浏览分类、打开 `大纲 / 角色 / 设定` 抽屉，并把模板应用到新建项目；不要在这里偷偷长出模板编辑器、模板发布系统或第二套项目创建协议。
@@ -87,6 +87,9 @@
 - **结构舞台只读消费阶段 1 sidecar，不接管持久化**：`StructureStageView` 当前可以读取 `creativeWorkflow` sidecar 作为阶段 3 接力卡与 AI handoff 输入，但它只能消费和展示，不得反向成为模板/黄金三章的新 owner。
 - **黄金三章导入必须复用现有结构草案链**：从阶段 3 接力卡导入黄金三章时，只能发 `create-structure-plan` 交给 `ProjectWorkspace.handleCreateStructurePlan` 统一创建章节与 outline 节点；不要在 `StructureStageView` 里直接写文档或大纲。
 - **黄金三章导入控制项仍由宿主兜底**：阶段 3 接力卡可以补 `导入位置（当前卷 / 项目根目录）` 与 `重复策略（跳过 / 允许重复）`，但最终 parent 解析、同名跳过与成功提示都必须落在 `ProjectWorkspace.handleCreateStructurePlan`，不要在结构舞台局部自行分叉创建逻辑。
+- **结构舞台默认层是“全书节奏表”聚合视图**：`StructureStageView` 默认只展示章节/情节点、正文绑定、状态、简化资产/图谱/时间线摘要和行级 handoff；完整事件排序、人物关系、资产详情、分支推演仍跳转到 overlay 内的专业工具，不允许在结构舞台复制第二套深度编辑 owner。
+- **长篇结构舞台必须用区段和窗口承载**：几百章以上的作品不得默认铺开完整列表；`StructureStageView` 应按卷或固定区段展示节奏地图，并只渲染当前章节附近的工作窗口，章节号/标题定位和问题筛选只改变窗口范围，不改变大纲原始顺序。
+- **长篇深度工具也必须按区段定位**：`TimelineOutlineView` 和 `StoryBranchView` 不得默认渲染全量事件/全量分支节点；应按固定区段提供地图、定位输入和当前窗口，避免几千章作品在辅助工具中重新变成长列表或全量画布。
 - **右栏不再伪装成通用 layout area**：布局 store 里的通用区域只剩 `left / bottom / overlay`，右侧常驻工具单独归 `rightToolArea` owner。不要再往 `workspaceLayoutStore.areas` 恢复历史 `right` 区域状态。
 - **Overlay 继续承接深度工具，不回流常驻右栏**：`structure / assets-fullscreen / relations / timeline / branches` 仍由 `WorkspaceToolOverlay` owner 管理；右栏只负责快速查阅和“展开全屏 →” handoff，不要复制第二套全屏宿主状态。
 - **Story Harness 先保留在底栏兼容入口**：当前右侧 activity bar 已切到四个常驻工具，Harness 通过 `WorkspaceBottomPanel` 保留兼容入口；若未来要回到常驻区，必须先补对应 plan 和交互边界。

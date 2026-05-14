@@ -86,62 +86,6 @@ describe('WorkspaceEditorContent', () => {
     expect(wrapper.find('[data-testid="tool-overlay"]').exists()).toBe(true)
   })
 
-  it('可按初始阶段直接打开蓝图工作面', () => {
-    const wrapper = mount(WorkspaceEditorContent, {
-      props: {
-        projectId: 'project-1',
-        chapterId: 'chapter-1',
-        chapterTitle: '第一章',
-        chapters: [{ id: 'chapter-1', title: '第一章' }],
-        content: '这里是正文。',
-        initialStage: 'blueprint',
-      },
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          TipTapEditorView: { template: '<div data-testid="tiptap-editor" />' },
-          WorkspaceToolOverlay: { template: '<div data-testid="tool-overlay" />' },
-          QyIcon: { template: '<span />' },
-          QyGhostButton: { template: '<button><slot /></button>' },
-        },
-      },
-    })
-
-    expect(wrapper.text()).toContain('蓝图绘制')
-    expect(wrapper.text()).toContain('伏笔计划表')
-    expect(wrapper.find('[data-testid="workspace-writing-surface"]').exists()).toBe(false)
-  })
-
-  it('阶段主动作应复用现有右栏入口', async () => {
-    const wrapper = mount(WorkspaceEditorContent, {
-      props: {
-        projectId: 'project-1',
-        chapterId: 'chapter-1',
-        chapterTitle: '第一章',
-        chapters: [{ id: 'chapter-1', title: '第一章' }],
-        content: '这里是正文。',
-        initialStage: 'inspiration',
-      },
-      global: {
-        plugins: [createPinia()],
-        stubs: {
-          TipTapEditorView: { template: '<div data-testid="tiptap-editor" />' },
-          WorkspaceToolOverlay: { template: '<div data-testid="tool-overlay" />' },
-          QyIcon: { template: '<span />' },
-          QyGhostButton: {
-            emits: ['click'],
-            template: '<button @click="$emit(\'click\', $event)"><slot /></button>',
-          },
-        },
-      },
-    })
-
-    const action = wrapper.findAll('button').find((button) => button.text().includes('打开灵感池'))
-    await action?.trigger('click')
-
-    expect(wrapper.emitted('open-right-tool')?.[0]).toEqual(['inspiration'])
-  })
-
   it('全屏关系图谱的交给 AI 动作应透传为 trigger-ai-action 事件', async () => {
     const WorkspaceToolOverlayStub = {
       emits: ['trigger-ai-action'],
