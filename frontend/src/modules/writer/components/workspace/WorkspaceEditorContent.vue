@@ -34,6 +34,7 @@
         :readonly="false"
         :show-reference-panel="false"
         @selection-action="emit('trigger-ai-action', $event)"
+        @entity-scan="emit('entity-scan', $event)"
         @save="(contents: unknown[]) => $emit('save', contents)"
         @open-tool-overlay="toolOverlay.open()"
       />
@@ -114,6 +115,7 @@ const emit = defineEmits<{
   (e: 'save', contents: unknown[]): void
   (e: 'add-doc'): void
   (e: 'rename-title', value: string): void
+  (e: 'entity-scan', refs: Array<{ id?: string; name: string; type: string }>): void
   (e: 'trigger-ai-action', payload: WriterWorkflowActionRequest): void
   (e: 'create-structure-plan', payload: WriterStructurePlanPayload): void
   (e: 'jump-to-chapter', chapterId: string): void

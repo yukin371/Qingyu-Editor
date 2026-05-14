@@ -1,6 +1,6 @@
 ﻿import { Mark, mergeAttributes, markPasteRule } from '@tiptap/core'
 
-export type KeywordType = 'character' | 'location' | 'item' | 'concept'
+export type KeywordType = 'character' | 'location' | 'item' | 'concept' | 'organization'
 
 export interface KeywordInfo {
   id?: string

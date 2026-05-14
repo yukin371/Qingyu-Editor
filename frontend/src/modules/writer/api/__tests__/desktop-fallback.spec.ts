@@ -146,8 +146,6 @@ describe('writer desktop api fallback', () => {
   })
 
   it('uses local timeline owner in desktop runtime', async () => {
-    ;(window as Window & { go?: unknown }).go = { main: { App: {} } }
-
     const [timeline] = await timelineApi.list('project-1')
     expect(timeline).toEqual(expect.objectContaining({ name: '主时间线' }))
 
@@ -441,6 +439,16 @@ describe('writer desktop api fallback', () => {
           type: 'character',
           name: '林舟',
           matchMode: 'pinyin_prefix',
+        }),
+      ]),
+    )
+
+    const atMentionMatch = await searchProjectKeywords(projectId, '@林', 10)
+    expect(atMentionMatch.suggestions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'character',
+          name: '林舟',
         }),
       ]),
     )

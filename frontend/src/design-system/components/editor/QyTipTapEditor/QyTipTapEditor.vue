@@ -184,6 +184,7 @@ import { AiDiffExtension } from '../QySmartKeyword/extensions/AiDiffExtension'
 import { searchProjectKeywords, type ParagraphContent } from '@/modules/writer/api/wrapper'
 import { characterApi } from '@/modules/writer/api/character'
 import { conceptApi } from '@/modules/writer/api/concept'
+import { createLocalEntity } from '@/modules/writer/api/entities'
 import { locationApi } from '@/modules/writer/api/location'
 import { createEmbeddedEditorImage } from '@/modules/writer/services/editorImageAsset.service'
 import { extractEntitiesFromTipTapContent } from '@/modules/writer/utils/entityParser'
@@ -667,7 +668,8 @@ function normalizeKeywordType(
     rawType === 'character' ||
     rawType === 'location' ||
     rawType === 'item' ||
-    rawType === 'concept'
+    rawType === 'concept' ||
+    rawType === 'organization'
   ) {
     return rawType
   }
@@ -892,6 +894,28 @@ async function handleEntityCreate(entity: {
           alias: entity.alias,
         })
         createdId = (resp as any)?.data?.id || (resp as any)?.id
+        break
+      }
+      case 'item': {
+        const resp = await createLocalEntity({
+          projectId: props.projectId,
+          type: 'item',
+          name: entity.name,
+          alias: entity.alias,
+          summary: entity.summary,
+        })
+        createdId = resp.id
+        break
+      }
+      case 'organization': {
+        const resp = await createLocalEntity({
+          projectId: props.projectId,
+          type: 'organization',
+          name: entity.name,
+          alias: entity.alias,
+          summary: entity.summary,
+        })
+        createdId = resp.id
         break
       }
       default:

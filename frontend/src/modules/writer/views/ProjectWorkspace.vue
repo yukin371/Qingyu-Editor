@@ -72,6 +72,7 @@
             :is-triggering-index="isStoryHarnessTriggering"
             v-model:content="tipTapContent"
             @trigger-ai-action="handleWorkflowAction"
+            @entity-scan="handleEditorEntityScan"
             @open-graph="handleOpenGraph"
             @jump-to-chapter="handleChapterIdUpdate"
             @save="handleTipTapSave"
@@ -200,6 +201,8 @@ import {
   type UpdateOutlineRequest,
 } from '@/modules/writer/api/outline'
 import { createDocument, updateDocument } from '@/modules/writer/api/document'
+import { conceptApi } from '@/modules/writer/api/concept'
+import { listEntities } from '@/modules/writer/api/entities'
 import {
   isStandaloneWriterRuntime,
   isWailsWriterAvailable,
@@ -230,6 +233,10 @@ import {
   groupEntitiesByType,
   parseEntityReferences,
 } from '@/modules/writer/utils/entityParser'
+import {
+  extractWriterAssetCandidates,
+  replaceScopeAssetRefs,
+} from '@/modules/writer/utils/writerAssetRefs'
 import type { EntityReference } from '@/modules/writer/types/entity'
 import type {
   WriterAIActionTrigger,
@@ -450,6 +457,48 @@ const { workflowContext, activeEntities } = useWorkflowContext({
   entityReferences: storyHarnessEntityReferences,
   entityStats: storyHarnessEntityStats,
 })
+
+const unwrapConceptList = <T,>(payload: unknown): T => {
+  if (payload && typeof payload === 'object' && 'data' in (payload as Record<string, unknown>)) {
+    return ((payload as Record<string, unknown>).data as T) ?? ([] as unknown as T)
+  }
+  return (payload as T) ?? ([] as unknown as T)
+}
+
+const handleEditorEntityScan = async (refs: Array<{ id?: string; name: string; type: string }>) => {
+  if (!currentProjectId.value || !displayChapterId.value) {
+    return
+  }
+
+  try {
+    const [items, organizations, conceptPayload] = await Promise.all([
+      listEntities(currentProjectId.value, 'item').catch(() => []),
+      listEntities(currentProjectId.value, 'organization').catch(() => []),
+      conceptApi.list(currentProjectId.value).catch(() => []),
+    ])
+
+    const candidates = extractWriterAssetCandidates({
+      text: currentChapterPlainText.value,
+      characters: writerStore.characters.list || [],
+      locations: writerStore.locations.list || [],
+      items,
+      organizations,
+      concepts: unwrapConceptList(conceptPayload),
+      entityReferences: refs,
+    }).filter((candidate) => !candidate.unresolved)
+
+    replaceScopeAssetRefs({
+      projectId: currentProjectId.value,
+      scopeType: 'chapter',
+      scopeId: displayChapterId.value,
+      candidates,
+    })
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.warn('[ProjectWorkspace] 同步章节资产引用失败:', error)
+    }
+  }
+}
 
 // =======================
 // UI 状态

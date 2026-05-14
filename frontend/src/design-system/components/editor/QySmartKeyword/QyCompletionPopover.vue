@@ -94,6 +94,7 @@ function getTypeIcon(type: KeywordType): string {
     location: '📍',
     item: '🎁',
     concept: '💡',
+    organization: '🏛️',
   }
   return icons[type] || '📝'
 }
@@ -104,6 +105,7 @@ function getTypeLabel(type: KeywordType): string {
     location: '地点',
     item: '物品',
     concept: '概念',
+    organization: '组织',
   }
   return labels[type] || '实体'
 }
@@ -187,6 +189,10 @@ function handleSelect(item: KeywordInfo) {
   border-left-color: #f59e0b;
 }
 
+.completion-item.type-organization {
+  border-left-color: #0f766e;
+}
+
 .completion-item.is-active.type-character {
   background: #eff6ff;
 }
@@ -197,6 +203,10 @@ function handleSelect(item: KeywordInfo) {
 
 .completion-item.is-active.type-item {
   background: #fffbeb;
+}
+
+.completion-item.is-active.type-organization {
+  background: #ecfeff;
 }
 
 .item-icon {

@@ -7,6 +7,9 @@
           <span class="asset-detail-panel__type-chip">{{ asset.typeLabel }}</span>
         </div>
         <div class="asset-detail-panel__actions">
+          <button type="button" class="asset-detail-panel__ghost" title="快速编辑" @click="$emit('edit')">
+            <QyIcon name="Edit" :size="14" />
+          </button>
           <button type="button" class="asset-detail-panel__ghost" title="关系图谱" @click="$emit('open-graph')">
             <QyIcon name="Share" :size="14" />
           </button>
@@ -26,6 +29,9 @@
             @click="$emit('open-fullscreen')"
           >
             <QyIcon name="FullScreen" :size="14" />
+          </button>
+          <button type="button" class="asset-detail-panel__ghost is-danger" title="删除资产" @click="$emit('delete')">
+            <QyIcon name="Delete" :size="14" />
           </button>
         </div>
       </header>
@@ -116,6 +122,8 @@ const props = defineProps<{
 }>()
 
 defineEmits<{
+  (e: 'edit'): void
+  (e: 'delete'): void
   (e: 'open-graph'): void
   (e: 'jump-to-chapter', chapterId: string): void
   (e: 'open-fullscreen'): void
@@ -204,6 +212,11 @@ watch(
     background: #f3f4f6;
     color: #111827;
   }
+}
+
+.asset-detail-panel__ghost.is-danger:hover {
+  background: #fef2f2;
+  color: #b91c1c;
 }
 
 .asset-detail-panel__tabs {

@@ -319,6 +319,68 @@ export function removeScopeAssetRef(
   })
 }
 
+export function replaceScopeAssetRefs(params: {
+  projectId: string
+  scopeType: WriterAssetScopeType
+  scopeId: string
+  candidates: WriterAssetCandidate[]
+}) {
+  const { projectId, scopeType, scopeId, candidates } = params
+
+  return updateWriterAssetRefState(projectId, (state) => {
+    const refMap = scopeType === 'volume' ? state.volumeRefs : state.chapterRefs
+    const currentRefs = refMap[scopeId] || []
+    const existingByKey = new Map(
+      currentRefs.map((ref) => [createCandidateKey(ref.assetType, ref.assetId, ref.assetName), ref]),
+    )
+    const now = new Date().toISOString()
+    const nextRefs = candidates.map((candidate, index) => {
+      const key = createCandidateKey(candidate.assetType, candidate.assetId, candidate.assetName)
+      const existing = existingByKey.get(key)
+      return existing
+        ? {
+            ...existing,
+            assetName: candidate.assetName,
+            source: candidate.source,
+            evidence: candidate.evidence || existing.evidence,
+            unresolved: candidate.unresolved ?? existing.unresolved,
+            updatedAt: now,
+          }
+        : {
+            id: `asset-ref-${scopeType}-${scopeId}-${Date.now()}-${index}`,
+            assetType: candidate.assetType,
+            assetId: candidate.assetId,
+            assetName: candidate.assetName,
+            scopeType,
+            scopeId,
+            source: candidate.source,
+            evidence: candidate.evidence,
+            unresolved: candidate.unresolved,
+            createdAt: now,
+            updatedAt: now,
+          }
+    })
+
+    if (scopeType === 'volume') {
+      return {
+        ...state,
+        volumeRefs: {
+          ...state.volumeRefs,
+          [scopeId]: nextRefs,
+        },
+      }
+    }
+
+    return {
+      ...state,
+      chapterRefs: {
+        ...state.chapterRefs,
+        [scopeId]: nextRefs,
+      },
+    }
+  })
+}
+
 export function extractWriterAssetCandidates(params: ExtractionParams): WriterAssetCandidate[] {
   const text = params.text || ''
   const summary = new Map<string, WriterAssetCandidate>()
@@ -466,35 +528,104 @@ export function extractWriterAssetCandidates(params: ExtractionParams): WriterAs
     })
   }
 
-  const mentionPatterns: Array<{ assetType: WriterAssetType; regex: RegExp }> = [
-    { assetType: 'character', regex: /@([\u4e00-\u9fa5\w-]{1,30})/g },
+  for (const match of text.matchAll(/@([\u4e00-\u9fa5\w-]{1,30})/g)) {
+    const rawName = match[1]?.trim()
+    if (!rawName) continue
+    const normalized = normalizeName(rawName)
+    const matchedCandidates: WriterAssetCandidate[] = []
+
+    const character = characterNameMap.get(normalized) || aliasMap.get(normalized)
+    if (character) {
+      matchedCandidates.push({
+        key: createCandidateKey('character', character.id, character.name),
+        assetType: 'character',
+        assetId: character.id,
+        assetName: character.name,
+        source: characterNameMap.get(normalized) ? 'mention' : 'alias',
+        evidence: rawName,
+        unresolved: false,
+      })
+    }
+
+    const location = locationNameMap.get(normalized)
+    if (location) {
+      matchedCandidates.push({
+        key: createCandidateKey('location', location.id, location.name),
+        assetType: 'location',
+        assetId: location.id,
+        assetName: location.name,
+        source: 'mention',
+        evidence: rawName,
+        unresolved: false,
+      })
+    }
+
+    const item = itemNameMap.get(normalized) || itemAliasMap.get(normalized)
+    if (item) {
+      matchedCandidates.push({
+        key: createCandidateKey('item', item.id, item.name),
+        assetType: 'item',
+        assetId: item.id,
+        assetName: item.name,
+        source: itemNameMap.get(normalized) ? 'mention' : 'alias',
+        evidence: rawName,
+        unresolved: false,
+      })
+    }
+
+    const organization = organizationNameMap.get(normalized) || organizationAliasMap.get(normalized)
+    if (organization) {
+      matchedCandidates.push({
+        key: createCandidateKey('organization', organization.id, organization.name),
+        assetType: 'organization',
+        assetId: organization.id,
+        assetName: organization.name,
+        source: organizationNameMap.get(normalized) ? 'mention' : 'alias',
+        evidence: rawName,
+        unresolved: false,
+      })
+    }
+
+    const concept = conceptNameMap.get(normalized) || conceptAliasMap.get(normalized)
+    if (concept) {
+      matchedCandidates.push({
+        key: createCandidateKey('concept', concept.id, concept.name),
+        assetType: 'concept',
+        assetId: concept.id,
+        assetName: concept.name,
+        source: conceptNameMap.get(normalized) ? 'mention' : 'alias',
+        evidence: rawName,
+        unresolved: false,
+      })
+    }
+
+    if (matchedCandidates.length === 0) {
+      matchedCandidates.push({
+        key: createCandidateKey('character', undefined, rawName),
+        assetType: 'character',
+        assetId: undefined,
+        assetName: rawName,
+        source: 'mention',
+        evidence: rawName,
+        unresolved: true,
+      })
+    }
+
+    for (const candidate of matchedCandidates) {
+      pushCandidate(candidate)
+    }
+  }
+
+  const legacyMentionPatterns: Array<{ assetType: WriterAssetType; regex: RegExp }> = [
     { assetType: 'location', regex: /#([\u4e00-\u9fa5\w-]{1,30})/g },
     { assetType: 'item', regex: /%([\u4e00-\u9fa5\w-]{1,30})/g },
   ]
 
-  for (const pattern of mentionPatterns) {
+  for (const pattern of legacyMentionPatterns) {
     for (const match of text.matchAll(pattern.regex)) {
       const rawName = match[1]?.trim()
       if (!rawName) continue
       const normalized = normalizeName(rawName)
-
-      if (pattern.assetType === 'character') {
-        const character = characterNameMap.get(normalized) || aliasMap.get(normalized)
-        pushCandidate({
-          key: createCandidateKey('character', character?.id, character?.name || rawName),
-          assetType: 'character',
-          assetId: character?.id,
-          assetName: character?.name || rawName,
-          source: characterNameMap.get(normalized)
-            ? 'mention'
-            : aliasMap.get(normalized)
-              ? 'alias'
-              : 'mention',
-          evidence: rawName,
-          unresolved: !character,
-        })
-        continue
-      }
 
       if (pattern.assetType === 'location') {
         const location = locationNameMap.get(normalized)
@@ -516,11 +647,7 @@ export function extractWriterAssetCandidates(params: ExtractionParams): WriterAs
         assetType: 'item',
         assetId: item?.id,
         assetName: item?.name || rawName,
-        source: itemNameMap.get(normalized)
-          ? 'mention'
-          : itemAliasMap.get(normalized)
-            ? 'alias'
-            : 'mention',
+        source: itemNameMap.get(normalized) ? 'mention' : itemAliasMap.get(normalized) ? 'alias' : 'mention',
         evidence: rawName,
         unresolved: !item,
       })
@@ -609,6 +736,74 @@ export function extractWriterAssetCandidates(params: ExtractionParams): WriterAs
         assetType: 'item',
         assetId: item.id,
         assetName: item.name,
+        source: 'alias',
+        evidence: matchedAlias,
+      })
+    }
+  }
+
+  for (const organization of params.organizations || []) {
+    if (normalizedText.includes(normalizeName(organization.name))) {
+      pushCandidate({
+        key: createCandidateKey('organization', organization.id, organization.name),
+        assetType: 'organization',
+        assetId: organization.id,
+        assetName: organization.name,
+        source: 'name',
+        evidence: organization.name,
+      })
+      continue
+    }
+
+    const matchedAlias = (organization.alias || []).find((alias) => {
+      if (!alias.trim()) return false
+      const pattern = new RegExp(
+        `(^|[^\\w\\u4e00-\\u9fa5])${escapeRegExp(alias)}([^\\w\\u4e00-\\u9fa5]|$)`,
+        'i',
+      )
+      return pattern.test(text)
+    })
+
+    if (matchedAlias) {
+      pushCandidate({
+        key: createCandidateKey('organization', organization.id, organization.name),
+        assetType: 'organization',
+        assetId: organization.id,
+        assetName: organization.name,
+        source: 'alias',
+        evidence: matchedAlias,
+      })
+    }
+  }
+
+  for (const concept of params.concepts || []) {
+    if (normalizedText.includes(normalizeName(concept.name))) {
+      pushCandidate({
+        key: createCandidateKey('concept', concept.id, concept.name),
+        assetType: 'concept',
+        assetId: concept.id,
+        assetName: concept.name,
+        source: 'name',
+        evidence: concept.name,
+      })
+      continue
+    }
+
+    const matchedAlias = (concept.alias || []).find((alias) => {
+      if (!alias.trim()) return false
+      const pattern = new RegExp(
+        `(^|[^\\w\\u4e00-\\u9fa5])${escapeRegExp(alias)}([^\\w\\u4e00-\\u9fa5]|$)`,
+        'i',
+      )
+      return pattern.test(text)
+    })
+
+    if (matchedAlias) {
+      pushCandidate({
+        key: createCandidateKey('concept', concept.id, concept.name),
+        assetType: 'concept',
+        assetId: concept.id,
+        assetName: concept.name,
         source: 'alias',
         evidence: matchedAlias,
       })

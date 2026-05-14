@@ -122,7 +122,7 @@ export const searchProjectKeywords = async (projectId: string, q: string, limit 
     })
   }
 
-  const query = q.trim().toLowerCase()
+  const query = q.trim().replace(/^[@#%]/, '').toLowerCase()
   if (!query) {
     return { query: q, suggestions: [] }
   }

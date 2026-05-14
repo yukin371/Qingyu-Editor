@@ -29,6 +29,9 @@ vi.mock('@/modules/writer/composables/useWriterAssetCatalog', () => ({
     selectedDataHint: ref(''),
     selectAsset: vi.fn(),
     buildGraphFocusTarget: vi.fn(),
+    createAsset: vi.fn(),
+    updateAsset: vi.fn(),
+    deleteAsset: vi.fn(),
   }),
 }))
 
@@ -75,6 +78,7 @@ describe('ToolRightPanel', () => {
           QyIcon: true,
           AssetListPanel: { template: '<div data-testid="asset-list-panel" />' },
           AssetDetailPanel: { template: '<div data-testid="asset-detail-panel" />' },
+          AssetQuickEditorDialog: { template: '<div data-testid="asset-quick-editor-dialog" />' },
           AIChatPanel: true,
           ProofreadPanel: true,
           InspirationPanel: true,

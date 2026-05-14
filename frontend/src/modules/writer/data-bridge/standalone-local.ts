@@ -1612,6 +1612,39 @@ async function createLocalEntity(payload: {
   }
 }
 
+async function updateLocalEntity(payload: {
+  entityId: string
+  projectId: string
+  name: string
+  alias?: string[]
+  summary?: string
+}): Promise<EntitySummary> {
+  const state = migrateLegacyWriterItemsForProject(readState(), payload.projectId)
+  const entity = state.genericEntities.find(
+    (item) => item.id === payload.entityId && item.projectId === payload.projectId,
+  )
+
+  if (!entity) {
+    throw new Error('未找到要更新的本地资产')
+  }
+
+  entity.name = payload.name.trim()
+  entity.alias = normalizeStringArray(payload.alias)
+  entity.summary = payload.summary || ''
+  entity.updatedAt = nowIso()
+  touchProject(state, payload.projectId)
+  writeState(state)
+
+  return {
+    id: entity.id,
+    name: entity.name,
+    entityType: entity.entityType,
+    alias: entity.alias || [],
+    summary: entity.summary || '',
+    stateFields: getEntityStateFields(state, entity.id),
+  }
+}
+
 async function deleteLocalEntity(entityId: string, projectId: string): Promise<void> {
   const state = migrateLegacyWriterItemsForProject(readState(), projectId)
   state.genericEntities = state.genericEntities.filter((entity) => entity.id !== entityId)
@@ -1763,6 +1796,7 @@ export const standaloneLocalBridge = {
   },
   entity: {
     create: createLocalEntity,
+    update: updateLocalEntity,
     list: listLocalEntities,
     getGraph: getLocalEntityGraph,
     updateStateFields: updateLocalEntityStateFields,

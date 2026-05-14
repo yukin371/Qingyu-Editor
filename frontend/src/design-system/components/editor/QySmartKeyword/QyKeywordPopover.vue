@@ -64,6 +64,7 @@ const keywordTypeLabel = computed(() => {
     location: '地点',
     item: '物品',
     concept: '概念',
+    organization: '组织',
   }
   return labels[props.keyword?.type || ''] || '未知类型'
 })
@@ -76,6 +77,7 @@ function getTypeIcon(type: KeywordType): string {
     location: '📍',
     item: '🎁',
     concept: '💡',
+    organization: '🏛️',
   }
   return icons[type] || '📝'
 }

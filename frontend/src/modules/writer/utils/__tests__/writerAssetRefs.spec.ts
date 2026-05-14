@@ -114,6 +114,46 @@ describe('writerAssetRefs', () => {
     )
   })
 
+  it('应在纯文本 @ 引用下识别组织与概念，不依赖 smart keyword mark', () => {
+    const candidates = extractWriterAssetCandidates({
+      text: '@巡夜司 封锁城门，@禁术回响 也再次出现。',
+      characters: [],
+      locations: [],
+      items: [],
+      organizations: [
+        {
+          id: 'org-1',
+          name: '巡夜司',
+          alias: ['巡夜人'],
+        },
+      ],
+      concepts: [
+        {
+          id: 'concept-1',
+          name: '禁术回响',
+          alias: ['回响术'],
+        },
+      ],
+    })
+
+    expect(candidates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          assetType: 'organization',
+          assetId: 'org-1',
+          assetName: '巡夜司',
+          unresolved: false,
+        }),
+        expect.objectContaining({
+          assetType: 'concept',
+          assetId: 'concept-1',
+          assetName: '禁术回响',
+          unresolved: false,
+        }),
+      ]),
+    )
+  })
+
   it('应持久化并移除章节绑定资产', () => {
     const projectId = 'project-1'
     upsertScopeAssetRef({

@@ -99,7 +99,8 @@
 - **全屏工具可见上下文由 overlay 统一展示**：`WorkspaceToolOverlay` 应使用 `useWorkflowContext` 同 owner 的摘要能力，把章节 / 场景 / 活跃实体显示在工具层顶部；不要再让 `CharacterGraphView / TimelineOutlineView / StoryBranchView / StructureStageView` 各自维护一份独立的“当前上下文”条。
 - **资产总览优先复用统一实体口径**：`EncyclopediaView` 当前已被复用为 Phase 4 资产总览 MVP，数据源应优先拼接 `writerStore.characters / locations`、统一实体接口 `api/entities.ts`（至少 item / organization）与 `conceptApi`，不要再额外新建影子资产 store。若后续要升级为独立 `AssetsOverviewView`，也必须先保持这套聚合口径不变。
 - **右栏设定速查与 overlay 资产总览共用同一套资产聚合口径**：右栏 `AssetListPanel / AssetDetailPanel` 与 `EncyclopediaView` 必须继续复用统一资产数据来源和分类口径；不要让右栏为了方便再维护一套单独的资产 store 或分类枚举。
-- **右栏设定区当前是只读速查 owner**：`ToolRightPanel` 已移除只弹 `TODO` 的设定新建 / 编辑 / 删除按钮。当前右栏只允许做列表/详情速查与“展开全屏” handoff；在 backend / shared entity owner 未明确前，不得在 writer 宿主内偷偷恢复第二套资产 CRUD。
+- **右栏设定区与项目资产共用同一口径**：`ToolRightPanel` 的设定列表、详情和快速 CRUD 必须继续复用 `useWriterAssetCatalog` 与现有本地资产 API；允许做当前分类下的新建 / 编辑 / 删除，但不得在右栏再维护第二套资产 store、分类枚举或脱离项目资产的表单协议。
+- **`@资产` 是正文内的统一轻量引用格式**：`QyTipTapEditor` 的自动补全、创建实体、章节资产自动检测都必须优先支持统一 `@名称`，并能覆盖 `角色 / 地点 / 物件 / 组织 / 概念`；`#地点`、`%物件` 只作为兼容输入保留，不能再成为默认主路径。
 - **编辑器外观偏好 owner 是 `editorAppearanceStore`**：字号、行距、版心、字体族与紧凑工具栏都应统一走 `editorAppearanceStore` 本地偏好；`TipTapEditorView` 只负责输出 CSS variables，`QyTipTapEditor` 只消费 `toolbarPreset`，不要再在组件内各自维护一份主题/排版状态。
 - **编辑器图片先走本地嵌入，不走在线存储**：`QyTipTapEditor` 当前应通过 writer 自己的图片适配层把 PNG/JPG/GIF 转成 data URL 直接写入正文，避免依赖 `/shared/storage/*` 这类在线平台 API；若未来要改成本地资产目录，也应由 writer/Wails owner 接管，而不是回退到 shared online storage。
 - **资产总览图谱深链由 overlay 接管**：`EncyclopediaView` 只负责发 `focus-graph-asset + switch-tool` 事件，不自己持有图谱 focus 状态；`WorkspaceToolOverlay` 是这条 focus payload 的 owner，并只把一次性聚焦参数透传给 `CharacterGraphView`。不要把图谱定点跳转状态再塞回路由、store 或资产视图本身。

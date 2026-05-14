@@ -159,6 +159,7 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
   (e: 'save', contents: ParagraphContent[]): void
   (e: 'keyword-click', keyword: KeywordInfo): void
+  (e: 'entity-scan', refs: Array<{ id?: string; name: string; type: string }>): void
   (
     e: 'selection-action',
     payload: {
@@ -397,6 +398,7 @@ function handleIgnoreEntity(entity: ScannedEntity) {
 }
 
 function handleEntityScan(refs: Array<{ id?: string; name: string; type: string }>) {
+  emit('entity-scan', refs)
   // 更新引用摘要 - 使用扫描结果刷新右侧面板
   // refs 是从 entityParser 解析出的实体引用列表
   // 直接更新 scannedEntities 或 referenceSummary

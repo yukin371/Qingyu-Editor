@@ -38,4 +38,22 @@ describe('AssetDetailPanel', () => {
     expect(wrapper.text()).toContain('第一章 开端')
     expect(wrapper.text()).toContain('关联结构节点 2')
   })
+
+  it('emits quick edit and delete actions from the header', async () => {
+    const wrapper = mount(AssetDetailPanel, {
+      props: baseProps,
+      global: {
+        stubs: {
+          QyIcon: true,
+        },
+      },
+    })
+
+    const buttons = wrapper.findAll('.asset-detail-panel__ghost')
+    await buttons[0].trigger('click')
+    await buttons[buttons.length - 1].trigger('click')
+
+    expect(wrapper.emitted('edit')).toEqual([[]])
+    expect(wrapper.emitted('delete')).toEqual([[]])
+  })
 })

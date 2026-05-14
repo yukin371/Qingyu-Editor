@@ -1,16 +1,26 @@
 <template>
   <div class="asset-list-panel">
-    <label class="asset-list-panel__search">
-      <QyIcon name="Search" :size="14" />
-      <input
-        id="writer-asset-search"
-        name="writer-asset-search"
-        :value="searchKeyword"
-        type="search"
-        placeholder="搜索设定"
-        @input="$emit('update:search-keyword', ($event.target as HTMLInputElement).value)"
-      />
-    </label>
+    <div class="asset-list-panel__toolbar">
+      <label class="asset-list-panel__search">
+        <QyIcon name="Search" :size="14" />
+        <input
+          id="writer-asset-search"
+          name="writer-asset-search"
+          :value="searchKeyword"
+          type="search"
+          placeholder="搜索设定"
+          @input="$emit('update:search-keyword', ($event.target as HTMLInputElement).value)"
+        />
+      </label>
+      <button
+        type="button"
+        class="asset-list-panel__create-btn"
+        title="快速新建"
+        @click="$emit('create-asset')"
+      >
+        新建
+      </button>
+    </div>
 
     <div class="asset-list-panel__tree">
       <section
@@ -76,6 +86,7 @@ defineEmits<{
   (e: 'update:search-keyword', value: string): void
   (e: 'select-category', category: EncyclopediaCategory): void
   (e: 'select-asset', assetId: string): void
+  (e: 'create-asset'): void
 }>()
 </script>
 
@@ -89,12 +100,19 @@ defineEmits<{
   background: #fff;
 }
 
+.asset-list-panel__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 10px 10px;
+}
+
 .asset-list-panel__search {
   display: flex;
   align-items: center;
   gap: 8px;
   height: 30px;
-  margin: 0 10px 10px;
+  flex: 1;
   padding: 0 10px;
   border: 1px solid #d9dee6;
   border-radius: 4px;
@@ -108,6 +126,23 @@ defineEmits<{
     background: transparent;
     color: #111827;
     font-size: 13px;
+  }
+}
+
+.asset-list-panel__create-btn {
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid #d9dee6;
+  border-radius: 4px;
+  background: #fff;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: #f8fafc;
+    color: #111827;
   }
 }
 

@@ -1,6 +1,18 @@
 import { computed, ref, unref, watch, type ComputedRef, type Ref } from 'vue'
+import {
+  createCharacter,
+  deleteCharacter,
+  updateCharacter,
+} from '@/modules/writer/api/character'
 import { conceptApi } from '@/modules/writer/api/concept'
-import { listEntities, type EntitySummary } from '@/modules/writer/api/entities'
+import {
+  createLocalEntity,
+  deleteLocalEntity,
+  listEntities,
+  type EntitySummary,
+  updateLocalEntity,
+} from '@/modules/writer/api/entities'
+import { locationApi } from '@/modules/writer/api/location'
 import type { EncyclopediaCategory, GraphFocusTarget, SidebarChapterSummary } from './types'
 import { useWriterStore } from '@/modules/writer/stores/writerStore'
 import { loadWriterAssetRefState } from '@/modules/writer/utils/writerAssetRefs'
@@ -36,6 +48,20 @@ export interface WriterAssetDetailField {
   value: string
 }
 
+export interface WriterAssetMutationInput {
+  category: EncyclopediaCategory
+  name: string
+  summary?: string
+  alias?: string[]
+  traits?: string[]
+  background?: string
+  climate?: string
+  culture?: string
+  geography?: string
+  atmosphere?: string
+  conceptCategory?: string
+}
+
 const ASSET_SCOPE_HINT =
   '当前仅纳入已建档的角色、地点、物件、组织、概念；伏笔与未确认资产候选暂不进入资产总览。'
 
@@ -52,6 +78,15 @@ const unwrapApiData = <T,>(payload: unknown): T => {
 }
 
 const normalizeSummary = (value: string | undefined | null) => String(value || '').trim()
+const unwrapConceptList = (payload: unknown) => unwrapApiData<Concept[]>(payload)
+const extractAssetId = (payload: unknown) => {
+  if (payload && typeof payload === 'object' && 'data' in (payload as Record<string, unknown>)) {
+    return String(
+      ((payload as Record<string, unknown>).data as Record<string, unknown> | undefined)?.id || '',
+    )
+  }
+  return String((payload as Record<string, unknown> | undefined)?.id || '')
+}
 
 export function useWriterAssetCatalog(options: {
   projectId: MaybeRef<string>
@@ -331,6 +366,15 @@ export function useWriterAssetCatalog(options: {
           ...sharedFields,
         ].filter(Boolean) as WriterAssetDetailField[]
       }
+      case 'items':
+      case 'organizations': {
+        const entity = raw as EntitySummary
+        return [
+          entity.alias?.length ? { label: '别名', value: entity.alias.join('、') } : null,
+          entity.summary ? { label: '摘要', value: entity.summary } : null,
+          ...sharedFields,
+        ].filter(Boolean) as WriterAssetDetailField[]
+      }
       default:
         return [{ label: '类别', value: selectedAsset.value.typeLabel }, ...sharedFields]
     }
@@ -407,10 +451,149 @@ export function useWriterAssetCatalog(options: {
 
       items.value = itemData
       organizations.value = organizationData
-      concepts.value = unwrapApiData<Concept[]>(conceptData)
+      concepts.value = unwrapConceptList(conceptData)
     } finally {
       loading.value = false
     }
+  }
+
+  const reloadAssetData = async (targetAssetId?: string | null) => {
+    const projectId = effectiveProjectId.value
+    if (!projectId) return
+
+    const preferredAssetId = targetAssetId || selectedAsset.value?.id || null
+    await loadAssetData(projectId)
+
+    if (preferredAssetId) {
+      ensureSelectedAsset(preferredAssetId)
+    }
+  }
+
+  const createAsset = async (payload: WriterAssetMutationInput) => {
+    const projectId = effectiveProjectId.value
+    if (!projectId) {
+      throw new Error('当前项目不存在，无法创建资产')
+    }
+
+    let nextId = ''
+    if (payload.category === 'characters') {
+      const created = await createCharacter(projectId, {
+        projectId,
+        name: payload.name,
+        alias: payload.alias,
+        summary: payload.summary,
+        traits: payload.traits,
+        background: payload.background,
+      })
+      nextId = extractAssetId(created)
+      await writerStore.loadCharacters(projectId)
+    } else if (payload.category === 'locations') {
+      const created = await locationApi.create(projectId, {
+        projectId,
+        name: payload.name,
+        description: payload.summary,
+        climate: payload.climate,
+        culture: payload.culture,
+        geography: payload.geography,
+        atmosphere: payload.atmosphere,
+      })
+      nextId = extractAssetId(created)
+      await writerStore.loadLocations(projectId)
+    } else if (payload.category === 'concepts') {
+      const created = await conceptApi.create(projectId, {
+        projectId,
+        name: payload.name,
+        alias: payload.alias,
+        summary: payload.summary,
+        category: payload.conceptCategory,
+      })
+      nextId = extractAssetId(created)
+    } else {
+      const created = await createLocalEntity({
+        projectId,
+        type: payload.category === 'items' ? 'item' : 'organization',
+        name: payload.name,
+        alias: payload.alias,
+        summary: payload.summary,
+      })
+      nextId = extractAssetId(created)
+    }
+
+    await reloadAssetData(nextId)
+    return selectedAsset.value
+  }
+
+  const updateAsset = async (asset: WriterAssetListItem, payload: WriterAssetMutationInput) => {
+    const projectId = effectiveProjectId.value
+    if (!projectId) {
+      throw new Error('当前项目不存在，无法更新资产')
+    }
+
+    if (asset.category === 'characters') {
+      await updateCharacter(asset.id, projectId, {
+        name: payload.name,
+        alias: payload.alias,
+        summary: payload.summary,
+        traits: payload.traits,
+        background: payload.background,
+      })
+      await writerStore.loadCharacters(projectId)
+    } else if (asset.category === 'locations') {
+      await locationApi.update(asset.id, projectId, {
+        projectId,
+        name: payload.name,
+        description: payload.summary,
+        climate: payload.climate,
+        culture: payload.culture,
+        geography: payload.geography,
+        atmosphere: payload.atmosphere,
+      })
+      await writerStore.loadLocations(projectId)
+    } else if (asset.category === 'concepts') {
+      await conceptApi.update(asset.id, projectId, {
+        name: payload.name,
+        alias: payload.alias,
+        summary: payload.summary,
+        category: payload.conceptCategory,
+      })
+    } else {
+      await updateLocalEntity({
+        entityId: asset.id,
+        projectId,
+        name: payload.name,
+        alias: payload.alias,
+        summary: payload.summary,
+      })
+    }
+
+    await reloadAssetData(asset.id)
+    return selectedAsset.value
+  }
+
+  const deleteAsset = async (asset: WriterAssetListItem) => {
+    const projectId = effectiveProjectId.value
+    if (!projectId) {
+      throw new Error('当前项目不存在，无法删除资产')
+    }
+
+    if (asset.category === 'characters') {
+      await deleteCharacter(asset.id, projectId)
+      await writerStore.loadCharacters(projectId)
+    } else if (asset.category === 'locations') {
+      await locationApi.delete(asset.id, projectId)
+      await writerStore.loadLocations(projectId)
+    } else if (asset.category === 'concepts') {
+      await conceptApi.delete(asset.id, projectId)
+    } else {
+      await deleteLocalEntity(asset.id, projectId)
+    }
+
+    const currentAssets = assetCatalog.value[asset.category] || []
+    const deletedIndex = currentAssets.findIndex((item) => item.id === asset.id)
+    await reloadAssetData()
+    const nextAssets = assetCatalog.value[asset.category] || []
+    selectedAsset.value =
+      nextAssets[deletedIndex] || nextAssets[Math.max(0, deletedIndex - 1)] || null
   }
 
   watch(
@@ -446,5 +629,9 @@ export function useWriterAssetCatalog(options: {
     selectAsset,
     ensureSelectedAsset,
     buildGraphFocusTarget,
+    reloadAssetData,
+    createAsset,
+    updateAsset,
+    deleteAsset,
   }
 }

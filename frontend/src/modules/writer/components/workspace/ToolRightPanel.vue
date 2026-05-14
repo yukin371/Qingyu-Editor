@@ -25,6 +25,7 @@
             @update:search-keyword="searchKeyword = $event"
             @select-category="handleAssetCategoryChange"
             @select-asset="handleAssetSelect"
+            @create-asset="handleCreateAsset"
           />
         </aside>
         <div
@@ -60,6 +61,8 @@
           :detail-fields="selectedDetailFields"
           :state-fields="selectedStateFields"
           :data-hint="selectedDataHint"
+          @edit="handleEditAsset"
+          @delete="handleDeleteAsset"
           @open-graph="handleOpenAssetGraph"
           @jump-to-chapter="$emit('jump-to-chapter', $event)"
           @open-fullscreen="handleOpenAssetsFullscreen"
@@ -76,20 +79,34 @@
         />
       </section>
     </div>
+
+    <AssetQuickEditorDialog
+      v-model:visible="assetEditorVisible"
+      :mode="assetEditorMode"
+      :category="assetEditorCategory"
+      :asset="selectedAsset"
+      :submitting="assetEditorSubmitting"
+      @submit="handleAssetEditorSubmit"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, type ComponentPublicInstance } from 'vue'
+import { message, messageBox } from '@/design-system/services'
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
 import AIChatPanel from '@/modules/writer/components/workspace/tool-right/AIChatPanel.vue'
 import AssetDetailPanel from '@/modules/writer/components/workspace/tool-right/AssetDetailPanel.vue'
 import AssetListPanel from '@/modules/writer/components/workspace/tool-right/AssetListPanel.vue'
+import AssetQuickEditorDialog from '@/modules/writer/components/workspace/tool-right/AssetQuickEditorDialog.vue'
 import InspirationPanel from '@/modules/writer/components/workspace/tool-right/InspirationPanel.vue'
 import ProofreadPanel from '@/modules/writer/components/workspace/tool-right/ProofreadPanel.vue'
 import { useToolOverlay } from '@/modules/writer/composables/useToolOverlay'
 import { useToolRightPanel } from '@/modules/writer/composables/useToolRightPanel'
-import { useWriterAssetCatalog } from '@/modules/writer/composables/useWriterAssetCatalog'
+import {
+  useWriterAssetCatalog,
+  type WriterAssetMutationInput,
+} from '@/modules/writer/composables/useWriterAssetCatalog'
 import type { EncyclopediaCategory, SidebarChapterSummary } from '@/modules/writer/composables/types'
 import type {
   WriterAIActionTrigger,
@@ -145,12 +162,19 @@ const {
   selectedDataHint,
   selectAsset,
   buildGraphFocusTarget,
+  createAsset,
+  updateAsset,
+  deleteAsset,
 } = useWriterAssetCatalog({
   projectId: computed(() => props.projectId),
   chapters: computed(() => props.chapters),
   activeCategory: assetCategory,
   searchKeyword,
 })
+const assetEditorVisible = ref(false)
+const assetEditorMode = ref<'create' | 'edit'>('create')
+const assetEditorSubmitting = ref(false)
+const assetEditorCategory = computed(() => assetCategory.value)
 const setDetailPanelRef = (
   value: Element | ComponentPublicInstance | null,
   _refs?: Record<string, unknown>,
@@ -165,6 +189,48 @@ const handleAssetCategoryChange = (category: EncyclopediaCategory) => {
 const handleAssetSelect = (assetId: string) => {
   const nextAsset = filteredAssets.value.find((asset) => asset.id === assetId) || null
   selectAsset(nextAsset)
+}
+
+const handleCreateAsset = () => {
+  assetEditorMode.value = 'create'
+  assetEditorVisible.value = true
+}
+
+const handleEditAsset = () => {
+  if (!selectedAsset.value) return
+  assetEditorMode.value = 'edit'
+  assetEditorVisible.value = true
+}
+
+const handleDeleteAsset = async () => {
+  if (!selectedAsset.value) return
+  try {
+    await messageBox.confirm(`确定删除资产「${selectedAsset.value.name}」吗？此操作不可恢复`, '删除资产', {
+      type: 'warning',
+    })
+    await deleteAsset(selectedAsset.value)
+    message.success('资产已删除')
+  } catch {
+    // 取消或失败都保持原状
+  }
+}
+
+const handleAssetEditorSubmit = async (payload: WriterAssetMutationInput) => {
+  assetEditorSubmitting.value = true
+  try {
+    if (assetEditorMode.value === 'edit' && selectedAsset.value) {
+      await updateAsset(selectedAsset.value, payload)
+      message.success('资产已更新')
+    } else {
+      await createAsset(payload)
+      message.success('资产已创建')
+    }
+    assetEditorVisible.value = false
+  } catch (error) {
+    message.error((error as Error).message || '保存资产失败')
+  } finally {
+    assetEditorSubmitting.value = false
+  }
 }
 
 const handleOpenAssetsFullscreen = () => {

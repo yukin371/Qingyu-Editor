@@ -74,4 +74,19 @@ describe('AssetListPanel', () => {
 
     expect(wrapper.emitted('select-category')).toEqual([['locations']])
   })
+
+  it('emits create-asset from the compact toolbar', async () => {
+    const wrapper = mount(AssetListPanel, {
+      props: baseProps,
+      global: {
+        stubs: {
+          QyIcon: true,
+        },
+      },
+    })
+
+    await wrapper.get('.asset-list-panel__create-btn').trigger('click')
+
+    expect(wrapper.emitted('create-asset')).toEqual([[]])
+  })
 })

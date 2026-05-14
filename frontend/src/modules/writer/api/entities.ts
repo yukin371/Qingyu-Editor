@@ -73,6 +73,14 @@ export interface CreateLocalEntityRequest {
   summary?: string
 }
 
+export interface UpdateLocalEntityRequest {
+  entityId: string
+  projectId: string
+  name: string
+  alias?: string[]
+  summary?: string
+}
+
 /**
  * 获取项目下的实体列表
  * @param projectId 项目ID
@@ -143,6 +151,14 @@ export async function createLocalEntity(payload: CreateLocalEntityRequest): Prom
   }
 
   throw new Error('当前宿主未启用本地统一实体创建，请改走后端 canonical owner')
+}
+
+export async function updateLocalEntity(payload: UpdateLocalEntityRequest): Promise<EntitySummary> {
+  if (isWailsWriterAvailable() || isStandaloneLocalWriterAvailable()) {
+    return standaloneLocalBridge.entity.update(payload)
+  }
+
+  throw new Error('当前宿主未启用本地统一实体更新，请改走后端 canonical owner')
 }
 
 export async function deleteLocalEntity(entityId: string, projectId: string): Promise<void> {

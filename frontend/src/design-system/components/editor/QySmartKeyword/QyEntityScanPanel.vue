@@ -73,6 +73,7 @@ function getTypeIcon(type: KeywordType): string {
     location: '📍',
     item: '🎁',
     concept: '💡',
+    organization: '🏛️',
   }
   return icons[type] || '📝'
 }
