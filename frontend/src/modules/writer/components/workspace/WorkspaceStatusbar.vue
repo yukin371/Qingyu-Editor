@@ -130,9 +130,9 @@ onMounted(() => {
 }
 
 .status-chip--warm {
-  background: rgba(143, 63, 47, 0.06);
-  border-color: rgba(143, 63, 47, 0.1);
-  color: #7b3123;
+  background: color-mix(in srgb, var(--color-warning-100, #fef3c7) 62%, transparent);
+  border-color: color-mix(in srgb, var(--color-warning-300, #fcd34d) 40%, transparent);
+  color: var(--color-warning-700, #b45309);
 }
 
 .workspace-statusbar__state {
@@ -144,15 +144,15 @@ onMounted(() => {
   transition: color 0.3s ease;
 
   &.status-saved {
-    color: #67c23a;
+    color: var(--color-success-500, #67c23a);
   }
 
   &.status-saving {
-    color: #409eff;
+    color: var(--color-info-500, #409eff);
   }
 
   &.status-unsaved {
-    color: #e6a23c;
+    color: var(--color-warning-500, #e6a23c);
   }
 }
 
@@ -160,8 +160,8 @@ onMounted(() => {
   width: 6px;
   height: 6px;
   border-radius: 999px;
-  background: #48e594;
-  box-shadow: 0 0 0 3px rgba(72, 229, 148, 0.2);
+  background: var(--color-success-400, #48e594);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success-400, #48e594) 22%, transparent);
   flex-shrink: 0;
 }
 

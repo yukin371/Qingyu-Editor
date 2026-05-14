@@ -2190,10 +2190,10 @@ const handleOutlineNodeClick = (node: any) => {
   }
 }
 
-/* 深色/暖纸/专注模式 — 统一使用 CSS 变量 */
-[data-editor-theme='dark'],
-[data-editor-theme='sepia'],
-[data-editor-theme='focus'] {
+/* 统一主题兼容层 */
+[data-editor-theme='graphite'],
+[data-editor-theme='amber'],
+[data-editor-theme='forest'] {
   .character-graph-view {
     background: var(--editor-bg-surface, #0d0d0d);
   }

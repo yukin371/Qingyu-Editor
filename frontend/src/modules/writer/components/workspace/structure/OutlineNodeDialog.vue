@@ -4,7 +4,6 @@
     :title="isEdit ? '编辑大纲节点' : '新增大纲节点'"
     width="560px"
     @update:visible="handleClose"
-    @confirm="handleConfirm"
   >
     <div class="outline-node-dialog">
       <!-- 基本信息 -->
@@ -137,6 +136,16 @@
         </div>
       </section>
     </div>
+    <template #footer>
+      <div class="outline-node-dialog__footer">
+        <button type="button" class="dialog-action dialog-action--ghost" @click="handleClose">
+          取消
+        </button>
+        <button type="button" class="dialog-action dialog-action--primary" @click="handleConfirm">
+          {{ isEdit ? '保存修改' : '创建节点' }}
+        </button>
+      </div>
+    </template>
   </QyModal>
 </template>
 
@@ -307,6 +316,12 @@ function handleConfirm() {
   gap: 24px;
 }
 
+.outline-node-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .dialog-section {
   display: flex;
   flex-direction: column;
@@ -353,7 +368,7 @@ function handleConfirm() {
   &:focus {
     outline: none;
     border-color: var(--editor-accent, #06b6d4);
-    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--editor-accent, #06b6d4) 16%, transparent);
   }
 
   &:disabled {
@@ -385,5 +400,36 @@ function handleConfirm() {
   gap: 4px;
   font-size: 13px;
   margin-top: 4px;
+}
+
+.dialog-action {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--editor-border, #e2e8f0);
+  background: var(--editor-bg-base, #fff);
+  color: var(--editor-text-secondary, #334155);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease-out,
+    background-color 120ms ease-out,
+    color 120ms ease-out;
+
+  &:hover {
+    border-color: var(--editor-border-focus, #06b6d4);
+    background: color-mix(in srgb, var(--editor-bg-base, #fff) 90%, var(--editor-bg-surface, #f8fafc) 10%);
+  }
+}
+
+.dialog-action--ghost {
+  background: var(--editor-bg-surface, #f8fafc);
+}
+
+.dialog-action--primary {
+  border-color: var(--editor-accent-soft-border, #a5f3fc);
+  background: var(--editor-accent-soft, #ecfeff);
+  color: var(--editor-accent, #0891b2);
 }
 </style>

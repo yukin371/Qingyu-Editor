@@ -1,31 +1,7 @@
 <template>
   <section class="story-branch-view">
     <header class="story-branch-view__header">
-      <div class="story-branch-view__title-wrap">
-        <h2 class="story-branch-view__title">故事分支</h2>
-      </div>
-      <div class="story-branch-view__context-anchors">
-        <span v-if="chapterTitle" class="context-anchor">
-          <QyIcon name="Document" :size="12" />
-          章节：{{ chapterTitle }}
-        </span>
-        <span v-if="workflowContext?.scopeLabel" class="context-anchor">
-          <QyIcon name="Grid" :size="12" />
-          场景：{{ workflowContext.scopeLabel }}
-        </span>
-      </div>
-      <div v-if="visibleAssetSummaryItems.length > 0" class="story-branch-view__asset-summary">
-        <span class="story-branch-view__asset-summary-label">当前资产</span>
-        <div class="story-branch-view__asset-summary-chips">
-          <span
-            v-for="item in visibleAssetSummaryItems"
-            :key="item.key"
-            class="story-branch-view__asset-chip"
-          >
-            {{ item.label }} {{ item.count }}
-          </span>
-        </div>
-      </div>
+      <ToolAssetSummaryChips :items="visibleAssetSummaryItems" />
       <div class="story-branch-view__header-actions">
         <div v-if="activeBranchId" class="branch-breadcrumb">
           <span class="branch-breadcrumb__label">当前分支：</span>
@@ -258,6 +234,7 @@ import { Empty } from '@/design-system/base'
 import type { OutlineNode } from '@/types/writer'
 import { useWriterStore } from '@/modules/writer/stores/writerStore'
 import { CanvasCore } from '@/modules/writer/components/canvas'
+import ToolAssetSummaryChips from '@/modules/writer/components/workspace/tool-overlay/ToolAssetSummaryChips.vue'
 import {
   formatActiveEntitiesPrompt,
   type ActiveEntitySummary,
@@ -685,82 +662,12 @@ watch(
   padding: 14px 16px;
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   background: var(--editor-bg-base, #ffffff);
   border-bottom: 1px solid var(--editor-border, #d7dff0);
   flex-shrink: 0;
-}
-
-.story-branch-view__title-wrap {
-  flex: 1;
-  min-width: 200px;
-}
-
-.story-branch-view__context-anchors {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.story-branch-view__asset-summary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.story-branch-view__asset-summary-label {
-  color: var(--editor-text-muted, #68799a);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.story-branch-view__asset-summary-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.story-branch-view__asset-chip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  padding: 0 9px;
-  border-radius: 999px;
-  background: rgba(77, 121, 218, 0.08);
-  border: 1px solid rgba(77, 121, 218, 0.14);
-  color: var(--editor-text-secondary, #475569);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.context-anchor {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(6, 182, 212, 0.08);
-  border: 1px solid rgba(6, 182, 212, 0.16);
-  color: var(--editor-accent, #06b6d4);
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.story-branch-view__title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--editor-text-primary, #1f3254);
-}
-
-.story-branch-view__subtitle {
-  margin: 6px 0 0;
-  font-size: 12px;
-  color: var(--editor-text-muted, #68799a);
 }
 
 .story-branch-view__header-actions {

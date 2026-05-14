@@ -189,7 +189,11 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: linear-gradient(180deg, #fafafa, #f5f7fa);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--editor-bg-base, #ffffff) 92%, white 8%),
+    color-mix(in srgb, var(--editor-bg-surface, #f5f7fa) 92%, var(--editor-bg-base, #ffffff) 8%)
+  );
   border-bottom: 1px solid var(--editor-border, #e2e8f0);
   flex-shrink: 0;
   position: relative;
@@ -211,8 +215,8 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   height: 28px;
   padding: 0 10px;
   border-radius: 8px;
-  background: #e8edf5;
-  color: #334155;
+  background: var(--editor-bg-elevated, #e8edf5);
+  color: var(--editor-text-secondary, #334155);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -224,10 +228,10 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   gap: 6px;
   height: 30px;
   padding: 0 10px;
-  border: 1px solid rgba(203, 213, 225, 0.9);
+  border: 1px solid color-mix(in srgb, var(--editor-border, #cbd5e1) 88%, transparent);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.82);
-  color: #475569;
+  background: color-mix(in srgb, var(--editor-bg-base, #ffffff) 84%, transparent);
+  color: var(--editor-text-secondary, #475569);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -241,8 +245,8 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   text-overflow: ellipsis;
 
   &:hover {
-    background: #ffffff;
-    border-color: #93c5fd;
+    background: var(--editor-bg-base, #ffffff);
+    border-color: var(--editor-accent-soft-border, #93c5fd);
     color: var(--editor-text-primary, #0f172a);
   }
 
@@ -287,8 +291,8 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   height: 22px;
   padding: 0 8px;
   border-radius: 999px;
-  background: #eef2f7;
-  color: #475569;
+  background: var(--editor-bg-elevated, #eef2f7);
+  color: var(--editor-text-secondary, #475569);
   font-size: 11px;
   font-weight: 600;
 }
@@ -305,9 +309,9 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   align-items: center;
   gap: 2px;
   padding: 2px;
-  border: 1px solid rgba(203, 213, 225, 0.9);
+  border: 1px solid color-mix(in srgb, var(--editor-border, #cbd5e1) 88%, transparent);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.82);
+  background: color-mix(in srgb, var(--editor-bg-base, #ffffff) 84%, transparent);
 }
 
 .topbar-icon-btn {
@@ -319,15 +323,15 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: #475569;
+  color: var(--editor-text-secondary, #475569);
   cursor: pointer;
   transition:
     background 120ms ease,
     color 120ms ease;
 
   &:hover {
-    background: #eef2f7;
-    color: #0f172a;
+    background: var(--editor-bg-elevated, #eef2f7);
+    color: var(--editor-text-primary, #0f172a);
   }
 }
 
@@ -337,10 +341,10 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   gap: 4px;
   height: 30px;
   padding: 0 10px;
-  border: 1px solid rgba(203, 213, 225, 0.9);
+  border: 1px solid color-mix(in srgb, var(--editor-border, #cbd5e1) 88%, transparent);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.92);
-  color: #475569;
+  background: color-mix(in srgb, var(--editor-bg-base, #ffffff) 92%, transparent);
+  color: var(--editor-text-secondary, #475569);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -348,20 +352,20 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   white-space: nowrap;
 
   &:hover {
-    background: #ffffff;
-    border-color: #93c5fd;
+    background: var(--editor-bg-base, #ffffff);
+    border-color: var(--editor-accent-soft-border, #93c5fd);
     color: var(--editor-text-primary, #0f172a);
   }
 
   &--primary {
-    background: #2563eb;
-    border-color: #2563eb;
-    color: #ffffff;
+    background: var(--editor-accent, #2563eb);
+    border-color: var(--editor-accent, #2563eb);
+    color: var(--editor-text-inverse, #ffffff);
 
     &:hover {
-      background: #1d4ed8;
-      border-color: #1d4ed8;
-      color: #ffffff;
+      background: var(--editor-accent-hover, #1d4ed8);
+      border-color: var(--editor-accent-hover, #1d4ed8);
+      color: var(--editor-text-inverse, #ffffff);
     }
   }
 
@@ -379,7 +383,7 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
 .topbar-divider {
   width: 1px;
   height: 20px;
-  background: rgba(203, 213, 225, 0.9);
+  background: color-mix(in srgb, var(--editor-border, #cbd5e1) 88%, transparent);
   margin: 0 2px;
 }
 
@@ -391,8 +395,8 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  background: #ffffff;
-  border: 1px solid rgba(203, 213, 225, 0.9);
+  background: var(--editor-bg-base, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--editor-border, #cbd5e1) 88%, transparent);
   border-radius: 10px;
   box-shadow: 0 16px 32px rgba(15, 23, 42, 0.1);
   padding: 6px;

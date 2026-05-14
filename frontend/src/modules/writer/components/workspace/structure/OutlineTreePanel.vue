@@ -361,7 +361,7 @@ function handleDialogConfirm(data: CreateOutlineRequest | UpdateOutlineRequest) 
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--editor-bg-base, #fff);
   overflow: hidden;
 }
 
@@ -371,12 +371,12 @@ function handleDialogConfirm(data: CreateOutlineRequest | UpdateOutlineRequest) 
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border-bottom: 1px solid #ebeff5;
+  border-bottom: 1px solid var(--editor-border-light, #ebeff5);
 }
 
 .outline-tree-panel__title {
   margin: 0;
-  color: #4b5563;
+  color: var(--editor-text-secondary, #4b5563);
   font-size: 12px;
   font-weight: 600;
 }
@@ -388,14 +388,14 @@ function handleDialogConfirm(data: CreateOutlineRequest | UpdateOutlineRequest) 
 }
 
 .outline-tree-panel__count {
-  color: #9ca3af;
+  color: var(--editor-text-ghost, #9ca3af);
   font-size: 11px;
   font-weight: 500;
   white-space: nowrap;
 }
 
 .outline-tree-panel__hint {
-  color: #9ca3af;
+  color: var(--editor-text-ghost, #9ca3af);
   font-size: 11px;
 }
 
@@ -404,13 +404,13 @@ function handleDialogConfirm(data: CreateOutlineRequest | UpdateOutlineRequest) 
   gap: 6px;
   flex-wrap: wrap;
   padding: 8px 12px;
-  border-bottom: 1px solid #ebeff5;
-  background: #fff;
+  border-bottom: 1px solid var(--editor-border-light, #ebeff5);
+  background: var(--editor-bg-base, #fff);
 }
 
 .outline-tree-panel__section {
   padding: 0 12px;
-  background: #fff;
+  background: var(--editor-bg-base, #fff);
 }
 
 .outline-tree-panel__section-title {
@@ -418,23 +418,23 @@ function handleDialogConfirm(data: CreateOutlineRequest | UpdateOutlineRequest) 
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #ebeff5;
-  color: #4b5563;
+  border-bottom: 1px solid var(--editor-border-light, #ebeff5);
+  color: var(--editor-text-secondary, #4b5563);
   font-size: 12px;
   font-weight: 600;
 }
 
 .outline-tree-panel__section-caption {
-  color: #9ca3af;
+  color: var(--editor-text-ghost, #9ca3af);
   font-size: 11px;
   font-weight: 400;
 }
 
 .outline-action {
-  border: 1px solid #d8dee8;
+  border: 1px solid var(--editor-border, #d8dee8);
   border-radius: 6px;
-  background: #fff;
-  color: #4b5563;
+  background: var(--editor-bg-base, #fff);
+  color: var(--editor-text-secondary, #4b5563);
   font-size: 12px;
   font-weight: 500;
   padding: 6px 10px;
@@ -446,18 +446,18 @@ function handleDialogConfirm(data: CreateOutlineRequest | UpdateOutlineRequest) 
 }
 
 .outline-action--primary {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #1d4ed8;
+  background: var(--editor-accent-soft, #eff6ff);
+  border-color: var(--editor-accent-soft-border, #bfdbfe);
+  color: var(--editor-accent, #1d4ed8);
 }
 
 .outline-action--danger {
-  color: #b42318;
+  color: var(--color-danger-700, #b42318);
 }
 
 .outline-action:not(:disabled):hover {
-  background: #f5f7fb;
-  border-color: #cfd7e3;
+  background: var(--editor-bg-surface, #f5f7fb);
+  border-color: var(--editor-border-focus, #cfd7e3);
 }
 
 .outline-action:disabled {
@@ -470,14 +470,14 @@ function handleDialogConfirm(data: CreateOutlineRequest | UpdateOutlineRequest) 
   min-height: 0;
   overflow: auto;
   padding: 6px;
-  background: #fff;
+  background: var(--editor-bg-base, #fff);
 
   &::-webkit-scrollbar {
     width: 6px;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, 0.35);
+    background: color-mix(in srgb, var(--editor-text-ghost, #94a3b8) 35%, transparent);
     border-radius: 999px;
   }
 }
@@ -490,19 +490,19 @@ function handleDialogConfirm(data: CreateOutlineRequest | UpdateOutlineRequest) 
 
 .outline-tree-panel__empty {
   border-radius: 8px;
-  border: 1px dashed #d8dee8;
-  background: #fafbfd;
+  border: 1px dashed var(--editor-border, #d8dee8);
+  background: color-mix(in srgb, var(--editor-bg-surface, #fafbfd) 92%, var(--editor-bg-base, #fff) 8%);
   padding: 18px;
-  color: #6b7280;
+  color: var(--editor-text-muted, #6b7280);
   font-size: 13px;
   line-height: 1.6;
 }
 
 .outline-tree-panel__empty--loading {
   border-style: dashed;
-  border-color: #cfe0f4;
-  background: #f7fbff;
-  color: #45627e;
+  border-color: color-mix(in srgb, var(--editor-accent-soft-border, #cfe0f4) 82%, transparent);
+  background: color-mix(in srgb, var(--editor-accent-soft, #f7fbff) 76%, var(--editor-bg-base, #fff) 24%);
+  color: var(--editor-text-secondary, #45627e);
 }
 
 @media (max-width: 960px) {

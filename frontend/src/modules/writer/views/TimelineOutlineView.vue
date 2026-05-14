@@ -1,31 +1,7 @@
 <template>
   <section class="timeline-outline-view">
     <header class="timeline-outline-view__header">
-      <div class="timeline-outline-view__title-wrap">
-        <h2 class="timeline-outline-view__title">时间线大纲</h2>
-      </div>
-      <div class="timeline-outline-view__context-anchors">
-        <span v-if="chapterTitle" class="context-anchor">
-          <QyIcon name="Document" :size="12" />
-          章节：{{ chapterTitle }}
-        </span>
-        <span v-if="workflowContext?.scopeLabel" class="context-anchor">
-          <QyIcon name="Grid" :size="12" />
-          场景：{{ workflowContext.scopeLabel }}
-        </span>
-      </div>
-      <div v-if="visibleAssetSummaryItems.length > 0" class="timeline-outline-view__asset-summary">
-        <span class="timeline-outline-view__asset-summary-label">当前资产</span>
-        <div class="timeline-outline-view__asset-summary-chips">
-          <span
-            v-for="item in visibleAssetSummaryItems"
-            :key="item.key"
-            class="timeline-outline-view__asset-chip"
-          >
-            {{ item.label }} {{ item.count }}
-          </span>
-        </div>
-      </div>
+      <ToolAssetSummaryChips :items="visibleAssetSummaryItems" />
       <div class="timeline-outline-view__actions">
         <QyButton variant="secondary" size="sm" @click="handleRefresh">
           <QyIcon name="Refresh" :size="14" />
@@ -167,6 +143,7 @@ import { computed, ref, watch } from 'vue'
 import { QyButton, QyIcon, QyTag } from '@/design-system/components'
 import { Empty } from '@/design-system/base'
 import { useWriterStore } from '@/modules/writer/stores/writerStore'
+import ToolAssetSummaryChips from '@/modules/writer/components/workspace/tool-overlay/ToolAssetSummaryChips.vue'
 import {
   formatActiveEntitiesPrompt,
   type ActiveEntitySummary,
@@ -465,81 +442,11 @@ watch(
   padding: 14px 16px;
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   border-bottom: 1px solid var(--editor-border, #d9e2f1);
   background: var(--editor-bg-base, #fff);
-}
-
-.timeline-outline-view__title-wrap {
-  flex: 1;
-  min-width: 200px;
-}
-
-.timeline-outline-view__context-anchors {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.timeline-outline-view__asset-summary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.timeline-outline-view__asset-summary-label {
-  color: var(--editor-text-muted, #667795);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.timeline-outline-view__asset-summary-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.timeline-outline-view__asset-chip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  padding: 0 9px;
-  border-radius: 999px;
-  background: rgba(79, 121, 216, 0.08);
-  border: 1px solid rgba(79, 121, 216, 0.14);
-  color: var(--editor-text-secondary, #475569);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.context-anchor {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(6, 182, 212, 0.08);
-  border: 1px solid rgba(6, 182, 212, 0.16);
-  color: var(--editor-accent, #06b6d4);
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.timeline-outline-view__title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--editor-text-primary, #1f3254);
-}
-
-.timeline-outline-view__subtitle {
-  margin: 6px 0 0;
-  font-size: 12px;
-  color: var(--editor-text-muted, #667795);
 }
 
 .timeline-outline-view__stats {
@@ -786,24 +693,16 @@ watch(
   justify-content: flex-end;
 }
 
-/* 深色/暖纸/专注模式 */
-[data-editor-theme='dark'],
-[data-editor-theme='sepia'],
-[data-editor-theme='focus'] {
+/* 非默认主题兼容层 */
+[data-editor-theme='graphite'],
+[data-editor-theme='amber'],
+[data-editor-theme='forest'] {
   .timeline-outline-view {
     background: var(--editor-bg-surface);
   }
 
   .timeline-outline-view__header {
     background: var(--editor-bg-base);
-  }
-
-  .timeline-outline-view__title {
-    color: var(--editor-text-primary);
-  }
-
-  .timeline-outline-view__subtitle {
-    color: var(--editor-text-muted);
   }
 
   .timeline-list,

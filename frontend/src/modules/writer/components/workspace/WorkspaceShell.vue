@@ -38,8 +38,9 @@ defineSlots<{
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f8f9fa;
+  background: var(--editor-bg-surface, #f8f9fa);
   overflow: hidden;
+  color: var(--editor-text-primary, #0f172a);
 }
 
 .writer-editor-shell__topbar,

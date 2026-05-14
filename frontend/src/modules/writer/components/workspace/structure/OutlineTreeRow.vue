@@ -198,28 +198,28 @@ function handleContextMenu(event: MouseEvent) {
 }
 
 .outline-tree-row__main:hover {
-  background: #f5f7fb;
-  border-left-color: #d1d5db;
+  background: var(--editor-bg-surface, #f5f7fb);
+  border-left-color: var(--editor-border, #d1d5db);
 }
 
 .outline-tree-row__main.is-selected {
-  background: #eaf2ff;
-  border-left-color: #2563eb;
+  background: var(--editor-accent-soft, #eaf2ff);
+  border-left-color: var(--editor-accent, #2563eb);
 }
 
 .outline-tree-row__main.is-volume {
-  background: #fff8e8;
-  border-left-color: #d4a72c;
+  background: color-mix(in srgb, var(--color-warning-50, #fff8e8) 82%, var(--editor-bg-base, #fff) 18%);
+  border-left-color: var(--color-warning-500, #d4a72c);
 }
 
 .outline-tree-row__main.is-volume:hover {
-  background: #fff3d6;
-  border-left-color: #c99514;
+  background: color-mix(in srgb, var(--color-warning-100, #fff3d6) 82%, var(--editor-bg-base, #fff) 18%);
+  border-left-color: var(--color-warning-600, #c99514);
 }
 
 .outline-tree-row__main.is-selected.is-volume {
-  background: #f5ead0;
-  border-left-color: #b9810c;
+  background: color-mix(in srgb, var(--color-warning-100, #f5ead0) 76%, var(--editor-accent-soft, #fff) 24%);
+  border-left-color: var(--color-warning-700, #b9810c);
 }
 
 .outline-tree-row__main.is-dragging {
@@ -234,7 +234,7 @@ function handleContextMenu(event: MouseEvent) {
   right: 14px;
   height: 2px;
   border-radius: 999px;
-  background: #2563eb;
+  background: var(--editor-accent, #2563eb);
 }
 
 .outline-tree-row__main.is-drop-before::before {
@@ -249,7 +249,7 @@ function handleContextMenu(event: MouseEvent) {
   width: 2px;
   height: 100%;
   border-radius: 999px;
-  background: rgba(209, 213, 219, 0.9);
+  background: color-mix(in srgb, var(--editor-border, #d1d5db) 90%, transparent);
 }
 
 .outline-tree-row__toggle {
@@ -258,7 +258,7 @@ function handleContextMenu(event: MouseEvent) {
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: #6b7280;
+  color: var(--editor-text-muted, #6b7280);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -266,8 +266,8 @@ function handleContextMenu(event: MouseEvent) {
 }
 
 .outline-tree-row__toggle:hover:not(.is-hidden) {
-  background: rgba(229, 231, 235, 0.75);
-  color: #374151;
+  background: color-mix(in srgb, var(--editor-bg-elevated, #e5e7eb) 78%, transparent);
+  color: var(--editor-text-secondary, #374151);
 }
 
 .outline-tree-row__toggle.is-hidden {
@@ -301,7 +301,7 @@ function handleContextMenu(event: MouseEvent) {
 
 .outline-tree-row__title {
   min-width: 0;
-  color: #111827;
+  color: var(--editor-text-primary, #111827);
   font-size: 13px;
   font-weight: 500;
   line-height: 1.4;
@@ -311,17 +311,17 @@ function handleContextMenu(event: MouseEvent) {
 }
 
 .outline-tree-row__main.is-selected .outline-tree-row__title {
-  color: #1d4ed8;
+  color: var(--editor-accent, #1d4ed8);
   font-weight: 700;
 }
 
 .outline-tree-row__main.is-volume .outline-tree-row__title {
-  color: #8a5a00;
+  color: var(--color-warning-800, #8a5a00);
   font-weight: 700;
 }
 
 .outline-tree-row__chapter {
-  color: #9ca3af;
+  color: var(--editor-text-ghost, #9ca3af);
   font-size: 11px;
   font-weight: 500;
   white-space: nowrap;
@@ -332,7 +332,7 @@ function handleContextMenu(event: MouseEvent) {
   align-items: center;
   gap: 4px;
   flex-wrap: wrap;
-  color: #9ca3af;
+  color: var(--editor-text-ghost, #9ca3af);
   font-size: 11px;
 }
 
@@ -344,33 +344,33 @@ function handleContextMenu(event: MouseEvent) {
 }
 
 .outline-tree-row__graph {
-  color: #9ca3af;
+  color: var(--editor-text-ghost, #9ca3af);
 }
 
 .outline-tree-row__graph--ready {
-  color: #2e6a3d;
+  color: var(--color-success-700, #2e6a3d);
 }
 
 .outline-tree-row__graph--inherit {
-  color: #2c4d66;
+  color: var(--color-info-700, #2c4d66);
 }
 
 .outline-tree-row__graph--missing {
-  color: #9a551f;
+  color: var(--color-warning-700, #9a551f);
 }
 
 .outline-tree-row__graph--unbound {
-  color: #9ca3af;
+  color: var(--editor-text-ghost, #9ca3af);
 }
 
 .outline-tree-row__asset {
-  color: #9ca3af;
+  color: var(--editor-text-ghost, #9ca3af);
 }
 
 .outline-tree-row__meta-row > span + span::before {
   content: '·';
   margin-right: 4px;
-  color: #c0c7d1;
+  color: color-mix(in srgb, var(--editor-text-ghost, #c0c7d1) 76%, transparent);
 }
 
 .outline-tree-row__graph-action {
@@ -378,7 +378,7 @@ function handleContextMenu(event: MouseEvent) {
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: #6b7280;
+  color: var(--editor-text-muted, #6b7280);
   font-size: 11px;
   font-weight: 500;
   padding: 4px 6px;
@@ -387,8 +387,8 @@ function handleContextMenu(event: MouseEvent) {
 }
 
 .outline-tree-row__graph-action:hover {
-  background: rgba(229, 231, 235, 0.75);
-  color: #374151;
+  background: color-mix(in srgb, var(--editor-bg-elevated, #e5e7eb) 78%, transparent);
+  color: var(--editor-text-secondary, #374151);
 }
 
 .outline-tree-row__children {

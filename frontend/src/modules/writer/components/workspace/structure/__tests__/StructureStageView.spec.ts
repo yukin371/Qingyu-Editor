@@ -48,17 +48,21 @@ vi.mock('@/modules/writer/utils/characterGraphDrafts', () => ({
   loadCharacterGraphDraftState: () => ({ chapterGraphs: [] }),
 }))
 
-vi.mock('@/modules/writer/utils/writerAssetRefs', () => ({
-  loadWriterAssetRefState: () => ({
-    chapterRefs: {
-      'chapter-1': [{ assetType: 'character', assetId: 'char-1', assetName: '林舟' }],
-    },
-    volumeRefs: {},
-  }),
-  summarizeWriterAssetRefs: (refs: Array<unknown>) => ({
-    total: refs.length,
-  }),
-}))
+vi.mock('@/modules/writer/utils/writerAssetRefs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/modules/writer/utils/writerAssetRefs')>()
+  return {
+    ...actual,
+    loadWriterAssetRefState: () => ({
+      chapterRefs: {
+        'chapter-1': [{ assetType: 'character', assetId: 'char-1', assetName: '林舟' }],
+      },
+      volumeRefs: {},
+    }),
+    summarizeWriterAssetRefs: (refs: Array<unknown>) => ({
+      total: refs.length,
+    }),
+  }
+})
 
 vi.mock('@/modules/writer/services/creativeWorkflow.service', () => ({
   loadCreativeWorkflow: () => ({

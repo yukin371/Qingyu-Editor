@@ -7,7 +7,7 @@ describe('WorkspaceShell', () => {
     const wrapper = mount(WorkspaceShell, {
       props: {
         isImmersiveMode: false,
-        editorTheme: 'light',
+        editorTheme: 'mist',
       },
       slots: {
         topbar: '<div data-testid="topbar-slot">topbar</div>',

@@ -162,7 +162,6 @@ describe('TimelineOutlineView', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('当前资产')
     expect(wrapper.text()).toContain('角色 1')
     expect(wrapper.text()).toContain('物品 1')
     await wrapper.get('[data-testid="timeline-send-to-ai"]').trigger('click')

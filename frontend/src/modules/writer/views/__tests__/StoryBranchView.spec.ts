@@ -155,7 +155,6 @@ describe('StoryBranchView', () => {
     await nextTick()
     await nextTick()
 
-    expect(wrapper.text()).toContain('当前资产')
     expect(wrapper.text()).toContain('角色 1')
     expect(wrapper.text()).toContain('地点 1')
     await wrapper.get('[data-testid="branch-send-to-ai"]').trigger('click')

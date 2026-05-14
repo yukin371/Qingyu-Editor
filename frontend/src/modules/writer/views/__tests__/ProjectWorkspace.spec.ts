@@ -216,7 +216,7 @@ vi.mock('@/modules/writer/stores/panelStore', () => ({
 
 vi.mock('@/modules/writer/stores/editorThemeStore', () => ({
   useEditorThemeStore: () => ({
-    currentTheme: 'light',
+    currentTheme: 'mist',
     initTheme: vi.fn(),
   }),
 }))

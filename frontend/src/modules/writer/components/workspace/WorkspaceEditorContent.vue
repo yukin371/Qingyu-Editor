@@ -222,7 +222,7 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
+  background: var(--editor-bg-base, #fff);
   border-left: 1px solid var(--editor-border, #e5e7eb);
   border-right: 1px solid var(--editor-border, #e5e7eb);
 }
@@ -230,14 +230,14 @@ defineExpose({
 .empty-content {
   width: min(420px, calc(100% - 48px));
   text-align: center;
-  color: #6b7280;
+  color: var(--editor-text-muted, #6b7280);
 }
 
 .empty-content h3 {
   margin: 0 0 8px;
   font-size: 20px;
   font-weight: 600;
-  color: #111827;
+  color: var(--editor-text-primary, #111827);
 }
 
 .empty-content p {
@@ -257,15 +257,19 @@ defineExpose({
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  background: #fff;
+  background: var(--editor-bg-base, #fff);
 }
 
 .workspace-writing-surface__header {
   display: flex;
   align-items: center;
   padding: 18px 32px 10px;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
-  background: linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(255, 255, 255, 0.96));
+  border-bottom: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 88%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--editor-bg-surface, #f8fafc) 96%, transparent),
+    color-mix(in srgb, var(--editor-bg-base, #ffffff) 96%, transparent)
+  );
 }
 
 .workspace-writing-surface__title-input {
@@ -273,7 +277,7 @@ defineExpose({
   border: none;
   outline: none;
   background: transparent;
-  color: #0f172a;
+  color: var(--editor-text-primary, #0f172a);
   font-size: 28px;
   line-height: 1.25;
   font-weight: 700;
@@ -282,7 +286,7 @@ defineExpose({
 }
 
 .workspace-writing-surface__title-input::placeholder {
-  color: #94a3b8;
+  color: var(--editor-text-ghost, #94a3b8);
 }
 
 .workspace-writing-surface__editor {
