@@ -82,12 +82,14 @@ import {
 import {
   buildAnalysisCandidate,
   buildChatRequestMessage,
+  buildPlanOnlyHandledResult,
   buildTargetCandidatesMeta,
   buildTargetStatusMeta,
   buildWriterCheckpointMeta,
   buildWriterPlanMeta,
   buildWriterRetrievalMeta,
   isCrossDocumentTarget,
+  shouldHandlePlanOnlyInline,
   type DocumentTargetRoute,
   type DocumentTargetSelectionPayload,
 } from '@/modules/writer/utils/writerAIChatMeta'
@@ -624,16 +626,11 @@ async function sendMessage(content: string) {
     trimmedContent,
     buildWriterAgentContext(),
   )
-  if (
-    editorPlan.route === 'plan_only' &&
-    !(
-      editorPlan.target.candidates?.length &&
-      editorPlan.target.assistantMessage?.includes('命中了多个章节')
-    )
-  ) {
-    addMessage('user', trimmedContent)
+  if (shouldHandlePlanOnlyInline(editorPlan)) {
+    const handledPlan = buildPlanOnlyHandledResult(trimmedContent, editorPlan)
+    addMessage('user', handledPlan.userMessage)
     inputText.value = ''
-    addMessage('assistant', editorPlan.userVisibleSummary, false, buildWriterPlanMeta(editorPlan))
+    addMessage('assistant', handledPlan.assistantMessage, false, handledPlan.assistantMeta)
     await scrollToBottom()
     return
   }

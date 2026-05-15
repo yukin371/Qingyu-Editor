@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest'
 import {
   buildAnalysisCandidate,
   buildChatRequestMessage,
+  buildPlanOnlyHandledResult,
   buildTargetCandidatesMeta,
   buildTargetStatusMeta,
   buildWriterCheckpointMeta,
   buildWriterPlanMeta,
   buildWriterRetrievalMeta,
   isCrossDocumentTarget,
+  shouldHandlePlanOnlyInline,
   type DocumentTargetRoute,
 } from '../writerAIChatMeta'
 import type {
@@ -101,6 +103,18 @@ describe('writerAIChatMeta', () => {
     expect(buildWriterCheckpointMeta(buildTarget(), 'chapter-1', 'switching')).toMatchObject({
       kind: 'writer_apply_checkpoint',
       statusText: '切章挂 diff',
+    })
+  })
+
+  it('handles plan-only result when no candidate selection is needed', () => {
+    const plan = buildPlan({
+      route: 'plan_only',
+      userVisibleSummary: '当前不会直接创建章节。',
+    })
+    expect(shouldHandlePlanOnlyInline(plan)).toBe(true)
+    expect(buildPlanOnlyHandledResult('帮我规划一下', plan)).toMatchObject({
+      userMessage: '帮我规划一下',
+      assistantMessage: '当前不会直接创建章节。',
     })
   })
 

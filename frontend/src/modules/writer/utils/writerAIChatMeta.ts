@@ -17,6 +17,12 @@ export interface DocumentTargetSelectionPayload {
   documentTitle?: string
 }
 
+export interface WriterPlanOnlyHandledResult {
+  userMessage: string
+  assistantMessage: string
+  assistantMeta: ChatMessage['meta']
+}
+
 export function buildAnalysisCandidate(
   intent: WriterPromptIntent,
   generatedText: string,
@@ -137,6 +143,27 @@ export function buildWriterPlanMeta(plan: WriterEditorPlan): ChatMessage['meta']
       plan.route === 'plan_only'
         ? '当前不会直接创建章节或批量写入正文；请确认目标和步骤后再生成逐章 diff。'
         : plan.userVisibleSummary,
+  }
+}
+
+export function shouldHandlePlanOnlyInline(plan: WriterEditorPlan): boolean {
+  return (
+    plan.route === 'plan_only' &&
+    !(
+      plan.target.candidates?.length &&
+      plan.target.assistantMessage?.includes('命中了多个章节')
+    )
+  )
+}
+
+export function buildPlanOnlyHandledResult(
+  userMessage: string,
+  plan: WriterEditorPlan,
+): WriterPlanOnlyHandledResult {
+  return {
+    userMessage,
+    assistantMessage: plan.userVisibleSummary,
+    assistantMeta: buildWriterPlanMeta(plan),
   }
 }
 
