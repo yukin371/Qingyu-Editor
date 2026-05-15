@@ -92,6 +92,10 @@ import {
   type DocumentTargetSelectionPayload,
 } from '@/modules/writer/utils/writerAIChatMeta'
 import {
+  buildWriterAgentContext as createWriterAgentContext,
+  resolveWriterAnalysisText,
+} from '@/modules/writer/utils/writerAIAnalysis'
+import {
   executeWriterTextAction,
   extractWriterGeneratedText,
   requestWriterEditIntent,
@@ -451,13 +455,14 @@ async function resolveDocumentTarget(instruction: string) {
 }
 
 function buildWriterAgentContext() {
-  return {
-    projectId: effectiveWorkflowContext.value?.projectId || props.sessionId,
-    currentDocumentId: effectiveWorkflowContext.value?.chapterId || null,
-    currentDocumentTitle: effectiveWorkflowContext.value?.chapterTitle || null,
-    currentSourceText: props.sourceText || '',
+  return createWriterAgentContext({
+    sessionId: props.sessionId,
+    projectId: effectiveWorkflowContext.value?.projectId,
+    currentDocumentId: effectiveWorkflowContext.value?.chapterId,
+    currentDocumentTitle: effectiveWorkflowContext.value?.chapterTitle,
+    currentSourceText: props.sourceText,
     selectedContext: selectedChatContext.value,
-  }
+  })
 }
 
 async function runResolvedAnalysis(
@@ -484,21 +489,18 @@ async function runResolvedAnalysis(
       const proofread = await proofreadText(sourceText, {
         projectId,
       })
-      generatedText = proofread.issues
-        .map((issue, index) => {
-          const suggestions =
-            Array.isArray(issue.suggestions) && issue.suggestions.length > 0
-              ? ` 建议：${issue.suggestions.join('；')}`
-              : ''
-          return `${index + 1}. ${issue.message || '检测到可优化项。'}${suggestions}`
-        })
-        .join('\n')
+      generatedText = resolveWriterAnalysisText({
+        proofreadIssues: proofread.issues,
+      })
     } else {
       const response = await summarizeText(sourceText, {
         projectId,
         summaryType: 'detailed',
       })
-      generatedText = response.summary || response.keyPoints.join('\n')
+      generatedText = resolveWriterAnalysisText({
+        summary: response.summary,
+        keyPoints: response.keyPoints,
+      })
     }
 
     if (generatedText.trim()) {
