@@ -95,9 +95,14 @@ import {
   executeWriterTextAction,
   extractWriterGeneratedText,
   requestWriterEditIntent,
-  resolveWriterActionLabel,
 } from '@/modules/writer/utils/writerAIGeneration'
 import { resolveWriterAIErrorState } from '@/modules/writer/utils/writerAIError'
+import {
+  buildSelectionApplyPayload,
+  buildSelectionNotice,
+  buildSelectionResultCandidate,
+  buildSelectionUserPrompt,
+} from '@/modules/writer/utils/writerAISelection'
 
 type EditorApplyMode =
   | 'replace_selection'
@@ -421,26 +426,7 @@ function updateSelectionNotice(
   instructions: string | undefined,
   status: SelectionNoticeStatus,
 ) {
-  const actionLabelMap: Record<string, string> = {
-    continue: resolveWriterActionLabel('continue'),
-    polish: resolveWriterActionLabel('polish'),
-    expand: resolveWriterActionLabel('expand'),
-    rewrite: resolveWriterActionLabel('rewrite'),
-  }
-  const statusLabelMap: Record<SelectionNoticeStatus, string> = {
-    pending: '已识别选中内容，等待执行',
-    running: '正在处理选中内容...',
-    done: '已完成并应用到编辑器',
-    error: '处理失败，请重试',
-  }
-  selectionNotice.value = {
-    action,
-    actionLabel: actionLabelMap[action] || '处理',
-    text: selectedText,
-    instructions: instructions?.trim() || undefined,
-    status,
-    statusText: statusLabelMap[status],
-  }
+  selectionNotice.value = buildSelectionNotice(action, selectedText, instructions, status)
 }
 
 function isSelectionContext(context: ChatContextSnippet | null | undefined): boolean {
@@ -851,15 +837,12 @@ async function runSelectionAction(action: string, selectedText: string, instruct
   isTyping.value = true
   updateSelectionNotice(action, selectedText, instructions, 'running')
   try {
-    const label = resolveWriterActionLabel(action)
     const trimmedInstructions = (instructions || '').trim()
     const mergedInstructions = mergeWriterAIInstructions([trimmedInstructions], {
       workflowContext: effectiveWorkflowContext.value,
       aiSummaryContextText: props.aiSummaryContextText,
     })
-    const userPrompt = trimmedInstructions
-      ? `[${label}] ${selectedText}\n要求：${trimmedInstructions}`
-      : `[${label}] ${selectedText}`
+    const userPrompt = buildSelectionUserPrompt(action, selectedText, instructions)
     addMessage('user', userPrompt)
 
     const projectId = props.sessionId || 'demo-project'
@@ -878,26 +861,8 @@ async function runSelectionAction(action: string, selectedText: string, instruct
     }
 
     addMessage('assistant', generatedText)
-    emit('resultCandidate', {
-      source:
-        action === 'continue' || action === 'expand' || action === 'polish' || action === 'rewrite'
-          ? 'rewrite'
-          : 'chat',
-      action,
-      title: `${label}结果`,
-      summary: generatedText.slice(0, 72) || '已生成新的处理结果。',
-      generatedText,
-      sourceText: selectedText,
-    })
-    emit('applyGeneratedText', {
-      action,
-      sourceText: selectedText,
-      generatedText,
-      applyMode:
-        action === 'continue' || action === 'expand'
-          ? 'insert_after_selection'
-          : 'replace_selection',
-    })
+    emit('resultCandidate', buildSelectionResultCandidate(action, selectedText, generatedText))
+    emit('applyGeneratedText', buildSelectionApplyPayload(action, selectedText, generatedText))
     updateSelectionNotice(action, selectedText, instructions, 'done')
     await scrollToBottom()
   } catch (error) {
