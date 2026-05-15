@@ -70,10 +70,6 @@ import { message } from '@/design-system/services'
 import { QUICK_ACTION_PROMPTS, getQuickActionPrompt } from '@/utils/mockAIResponse'
 import {
   chatWithAI,
-  continueWriting,
-  polishText,
-  expandText,
-  rewriteText,
   summarizeText,
   proofreadText,
 } from '@/modules/ai/api'
@@ -95,6 +91,12 @@ import {
   type DocumentTargetRoute,
   type DocumentTargetSelectionPayload,
 } from '@/modules/writer/utils/writerAIChatMeta'
+import {
+  executeWriterTextAction,
+  extractWriterGeneratedText,
+  requestWriterEditIntent,
+  resolveWriterActionLabel,
+} from '@/modules/writer/utils/writerAIGeneration'
 import { resolveWriterAIErrorState } from '@/modules/writer/utils/writerAIError'
 
 type EditorApplyMode =
@@ -420,10 +422,10 @@ function updateSelectionNotice(
   status: SelectionNoticeStatus,
 ) {
   const actionLabelMap: Record<string, string> = {
-    continue: '续写',
-    polish: '润色',
-    expand: '扩写',
-    rewrite: '改写',
+    continue: resolveWriterActionLabel('continue'),
+    polish: resolveWriterActionLabel('polish'),
+    expand: resolveWriterActionLabel('expand'),
+    rewrite: resolveWriterActionLabel('rewrite'),
   }
   const statusLabelMap: Record<SelectionNoticeStatus, string> = {
     pending: '已识别选中内容，等待执行',
@@ -569,49 +571,16 @@ async function requestEditIntent(
       aiSummaryContextText: props.aiSummaryContextText,
     },
   )
-
-  if (action === 'continue') {
-    const response = await continueWriting(
-      projectId,
-      sourceText,
-      intent?.targetLength ?? 300,
-      mergedInstructions || undefined,
-    )
-    return {
-      emittedAction: 'continue' as const,
-      label: '续写',
-      generatedText: response.generated_text || '',
-      applyMode,
-    }
-  }
-
-  if (action === 'expand') {
-    const response = await expandText(
-      projectId,
-      sourceText,
-      mergedInstructions || undefined,
-      intent?.targetLength,
-    )
-    return {
-      emittedAction: 'expand' as const,
-      label: '扩写',
-      generatedText: response.expanded_text || response.rewritten_text || '',
-      applyMode,
-    }
-  }
-
-  const response = await rewriteText(
+  return requestWriterEditIntent({
     projectId,
     sourceText,
-    'polish',
-    mergedInstructions || undefined,
-  )
-  return {
-    emittedAction: 'rewrite' as const,
-    label: '改写',
-    generatedText: response.rewritten_text || response.polished_text || '',
+    intent:
+      action === 'continue' || action === 'expand'
+        ? intent
+        : { action: 'rewrite', confidence: intent?.confidence ?? 1, kind: 'edit' },
     applyMode,
-  }
+    mergedInstructions: mergedInstructions || undefined,
+  })
 }
 
 // ==================== 消息发送方法 ====================
@@ -875,14 +844,6 @@ async function runDirectEdit(
   await runResolvedDirectEdit(instruction, intent, resolvedTarget, plan)
 }
 
-function getGeneratedTextByAction(action: string, response: Record<string, any>): string {
-  if (action === 'continue') return response.generated_text || ''
-  if (action === 'polish') return response.polished_text || response.rewritten_text || ''
-  if (action === 'expand') return response.expanded_text || response.rewritten_text || ''
-  if (action === 'rewrite') return response.rewritten_text || response.polished_text || ''
-  return ''
-}
-
 async function runSelectionAction(action: string, selectedText: string, instructions?: string) {
   if (!selectedText.trim()) return
   if (isTyping.value) return
@@ -890,13 +851,7 @@ async function runSelectionAction(action: string, selectedText: string, instruct
   isTyping.value = true
   updateSelectionNotice(action, selectedText, instructions, 'running')
   try {
-    const actionLabelMap: Record<string, string> = {
-      continue: '续写',
-      polish: '润色',
-      expand: '扩写',
-      rewrite: '改写',
-    }
-    const label = actionLabelMap[action] || '处理'
+    const label = resolveWriterActionLabel(action)
     const trimmedInstructions = (instructions || '').trim()
     const mergedInstructions = mergeWriterAIInstructions([trimmedInstructions], {
       workflowContext: effectiveWorkflowContext.value,
@@ -908,28 +863,15 @@ async function runSelectionAction(action: string, selectedText: string, instruct
     addMessage('user', userPrompt)
 
     const projectId = props.sessionId || 'demo-project'
-    let response: Record<string, any> = {}
-    if (action === 'continue') {
-      response = await continueWriting(
-        projectId,
-        selectedText,
-        200,
-        mergedInstructions || undefined,
-      )
-    } else if (action === 'polish') {
-      response = await polishText(projectId, selectedText, mergedInstructions || undefined)
-    } else if (action === 'expand') {
-      response = await expandText(projectId, selectedText, mergedInstructions || undefined)
-    } else if (action === 'rewrite') {
-      response = await rewriteText(
-        projectId,
-        selectedText,
-        'polish',
-        mergedInstructions || undefined,
-      )
-    }
+    const response = await executeWriterTextAction({
+      projectId,
+      action: action as 'continue' | 'polish' | 'expand' | 'rewrite',
+      sourceText: selectedText,
+      instructions: mergedInstructions || undefined,
+      targetLength: action === 'continue' ? 200 : undefined,
+    })
 
-    const generatedText = getGeneratedTextByAction(action, response)
+    const generatedText = extractWriterGeneratedText(action, response)
     if (!generatedText) {
       addMessage('assistant', '未生成有效内容，请稍后重试。')
       return
