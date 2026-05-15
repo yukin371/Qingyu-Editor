@@ -619,11 +619,10 @@ async function runAnalysisRoute(instruction: string, intent: WriterPromptIntent)
     onUnresolved: async (resolvedTarget) => {
       await pushUserMessage(instruction)
       appendTargetResolutionMessage(instruction, 'analysis', resolvedTarget)
-      isTyping.value = false
-      await scrollToBottom()
+      await finishTyping({ scroll: true })
     },
     onResolved: async (resolvedTarget) => {
-      isTyping.value = false
+      await finishTyping()
       await runResolvedAnalysis(instruction, intent, resolvedTarget)
     },
   })
@@ -639,8 +638,7 @@ async function runGeneralChatRoute(finalRequestMessage: string) {
       if (selectedChatContext.value) {
         handleClearSelectedContext()
       }
-      isTyping.value = false
-      await scrollToBottom()
+      await finishTyping({ scroll: true })
     },
   })
 }
@@ -848,6 +846,13 @@ async function pushAssistantMessage(
   } = {},
 ) {
   addMessage('assistant', content, false, meta)
+  if (options.scroll) {
+    await scrollToBottom()
+  }
+}
+
+async function finishTyping(options: { scroll?: boolean } = {}) {
+  isTyping.value = false
   if (options.scroll) {
     await scrollToBottom()
   }
