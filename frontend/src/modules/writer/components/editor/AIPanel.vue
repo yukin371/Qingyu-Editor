@@ -95,6 +95,7 @@ import { runWriterDirectEdit } from '@/modules/writer/utils/writerAIDirectEditRu
 import { runWriterPlanOnly } from '@/modules/writer/utils/writerAIPlanRunner'
 import {
   runWriterAnalysisRoute,
+  runWriterDirectEditRoute,
   runWriterGeneralChatRoute,
 } from '@/modules/writer/utils/writerAIRouteRunner'
 import {
@@ -805,15 +806,18 @@ async function runDirectEdit(
   intent: WriterPromptIntent | null = null,
   plan?: WriterEditorPlan,
 ) {
-  const resolvedTarget =
-    plan?.target.status === 'ready' ? plan.target : await resolveDocumentTarget(instruction)
-  if (resolvedTarget.status !== 'ready' || !resolvedTarget.sourceText?.trim()) {
-    addMessage('user', instruction)
-    appendTargetResolutionMessage(instruction, 'edit', resolvedTarget)
-    return
-  }
-
-  await runResolvedDirectEdit(instruction, intent, resolvedTarget, plan)
+  await runWriterDirectEditRoute({
+    instruction,
+    target: plan?.target,
+    resolveTarget: resolveDocumentTarget,
+    onUnresolved: async (resolvedTarget) => {
+      addMessage('user', instruction)
+      appendTargetResolutionMessage(instruction, 'edit', resolvedTarget)
+    },
+    onResolved: async (resolvedTarget) => {
+      await runResolvedDirectEdit(instruction, intent, resolvedTarget, plan)
+    },
+  })
 }
 
 async function runSelectionAction(action: string, selectedText: string, instructions?: string) {

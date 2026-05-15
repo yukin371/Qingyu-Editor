@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   runWriterAnalysisRoute,
+  runWriterDirectEditRoute,
   runWriterGeneralChatRoute,
 } from '../writerAIRouteRunner'
 
@@ -43,5 +44,44 @@ describe('writerAIRouteRunner', () => {
     })
 
     expect(onReply).toHaveBeenCalledWith('抱歉，我没有理解您的问题。')
+  })
+
+  it('routes direct edit flow to unresolved handler when target has no source text', async () => {
+    const onUnresolved = vi.fn(async () => {})
+    const onResolved = vi.fn(async () => {})
+
+    await runWriterDirectEditRoute({
+      instruction: '改写这章',
+      resolveTarget: async () => ({ status: 'ready', sourceText: '   ' }),
+      onUnresolved,
+      onResolved,
+    })
+
+    expect(onUnresolved).toHaveBeenCalledTimes(1)
+    expect(onResolved).not.toHaveBeenCalled()
+  })
+
+  it('uses pre-resolved target for direct edit route', async () => {
+    const onResolved = vi.fn(async () => {})
+
+    await runWriterDirectEditRoute({
+      instruction: '改写这章',
+      target: {
+        status: 'ready',
+        sourceText: '正文',
+        targetDocumentId: 'chapter-1',
+      },
+      resolveTarget: async () => {
+        throw new Error('should not resolve again')
+      },
+      onUnresolved: async () => {},
+      onResolved,
+    })
+
+    expect(onResolved).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetDocumentId: 'chapter-1',
+      }),
+    )
   })
 })

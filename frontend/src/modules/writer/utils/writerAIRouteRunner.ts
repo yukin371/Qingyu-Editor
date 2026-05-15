@@ -29,6 +29,30 @@ export async function runWriterAnalysisRoute({
   await onResolved(resolvedTarget)
 }
 
+export interface WriterDirectEditRouteRunnerInput {
+  instruction: string
+  resolveTarget: (instruction: string) => Promise<WriterResolvedDocumentTarget>
+  target?: WriterResolvedDocumentTarget
+  onUnresolved: (target: WriterResolvedDocumentTarget) => Promise<void>
+  onResolved: (target: WriterResolvedDocumentTarget) => Promise<void>
+}
+
+export async function runWriterDirectEditRoute({
+  instruction,
+  resolveTarget,
+  target,
+  onUnresolved,
+  onResolved,
+}: WriterDirectEditRouteRunnerInput): Promise<void> {
+  const resolvedTarget = target?.status === 'ready' ? target : await resolveTarget(instruction)
+  if (resolvedTarget.status !== 'ready' || !resolvedTarget.sourceText?.trim()) {
+    await onUnresolved(resolvedTarget)
+    return
+  }
+
+  await onResolved(resolvedTarget)
+}
+
 export interface WriterGeneralChatRouteRunnerInput {
   finalRequestMessage: string
   messages: ChatMessage[]
