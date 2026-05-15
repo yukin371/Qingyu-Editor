@@ -89,10 +89,23 @@ type EditorApplyMode =
   | 'append_paragraph'
   | 'replace_document'
 
-function resolveAIErrorMessage(error: unknown): string {
+interface ResolvedAIErrorState {
+  message: string
+  meta?:
+    | {
+        kind: 'writer_connection_status'
+        status: 'offline' | 'error'
+        statusText: string
+        targetLabel: string
+        detail?: string
+      }
+    | undefined
+}
+
+function resolveAIErrorState(error: unknown): ResolvedAIErrorState {
   const fallback = '抱歉，我遇到了一些问题。请稍后再试。'
   if (!error || typeof error !== 'object') {
-    return fallback
+    return { message: fallback }
   }
 
   const record = error as {
@@ -118,22 +131,31 @@ function resolveAIErrorMessage(error: unknown): string {
             : ''
 
   if (status === 401) {
-    return 'AI 请求未通过鉴权，请刷新页面后重试。'
+    return { message: 'AI 请求未通过鉴权，请刷新页面后重试。' }
   }
   if (status === 404) {
-    return '当前 AI 接口不可用，请检查服务配置后重试。'
+    return { message: '当前 AI 接口不可用，请检查服务配置后重试。' }
   }
   if (status && status >= 500) {
-    return responseMessage || 'AI 服务暂时不可用，请稍后再试。'
+    return { message: responseMessage || 'AI 服务暂时不可用，请稍后再试。' }
   }
   if (record.code === 'ECONNABORTED' || /timeout/i.test(record.message || '')) {
-    return 'AI 请求超时，请稍后重试。'
+    return { message: 'AI 请求超时，请稍后重试。' }
   }
   if (/network error/i.test(record.message || '')) {
-    return 'AI 服务连接失败，请确认本地 AI 服务已启动。'
+    return {
+      message: 'AI 服务连接失败，请确认本地 AI 服务已启动。',
+      meta: {
+        kind: 'writer_connection_status',
+        status: 'offline',
+        statusText: '服务未连接',
+        targetLabel: 'AI 服务不可用',
+        detail: '当前请求已经发出，但本地 AI 服务未启动或无法连接到配置地址。',
+      },
+    }
   }
 
-  return responseMessage || fallback
+  return { message: responseMessage || fallback }
 }
 import type {
   WriterPromptIntent,
@@ -763,7 +785,8 @@ async function runResolvedAnalysis(
     await scrollToBottom()
   } catch (error) {
     console.error('[AIPanel] Failed to get AI response:', error)
-    addMessage('assistant', resolveAIErrorMessage(error))
+    const resolvedError = resolveAIErrorState(error)
+    addMessage('assistant', resolvedError.message, false, resolvedError.meta)
   } finally {
     isTyping.value = false
   }
@@ -961,7 +984,8 @@ async function sendMessage(content: string) {
     await scrollToBottom()
   } catch (error) {
     console.error('[AIPanel] Failed to get AI response:', error)
-    addMessage('assistant', resolveAIErrorMessage(error))
+    const resolvedError = resolveAIErrorState(error)
+    addMessage('assistant', resolvedError.message, false, resolvedError.meta)
     isTyping.value = false
   }
 }

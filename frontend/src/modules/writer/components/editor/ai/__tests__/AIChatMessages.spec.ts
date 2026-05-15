@@ -285,6 +285,31 @@ describe('AIChatMessages', () => {
     expect(wrapper.find('.message-checkpoint-item--running').text()).toContain('等待宿主切章')
   })
 
+  it('should render writer connection status card', () => {
+    const messages: ChatMessage[] = [
+      {
+        id: '1',
+        role: 'assistant',
+        content: 'AI 服务连接失败，请确认本地 AI 服务已启动。',
+        timestamp: Date.now(),
+        meta: {
+          kind: 'writer_connection_status',
+          status: 'offline',
+          statusText: '服务未连接',
+          targetLabel: 'AI 服务不可用',
+          detail: '当前请求已经发出，但本地 AI 服务未启动或无法连接到配置地址。',
+        },
+      },
+    ]
+
+    const wrapper = buildWrapper({ messages })
+
+    expect(wrapper.find('.message-tool-card--offline').exists()).toBe(true)
+    expect(wrapper.find('.message-tool-card__title').text()).toContain('AI 服务不可用')
+    expect(wrapper.find('.message-tool-card__status').text()).toContain('服务未连接')
+    expect(wrapper.find('.message-tool-card__detail').text()).toContain('本地 AI 服务未启动')
+  })
+
   it('should show pending assistant bubble when panel is typing without persisted typing message', () => {
     const messages: ChatMessage[] = [
       { id: '1', role: 'user', content: '继续写', timestamp: Date.now() },

@@ -57,11 +57,20 @@ export interface WriterApplyCheckpointMeta {
   stages: WriterApplyCheckpointItem[]
 }
 
+export interface WriterConnectionStatusMeta {
+  kind: 'writer_connection_status'
+  status: 'offline' | 'error'
+  statusText: string
+  targetLabel: string
+  detail?: string
+}
+
 export type WriterChatMessageMeta =
   | BaseChatMessageMeta
   | WriterRetrievalSummaryMeta
   | WriterPlanPreviewMeta
   | WriterApplyCheckpointMeta
+  | WriterConnectionStatusMeta
 
 export type WriterChatMessage = Omit<BaseChatMessage, 'meta'> & {
   meta?: WriterChatMessageMeta

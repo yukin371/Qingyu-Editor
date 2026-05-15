@@ -214,6 +214,19 @@
             </ol>
           </div>
           <div
+            v-else-if="message.meta?.kind === 'writer_connection_status'"
+            class="message-tool-card"
+            :class="`message-tool-card--${message.meta.status}`"
+          >
+            <div class="message-tool-card__header">
+              <div class="message-tool-card__title">{{ message.meta.targetLabel }}</div>
+              <span class="message-tool-card__status">{{ message.meta.statusText }}</span>
+            </div>
+            <div v-if="message.meta.detail" class="message-tool-card__detail">
+              {{ message.meta.detail }}
+            </div>
+          </div>
+          <div
             class="message-content"
             :class="{ 'message-content--pending': message.typing }"
             v-safe-html="renderAssistantMessage(message)"
@@ -589,6 +602,19 @@ watch(
   &--selection {
     border-color: #bfdbfe;
     box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.08);
+  }
+
+  &--offline,
+  &--error {
+    border-color: rgba(245, 158, 11, 0.55);
+    background:
+      linear-gradient(180deg, rgba(255, 251, 235, 0.96), rgba(255, 247, 237, 0.98)),
+      var(--ai-bg-soft, #fff7ed);
+
+    .message-tool-card__status {
+      background: rgba(254, 243, 199, 0.95);
+      color: #b45309;
+    }
   }
 }
 

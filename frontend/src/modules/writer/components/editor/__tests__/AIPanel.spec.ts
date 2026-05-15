@@ -447,6 +447,30 @@ describe('AIPanel', () => {
     ])
   })
 
+  it('emits structured connection status meta when ai service is offline', async () => {
+    vi.mocked(chatWithAI).mockRejectedValue({
+      message: 'Network Error',
+    } as never)
+
+    const wrapper = mountPanel()
+    const input = wrapper.findComponent(AIInputAreaStub)
+    input.vm.$emit('update:modelValue', '这章整体给人的感觉怎么样')
+    await nextTick()
+    input.vm.$emit('send')
+    await flushPromises()
+
+    expect(addMessage).toHaveBeenCalledWith(
+      'assistant',
+      'AI 服务连接失败，请确认本地 AI 服务已启动。',
+      false,
+      expect.objectContaining({
+        kind: 'writer_connection_status',
+        status: 'offline',
+        statusText: '服务未连接',
+      }),
+    )
+  })
+
   it('routes explicit expand-length requests into direct edit diff flow', async () => {
     vi.mocked(expandText).mockResolvedValue({
       expanded_text: '扩写后的整章正文',
