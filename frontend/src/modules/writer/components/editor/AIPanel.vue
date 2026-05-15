@@ -61,6 +61,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick, onBeforeUnmount } from 'vue'
+import { useDebounce } from '@/composables/useDebounce'
 import { useI18n } from '@/composables/useI18n'
 import { useBreakpoints } from '@/composables/useBreakpoints'
 import { useChatHistory } from '@/composables/useChatHistory'
@@ -120,20 +121,6 @@ import type {
   ChatContextSnippet,
   QuickAction,
 } from './ai/types'
-
-// 防抖函数
-function useDebounceFn<T extends (...args: any[]) => any>(fn: T, delay: number): T {
-  let timeoutId: ReturnType<typeof setTimeout> | null = null
-  return ((...parameters: Parameters<T>) => {
-    if (timeoutId) {
-      clearTimeout(timeoutId)
-    }
-    timeoutId = setTimeout(() => {
-      fn(...parameters)
-      timeoutId = null
-    }, delay)
-  }) as T
-}
 
 // ==================== 类型定义 ====================
 interface Props {
@@ -1227,6 +1214,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  flushDebouncedSave()
   // 保存对话历史
   save()
   saveConversations()
@@ -1237,7 +1225,7 @@ onBeforeUnmount(() => {
 
 // ==================== 监听 ====================
 // 防抖保存（1秒防抖）
-const debouncedSave = useDebounceFn(() => {
+const { debouncedFn: debouncedSave, flush: flushDebouncedSave } = useDebounce(() => {
   save()
 }, 1000)
 
