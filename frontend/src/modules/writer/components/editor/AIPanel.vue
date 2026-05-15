@@ -83,6 +83,18 @@ import {
   type WriterEditorPlan,
   type WriterResolvedDocumentTarget,
 } from '@/modules/writer/services/writerDocumentAgent.service'
+import {
+  buildAnalysisCandidate,
+  buildChatRequestMessage,
+  buildTargetCandidatesMeta,
+  buildTargetStatusMeta,
+  buildWriterCheckpointMeta,
+  buildWriterPlanMeta,
+  buildWriterRetrievalMeta,
+  isCrossDocumentTarget,
+  type DocumentTargetRoute,
+  type DocumentTargetSelectionPayload,
+} from '@/modules/writer/utils/writerAIChatMeta'
 import { resolveWriterAIErrorState } from '@/modules/writer/utils/writerAIError'
 
 type EditorApplyMode =
@@ -429,188 +441,8 @@ function updateSelectionNotice(
   }
 }
 
-function buildAnalysisCandidate(
-  intent: WriterPromptIntent,
-  generatedText: string,
-  sourceText: string,
-): WriterResultCandidate {
-  if (intent.action === 'summarize') {
-    return {
-      source: 'summary',
-      action: 'summary',
-      title: '章节方向提案',
-      summary: generatedText.slice(0, 72) || '已生成新的摘要结果。',
-      generatedText,
-      sourceText,
-    }
-  }
-
-  return {
-    source: 'review',
-    action: 'proofread',
-    title: '审校建议提案',
-    summary: generatedText.slice(0, 72) || '已生成新的审校建议。',
-    generatedText,
-    sourceText,
-  }
-}
-
 function isSelectionContext(context: ChatContextSnippet | null | undefined): boolean {
   return context?.kind === 'selection'
-}
-
-function buildChatRequestMessage(instruction: string): string {
-  const context = selectedChatContext.value
-  if (!context?.text.trim()) {
-    return instruction
-  }
-
-  const prefix = context.kind === 'revision' ? '参考候选稿' : '参考片段'
-  return `${prefix}：${context.text}\n\n用户需求：${instruction}`
-}
-
-type DocumentTargetRoute = 'edit' | 'analysis'
-
-interface DocumentTargetSelectionPayload {
-  instruction: string
-  route: DocumentTargetRoute
-  documentId: string
-  documentTitle?: string
-}
-
-function isCrossDocumentTarget(target: WriterResolvedDocumentTarget): boolean {
-  const targetDocumentId = target.targetDocumentId?.trim()
-  const currentDocumentId = effectiveWorkflowContext.value?.chapterId?.trim() || ''
-  return !!targetDocumentId && !!currentDocumentId && targetDocumentId !== currentDocumentId
-}
-
-function buildTargetCandidatesMeta(
-  instruction: string,
-  route: DocumentTargetRoute,
-  target: WriterResolvedDocumentTarget,
-): ChatMessage['meta'] | undefined {
-  if (!target.candidates?.length) {
-    return undefined
-  }
-
-  return {
-    kind: 'document_target_candidates',
-    status: 'needs_selection',
-    statusText: '命中了多个章节',
-    requestLabel: target.requestLabel || '目标章节待确认',
-    instruction,
-    route,
-    candidates: target.candidates,
-  }
-}
-
-function buildTargetStatusMeta(
-  target: WriterResolvedDocumentTarget,
-  status: 'loading' | 'switching' | 'ready',
-  statusText: string,
-  detail?: string,
-): ChatMessage['meta'] | undefined {
-  const documentLabel = target.targetDocumentTitle?.trim() || target.targetDocumentId?.trim()
-  if (!documentLabel) {
-    return undefined
-  }
-
-  return {
-    kind: 'document_target_status',
-    status,
-    statusText,
-    documentLabel: `《${documentLabel}》`,
-    detail,
-  }
-}
-
-function buildWriterPlanMeta(plan: WriterEditorPlan): ChatMessage['meta'] {
-  const targetLabel =
-    plan.target.requestLabel ||
-    plan.target.targetDocumentTitle ||
-    plan.target.targetDocumentId ||
-    (plan.mutationMode === 'chapter_create_plan' ? '新章节' : '目标章节')
-  const operationLabel =
-    plan.mutationMode === 'chapter_create_plan'
-      ? '新增章节计划'
-      : plan.mutationMode === 'multi_document_plan'
-        ? '多章节修改计划'
-        : plan.route === 'analysis'
-          ? '章节分析计划'
-          : '章节编辑计划'
-  const executionMode =
-    plan.route === 'plan_only'
-      ? 'plan_only'
-      : plan.requiresConfirmation
-        ? 'confirm_first'
-        : 'direct_apply'
-
-  return {
-    kind: 'writer_plan_preview',
-    status: plan.requiresConfirmation ? 'needs_confirmation' : 'planned',
-    statusText: plan.requiresConfirmation ? '需要确认' : '已规划',
-    operationLabel,
-    targetLabel,
-    executionMode,
-    requiresConfirmation: plan.requiresConfirmation,
-    nextStep:
-      plan.route === 'plan_only'
-        ? '当前不会直接创建章节或批量写入正文；请确认目标和步骤后再生成逐章 diff。'
-        : plan.userVisibleSummary,
-  }
-}
-
-function buildWriterRetrievalMeta(plan: WriterEditorPlan): ChatMessage['meta'] | undefined {
-  if (plan.retrievals.length === 0) {
-    return undefined
-  }
-
-  return {
-    kind: 'writer_retrieval_summary',
-    status: 'ready',
-    statusText: `已整理 ${plan.retrievals.length} 个上下文`,
-    queryLabel: plan.target.requestLabel || '跨文件查找',
-    targetDocumentId: plan.target.targetDocumentId,
-    hits: plan.retrievals.map((item) => ({
-      documentId: item.documentId || item.kind,
-      documentTitle: item.documentTitle,
-      reason: item.reason || '纳入本次 AI 上下文',
-      excerpt: item.excerpt,
-      selected: !!plan.target.targetDocumentId && item.documentId === plan.target.targetDocumentId,
-    })),
-  }
-}
-
-function buildWriterCheckpointMeta(
-  target: WriterResolvedDocumentTarget,
-  status: 'generated' | 'switching' | 'ready_for_review',
-  detail?: string,
-): ChatMessage['meta'] {
-  const targetLabel =
-    target.targetDocumentTitle || target.targetDocumentId || target.requestLabel || '目标章节'
-  const isSwitching = status === 'switching'
-
-  return {
-    kind: 'writer_apply_checkpoint',
-    status,
-    statusText: isSwitching ? '切章挂 diff' : '正文 diff 已生成',
-    targetLabel: targetLabel.startsWith('《') ? targetLabel : `《${targetLabel}》`,
-    detail,
-    stages: [
-      { stage: 'planned', status: 'done', label: '规划目标' },
-      { stage: 'generated', status: 'done', label: '生成正文' },
-      {
-        stage: 'switching',
-        status: isCrossDocumentTarget(target) ? (isSwitching ? 'running' : 'done') : 'pending',
-        label: '切换章节',
-      },
-      {
-        stage: 'ready_for_review',
-        status: status === 'ready_for_review' ? 'running' : 'pending',
-        label: '等待审阅',
-      },
-    ],
-  }
 }
 
 function appendTargetResolutionMessage(
@@ -686,7 +518,7 @@ async function runResolvedAnalysis(
         'assistant',
         generatedText,
         false,
-        isCrossDocumentTarget(resolvedTarget)
+        isCrossDocumentTarget(resolvedTarget, effectiveWorkflowContext.value?.chapterId)
           ? buildTargetStatusMeta(
               resolvedTarget,
               'ready',
@@ -846,7 +678,7 @@ async function sendMessage(content: string) {
     await runDirectEdit(trimmedContent, intent, editorPlan)
     return
   }
-  const requestMessage = buildChatRequestMessage(trimmedContent)
+  const requestMessage = buildChatRequestMessage(trimmedContent, selectedChatContext.value)
   const finalRequestMessage =
     mergeWriterAIInstructions([requestMessage], {
       workflowContext: effectiveWorkflowContext.value,
@@ -942,7 +774,7 @@ async function runResolvedDirectEdit(
       await scrollToBottom()
     }
 
-    if (isCrossDocumentTarget(resolvedTarget)) {
+    if (isCrossDocumentTarget(resolvedTarget, effectiveWorkflowContext.value?.chapterId)) {
       addMessage(
         'assistant',
         `已定位到 ${resolvedTarget.requestLabel || resolvedTarget.targetDocumentTitle || resolvedTarget.targetDocumentId}，正在生成可挂载到正文编辑器的结果。`,
@@ -977,7 +809,7 @@ async function runResolvedDirectEdit(
       'assistant',
       generatedText,
       false,
-      isCrossDocumentTarget(resolvedTarget)
+      isCrossDocumentTarget(resolvedTarget, effectiveWorkflowContext.value?.chapterId)
         ? buildTargetStatusMeta(
             resolvedTarget,
             'switching',
@@ -986,13 +818,14 @@ async function runResolvedDirectEdit(
           )
         : undefined,
     )
-    if (isCrossDocumentTarget(resolvedTarget)) {
+    if (isCrossDocumentTarget(resolvedTarget, effectiveWorkflowContext.value?.chapterId)) {
       addMessage(
         'assistant',
         '正文 diff 已交给工作区处理。',
         false,
         buildWriterCheckpointMeta(
           resolvedTarget,
+          effectiveWorkflowContext.value?.chapterId,
           'switching',
           'ProjectWorkspace 会切换到目标章节，并展示可接受/放弃的正文 diff。',
         ),
