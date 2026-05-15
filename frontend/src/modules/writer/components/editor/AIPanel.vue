@@ -96,6 +96,12 @@ import {
   resolveWriterAnalysisText,
 } from '@/modules/writer/utils/writerAIAnalysis'
 import {
+  buildDirectEditApplyPayload,
+  buildDirectEditLoadingMessage,
+  buildDirectEditResultCandidate,
+  buildDirectEditUserPrompt,
+} from '@/modules/writer/utils/writerAIDirectEdit'
+import {
   executeWriterTextAction,
   extractWriterGeneratedText,
   requestWriterEditIntent,
@@ -719,7 +725,7 @@ async function runResolvedDirectEdit(
   isTyping.value = true
   addMessage(
     'user',
-    `[直接修改正文]\n目标：${resolvedTarget.requestLabel || (applyMode === 'replace_document' ? '当前章节' : '当前片段')}\n修改要求：${instruction}`,
+    buildDirectEditUserPrompt(instruction, resolvedTarget, applyMode),
   )
   inputText.value = ''
   await scrollToBottom()
@@ -734,7 +740,7 @@ async function runResolvedDirectEdit(
     if (isCrossDocumentTarget(resolvedTarget, effectiveWorkflowContext.value?.chapterId)) {
       addMessage(
         'assistant',
-        `已定位到 ${resolvedTarget.requestLabel || resolvedTarget.targetDocumentTitle || resolvedTarget.targetDocumentId}，正在生成可挂载到正文编辑器的结果。`,
+        buildDirectEditLoadingMessage(resolvedTarget),
         false,
         buildTargetStatusMeta(
           resolvedTarget,
@@ -788,22 +794,25 @@ async function runResolvedDirectEdit(
         ),
       )
     }
-    emit('resultCandidate', {
-      source: 'rewrite',
-      action: editResult.emittedAction,
-      title: `AI 直接${editResult.label}结果`,
-      summary: generatedText.slice(0, 72) || '已生成新的正文版本。',
-      generatedText,
-      sourceText,
-    })
-    emit('applyGeneratedText', {
-      action: editResult.emittedAction,
-      sourceText,
-      generatedText,
-      applyMode: editResult.applyMode,
-      targetDocumentId: resolvedTarget.targetDocumentId,
-      targetDocumentTitle: resolvedTarget.targetDocumentTitle,
-    })
+    emit(
+      'resultCandidate',
+      buildDirectEditResultCandidate({
+        action: editResult.emittedAction,
+        label: editResult.label,
+        generatedText,
+        sourceText,
+      }),
+    )
+    emit(
+      'applyGeneratedText',
+      buildDirectEditApplyPayload({
+        action: editResult.emittedAction,
+        sourceText,
+        generatedText,
+        applyMode: editResult.applyMode,
+        target: resolvedTarget,
+      }),
+    )
     if (context) {
       handleClearSelectedContext()
     }
