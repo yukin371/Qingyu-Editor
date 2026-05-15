@@ -126,6 +126,7 @@ import {
   resolveWriterPromptExecution,
 } from '@/modules/writer/types/workflow'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
+import type { WriterAIContextOptions } from '@/modules/writer/utils/writerAIContext'
 
 // 子组件
 import AIConversationToolbar from './ai/AIConversationToolbar.vue'
@@ -581,8 +582,7 @@ async function sendMessage(content: string) {
     interactionMode: interactionMode.value,
     canEditDirectly: canEditDirectly.value,
     hasSelectionContext: isSelectionContext(selectedChatContext.value),
-    workflowContext: effectiveWorkflowContext.value,
-    aiSummaryContextText: props.aiSummaryContextText,
+    ...buildAIContextOptions(),
   })
   const intent = promptExecution.intent
 
@@ -686,10 +686,7 @@ async function runResolvedDirectEdit(
           intent,
           applyMode: applyMode as EditorApplyMode,
           baseInstructions,
-          context: {
-            workflowContext: effectiveWorkflowContext.value,
-            aiSummaryContextText: props.aiSummaryContextText,
-          },
+          context: buildAIContextOptions(),
         }),
       onUserMessage: async (message) => {
         await pushUserMessage(message, { clearInput: true, scroll: true })
@@ -784,10 +781,7 @@ async function runSelectionAction(action: string, selectedText: string, instruct
           action: nextAction,
           selectedText: nextSelectedText,
           instructions,
-          context: {
-            workflowContext: effectiveWorkflowContext.value,
-            aiSummaryContextText: props.aiSummaryContextText,
-          },
+          context: buildAIContextOptions(),
         })
       },
       onUserMessage: (userPrompt) => {
@@ -821,6 +815,13 @@ function handleSend() {
 function handleQuickAction(action: QuickAction) {
   const prompt = getQuickActionPrompt(action.id)
   sendMessage(prompt)
+}
+
+function buildAIContextOptions(): WriterAIContextOptions {
+  return {
+    workflowContext: effectiveWorkflowContext.value,
+    aiSummaryContextText: props.aiSummaryContextText,
+  }
 }
 
 async function pushUserMessage(
