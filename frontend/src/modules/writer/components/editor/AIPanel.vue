@@ -92,7 +92,7 @@ import { runWriterResolvedAnalysis } from '@/modules/writer/utils/writerAIAnalys
 import {
   buildTargetResolutionResult,
 } from '@/modules/writer/utils/writerAIConversation'
-import { buildHandledDocumentCommandResult } from '@/modules/writer/utils/writerAIDocumentCommand'
+import { runWriterDocumentCommand } from '@/modules/writer/utils/writerAIDocumentCommandRunner'
 import { runWriterDirectEdit } from '@/modules/writer/utils/writerAIDirectEditRunner'
 import {
   runWriterAnalysisRoute,
@@ -570,39 +570,29 @@ async function sendMessage(content: string) {
   if (!content.trim() || isTyping.value) return
 
   const trimmedContent = content.trim()
-  const documentCommand = await executeWriterDocumentCommand(trimmedContent, {
-    projectId: effectiveWorkflowContext.value?.projectId || props.sessionId,
-    currentDocumentId: effectiveWorkflowContext.value?.chapterId || null,
-    currentDocumentTitle: effectiveWorkflowContext.value?.chapterTitle || null,
-    currentSourceText: props.sourceText || '',
+  const handledDocumentCommand = await runWriterDocumentCommand({
+    content: trimmedContent,
+    context: {
+      projectId: effectiveWorkflowContext.value?.projectId || props.sessionId,
+      currentDocumentId: effectiveWorkflowContext.value?.chapterId || null,
+      currentDocumentTitle: effectiveWorkflowContext.value?.chapterTitle || null,
+      currentSourceText: props.sourceText || '',
+    },
+    executeCommand: executeWriterDocumentCommand,
+    onUserMessage: async (message) => {
+      addMessage('user', message)
+      inputText.value = ''
+      await scrollToBottom()
+    },
+    onAssistantMessage: (message, meta) => {
+      addMessage('assistant', message, false, meta)
+    },
+    onPatchPayload: (payload) => {
+      emit('applyGeneratedText', payload)
+    },
   })
 
-  if (documentCommand.handled) {
-    const handledCommand = buildHandledDocumentCommandResult({
-      fallbackUserMessage: trimmedContent,
-      userEcho: documentCommand.userEcho,
-      assistantMessage: documentCommand.assistantMessage,
-      assistantMeta: documentCommand.assistantMeta,
-      patchPayload: documentCommand.patchPayload,
-    })
-
-    addMessage('user', handledCommand.userMessage)
-    inputText.value = ''
-    await scrollToBottom()
-
-    if (handledCommand.assistantMessage) {
-      addMessage(
-        'assistant',
-        handledCommand.assistantMessage,
-        false,
-        handledCommand.assistantMeta,
-      )
-    }
-
-    if (handledCommand.patchPayload) {
-      emit('applyGeneratedText', handledCommand.patchPayload)
-    }
-
+  if (handledDocumentCommand) {
     await scrollToBottom()
     return
   }
