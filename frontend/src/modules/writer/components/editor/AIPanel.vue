@@ -97,6 +97,7 @@ import {
   runWriterAnalysisRoute,
   runWriterDirectEditRoute,
   runWriterGeneralChatRoute,
+  runWriterSelectedDocumentRoute,
 } from '@/modules/writer/utils/writerAIRouteRunner'
 import {
   requestWriterContextualEditIntent,
@@ -885,31 +886,24 @@ async function handleSelectDocumentTarget(payload: DocumentTargetSelectionPayloa
     selectedContext: selectedChatContext.value,
   })
 
-  if (resolvedTarget.status !== 'ready' || !resolvedTarget.sourceText?.trim()) {
-    addMessage('assistant', resolvedTarget.assistantMessage || '目标章节读取失败，请稍后重试。')
-    return
-  }
-
-  if (payload.route === 'analysis') {
-    const promptExecution = resolveWriterPromptExecution(payload.instruction, {
-      interactionMode: interactionMode.value,
-      canEditDirectly: canEditDirectly.value,
-      hasSelectionContext: isSelectionContext(selectedChatContext.value),
-    })
-    if (!promptExecution.intent) {
-      addMessage('assistant', '当前需求未识别成可分析动作，请重新输入更明确的指令。')
-      return
-    }
-    await runResolvedAnalysis(payload.instruction, promptExecution.intent, resolvedTarget)
-    return
-  }
-
-  const promptExecution = resolveWriterPromptExecution(payload.instruction, {
-    interactionMode: 'edit',
-    canEditDirectly: canEditDirectly.value,
-    hasSelectionContext: isSelectionContext(selectedChatContext.value),
+  await runWriterSelectedDocumentRoute({
+    payload,
+    resolvedTarget,
+    resolvePromptExecution: (instruction, route) =>
+      resolveWriterPromptExecution(instruction, {
+        interactionMode: route === 'analysis' ? interactionMode.value : 'edit',
+        canEditDirectly: canEditDirectly.value,
+        hasSelectionContext: isSelectionContext(selectedChatContext.value),
+      }),
+    onInvalidTarget: (resolvedTarget) =>
+      pushAssistantMessage(resolvedTarget.assistantMessage || '目标章节读取失败，请稍后重试。'),
+    onInvalidAnalysisIntent: () =>
+      pushAssistantMessage('当前需求未识别成可分析动作，请重新输入更明确的指令。'),
+    onAnalysis: ({ instruction, intent, resolvedTarget }) =>
+      runResolvedAnalysis(instruction, intent, resolvedTarget),
+    onEdit: ({ instruction, intent, resolvedTarget }) =>
+      runResolvedDirectEdit(instruction, intent, resolvedTarget),
   })
-  await runResolvedDirectEdit(payload.instruction, promptExecution.intent, resolvedTarget)
 }
 
 // ==================== 生命周期 ====================

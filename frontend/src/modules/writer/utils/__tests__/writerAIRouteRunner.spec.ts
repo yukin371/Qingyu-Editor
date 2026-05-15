@@ -3,6 +3,7 @@ import {
   runWriterAnalysisRoute,
   runWriterDirectEditRoute,
   runWriterGeneralChatRoute,
+  runWriterSelectedDocumentRoute,
 } from '../writerAIRouteRunner'
 
 describe('writerAIRouteRunner', () => {
@@ -81,6 +82,69 @@ describe('writerAIRouteRunner', () => {
     expect(onResolved).toHaveBeenCalledWith(
       expect.objectContaining({
         targetDocumentId: 'chapter-1',
+      }),
+    )
+  })
+
+  it('routes selected target to analysis callback when intent is available', async () => {
+    const onAnalysis = vi.fn(async () => {})
+
+    await runWriterSelectedDocumentRoute({
+      payload: {
+        instruction: '总结这一章',
+        route: 'analysis',
+        documentId: 'chapter-1',
+      },
+      resolvedTarget: {
+        status: 'ready',
+        sourceText: '正文',
+        targetDocumentId: 'chapter-1',
+      },
+      resolvePromptExecution: () => ({
+        route: 'analysis',
+        intent: { action: 'summarize', confidence: 1, kind: 'analysis' },
+      }),
+      onInvalidTarget: async () => {},
+      onInvalidAnalysisIntent: async () => {},
+      onAnalysis,
+      onEdit: async () => {},
+    })
+
+    expect(onAnalysis).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instruction: '总结这一章',
+      }),
+    )
+  })
+
+  it('routes selected target to edit callback with nullable intent', async () => {
+    const onEdit = vi.fn(async () => {})
+
+    await runWriterSelectedDocumentRoute({
+      payload: {
+        instruction: '补强这一章',
+        route: 'edit',
+        documentId: 'chapter-2',
+      },
+      resolvedTarget: {
+        status: 'ready',
+        sourceText: '正文',
+        targetDocumentId: 'chapter-2',
+      },
+      resolvePromptExecution: () => ({
+        route: 'edit',
+        intent: null,
+      }),
+      onInvalidTarget: async () => {},
+      onInvalidAnalysisIntent: async () => {},
+      onAnalysis: async () => {},
+      onEdit,
+    })
+
+    expect(onEdit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instruction: '补强这一章',
+        intent: null,
       }),
     )
   })

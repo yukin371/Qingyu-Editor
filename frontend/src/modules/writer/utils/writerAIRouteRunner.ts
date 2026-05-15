@@ -1,10 +1,11 @@
 import type { ChatMessage } from '@/modules/writer/components/editor/ai/types'
 import type { WriterResolvedDocumentTarget } from '@/modules/writer/services/writerDocumentAgent.service'
-import type { WriterPromptIntent } from '@/modules/writer/types/workflow'
+import type { WriterPromptExecution, WriterPromptIntent } from '@/modules/writer/types/workflow'
 import {
   buildGeneralChatHistory,
   resolveGeneralChatReply,
 } from './writerAIConversation'
+import type { DocumentTargetSelectionPayload } from './writerAIChatMeta'
 
 export interface WriterAnalysisRouteRunnerInput {
   instruction: string
@@ -51,6 +52,61 @@ export async function runWriterDirectEditRoute({
   }
 
   await onResolved(resolvedTarget)
+}
+
+export interface WriterSelectedDocumentRouteRunnerInput {
+  payload: DocumentTargetSelectionPayload
+  resolvedTarget: WriterResolvedDocumentTarget
+  resolvePromptExecution: (instruction: string, route: 'analysis' | 'edit') => WriterPromptExecution
+  onInvalidTarget: (target: WriterResolvedDocumentTarget) => Promise<void>
+  onInvalidAnalysisIntent: () => Promise<void>
+  onAnalysis: (input: {
+    instruction: string
+    intent: WriterPromptIntent
+    resolvedTarget: WriterResolvedDocumentTarget
+  }) => Promise<void>
+  onEdit: (input: {
+    instruction: string
+    intent: WriterPromptIntent | null
+    resolvedTarget: WriterResolvedDocumentTarget
+  }) => Promise<void>
+}
+
+export async function runWriterSelectedDocumentRoute({
+  payload,
+  resolvedTarget,
+  resolvePromptExecution,
+  onInvalidTarget,
+  onInvalidAnalysisIntent,
+  onAnalysis,
+  onEdit,
+}: WriterSelectedDocumentRouteRunnerInput): Promise<void> {
+  if (resolvedTarget.status !== 'ready' || !resolvedTarget.sourceText?.trim()) {
+    await onInvalidTarget(resolvedTarget)
+    return
+  }
+
+  if (payload.route === 'analysis') {
+    const promptExecution = resolvePromptExecution(payload.instruction, 'analysis')
+    if (!promptExecution.intent) {
+      await onInvalidAnalysisIntent()
+      return
+    }
+
+    await onAnalysis({
+      instruction: payload.instruction,
+      intent: promptExecution.intent,
+      resolvedTarget,
+    })
+    return
+  }
+
+  const promptExecution = resolvePromptExecution(payload.instruction, 'edit')
+  await onEdit({
+    instruction: payload.instruction,
+    intent: promptExecution.intent,
+    resolvedTarget,
+  })
 }
 
 export interface WriterGeneralChatRouteRunnerInput {
