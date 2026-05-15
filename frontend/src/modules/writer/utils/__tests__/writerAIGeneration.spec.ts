@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   executeWriterTextAction,
   extractWriterGeneratedText,
+  requestWriterContextualEditIntent,
   requestWriterEditIntent,
   resolveWriterActionLabel,
 } from '../writerAIGeneration'
@@ -62,6 +63,44 @@ describe('writerAIGeneration', () => {
       label: '续写',
       generatedText: '续写结果',
       applyMode: 'append_paragraph',
+    })
+  })
+
+  it('builds contextual rewrite request with merged instructions', async () => {
+    rewriteText.mockResolvedValue({ rewritten_text: '改写结果' })
+
+    const result = await requestWriterContextualEditIntent({
+      projectId: 'project-1',
+      sourceText: '原文',
+      instruction: '改得更克制',
+      intent: null,
+      applyMode: 'replace_document',
+      baseInstructions: '保留人物口吻',
+      context: {
+        workflowContext: {
+          signature: 'sig',
+          projectId: 'project-1',
+          chapterId: 'chapter-1',
+          chapterTitle: '第一章',
+          activeCharacters: [],
+          activeRelations: [],
+          pendingChangeRequests: [],
+          pendingChangeRequestCount: 0,
+        },
+        aiSummaryContextText: '前文摘要',
+      },
+    })
+
+    expect(rewriteText).toHaveBeenCalledWith(
+      'project-1',
+      '原文',
+      'polish',
+      expect.stringContaining('请直接输出可替换整章正文的完整版本。'),
+    )
+    expect(result).toMatchObject({
+      emittedAction: 'rewrite',
+      generatedText: '改写结果',
+      applyMode: 'replace_document',
     })
   })
 })

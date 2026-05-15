@@ -92,6 +92,9 @@ import {
 import { buildWriterMessageDispatch } from '@/modules/writer/utils/writerAIMessageDispatch'
 import { runWriterDocumentCommand } from '@/modules/writer/utils/writerAIDocumentCommandRunner'
 import { runWriterDirectEdit } from '@/modules/writer/utils/writerAIDirectEditRunner'
+import {
+  buildWriterSelectionInstructions,
+} from '@/modules/writer/utils/writerAIInstructionBuilder'
 import { runWriterPlanOnly } from '@/modules/writer/utils/writerAIPlanRunner'
 import {
   runWriterAnalysisRoute,
@@ -100,7 +103,7 @@ import {
 } from '@/modules/writer/utils/writerAIRouteRunner'
 import {
   executeWriterTextAction,
-  requestWriterEditIntent,
+  requestWriterContextualEditIntent,
 } from '@/modules/writer/utils/writerAIGeneration'
 import { resolveWriterAIErrorState } from '@/modules/writer/utils/writerAIError'
 import {
@@ -125,7 +128,6 @@ import {
   resolveWriterEditApplyMode,
   resolveWriterPromptExecution,
 } from '@/modules/writer/types/workflow'
-import { mergeWriterAIInstructions } from '@/modules/writer/utils/writerAIContext'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 
 // 子组件
@@ -527,44 +529,6 @@ async function runResolvedAnalysis(
   }
 }
 
-async function requestEditIntent(
-  projectId: string,
-  sourceText: string,
-  instruction: string,
-  intent: WriterPromptIntent | null,
-  applyMode: EditorApplyMode,
-  baseInstructions?: string,
-) {
-  const action = intent?.action ?? 'rewrite'
-  const replacementHint =
-    applyMode === 'replace_document'
-      ? '请直接输出可替换整章正文的完整版本。'
-      : applyMode === 'replace_selection'
-        ? '请直接输出可替换当前选中文本的完整版本。'
-        : ''
-  const mergedInstructions = mergeWriterAIInstructions(
-    [
-      instruction,
-      baseInstructions || '',
-      replacementHint,
-    ],
-    {
-      workflowContext: effectiveWorkflowContext.value,
-      aiSummaryContextText: props.aiSummaryContextText,
-    },
-  )
-  return requestWriterEditIntent({
-    projectId,
-    sourceText,
-    intent:
-      action === 'continue' || action === 'expand'
-        ? intent
-        : { action: 'rewrite', confidence: intent?.confidence ?? 1, kind: 'edit' },
-    applyMode,
-    mergedInstructions: mergedInstructions || undefined,
-  })
-}
-
 // ==================== 消息发送方法 ====================
 async function sendMessage(content: string) {
   if (!content.trim() || isTyping.value) return
@@ -728,14 +692,18 @@ async function runResolvedDirectEdit(
       sourceText,
       baseInstructions: context?.instructions?.trim() || '',
       requestEdit: ({ sourceText, instruction, intent, applyMode, baseInstructions }) =>
-        requestEditIntent(
-          props.sessionId || 'demo-project',
+        requestWriterContextualEditIntent({
+          projectId: props.sessionId || 'demo-project',
           sourceText,
           instruction,
           intent,
-          applyMode as EditorApplyMode,
+          applyMode: applyMode as EditorApplyMode,
           baseInstructions,
-        ),
+          context: {
+            workflowContext: effectiveWorkflowContext.value,
+            aiSummaryContextText: props.aiSummaryContextText,
+          },
+        }),
       onUserMessage: async (message) => {
         addMessage('user', message)
         inputText.value = ''
@@ -827,10 +795,12 @@ async function runSelectionAction(action: string, selectedText: string, instruct
   isTyping.value = true
   updateSelectionNotice(action, selectedText, instructions, 'running')
   try {
-    const trimmedInstructions = (instructions || '').trim()
-    const mergedInstructions = mergeWriterAIInstructions([trimmedInstructions], {
+    const mergedInstructions = buildWriterSelectionInstructions({
+      instructions,
+      context: {
       workflowContext: effectiveWorkflowContext.value,
       aiSummaryContextText: props.aiSummaryContextText,
+      },
     })
     await runWriterSelectionAction({
       action: action as 'continue' | 'polish' | 'expand' | 'rewrite',

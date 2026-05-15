@@ -5,6 +5,8 @@ import {
   rewriteText,
 } from '@/modules/ai/api'
 import type { AIApplyMode, WriterPromptIntent } from '@/modules/writer/types/workflow'
+import type { WriterAIContextOptions } from './writerAIContext'
+import { buildWriterEditInstructions, type WriterInstructionApplyMode } from './writerAIInstructionBuilder'
 
 export type WriterGenerationAction = 'continue' | 'polish' | 'expand' | 'rewrite'
 
@@ -89,4 +91,36 @@ export async function requestWriterEditIntent(params: {
     generatedText: extractWriterGeneratedText(action, response),
     applyMode: params.applyMode,
   }
+}
+
+export async function requestWriterContextualEditIntent(params: {
+  projectId: string
+  sourceText: string
+  instruction: string
+  intent: WriterPromptIntent | null
+  applyMode: WriterInstructionApplyMode
+  baseInstructions?: string
+  context: WriterAIContextOptions
+}): Promise<WriterEditExecutionResult> {
+  return requestWriterEditIntent({
+    projectId: params.projectId,
+    sourceText: params.sourceText,
+    intent:
+      params.intent?.action === 'continue' || params.intent?.action === 'expand'
+        ? params.intent
+        : params.intent
+          ? {
+              action: 'rewrite',
+              confidence: params.intent.confidence,
+              kind: 'edit',
+            }
+          : { action: 'rewrite', confidence: 1, kind: 'edit' },
+    applyMode: params.applyMode,
+    mergedInstructions: buildWriterEditInstructions({
+      instruction: params.instruction,
+      baseInstructions: params.baseInstructions,
+      applyMode: params.applyMode,
+      context: params.context,
+    }),
+  })
 }
