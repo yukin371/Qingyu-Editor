@@ -101,12 +101,7 @@ import {
   buildTargetResolutionResult,
 } from '@/modules/writer/utils/writerAIConversation'
 import { buildHandledDocumentCommandResult } from '@/modules/writer/utils/writerAIDocumentCommand'
-import {
-  buildDirectEditApplyPayload,
-  buildDirectEditLoadingMessage,
-  buildDirectEditResultCandidate,
-  buildDirectEditUserPrompt,
-} from '@/modules/writer/utils/writerAIDirectEdit'
+import { runWriterDirectEdit } from '@/modules/writer/utils/writerAIDirectEditRunner'
 import {
   runWriterAnalysisRoute,
   runWriterGeneralChatRoute,
@@ -738,13 +733,6 @@ async function runResolvedDirectEdit(
     )) as EditorApplyMode
 
   isTyping.value = true
-  addMessage(
-    'user',
-    buildDirectEditUserPrompt(instruction, resolvedTarget, applyMode),
-  )
-  inputText.value = ''
-  await scrollToBottom()
-
   try {
     const retrievalMeta = plan ? buildWriterRetrievalMeta(plan) : undefined
     if (retrievalMeta && plan?.route === 'search_then_edit') {
@@ -752,86 +740,80 @@ async function runResolvedDirectEdit(
       await scrollToBottom()
     }
 
-    if (isCrossDocumentTarget(resolvedTarget, effectiveWorkflowContext.value?.chapterId)) {
-      addMessage(
-        'assistant',
-        buildDirectEditLoadingMessage(resolvedTarget),
-        false,
-        buildTargetStatusMeta(
-          resolvedTarget,
-          'loading',
-          '已定位目标章节，正在生成结果',
-          '生成完成后会自动提交给宿主切章并挂起正文 diff。',
-        ),
-      )
-      await scrollToBottom()
-    }
-
-    const projectId = props.sessionId || 'demo-project'
-    const editResult = await requestEditIntent(
-      projectId,
-      sourceText,
+    await runWriterDirectEdit({
       instruction,
       intent,
+      resolvedTarget,
+      currentDocumentId: effectiveWorkflowContext.value?.chapterId,
       applyMode,
-      context?.instructions?.trim() || '',
-    )
-    const generatedText = editResult.generatedText
-
-    if (!generatedText.trim()) {
-      addMessage('assistant', '未生成可应用的正文，请调整要求后重试。')
-      return
-    }
-
-    addMessage(
-      'assistant',
-      generatedText,
-      false,
-      isCrossDocumentTarget(resolvedTarget, effectiveWorkflowContext.value?.chapterId)
-        ? buildTargetStatusMeta(
-            resolvedTarget,
-            'switching',
-            '已提交切章挂 diff',
-            '宿主会自动切换到目标章节，并在正文编辑器中展示可接受/放弃的 diff。',
-          )
-        : undefined,
-    )
-    if (isCrossDocumentTarget(resolvedTarget, effectiveWorkflowContext.value?.chapterId)) {
-      addMessage(
-        'assistant',
-        '正文 diff 已交给工作区处理。',
-        false,
-        buildWriterCheckpointMeta(
-          resolvedTarget,
-          effectiveWorkflowContext.value?.chapterId,
-          'switching',
-          'ProjectWorkspace 会切换到目标章节，并展示可接受/放弃的正文 diff。',
+      sourceText,
+      baseInstructions: context?.instructions?.trim() || '',
+      requestEdit: ({ sourceText, instruction, intent, applyMode, baseInstructions }) =>
+        requestEditIntent(
+          props.sessionId || 'demo-project',
+          sourceText,
+          instruction,
+          intent,
+          applyMode as EditorApplyMode,
+          baseInstructions,
         ),
-      )
-    }
-    emit(
-      'resultCandidate',
-      buildDirectEditResultCandidate({
-        action: editResult.emittedAction,
-        label: editResult.label,
-        generatedText,
-        sourceText,
-      }),
-    )
-    emit(
-      'applyGeneratedText',
-      buildDirectEditApplyPayload({
-        action: editResult.emittedAction,
-        sourceText,
-        generatedText,
-        applyMode: editResult.applyMode,
-        target: resolvedTarget,
-      }),
-    )
-    if (context) {
-      handleClearSelectedContext()
-    }
-    await scrollToBottom()
+      onUserMessage: async (message) => {
+        addMessage('user', message)
+        inputText.value = ''
+        await scrollToBottom()
+      },
+      onCrossDocumentLoading: async (loadingMessage) => {
+        addMessage(
+          'assistant',
+          loadingMessage,
+          false,
+          buildTargetStatusMeta(
+            resolvedTarget,
+            'loading',
+            '已定位目标章节，正在生成结果',
+            '生成完成后会自动提交给宿主切章并挂起正文 diff。',
+          ),
+        )
+        await scrollToBottom()
+      },
+      onEmptyResult: () => {
+        addMessage('assistant', '未生成可应用的正文，请调整要求后重试。')
+      },
+      onSuccess: async ({ generatedText, resultCandidate, applyPayload, isCrossDocument }) => {
+        addMessage(
+          'assistant',
+          generatedText,
+          false,
+          isCrossDocument
+            ? buildTargetStatusMeta(
+                resolvedTarget,
+                'switching',
+                '已提交切章挂 diff',
+                '宿主会自动切换到目标章节，并在正文编辑器中展示可接受/放弃的 diff。',
+              )
+            : undefined,
+        )
+        if (isCrossDocument) {
+          addMessage(
+            'assistant',
+            '正文 diff 已交给工作区处理。',
+            false,
+            buildWriterCheckpointMeta(
+              resolvedTarget,
+              effectiveWorkflowContext.value?.chapterId,
+              'switching',
+              'ProjectWorkspace 会切换到目标章节，并展示可接受/放弃的正文 diff。',
+            ),
+          )
+        }
+        emit('resultCandidate', resultCandidate)
+        emit('applyGeneratedText', applyPayload)
+        if (context) {
+          handleClearSelectedContext()
+        }
+        await scrollToBottom()
+      },
+    })
   } catch (error) {
     console.error('[AIPanel] Failed to run direct edit:', error)
     addMessage('assistant', '直接修改失败，请稍后重试。')
