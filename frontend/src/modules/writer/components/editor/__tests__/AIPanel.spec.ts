@@ -3,7 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { defineComponent, nextTick, ref } from 'vue'
 import AIPanel from '../AIPanel.vue'
 import type { WriterWorkflowContext } from '@/modules/writer/types/workflow'
-import { continueWriting, expandText, rewriteText, summarizeText } from '@/modules/ai/api'
+import { chatWithAI, continueWriting, expandText, rewriteText, summarizeText } from '@/modules/ai/api'
 
 const messages = ref<Array<{ role: string; content: string }>>([])
 const addMessage = vi.fn()
@@ -183,6 +183,7 @@ function mountPanel() {
       sourceText: '',
       workflowContext: buildWorkflowContext('chapter-1'),
       actionTrigger: null,
+      aiSummaryContextText: '创作蓝图与资产摘要：\n当前章节资产：角色 2；地点 1',
     },
     global: {
       stubs: {
@@ -196,6 +197,10 @@ function mountPanel() {
   })
 }
 
+function getFirstApplyGeneratedPayload(wrapper: ReturnType<typeof mountPanel>) {
+  return (wrapper.emitted('applyGeneratedText') as Array<[Record<string, unknown>]> | undefined)?.[0]?.[0]
+}
+
 describe('AIPanel', () => {
   beforeEach(() => {
     messages.value = []
@@ -207,6 +212,7 @@ describe('AIPanel', () => {
     vi.mocked(expandText).mockReset()
     vi.mocked(rewriteText).mockReset()
     vi.mocked(summarizeText).mockReset()
+    vi.mocked(chatWithAI).mockReset()
     mockExecuteWriterDocumentCommand.mockReset()
     mockExecuteWriterDocumentCommand.mockResolvedValue({ handled: false })
     mockListDocuments.mockReset()
@@ -350,6 +356,7 @@ describe('AIPanel', () => {
         sourceText: '当前整章正文',
         workflowContext: buildWorkflowContext('chapter-1'),
         actionTrigger: null,
+        aiSummaryContextText: '创作蓝图与资产摘要：\n当前章节资产：角色 2；地点 1',
       },
       global: {
         stubs: {
@@ -374,8 +381,30 @@ describe('AIPanel', () => {
       'project-1',
       '当前整章正文',
       'polish',
-      expect.stringContaining('请直接输出可替换整章正文的完整版本。'),
+      expect.stringContaining('创作蓝图与资产摘要：'),
     )
+    expect(vi.mocked(rewriteText).mock.calls[0]?.[3]).toContain(
+      '请直接输出可替换整章正文的完整版本。',
+    )
+  })
+
+  it('merges summary context into general chat requests', async () => {
+    vi.mocked(chatWithAI).mockResolvedValue({
+      reply: '收到，我们继续讨论。',
+    } as never)
+
+    const wrapper = mountPanel()
+    const input = wrapper.findComponent(AIInputAreaStub)
+    input.vm.$emit('update:modelValue', '聊聊这章的节奏问题')
+    await nextTick()
+    input.vm.$emit('send')
+    await flushPromises()
+
+    expect(vi.mocked(chatWithAI)).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(chatWithAI).mock.calls[0]?.[0]).toContain('当前工作流上下文：')
+    expect(vi.mocked(chatWithAI).mock.calls[0]?.[0]).toContain('创作蓝图与资产摘要：')
+    expect(vi.mocked(chatWithAI).mock.calls[0]?.[0]).toContain('当前章节资产：角色 2；地点 1')
+    expect(vi.mocked(chatWithAI).mock.calls[0]?.[0]).toContain('聊聊这章的节奏问题')
   })
 
   it('routes explicit expand-length requests into direct edit diff flow', async () => {
@@ -624,7 +653,7 @@ describe('AIPanel', () => {
       'polish',
       expect.any(String),
     )
-    expect(wrapper.emitted('applyGeneratedText')?.[0]?.[0]).toMatchObject({
+    expect(getFirstApplyGeneratedPayload(wrapper)).toMatchObject({
       action: 'rewrite',
       sourceText: '雨夜章节正文',
       generatedText: '雨夜章节改写后正文',
@@ -739,7 +768,7 @@ describe('AIPanel', () => {
         targetDocumentId: 'chapter-2',
       }),
     )
-    expect(wrapper.emitted('applyGeneratedText')?.[0]?.[0]).toMatchObject({
+    expect(getFirstApplyGeneratedPayload(wrapper)).toMatchObject({
       targetDocumentId: 'chapter-2',
       generatedText: '第二章补强后正文',
     })
@@ -839,7 +868,7 @@ describe('AIPanel', () => {
       'polish',
       expect.any(String),
     )
-    expect(wrapper.emitted('applyGeneratedText')?.[0]?.[0]).toMatchObject({
+    expect(getFirstApplyGeneratedPayload(wrapper)).toMatchObject({
       targetDocumentId: 'chapter-2',
       targetDocumentTitle: '第二章',
       generatedText: '第二章改写后正文',
@@ -967,7 +996,7 @@ describe('AIPanel', () => {
     input.vm.$emit('send')
     await flushPromises()
 
-    expect(wrapper.emitted('applyGeneratedText')?.[0]?.[0]).toEqual({
+    expect(getFirstApplyGeneratedPayload(wrapper)).toEqual({
       action: 'rewrite',
       sourceText: '第一行\n第二行',
       generatedText: '第一行\n第二行（改）',

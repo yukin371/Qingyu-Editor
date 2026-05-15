@@ -109,13 +109,16 @@ import type {
   WriterAIActionTrigger,
   WriterResultCandidate,
 } from '@/modules/writer/types/workflow'
+import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 
 const props = defineProps<{
   projectId: string
   chapterId: string
   chapterTitle: string
+  chapters?: SidebarChapterSummary[]
   seedText: string
   actionTrigger: WriterAIActionTrigger | null
+  aiSummaryContextText?: string
 }>()
 
 const emit = defineEmits<{

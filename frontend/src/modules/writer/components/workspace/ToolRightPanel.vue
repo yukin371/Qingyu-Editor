@@ -38,10 +38,12 @@
           :project-id="projectId"
           :chapter-id="chapterId"
           :chapter-title="chapterTitle"
+          :chapters="chapters"
           :source-text="sourceText"
           :ai-action-trigger="aiActionTrigger"
           :ai-apply-feedback="aiApplyFeedback"
           :workflow-context="workflowContext"
+          :ai-summary-context-text="aiSummaryContextText"
           :draft-proposals="draftProposals"
           @ai-apply="(payload) => $emit('ai-apply', payload)"
           @proposal-draft="(payload) => $emit('proposal-draft', payload)"
@@ -91,6 +93,7 @@ import AssetListPanel from '@/modules/writer/components/workspace/tool-right/Ass
 import AssetQuickEditorDialog from '@/modules/writer/components/workspace/tool-right/AssetQuickEditorDialog.vue'
 import InspirationPanel from '@/modules/writer/components/workspace/tool-right/InspirationPanel.vue'
 import ProofreadPanel from '@/modules/writer/components/workspace/tool-right/ProofreadPanel.vue'
+import { useWriterAISummaryContext } from '@/modules/writer/composables/useWriterAISummaryContext'
 import { useToolOverlay } from '@/modules/writer/composables/useToolOverlay'
 import { useToolRightAssets } from '@/modules/writer/composables/useToolRightAssets'
 import { useToolRightPanel } from '@/modules/writer/composables/useToolRightPanel'
@@ -137,7 +140,6 @@ const activeToolRef = computed(() => props.activeTool)
 const { activeConfig, showListPanel, listWidth, isResizingList, attachDetailPanel, startListResize } =
   useToolRightPanel(activeToolRef)
 const {
-  assetCategory,
   handleAssetSearchKeywordChange,
   handleAssetCategoryChange,
   assetListPanelProps,
@@ -156,6 +158,11 @@ const {
   handleOpenAssetGraph,
 } = useToolRightAssets({
   projectId: computed(() => props.projectId),
+  chapters: computed(() => props.chapters),
+})
+const { aiSummaryContextText } = useWriterAISummaryContext({
+  projectId: computed(() => props.projectId),
+  chapterId: computed(() => props.chapterId),
   chapters: computed(() => props.chapters),
 })
 const setDetailPanelRef = (

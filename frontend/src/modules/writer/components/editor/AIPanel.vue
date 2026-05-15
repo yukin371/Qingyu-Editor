@@ -143,11 +143,12 @@ import type {
   WriterWorkflowContext,
 } from '@/modules/writer/types/workflow'
 import {
-  buildWriterWorkflowContextPrompt,
   isWriterEditAction,
   resolveWriterEditApplyMode,
   resolveWriterPromptExecution,
 } from '@/modules/writer/types/workflow'
+import { mergeWriterAIInstructions } from '@/modules/writer/utils/writerAIContext'
+import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 
 // 子组件
 import AIConversationToolbar from './ai/AIConversationToolbar.vue'
@@ -188,6 +189,8 @@ interface Props {
   actionTrigger?: WriterAIActionTrigger | null
   workflowContext?: WriterWorkflowContext | null
   revisionSeed?: WriterRevisionSeed | null
+  chapters?: SidebarChapterSummary[]
+  aiSummaryContextText?: string
 }
 
 interface Emits {
@@ -775,21 +778,23 @@ async function requestEditIntent(
   baseInstructions?: string,
 ) {
   const action = intent?.action ?? 'rewrite'
-  const workflowContextPrompt = buildWriterWorkflowContextPrompt(effectiveWorkflowContext.value)
   const replacementHint =
     applyMode === 'replace_document'
       ? '请直接输出可替换整章正文的完整版本。'
       : applyMode === 'replace_selection'
         ? '请直接输出可替换当前选中文本的完整版本。'
         : ''
-  const mergedInstructions = [
-    instruction,
-    baseInstructions || '',
-    replacementHint,
-    workflowContextPrompt,
-  ]
-    .filter((item) => item && item.trim())
-    .join('\n\n')
+  const mergedInstructions = mergeWriterAIInstructions(
+    [
+      instruction,
+      baseInstructions || '',
+      replacementHint,
+    ],
+    {
+      workflowContext: effectiveWorkflowContext.value,
+      aiSummaryContextText: props.aiSummaryContextText,
+    },
+  )
 
   if (action === 'continue') {
     const response = await continueWriting(
@@ -900,10 +905,11 @@ async function sendMessage(content: string) {
     return
   }
   const requestMessage = buildChatRequestMessage(trimmedContent)
-  const workflowContextPrompt = buildWriterWorkflowContextPrompt(effectiveWorkflowContext.value)
-  const finalRequestMessage = workflowContextPrompt
-    ? `${workflowContextPrompt}\n\n${requestMessage}`
-    : requestMessage
+  const finalRequestMessage =
+    mergeWriterAIInstructions([requestMessage], {
+      workflowContext: effectiveWorkflowContext.value,
+      aiSummaryContextText: props.aiSummaryContextText,
+    }) || requestMessage
 
   // 添加用户消息
   addMessage('user', trimmedContent)
@@ -1115,10 +1121,10 @@ async function runSelectionAction(action: string, selectedText: string, instruct
     }
     const label = actionLabelMap[action] || '处理'
     const trimmedInstructions = (instructions || '').trim()
-    const workflowContextPrompt = buildWriterWorkflowContextPrompt(effectiveWorkflowContext.value)
-    const mergedInstructions = [trimmedInstructions, workflowContextPrompt]
-      .filter((item) => item && item.trim())
-      .join('\n\n')
+    const mergedInstructions = mergeWriterAIInstructions([trimmedInstructions], {
+      workflowContext: effectiveWorkflowContext.value,
+      aiSummaryContextText: props.aiSummaryContextText,
+    })
     const userPrompt = trimmedInstructions
       ? `[${label}] ${selectedText}\n要求：${trimmedInstructions}`
       : `[${label}] ${selectedText}`

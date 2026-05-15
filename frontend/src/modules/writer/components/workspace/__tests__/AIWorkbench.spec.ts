@@ -47,6 +47,7 @@ describe('AIWorkbench', () => {
         projectId: 'project-1',
         chapterId: 'chapter-1',
         chapterTitle: '第一章',
+        chapters: [],
         sourceText: '这是当前章节正文。',
         actionTrigger: null,
         aiApplyFeedback: null,
@@ -61,6 +62,7 @@ describe('AIWorkbench', () => {
           pendingChangeRequests: [],
           pendingChangeRequestCount: 3,
         },
+        aiSummaryContextText: '创作蓝图与资产摘要：\n当前章节资产：角色 2',
         draftProposals: [
           {
             id: 'proposal-1',
@@ -102,6 +104,7 @@ describe('AIWorkbench', () => {
         projectId: 'project-1',
         chapterId: 'chapter-1',
         chapterTitle: '第一章',
+        chapters: [],
         sourceText: '这是当前章节正文。',
         actionTrigger: null,
         aiApplyFeedback: {
@@ -122,6 +125,7 @@ describe('AIWorkbench', () => {
           pendingChangeRequests: [],
           pendingChangeRequestCount: 0,
         },
+        aiSummaryContextText: '创作蓝图与资产摘要：\n当前章节资产：角色 2',
         draftProposals: [],
       },
       global: {
@@ -153,8 +157,9 @@ describe('AIWorkbench', () => {
 
   it('passes current chapter source text down to chat AIPanel', () => {
     const AIPanelStub = defineComponent({
-      props: ['sourceText'],
-      template: '<div data-testid="ai-panel-source-text">{{ sourceText }}</div>',
+      props: ['sourceText', 'aiSummaryContextText'],
+      template:
+        '<div><div data-testid="ai-panel-source-text">{{ sourceText }}</div><div data-testid="ai-panel-summary-context">{{ aiSummaryContextText }}</div></div>',
     })
 
     const wrapper = mount(AIWorkbench, {
@@ -162,6 +167,7 @@ describe('AIWorkbench', () => {
         projectId: 'project-1',
         chapterId: 'chapter-1',
         chapterTitle: '第一章',
+        chapters: [],
         sourceText: '这是当前章节正文。',
         actionTrigger: null,
         aiApplyFeedback: null,
@@ -176,6 +182,7 @@ describe('AIWorkbench', () => {
           pendingChangeRequests: [],
           pendingChangeRequestCount: 0,
         },
+        aiSummaryContextText: '创作蓝图与资产摘要：\n当前章节资产：角色 2',
         draftProposals: [],
       },
       global: {
@@ -189,6 +196,9 @@ describe('AIWorkbench', () => {
     })
 
     expect(wrapper.get('[data-testid="ai-panel-source-text"]').text()).toBe('这是当前章节正文。')
+    expect(wrapper.get('[data-testid="ai-panel-summary-context"]').text()).toContain(
+      '创作蓝图与资产摘要：',
+    )
   })
 
   it('promotes AI result candidates into proposal drafts through emitted events', async () => {
@@ -1199,12 +1209,11 @@ describe('AIWorkbench', () => {
     expect(wrapper.find('[data-testid="workflow-result-card"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="workflow-result-meta"]').text()).toContain('候选')
     expect(wrapper.get('[data-testid="workflow-result-meta"]').text()).toContain('总结')
-    expect(wrapper.get('[data-testid="workflow-result-meta"]').text()).toContain('方向')
     expect(wrapper.text()).toContain('章节方向提案')
     expect(wrapper.get('[data-testid="workflow-result-summary"]').text()).toContain(
       '本章应聚焦冲突升级',
     )
-    expect(wrapper.get('[data-testid="workflow-result-action"]').text()).toBe('存为方向')
+    expect(wrapper.get('[data-testid="workflow-result-action"]').text()).toBe('存为正文')
 
     await wrapper.find('.workflow-result-card__action').trigger('click')
     expect(wrapper.emitted('proposalDraft')?.[0]?.[0]).toMatchObject({

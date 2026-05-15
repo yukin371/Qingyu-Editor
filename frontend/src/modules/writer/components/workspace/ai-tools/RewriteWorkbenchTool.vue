@@ -96,15 +96,18 @@ import type {
   WriterAIActionTrigger,
   WriterWorkflowContext,
 } from '@/modules/writer/types/workflow'
-import { buildWriterWorkflowContextPrompt } from '@/modules/writer/types/workflow'
+import { mergeWriterAIInstructions } from '@/modules/writer/utils/writerAIContext'
+import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 
 const props = defineProps<{
   projectId: string
   chapterId: string
   chapterTitle: string
+  chapters?: SidebarChapterSummary[]
   seedText: string
   actionTrigger: WriterAIActionTrigger | null
   workflowContext?: WriterWorkflowContext | null
+  aiSummaryContextText?: string
 }>()
 
 const emit = defineEmits<{
@@ -197,16 +200,16 @@ async function handleRun() {
   loading.value = true
   errorText.value = ''
   try {
-    const workflowContextPrompt = buildWriterWorkflowContextPrompt(effectiveWorkflowContext.value)
-    const mergedInstructions = [instructions.value.trim(), workflowContextPrompt]
-      .filter((item) => item && item.trim())
-      .join('\n\n')
+    const mergedInstructions = mergeWriterAIInstructions([instructions.value.trim()], {
+      workflowContext: effectiveWorkflowContext.value,
+      aiSummaryContextText: props.aiSummaryContextText,
+    })
     const result = await rewriteWithWorkbench({
       projectId: props.projectId,
       chapterId: props.chapterId || undefined,
       originalText: draftText.value,
       mode: mode.value,
-      instructions: mergedInstructions || undefined,
+      instructions: mergedInstructions,
     })
     resultText.value = result.rewrittenText
   } catch (error) {

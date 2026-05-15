@@ -36,9 +36,11 @@
         :project-id="projectId"
         :chapter-id="chapterId"
         :chapter-title="chapterTitle"
+        :chapters="chapters"
         :seed-text="sourceText"
         :action-trigger="actionTrigger"
         :workflow-context="workflowContext"
+        :ai-summary-context-text="aiSummaryContextText"
         @apply="handleApplyPayload"
       />
 
@@ -47,9 +49,11 @@
         :project-id="projectId"
         :chapter-id="chapterId"
         :chapter-title="chapterTitle"
+        :chapters="chapters"
         :seed-text="sourceText"
         :action-trigger="actionTrigger"
         :workflow-context="workflowContext"
+        :ai-summary-context-text="aiSummaryContextText"
         @result-candidate="handleResultCandidate"
         @apply-structure-plan="(payload) => emit('applyStructurePlan', payload)"
       />
@@ -59,8 +63,10 @@
         :project-id="projectId"
         :chapter-id="chapterId"
         :chapter-title="chapterTitle"
+        :chapters="chapters"
         :seed-text="sourceText"
         :action-trigger="actionTrigger"
+        :ai-summary-context-text="aiSummaryContextText"
         @result-candidate="handleResultCandidate"
       />
 
@@ -70,6 +76,8 @@
         :source-text="sourceText"
         :action-trigger="actionTrigger"
         :workflow-context="workflowContext"
+        :chapters="chapters"
+        :ai-summary-context-text="aiSummaryContextText"
         :revision-seed="revisionSeed"
         @apply-generated-text="handleApplyPayload"
         @result-candidate="handleResultCandidate"
@@ -86,6 +94,7 @@ import RewriteWorkbenchTool from '@/modules/writer/components/workspace/ai-tools
 import SummaryWorkbenchTool from '@/modules/writer/components/workspace/ai-tools/SummaryWorkbenchTool.vue'
 import ReviewWorkbenchTool from '@/modules/writer/components/workspace/ai-tools/ReviewWorkbenchTool.vue'
 import { useAIWorkbenchRail } from '@/modules/writer/composables/useAIWorkbenchRail'
+import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 import type {
   WriterAIActionTrigger,
   WriterAIApplyFeedback,
@@ -98,16 +107,20 @@ import type {
   WriterWorkflowContext,
 } from '@/modules/writer/types/workflow'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   projectId: string
   chapterId: string
   chapterTitle: string
+  chapters?: SidebarChapterSummary[]
   sourceText: string
   actionTrigger: WriterAIActionTrigger | null
   aiApplyFeedback: WriterAIApplyFeedback | null
   workflowContext: WriterWorkflowContext
+  aiSummaryContextText?: string
   draftProposals: WriterDraftProposal[]
-}>()
+}>(), {
+  chapters: () => [],
+})
 
 const emit = defineEmits<{
   (e: 'applyGeneratedText', payload: WriterAIApplyPayload): void

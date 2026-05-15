@@ -190,6 +190,7 @@ describe('SummaryWorkbenchTool', () => {
         chapterTitle: '第一章',
         seedText: '张三试探李四。',
         actionTrigger: null,
+        aiSummaryContextText: '创作蓝图与资产摘要：\n当前章节资产：角色 2；地点 1',
         workflowContext: {
           signature: 'ctx-1',
           projectId: 'project-1',
@@ -212,7 +213,11 @@ describe('SummaryWorkbenchTool', () => {
         projectId: 'project-1',
         chapterId: 'chapter-1',
         mode: 'chapter',
+        workflowContextPrompt: expect.stringContaining('创作蓝图与资产摘要：'),
       }),
+    )
+    expect(generateStructurePlan.mock.calls[0]?.[0]?.workflowContextPrompt).toContain(
+      '当前章节资产：角色 2；地点 1',
     )
     expect(wrapper.text()).toContain('夜探旧仓库')
 

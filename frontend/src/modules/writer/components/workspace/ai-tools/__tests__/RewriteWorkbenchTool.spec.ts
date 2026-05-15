@@ -23,6 +23,7 @@ describe('RewriteWorkbenchTool', () => {
         chapterTitle: '第一章',
         seedText: '原始文本',
         actionTrigger: null,
+        aiSummaryContextText: '创作蓝图与资产摘要：\n当前章节资产：角色 2；地点 1',
         workflowContext: {
           signature: 'sig-1',
           projectId: 'project-1',
@@ -57,6 +58,8 @@ describe('RewriteWorkbenchTool', () => {
     expect(payload.instructions).toContain('当前工作流上下文：')
     expect(payload.instructions).toContain('章节：第一章')
     expect(payload.instructions).toContain('场景作用域：第一场')
+    expect(payload.instructions).toContain('创作蓝图与资产摘要：')
+    expect(payload.instructions).toContain('当前章节资产：角色 2；地点 1')
   })
 
   it('keeps instructions undefined when both manual and workflow context are empty', async () => {

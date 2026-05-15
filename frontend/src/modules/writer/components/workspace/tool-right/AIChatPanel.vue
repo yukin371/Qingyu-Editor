@@ -4,10 +4,12 @@
       :project-id="projectId"
       :chapter-id="chapterId"
       :chapter-title="chapterTitle"
+      :chapters="chapters"
       :source-text="sourceText"
       :action-trigger="aiActionTrigger"
       :ai-apply-feedback="aiApplyFeedback"
       :workflow-context="workflowContext"
+      :ai-summary-context-text="aiSummaryContextText"
       :draft-proposals="draftProposals"
       @apply-generated-text="(payload) => $emit('ai-apply', payload)"
       @proposal-draft="(payload) => $emit('proposal-draft', payload)"
@@ -29,15 +31,18 @@ import type {
   WriterStructurePlanPayload,
   WriterWorkflowContext,
 } from '@/modules/writer/types/workflow'
+import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 
 defineProps<{
   projectId: string
   chapterId: string
   chapterTitle: string
+  chapters: SidebarChapterSummary[]
   sourceText: string
   aiActionTrigger: WriterAIActionTrigger | null
   aiApplyFeedback: WriterAIApplyFeedback | null
   workflowContext: WriterWorkflowContext
+  aiSummaryContextText?: string
   draftProposals: WriterDraftProposal[]
 }>()
 
