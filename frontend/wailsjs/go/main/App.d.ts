@@ -27,6 +27,10 @@ export function CreateTimelineEvent(arg1:database.CreateTimelineEventInput):Prom
 
 export function CreateVolume(arg1:database.CreateVolumeInput):Promise<database.Volume>;
 
+export function DeleteAppSecret(arg1:string):Promise<void>;
+
+export function DeleteAppSetting(arg1:string):Promise<void>;
+
 export function DeleteChapter(arg1:string):Promise<void>;
 
 export function DeleteCharacter(arg1:string):Promise<void>;
@@ -39,10 +43,6 @@ export function DeleteLocation(arg1:string):Promise<void>;
 
 export function DeleteLocationRelation(arg1:string):Promise<void>;
 
-export function DeleteAppSetting(arg1:string):Promise<void>;
-
-export function DeleteAppSecret(arg1:string):Promise<void>;
-
 export function DeleteProject(arg1:string):Promise<void>;
 
 export function DeleteTimeline(arg1:string):Promise<void>;
@@ -51,11 +51,11 @@ export function DeleteTimelineEvent(arg1:string):Promise<void>;
 
 export function DeleteVolume(arg1:string):Promise<void>;
 
-export function GetChapter(arg1:string):Promise<database.Chapter>;
+export function GetAppSecret(arg1:string):Promise<string>;
 
 export function GetAppSetting(arg1:string):Promise<string>;
 
-export function GetAppSecret(arg1:string):Promise<string>;
+export function GetChapter(arg1:string):Promise<database.Chapter>;
 
 export function GetCharacter(arg1:string):Promise<database.Character>;
 
@@ -115,9 +115,9 @@ export function ReorderVolumes(arg1:database.ReorderVolumesInput):Promise<void>;
 
 export function SaveCreativeWorkflow(arg1:string,arg2:database.CreativeWorkflowUpdate):Promise<database.CreativeWorkflowRecord>;
 
-export function SetAppSetting(arg1:string,arg2:string):Promise<void>;
-
 export function SetAppSecret(arg1:string,arg2:string):Promise<void>;
+
+export function SetAppSetting(arg1:string,arg2:string):Promise<void>;
 
 export function TriggerStoryHarnessIndex(arg1:string,arg2:string):Promise<database.StoryHarnessTriggerIndexResult>;
 
