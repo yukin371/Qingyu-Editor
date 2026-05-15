@@ -76,14 +76,11 @@ import {
   type WriterResolvedDocumentTarget,
 } from '@/modules/writer/services/writerDocumentAgent.service'
 import {
-  buildChatRequestMessage,
-  buildPlanOnlyHandledResult,
   buildTargetCandidatesMeta,
   buildTargetStatusMeta,
   buildWriterCheckpointMeta,
   buildWriterPlanMeta,
   buildWriterRetrievalMeta,
-  shouldHandlePlanOnlyInline,
   type DocumentTargetRoute,
   type DocumentTargetSelectionPayload,
 } from '@/modules/writer/utils/writerAIChatMeta'
@@ -92,8 +89,10 @@ import { runWriterResolvedAnalysis } from '@/modules/writer/utils/writerAIAnalys
 import {
   buildTargetResolutionResult,
 } from '@/modules/writer/utils/writerAIConversation'
+import { buildWriterMessageDispatch } from '@/modules/writer/utils/writerAIMessageDispatch'
 import { runWriterDocumentCommand } from '@/modules/writer/utils/writerAIDocumentCommandRunner'
 import { runWriterDirectEdit } from '@/modules/writer/utils/writerAIDirectEditRunner'
+import { runWriterPlanOnly } from '@/modules/writer/utils/writerAIPlanRunner'
 import {
   runWriterAnalysisRoute,
   runWriterGeneralChatRoute,
@@ -601,20 +600,30 @@ async function sendMessage(content: string) {
     trimmedContent,
     buildWriterAgentContext(),
   )
-  if (shouldHandlePlanOnlyInline(editorPlan)) {
-    const handledPlan = buildPlanOnlyHandledResult(trimmedContent, editorPlan)
-    addMessage('user', handledPlan.userMessage)
-    inputText.value = ''
-    addMessage('assistant', handledPlan.assistantMessage, false, handledPlan.assistantMeta)
+  const handledPlanOnly = await runWriterPlanOnly({
+    content: trimmedContent,
+    plan: editorPlan,
+    onUserMessage: (message) => {
+      addMessage('user', message)
+      inputText.value = ''
+    },
+    onAssistantMessage: (message, meta) => {
+      addMessage('assistant', message, false, meta)
+    },
+  })
+  if (handledPlanOnly) {
     await scrollToBottom()
     return
   }
 
-  const hasSelectionContext = isSelectionContext(selectedChatContext.value)
-  const promptExecution = resolveWriterPromptExecution(trimmedContent, {
+  const { promptExecution, finalRequestMessage } = buildWriterMessageDispatch({
+    content: trimmedContent,
+    selectedContext: selectedChatContext.value,
     interactionMode: interactionMode.value,
     canEditDirectly: canEditDirectly.value,
-    hasSelectionContext,
+    hasSelectionContext: isSelectionContext(selectedChatContext.value),
+    workflowContext: effectiveWorkflowContext.value,
+    aiSummaryContextText: props.aiSummaryContextText,
   })
   const intent = promptExecution.intent
 
@@ -622,12 +631,6 @@ async function sendMessage(content: string) {
     await runDirectEdit(trimmedContent, intent, editorPlan)
     return
   }
-  const requestMessage = buildChatRequestMessage(trimmedContent, selectedChatContext.value)
-  const finalRequestMessage =
-    mergeWriterAIInstructions([requestMessage], {
-      workflowContext: effectiveWorkflowContext.value,
-      aiSummaryContextText: props.aiSummaryContextText,
-    }) || requestMessage
 
   // 添加用户消息
   addMessage('user', trimmedContent)
@@ -646,7 +649,7 @@ async function sendMessage(content: string) {
       return
     }
 
-    await runGeneralChatRoute(finalRequestMessage)
+    await runGeneralChatRoute(finalRequestMessage || trimmedContent)
   } catch (error) {
     console.error('[AIPanel] Failed to get AI response:', error)
     const resolvedError = resolveWriterAIErrorState(error)
