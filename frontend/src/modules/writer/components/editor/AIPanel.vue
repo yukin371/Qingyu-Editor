@@ -541,12 +541,10 @@ async function sendMessage(content: string) {
     },
     executeCommand: executeWriterDocumentCommand,
     onUserMessage: async (message) => {
-      addMessage('user', message)
-      inputText.value = ''
-      await scrollToBottom()
+      await pushUserMessage(message, { clearInput: true, scroll: true })
     },
     onAssistantMessage: (message, meta) => {
-      addMessage('assistant', message, false, meta)
+      return pushAssistantMessage(message, meta)
     },
     onPatchPayload: (payload) => {
       emit('applyGeneratedText', payload)
@@ -566,11 +564,10 @@ async function sendMessage(content: string) {
     content: trimmedContent,
     plan: editorPlan,
     onUserMessage: (message) => {
-      addMessage('user', message)
-      inputText.value = ''
+      return pushUserMessage(message, { clearInput: true })
     },
     onAssistantMessage: (message, meta) => {
-      addMessage('assistant', message, false, meta)
+      return pushAssistantMessage(message, meta)
     },
   })
   if (handledPlanOnly) {
@@ -595,13 +592,7 @@ async function sendMessage(content: string) {
   }
 
   // 添加用户消息
-  addMessage('user', trimmedContent)
-
-  // 清空输入框
-  inputText.value = ''
-
-  // 滚动到底部
-  await scrollToBottom()
+  await pushUserMessage(trimmedContent, { clearInput: true, scroll: true })
 
   // 调用真实AI API
   isTyping.value = true
@@ -626,7 +617,7 @@ async function runAnalysisRoute(instruction: string, intent: WriterPromptIntent)
     intent,
     resolveTarget: resolveDocumentTarget,
     onUnresolved: async (resolvedTarget) => {
-      addMessage('user', instruction)
+      await pushUserMessage(instruction)
       appendTargetResolutionMessage(instruction, 'analysis', resolvedTarget)
       isTyping.value = false
       await scrollToBottom()
@@ -644,7 +635,7 @@ async function runGeneralChatRoute(finalRequestMessage: string) {
     messages: messages.value,
     requestChat: chatWithAI,
     onReply: async (aiResponseText) => {
-      addMessage('assistant', aiResponseText)
+      await pushAssistantMessage(aiResponseText)
       if (selectedChatContext.value) {
         handleClearSelectedContext()
       }
@@ -676,8 +667,7 @@ async function runResolvedDirectEdit(
   try {
     const retrievalMeta = plan ? buildWriterRetrievalMeta(plan) : undefined
     if (retrievalMeta && plan?.route === 'search_then_edit') {
-      addMessage('assistant', plan.userVisibleSummary, false, retrievalMeta)
-      await scrollToBottom()
+      await pushAssistantMessage(plan.userVisibleSummary, retrievalMeta, { scroll: true })
     }
 
     await runWriterDirectEdit({
@@ -702,32 +692,26 @@ async function runResolvedDirectEdit(
           },
         }),
       onUserMessage: async (message) => {
-        addMessage('user', message)
-        inputText.value = ''
-        await scrollToBottom()
+        await pushUserMessage(message, { clearInput: true, scroll: true })
       },
       onCrossDocumentLoading: async (loadingMessage) => {
-        addMessage(
-          'assistant',
+        await pushAssistantMessage(
           loadingMessage,
-          false,
           buildTargetStatusMeta(
             resolvedTarget,
             'loading',
             '已定位目标章节，正在生成结果',
             '生成完成后会自动提交给宿主切章并挂起正文 diff。',
           ),
+          { scroll: true },
         )
-        await scrollToBottom()
       },
       onEmptyResult: () => {
-        addMessage('assistant', '未生成可应用的正文，请调整要求后重试。')
+        return pushAssistantMessage('未生成可应用的正文，请调整要求后重试。')
       },
       onSuccess: async ({ generatedText, resultCandidate, applyPayload, isCrossDocument }) => {
-        addMessage(
-          'assistant',
+        await pushAssistantMessage(
           generatedText,
-          false,
           isCrossDocument
             ? buildTargetStatusMeta(
                 resolvedTarget,
@@ -738,10 +722,8 @@ async function runResolvedDirectEdit(
             : undefined,
         )
         if (isCrossDocument) {
-          addMessage(
-            'assistant',
+          await pushAssistantMessage(
             '正文 diff 已交给工作区处理。',
-            false,
             buildWriterCheckpointMeta(
               resolvedTarget,
               effectiveWorkflowContext.value?.chapterId,
@@ -776,7 +758,7 @@ async function runDirectEdit(
     target: plan?.target,
     resolveTarget: resolveDocumentTarget,
     onUnresolved: async (resolvedTarget) => {
-      addMessage('user', instruction)
+      await pushUserMessage(instruction)
       appendTargetResolutionMessage(instruction, 'edit', resolvedTarget)
     },
     onResolved: async (resolvedTarget) => {
@@ -809,13 +791,13 @@ async function runSelectionAction(action: string, selectedText: string, instruct
         })
       },
       onUserMessage: (userPrompt) => {
-        addMessage('user', userPrompt)
+        return pushUserMessage(userPrompt)
       },
       onEmptyResult: () => {
-        addMessage('assistant', '未生成有效内容，请稍后重试。')
+        return pushAssistantMessage('未生成有效内容，请稍后重试。')
       },
       onSuccess: async ({ generatedText, resultCandidate, applyPayload }) => {
-        addMessage('assistant', generatedText)
+        await pushAssistantMessage(generatedText)
         emit('resultCandidate', resultCandidate)
         emit('applyGeneratedText', applyPayload)
         updateSelectionNotice(action, selectedText, instructions, 'done')
@@ -839,6 +821,35 @@ function handleSend() {
 function handleQuickAction(action: QuickAction) {
   const prompt = getQuickActionPrompt(action.id)
   sendMessage(prompt)
+}
+
+async function pushUserMessage(
+  content: string,
+  options: {
+    clearInput?: boolean
+    scroll?: boolean
+  } = {},
+) {
+  addMessage('user', content)
+  if (options.clearInput) {
+    inputText.value = ''
+  }
+  if (options.scroll) {
+    await scrollToBottom()
+  }
+}
+
+async function pushAssistantMessage(
+  content: string,
+  meta?: ChatMessage['meta'],
+  options: {
+    scroll?: boolean
+  } = {},
+) {
+  addMessage('assistant', content, false, meta)
+  if (options.scroll) {
+    await scrollToBottom()
+  }
 }
 
 async function scrollToBottom() {
