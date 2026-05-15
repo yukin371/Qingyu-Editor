@@ -97,6 +97,11 @@ import {
   buildWriterAgentContext as createWriterAgentContext,
   resolveWriterAnalysisText,
 } from '@/modules/writer/utils/writerAIAnalysis'
+import {
+  buildGeneralChatHistory,
+  buildTargetResolutionResult,
+  resolveGeneralChatReply,
+} from '@/modules/writer/utils/writerAIConversation'
 import { buildHandledDocumentCommandResult } from '@/modules/writer/utils/writerAIDocumentCommand'
 import {
   buildDirectEditApplyPayload,
@@ -451,11 +456,12 @@ function appendTargetResolutionMessage(
   route: DocumentTargetRoute,
   target: WriterResolvedDocumentTarget,
 ) {
+  const resolutionResult = buildTargetResolutionResult(instruction, route, target)
   addMessage(
     'assistant',
-    target.assistantMessage || '当前没有可用的目标章节。',
+    resolutionResult.assistantMessage,
     false,
-    buildTargetCandidatesMeta(instruction, route, target),
+    resolutionResult.assistantMeta,
   )
 }
 
@@ -681,17 +687,9 @@ async function sendMessage(content: string) {
     }
 
     // ── 通用聊天（无匹配意图或无选中文本）──
-    // 构建对话历史
-    const history = messages.value
-      .slice(0, -1)
-      .filter((m) => m.role !== 'system')
-      .map((m) => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-      }))
-
+    const history = buildGeneralChatHistory(messages.value)
     const response = await chatWithAI(finalRequestMessage, history)
-    const aiResponseText = response.reply || '抱歉，我没有理解您的问题。'
+    const aiResponseText = resolveGeneralChatReply(response.reply)
 
     // 通用对话：只在聊天气泡中显示，不触发编辑器候选
     addMessage('assistant', aiResponseText)
