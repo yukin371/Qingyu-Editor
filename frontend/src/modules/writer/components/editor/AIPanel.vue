@@ -113,16 +113,13 @@ import {
 } from '@/modules/writer/utils/writerAIRouteRunner'
 import {
   executeWriterTextAction,
-  extractWriterGeneratedText,
   requestWriterEditIntent,
 } from '@/modules/writer/utils/writerAIGeneration'
 import { resolveWriterAIErrorState } from '@/modules/writer/utils/writerAIError'
 import {
-  buildSelectionApplyPayload,
   buildSelectionNotice,
-  buildSelectionResultCandidate,
-  buildSelectionUserPrompt,
 } from '@/modules/writer/utils/writerAISelection'
+import { runWriterSelectionAction } from '@/modules/writer/utils/writerAISelectionRunner'
 
 type EditorApplyMode =
   | 'replace_selection'
@@ -871,29 +868,35 @@ async function runSelectionAction(action: string, selectedText: string, instruct
       workflowContext: effectiveWorkflowContext.value,
       aiSummaryContextText: props.aiSummaryContextText,
     })
-    const userPrompt = buildSelectionUserPrompt(action, selectedText, instructions)
-    addMessage('user', userPrompt)
-
-    const projectId = props.sessionId || 'demo-project'
-    const response = await executeWriterTextAction({
-      projectId,
+    await runWriterSelectionAction({
       action: action as 'continue' | 'polish' | 'expand' | 'rewrite',
-      sourceText: selectedText,
-      instructions: mergedInstructions || undefined,
-      targetLength: action === 'continue' ? 200 : undefined,
+      selectedText,
+      instructions,
+      mergedInstructions: mergedInstructions || undefined,
+      executeAction: async ({ action: nextAction, selectedText: nextSelectedText, mergedInstructions: nextInstructions }) => {
+        const projectId = props.sessionId || 'demo-project'
+        return executeWriterTextAction({
+          projectId,
+          action: nextAction,
+          sourceText: nextSelectedText,
+          instructions: nextInstructions,
+          targetLength: nextAction === 'continue' ? 200 : undefined,
+        })
+      },
+      onUserMessage: (userPrompt) => {
+        addMessage('user', userPrompt)
+      },
+      onEmptyResult: () => {
+        addMessage('assistant', '未生成有效内容，请稍后重试。')
+      },
+      onSuccess: async ({ generatedText, resultCandidate, applyPayload }) => {
+        addMessage('assistant', generatedText)
+        emit('resultCandidate', resultCandidate)
+        emit('applyGeneratedText', applyPayload)
+        updateSelectionNotice(action, selectedText, instructions, 'done')
+        await scrollToBottom()
+      },
     })
-
-    const generatedText = extractWriterGeneratedText(action, response)
-    if (!generatedText) {
-      addMessage('assistant', '未生成有效内容，请稍后重试。')
-      return
-    }
-
-    addMessage('assistant', generatedText)
-    emit('resultCandidate', buildSelectionResultCandidate(action, selectedText, generatedText))
-    emit('applyGeneratedText', buildSelectionApplyPayload(action, selectedText, generatedText))
-    updateSelectionNotice(action, selectedText, instructions, 'done')
-    await scrollToBottom()
   } catch (error) {
     console.error('[AIPanel] Failed to run selection action:', error)
     addMessage('assistant', '处理失败，请稍后重试。')
