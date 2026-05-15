@@ -68,11 +68,7 @@ import { useChatHistory } from '@/composables/useChatHistory'
 import { useTypewriter } from '@/composables/useTypewriter'
 import { message } from '@/design-system/services'
 import { QUICK_ACTION_PROMPTS, getQuickActionPrompt } from '@/utils/mockAIResponse'
-import {
-  chatWithAI,
-  summarizeText,
-  proofreadText,
-} from '@/modules/ai/api'
+import { chatWithAI, summarizeText, proofreadText } from '@/modules/ai/api'
 import { executeWriterDocumentCommand } from '@/modules/writer/services/documentToolCommands.service'
 import {
   writerDocumentAgentService,
@@ -80,7 +76,6 @@ import {
   type WriterResolvedDocumentTarget,
 } from '@/modules/writer/services/writerDocumentAgent.service'
 import {
-  buildAnalysisCandidate,
   buildChatRequestMessage,
   buildPlanOnlyHandledResult,
   buildTargetCandidatesMeta,
@@ -88,15 +83,12 @@ import {
   buildWriterCheckpointMeta,
   buildWriterPlanMeta,
   buildWriterRetrievalMeta,
-  isCrossDocumentTarget,
   shouldHandlePlanOnlyInline,
   type DocumentTargetRoute,
   type DocumentTargetSelectionPayload,
 } from '@/modules/writer/utils/writerAIChatMeta'
-import {
-  buildWriterAgentContext as createWriterAgentContext,
-  resolveWriterAnalysisText,
-} from '@/modules/writer/utils/writerAIAnalysis'
+import { buildWriterAgentContext as createWriterAgentContext } from '@/modules/writer/utils/writerAIAnalysis'
+import { runWriterResolvedAnalysis } from '@/modules/writer/utils/writerAIAnalysisRunner'
 import {
   buildTargetResolutionResult,
 } from '@/modules/writer/utils/writerAIConversation'
@@ -479,60 +471,53 @@ async function runResolvedAnalysis(
   intent: WriterPromptIntent,
   resolvedTarget: WriterResolvedDocumentTarget,
 ) {
-  const sourceText = resolvedTarget.sourceText?.trim() || ''
-  if (!sourceText) {
-    addMessage('assistant', '当前没有可供分析的正文内容，请先确认目标章节。')
-    return
-  }
-
-  addMessage('user', instruction)
-  inputText.value = ''
-  await scrollToBottom()
-
   isTyping.value = true
   try {
-    const projectId = props.sessionId || 'demo-project'
-    let generatedText = ''
-
-    if (intent.action === 'proofread') {
-      const proofread = await proofreadText(sourceText, {
-        projectId,
-      })
-      generatedText = resolveWriterAnalysisText({
-        proofreadIssues: proofread.issues,
-      })
-    } else {
-      const response = await summarizeText(sourceText, {
-        projectId,
-        summaryType: 'detailed',
-      })
-      generatedText = resolveWriterAnalysisText({
-        summary: response.summary,
-        keyPoints: response.keyPoints,
-      })
-    }
-
-    if (generatedText.trim()) {
-      addMessage(
-        'assistant',
-        generatedText,
-        false,
-        isCrossDocumentTarget(resolvedTarget, effectiveWorkflowContext.value?.chapterId)
-          ? buildTargetStatusMeta(
-              resolvedTarget,
-              'ready',
-              '已读取目标章节并完成结果生成',
-              '这是基于异章节正文生成的结果；若继续改写，将沿用该目标章节。',
-            )
-          : undefined,
-      )
-      emit('resultCandidate', buildAnalysisCandidate(intent, generatedText, sourceText))
-    } else {
-      addMessage('assistant', '未返回有效结果，请重试。')
-    }
-
-    if (selectedChatContext.value) handleClearSelectedContext()
-    await scrollToBottom()
+    await runWriterResolvedAnalysis({
+      instruction,
+      intent,
+      resolvedTarget,
+      currentDocumentId: effectiveWorkflowContext.value?.chapterId,
+      projectId: props.sessionId || 'demo-project',
+      requestProofread: (sourceText, projectId) =>
+        proofreadText(sourceText, {
+          projectId,
+        }),
+      requestSummary: (sourceText, projectId) =>
+        summarizeText(sourceText, {
+          projectId,
+          summaryType: 'detailed',
+        }),
+      onMissingSource: () => {
+        addMessage('assistant', '当前没有可供分析的正文内容，请先确认目标章节。')
+      },
+      onUserMessage: async (message) => {
+        addMessage('user', message)
+        inputText.value = ''
+        await scrollToBottom()
+      },
+      onEmptyResult: () => {
+        addMessage('assistant', '未返回有效结果，请重试。')
+      },
+      onSuccess: async ({ generatedText, resultCandidate, isCrossDocument }) => {
+        addMessage(
+          'assistant',
+          generatedText,
+          false,
+          isCrossDocument
+            ? buildTargetStatusMeta(
+                resolvedTarget,
+                'ready',
+                '已读取目标章节并完成结果生成',
+                '这是基于异章节正文生成的结果；若继续改写，将沿用该目标章节。',
+              )
+            : undefined,
+        )
+        emit('resultCandidate', resultCandidate)
+        if (selectedChatContext.value) handleClearSelectedContext()
+        await scrollToBottom()
+      },
+    })
   } catch (error) {
     console.error('[AIPanel] Failed to get AI response:', error)
     const resolvedError = resolveWriterAIErrorState(error)
