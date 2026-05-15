@@ -499,7 +499,7 @@ async function runResolvedAnalysis(
   intent: WriterPromptIntent,
   resolvedTarget: WriterResolvedDocumentTarget,
 ) {
-  isTyping.value = true
+  startTyping()
   try {
     await runWriterResolvedAnalysis({
       instruction,
@@ -514,24 +514,20 @@ async function runResolvedAnalysis(
       requestSummary: (sourceText, projectId) =>
         summarizeText(sourceText, {
           projectId,
-          summaryType: 'detailed',
+        summaryType: 'detailed',
         }),
       onMissingSource: () => {
-        addMessage('assistant', '当前没有可供分析的正文内容，请先确认目标章节。')
+        return pushAssistantMessage('当前没有可供分析的正文内容，请先确认目标章节。')
       },
       onUserMessage: async (message) => {
-        addMessage('user', message)
-        inputText.value = ''
-        await scrollToBottom()
+        await pushUserMessage(message, { clearInput: true, scroll: true })
       },
       onEmptyResult: () => {
-        addMessage('assistant', '未返回有效结果，请重试。')
+        return pushAssistantMessage('未返回有效结果，请重试。')
       },
       onSuccess: async ({ generatedText, resultCandidate, isCrossDocument }) => {
-        addMessage(
-          'assistant',
+        await pushAssistantMessage(
           generatedText,
-          false,
           isCrossDocument
             ? buildTargetStatusMeta(
                 resolvedTarget,
@@ -547,11 +543,9 @@ async function runResolvedAnalysis(
       },
     })
   } catch (error) {
-    console.error('[AIPanel] Failed to get AI response:', error)
-    const resolvedError = resolveWriterAIErrorState(error)
-    addMessage('assistant', resolvedError.message, false, resolvedError.meta)
+    await failWithResolvedAIError('[AIPanel] Failed to get AI response:', error)
   } finally {
-    isTyping.value = false
+    await finishTyping()
   }
 }
 
