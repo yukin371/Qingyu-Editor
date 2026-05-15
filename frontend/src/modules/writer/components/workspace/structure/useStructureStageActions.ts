@@ -9,9 +9,8 @@ import { mapLevelToDocumentType } from './structureNodeTypes'
 
 type TreeDropPosition = 'before' | 'after'
 
-interface WriterStoreLike {
-  currentProjectId?: string
-  error?: string
+export interface WriterStoreLike {
+  error?: string | null
   loadOutlineTree: (projectId: string) => Promise<void>
   updateOutlineNode: (nodeId: string, projectId: string, payload: Record<string, unknown>) => Promise<void>
   createOutlineNode: (projectId: string, payload: Record<string, unknown>) => Promise<void>

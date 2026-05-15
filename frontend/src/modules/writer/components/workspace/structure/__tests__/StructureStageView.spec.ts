@@ -114,6 +114,58 @@ vi.mock('@/modules/writer/services/creativeWorkflow.service', () => ({
     id: 'comeback',
     name: '逆袭打脸',
   }),
+  buildCreativeWorkflowSnapshot: (record: {
+    projectId: string
+    templateId: string | null
+    pitchLine: string
+    targetAudience: string[]
+    corePromises: string[]
+    paceContract: string
+    goldenChapters: Array<Record<string, unknown>>
+    updatedAt: string
+  } | null) => (record
+    ? {
+    projectId: record.projectId,
+    templateId: record.templateId,
+    templateName: '逆袭打脸',
+    premise: record.pitchLine,
+    targetAudience: record.targetAudience,
+    corePromises: record.corePromises,
+    paceContract: record.paceContract,
+    goldenChapters: record.goldenChapters,
+    updatedAt: record.updatedAt,
+      }
+    : null),
+  buildCreativeWorkflowSummaryLines: (snapshot: {
+    templateName: string
+    premise: string
+    targetAudience: string[]
+    corePromises: string[]
+    paceContract: string
+    goldenChapters: Array<{
+      chapterNumber: number
+      title: string
+      summary?: string
+      hook?: string
+      payoff?: string
+    }>
+  }) => [
+    snapshot.templateName ? `题材模板：${snapshot.templateName}` : '',
+    snapshot.premise ? `定位声明：${snapshot.premise}` : '',
+    snapshot.targetAudience.length ? `目标读者：${snapshot.targetAudience.slice(0, 2).join(' / ')}` : '',
+    snapshot.corePromises.length ? `核心承诺：${snapshot.corePromises.join('；')}` : '',
+    snapshot.paceContract ? `节奏合约：${snapshot.paceContract}` : '',
+    ...snapshot.goldenChapters.map((chapter) =>
+      [
+        `第${chapter.chapterNumber}章：${chapter.title}`,
+        chapter.summary ? `目标：${chapter.summary}` : '',
+        chapter.hook ? `钩子：${chapter.hook}` : '',
+        chapter.payoff ? `兑现：${chapter.payoff}` : '',
+      ]
+        .filter(Boolean)
+        .join(' | '),
+    ),
+  ].filter(Boolean),
 }))
 
 describe('StructureStageView', () => {

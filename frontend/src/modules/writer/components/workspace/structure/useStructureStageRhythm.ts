@@ -2,8 +2,13 @@ import { computed, ref, watch, type ComputedRef, type Ref } from 'vue'
 import { message } from '@/design-system/services'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 import type { WriterAssetSummary } from '@/modules/writer/utils/writerAssetRefs'
+import {
+  locateWriterCandidate,
+  resolveStableWriterSegmentId,
+  resolveWriterWindowRange,
+} from '@/modules/writer/utils/longformLocate'
 import type { OutlineNode } from '@/types/writer'
-import { getBoundChapterId, getStructureNodeStatusText } from './structureNodeTypes'
+import { getBoundChapterId, getStructureNodeLane, getStructureNodeStatusText } from './structureNodeTypes'
 
 export type RhythmFilterMode =
   | 'all'
@@ -58,6 +63,11 @@ const RHYTHM_WINDOW_BEFORE_COUNT = 20
 const RHYTHM_WINDOW_AFTER_COUNT = 20
 const RHYTHM_SEGMENT_INITIAL_LIMIT = 40
 const RHYTHM_FILTERED_ROW_LIMIT = 80
+const RHYTHM_WINDOW_OPTIONS = {
+  beforeCount: RHYTHM_WINDOW_BEFORE_COUNT,
+  afterCount: RHYTHM_WINDOW_AFTER_COUNT,
+  initialCount: RHYTHM_SEGMENT_INITIAL_LIMIT,
+} as const
 
 export function useStructureStageRhythm(options: UseStructureStageRhythmOptions) {
   const activeSegmentId = ref('')
@@ -116,7 +126,8 @@ export function useStructureStageRhythm(options: UseStructureStageRhythmOptions)
       const assetCount = chapterId
         ? options.assetSummaryByChapterId.value[chapterId]?.total || 0
         : 0
-      const status = getStructureNodeStatusText(node.status || 'planned')
+      const statusLabel = getStructureNodeStatusText(node)
+      const statusTone = getStructureNodeLane(node)
       const segmentId = hasVolumeSegments.value
         ? `volume:${chapter?.parentId || 'ungrouped'}`
         : `segment:${Math.floor(index / RHYTHM_SEGMENT_SIZE) + 1}`
@@ -130,8 +141,8 @@ export function useStructureStageRhythm(options: UseStructureStageRhythmOptions)
         chapterId: chapter?.id,
         orderLabel: `#${index + 1}`,
         segmentId,
-        statusTone: status.tone,
-        statusLabel: status.label,
+        statusTone,
+        statusLabel,
         hookLabel: node.description?.slice(0, 24) || '待补钩子',
         timelineLabel: chapter ? (options.currentChapterId.value === chapter.id ? '当前章节' : '查看时间线') : '待接时间线',
         assetCount,
@@ -203,32 +214,37 @@ export function useStructureStageRhythm(options: UseStructureStageRhythmOptions)
       ? rhythmAllRows.value.find((row) => row.chapterId === options.currentChapterId.value) || null
       : null,
   )
-  const baseWindowAnchorIndex = computed(() => {
-    if (selectedRhythmRow.value?.segmentId === activeSegmentId.value) {
-      return selectedRhythmRow.value.index
-    }
-    if (currentChapterRhythmRow.value?.segmentId === activeSegmentId.value) {
-      return currentChapterRhythmRow.value.index
-    }
-    return activeRhythmSegment.value?.startIndex ?? 0
-  })
-
   const rhythmWindowRows = computed(() => {
     let rows = activeSegmentRows.value
 
     if (rhythmFilterMode.value === 'nearby') {
-      const segment = activeRhythmSegment.value
-      if (!segment) return []
-      const hasAnchor =
-        selectedRhythmRow.value?.segmentId === activeSegmentId.value ||
-        currentChapterRhythmRow.value?.segmentId === activeSegmentId.value
-      const start = hasAnchor
-        ? Math.max(segment.startIndex, baseWindowAnchorIndex.value - RHYTHM_WINDOW_BEFORE_COUNT)
-        : segment.startIndex
-      const end = hasAnchor
-        ? Math.min(segment.endIndex, baseWindowAnchorIndex.value + RHYTHM_WINDOW_AFTER_COUNT)
-        : Math.min(segment.endIndex, segment.startIndex + RHYTHM_SEGMENT_INITIAL_LIMIT - 1)
-      rows = rows.filter((row) => row.index >= start && row.index <= end)
+      const anchor =
+        selectedRhythmRow.value?.segmentId === activeSegmentId.value
+          ? {
+              ...selectedRhythmRow.value,
+              order: selectedRhythmRow.value.index,
+            }
+          : currentChapterRhythmRow.value?.segmentId === activeSegmentId.value
+            ? {
+                ...currentChapterRhythmRow.value,
+                order: currentChapterRhythmRow.value.index,
+              }
+            : null
+      const windowRange = resolveWriterWindowRange(
+        activeSegmentRows.value.map((row) => ({
+          ...row,
+          order: row.index,
+        })),
+        anchor,
+        anchor ? 'around-target' : 'segment',
+        RHYTHM_WINDOW_OPTIONS,
+      )
+      if (!windowRange) {
+        return []
+      }
+      rows = rows.filter(
+        (row) => row.index >= windowRange.startOrder && row.index <= windowRange.endOrder,
+      )
     }
     if (rhythmFilterMode.value === 'unlinked') {
       rows = rows.filter((row) => !row.chapterId)
@@ -263,37 +279,37 @@ export function useStructureStageRhythm(options: UseStructureStageRhythmOptions)
     }
   }
 
-  function normalizeLocatorText(value: string) {
-    return value.trim().toLowerCase()
-  }
-
   function handleRhythmLocate() {
-    const query = normalizeLocatorText(rhythmLocatorQuery.value)
-    if (!query) return
+    const located = locateWriterCandidate(
+      rhythmAllRows.value.map((row) => ({
+        ...row,
+        order: row.index,
+        chapterNumber: row.chapterId
+          ? options.chapterOptions.value.find((item) => item.id === row.chapterId)?.chapterNum
+          : undefined,
+        chapterTitle: row.chapterId
+          ? options.chapterOptions.value.find((item) => item.id === row.chapterId)?.title
+          : undefined,
+      })),
+      rhythmLocatorQuery.value,
+      (segmentId) =>
+        rhythmAllRows.value
+          .filter((row) => row.segmentId === segmentId)
+          .map((row) => ({
+            ...row,
+            order: row.index,
+          })),
+      RHYTHM_WINDOW_OPTIONS,
+    )
 
-    const chapterNumberMatch = query.match(/\d+/)
-    const chapterNumber = chapterNumberMatch ? Number(chapterNumberMatch[0]) : 0
-    const matchedRow = rhythmAllRows.value.find((row) => {
-      const chapter = row.chapterId
-        ? options.chapterOptions.value.find((item) => item.id === row.chapterId)
-        : null
-      if (chapterNumber > 0 && chapter?.chapterNum === chapterNumber) return true
-      if (chapterNumber > 0 && row.index + 1 === chapterNumber) return true
-      return (
-        row.title.toLowerCase().includes(query) ||
-        row.description.toLowerCase().includes(query) ||
-        chapter?.title.toLowerCase().includes(query)
-      )
-    })
-
-    if (!matchedRow) {
+    if (!located) {
       message.warning('没有找到匹配的章节或结构节点')
       return
     }
 
-    activeSegmentId.value = matchedRow.segmentId
+    activeSegmentId.value = located.segmentId
     rhythmFilterMode.value = 'nearby'
-    options.selectNode(matchedRow.node)
+    options.selectNode(located.candidate.node)
   }
 
   watch(
@@ -310,23 +326,16 @@ export function useStructureStageRhythm(options: UseStructureStageRhythmOptions)
         return
       }
 
-      const targetSegmentId =
-        currentChapterRhythmRow.value?.segmentId ||
-        selectedRhythmRow.value?.segmentId ||
-        rhythmSegments.value[0]?.id ||
-        ''
-      activeSegmentId.value = targetSegmentId
+      activeSegmentId.value = resolveStableWriterSegmentId(
+        activeSegmentId.value,
+        rhythmSegments.value.map((segment) => segment.id),
+        [
+          selectedRhythmRow.value?.segmentId,
+          currentChapterRhythmRow.value?.segmentId,
+        ],
+      )
     },
     { immediate: true },
-  )
-
-  watch(
-    () => options.currentChapterId.value,
-    () => {
-      if (currentChapterRhythmRow.value) {
-        activeSegmentId.value = currentChapterRhythmRow.value.segmentId
-      }
-    },
   )
 
   return {

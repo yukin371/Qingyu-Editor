@@ -150,6 +150,11 @@ import {
 } from '@/modules/writer/composables/useWorkflowContext'
 import { useWriterAssetSummary } from '@/modules/writer/composables/useWriterAssetSummary'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
+import {
+  locateWriterCandidate,
+  resolveStableWriterSegmentId,
+  resolveWriterWindowRange,
+} from '@/modules/writer/utils/longformLocate'
 import type { Timeline, TimelineEvent } from '@/types/writer'
 import SystemStatCard from '@/modules/writer/components/system-design/SystemStatCard.vue'
 import type {
@@ -194,6 +199,11 @@ const EVENT_SEGMENT_SIZE = 50
 const EVENT_WINDOW_BEFORE_COUNT = 20
 const EVENT_WINDOW_AFTER_COUNT = 20
 const EVENT_SEGMENT_INITIAL_LIMIT = 40
+const EVENT_WINDOW_OPTIONS = {
+  beforeCount: EVENT_WINDOW_BEFORE_COUNT,
+  afterCount: EVENT_WINDOW_AFTER_COUNT,
+  initialCount: EVENT_SEGMENT_INITIAL_LIMIT,
+} as const
 const activeEventSegmentId = ref('')
 const selectedEventId = ref('')
 const eventLocatorQuery = ref('')
@@ -290,17 +300,31 @@ const timelineWindowEvents = computed(() => {
         ? selectedEventRow.value.index
         : currentChapterEventRow.value?.segmentId === segment.id
           ? currentChapterEventRow.value.index
-          : segment.startIndex
-    const hasAnchor =
-      selectedEventRow.value?.segmentId === segment.id ||
-      currentChapterEventRow.value?.segmentId === segment.id
-    const start = hasAnchor
-      ? Math.max(segment.startIndex, anchor - EVENT_WINDOW_BEFORE_COUNT)
-      : segment.startIndex
-    const end = hasAnchor
-      ? Math.min(segment.endIndex, anchor + EVENT_WINDOW_AFTER_COUNT)
-      : Math.min(segment.endIndex, segment.startIndex + EVENT_SEGMENT_INITIAL_LIMIT - 1)
-    rows = rows.filter((row) => row.index >= start && row.index <= end)
+          : null
+    const windowRange = resolveWriterWindowRange(
+      rows.map((row) => ({
+        id: row.event.id,
+        order: row.index,
+        segmentId: row.segmentId,
+        title: row.event.title,
+      })),
+      anchor === null
+        ? null
+        : {
+            id: selectedEventRow.value?.segmentId === segment.id
+              ? selectedEventRow.value.event.id
+              : currentChapterEventRow.value?.event.id || '',
+            order: anchor,
+            segmentId: segment.id,
+            title: '',
+          },
+      anchor === null ? 'segment' : 'around-target',
+      EVENT_WINDOW_OPTIONS,
+    )
+    if (!windowRange) return []
+    rows = rows.filter(
+      (row) => row.index >= windowRange.startOrder && row.index <= windowRange.endOrder,
+    )
   }
   if (eventFilterMode.value === 'high-priority') {
     rows = rows.filter((row) => (row.event.importance || 0) >= 8)
@@ -372,20 +396,36 @@ const activateEventSegment = (segmentId: string) => {
 }
 
 const handleEventLocate = () => {
-  const query = eventLocatorQuery.value.trim().toLowerCase()
-  if (!query) return
-  const matchedRow = orderedEventRows.value.find((row) => {
-    const storyTime = formatStoryTime(row.event.storyTime).toLowerCase()
-    return (
-      row.event.title.toLowerCase().includes(query) ||
-      row.event.description?.toLowerCase().includes(query) ||
-      row.event.eventType.toLowerCase().includes(query) ||
-      storyTime.includes(query)
-    )
-  })
-  if (!matchedRow) return
-  activeEventSegmentId.value = matchedRow.segmentId
-  selectedEventId.value = matchedRow.event.id
+  const located = locateWriterCandidate(
+    orderedEventRows.value.map((row) => ({
+      id: row.event.id,
+      order: row.index,
+      segmentId: row.segmentId,
+      title: row.event.title,
+      description: row.event.description,
+      chapterNumber: row.event.chapterIds?.[0]
+        ? props.chapters.find((chapter) => chapter.id === row.event.chapterIds?.[0])?.chapterNum
+        : undefined,
+      chapterTitle: row.event.chapterIds?.[0]
+        ? props.chapters.find((chapter) => chapter.id === row.event.chapterIds?.[0])?.title
+        : undefined,
+      aliases: [row.event.eventType, formatStoryTime(row.event.storyTime)],
+    })),
+    eventLocatorQuery.value,
+    (segmentId) =>
+      orderedEventRows.value
+        .filter((row) => row.segmentId === segmentId)
+        .map((row) => ({
+          id: row.event.id,
+          order: row.index,
+          segmentId: row.segmentId,
+          title: row.event.title,
+        })),
+    EVENT_WINDOW_OPTIONS,
+  )
+  if (!located) return
+  activeEventSegmentId.value = located.segmentId
+  selectedEventId.value = located.candidate.id
   eventFilterMode.value = 'nearby'
 }
 
@@ -422,8 +462,11 @@ watch(
     ) {
       return
     }
-    activeEventSegmentId.value =
-      currentChapterEventRow.value?.segmentId || eventSegments.value[0]?.id || ''
+    activeEventSegmentId.value = resolveStableWriterSegmentId(
+      activeEventSegmentId.value,
+      eventSegments.value.map((segment) => segment.id),
+      [selectedEventRow.value?.segmentId, currentChapterEventRow.value?.segmentId],
+    )
   },
   { immediate: true },
 )

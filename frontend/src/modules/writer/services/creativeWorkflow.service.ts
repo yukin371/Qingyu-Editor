@@ -10,6 +10,18 @@ import {
 
 export type { CreativeWorkflowTemplate, CreativeWorkflowTemplateId, GoldenChapterPlan } from './templateCatalog.fallback'
 
+export interface CreativeWorkflowSnapshot {
+  projectId: string
+  templateId: CreativeWorkflowTemplateId | null
+  templateName: string
+  premise: string
+  targetAudience: string[]
+  corePromises: string[]
+  paceContract: string
+  goldenChapters: GoldenChapterPlan[]
+  updatedAt: string
+}
+
 export interface InspirationGateResult {
   status: 'ready' | 'blocked'
   missing: string[]
@@ -317,4 +329,52 @@ export async function saveCreativeWorkflow(
 
 export function removeCreativeWorkflow(projectId: string): void {
   storage.remove(getStorageKey(projectId || 'global'))
+}
+
+export function buildCreativeWorkflowSnapshot(
+  record: CreativeWorkflowRecord | null | undefined,
+): CreativeWorkflowSnapshot | null {
+  if (!record) {
+    return null
+  }
+
+  const template = getCreativeWorkflowTemplate(record.templateId)
+
+  return {
+    projectId: record.projectId,
+    templateId: record.templateId,
+    templateName: template?.name || '',
+    premise: record.pitchLine,
+    targetAudience: [...record.targetAudience],
+    corePromises: [...record.corePromises],
+    paceContract: record.paceContract,
+    goldenChapters: record.goldenChapters.map((chapter) => ({ ...chapter })),
+    updatedAt: record.updatedAt,
+  }
+}
+
+export function buildCreativeWorkflowSummaryLines(
+  snapshot: CreativeWorkflowSnapshot | null | undefined,
+): string[] {
+  if (!snapshot) {
+    return []
+  }
+
+  return [
+    snapshot.templateName ? `题材模板：${snapshot.templateName}` : '',
+    snapshot.premise ? `定位声明：${snapshot.premise}` : '',
+    snapshot.targetAudience.length ? `目标读者：${snapshot.targetAudience.slice(0, 2).join(' / ')}` : '',
+    snapshot.corePromises.length ? `核心承诺：${snapshot.corePromises.join('；')}` : '',
+    snapshot.paceContract ? `节奏合约：${snapshot.paceContract}` : '',
+    ...snapshot.goldenChapters.map((chapter) =>
+      [
+        `第${chapter.chapterNumber}章：${chapter.title}`,
+        chapter.summary ? `目标：${chapter.summary}` : '',
+        chapter.hook ? `钩子：${chapter.hook}` : '',
+        chapter.payoff ? `兑现：${chapter.payoff}` : '',
+      ]
+        .filter(Boolean)
+        .join(' | '),
+    ),
+  ].filter(Boolean)
 }

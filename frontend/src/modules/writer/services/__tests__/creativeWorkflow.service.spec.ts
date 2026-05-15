@@ -28,6 +28,8 @@ vi.mock('@/utils/storage', () => {
 })
 
 import {
+  buildCreativeWorkflowSnapshot,
+  buildCreativeWorkflowSummaryLines,
   buildInspirationGate,
   listCreativeWorkflowTemplates,
   loadCreativeWorkflow,
@@ -109,6 +111,17 @@ describe('creativeWorkflow.service', () => {
         title: '第一座工坊',
         payoff: '读者拿到第一轮正反馈。',
       }),
+    )
+
+    const snapshot = buildCreativeWorkflowSnapshot(updated)
+    expect(snapshot).toMatchObject({
+      projectId: 'project-alpha',
+      templateId: 'building',
+      premise: '',
+      paceContract: '第一卷先做资源闭环，再上人口增长。',
+    })
+    expect(buildCreativeWorkflowSummaryLines(snapshot)).toContain(
+      '核心承诺：前三章看到建设成果',
     )
   })
 

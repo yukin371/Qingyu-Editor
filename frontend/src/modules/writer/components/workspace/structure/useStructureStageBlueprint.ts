@@ -10,9 +10,12 @@ import {
   type WriterStructurePlanPayload,
 } from '@/modules/writer/types/workflow'
 import {
+  buildCreativeWorkflowSnapshot,
+  buildCreativeWorkflowSummaryLines,
   type GoldenChapterPlan,
   getCreativeWorkflowTemplate,
   loadCreativeWorkflow,
+  type CreativeWorkflowSnapshot,
   type CreativeWorkflowRecord,
 } from '@/modules/writer/services/creativeWorkflow.service'
 
@@ -25,25 +28,28 @@ interface UseStructureStageBlueprintOptions {
 
 export function useStructureStageBlueprint(options: UseStructureStageBlueprintOptions) {
   const creativeWorkflow = ref<CreativeWorkflowRecord | null>(null)
+  const creativeWorkflowSnapshot = computed<CreativeWorkflowSnapshot | null>(() =>
+    buildCreativeWorkflowSnapshot(creativeWorkflow.value),
+  )
   const creativeWorkflowTemplate = computed(() =>
-    getCreativeWorkflowTemplate(creativeWorkflow.value?.templateId),
+    getCreativeWorkflowTemplate(creativeWorkflowSnapshot.value?.templateId),
   )
   const hasCreativeWorkflowBlueprint = computed(() =>
     Boolean(
-      creativeWorkflow.value?.templateId ||
-      creativeWorkflow.value?.pitchLine ||
-      creativeWorkflow.value?.corePromises.length,
+      creativeWorkflowSnapshot.value?.templateId ||
+      creativeWorkflowSnapshot.value?.premise ||
+      creativeWorkflowSnapshot.value?.corePromises.length,
     ),
   )
   const creativeWorkflowTemplateName = computed(() => creativeWorkflowTemplate.value?.name || '')
-  const creativeWorkflowPitch = computed(() => creativeWorkflow.value?.pitchLine || '')
+  const creativeWorkflowPitch = computed(() => creativeWorkflowSnapshot.value?.premise || '')
   const creativeWorkflowAudienceLabel = computed(
-    () => creativeWorkflow.value?.targetAudience.slice(0, 2).join(' / ') || '',
+    () => creativeWorkflowSnapshot.value?.targetAudience.slice(0, 2).join(' / ') || '',
   )
-  const creativeWorkflowPaceContract = computed(() => creativeWorkflow.value?.paceContract || '')
-  const creativeWorkflowPromises = computed(() => creativeWorkflow.value?.corePromises || [])
+  const creativeWorkflowPaceContract = computed(() => creativeWorkflowSnapshot.value?.paceContract || '')
+  const creativeWorkflowPromises = computed(() => creativeWorkflowSnapshot.value?.corePromises || [])
   const creativeWorkflowGoldenChapters = computed<GoldenChapterPlan[]>(
-    () => creativeWorkflow.value?.goldenChapters || [],
+    () => creativeWorkflowSnapshot.value?.goldenChapters || [],
   )
   const currentVolumeDirectory = computed(() => {
     const currentChapter = options.chapters.value.find(
@@ -98,30 +104,10 @@ export function useStructureStageBlueprint(options: UseStructureStageBlueprintOp
   }
 
   function buildCreativeWorkflowToAIRequest(): WriterWorkflowActionRequest | null {
-    if (!creativeWorkflow.value) return null
+    if (!creativeWorkflowSnapshot.value) return null
 
     const workflowPrompt = buildWriterWorkflowContextPrompt(options.workflowContext.value)
-    const lines = [
-      '阶段 1 创作流输入：',
-      creativeWorkflowTemplateName.value ? `题材模板：${creativeWorkflowTemplateName.value}` : '',
-      creativeWorkflowPitch.value ? `定位声明：${creativeWorkflowPitch.value}` : '',
-      creativeWorkflowAudienceLabel.value ? `目标读者：${creativeWorkflowAudienceLabel.value}` : '',
-      creativeWorkflowPromises.value.length
-        ? `核心承诺：${creativeWorkflowPromises.value.join('；')}`
-        : '',
-      creativeWorkflowPaceContract.value ? `节奏合约：${creativeWorkflowPaceContract.value}` : '',
-      ...creativeWorkflowGoldenChapters.value.map((chapter) =>
-        [
-          `第${chapter.chapterNumber}章：${chapter.title}`,
-          chapter.summary ? `目标：${chapter.summary}` : '',
-          chapter.hook ? `钩子：${chapter.hook}` : '',
-          chapter.payoff ? `兑现：${chapter.payoff}` : '',
-        ]
-          .filter(Boolean)
-          .join(' | '),
-      ),
-      workflowPrompt,
-    ].filter(Boolean)
+    const lines = ['阶段 1 创作流输入：', ...buildCreativeWorkflowSummaryLines(creativeWorkflowSnapshot.value), workflowPrompt].filter(Boolean)
 
     return {
       source: 'workspace',
@@ -163,6 +149,7 @@ export function useStructureStageBlueprint(options: UseStructureStageBlueprintOp
 
   return {
     creativeWorkflow,
+    creativeWorkflowSnapshot,
     hasCreativeWorkflowBlueprint,
     creativeWorkflowTemplateName,
     creativeWorkflowPitch,

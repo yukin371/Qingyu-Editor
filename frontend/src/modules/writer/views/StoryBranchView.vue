@@ -241,6 +241,10 @@ import {
 } from '@/modules/writer/composables/useWorkflowContext'
 import { useWriterAssetSummary } from '@/modules/writer/composables/useWriterAssetSummary'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
+import {
+  locateWriterCandidate,
+  resolveStableWriterSegmentId,
+} from '@/modules/writer/utils/longformLocate'
 import SystemStatCard from '@/modules/writer/components/system-design/SystemStatCard.vue'
 import type {
   WriterWorkflowActionRequest,
@@ -388,6 +392,18 @@ const activeBranchTitle = computed(() => {
 const selectedOrgNode = computed(() =>
   selectedNodeId.value ? findNode(selectedNodeId.value) : null,
 )
+const outlineRows = computed(() =>
+  flatOutlineNodes.value.map((node, index) => ({
+    id: node.id,
+    order: index,
+    segmentId: `segment:${Math.floor(index / BRANCH_SEGMENT_SIZE)}`,
+    title: node.title || '未命名节点',
+    description: node.description || '',
+    chapterNumber: index + 1,
+    chapterTitle: node.title || '',
+    aliases: [node.type || ''],
+  })),
+)
 
 function selectNode(node: OrgTreeNode) {
   selectedNodeId.value = node.id
@@ -419,7 +435,16 @@ function enterBranch(node: OrgTreeNode) {
 function activateBranchSegment(segmentId: string) {
   activeBranchSegmentId.value = segmentId
   activeBranchId.value = ''
-  const firstNode = flatOutlineNodes.value.find((node) => activeSegmentNodeIds.value.has(node.id))
+  const currentSelected = selectedNodeId.value
+    ? flatOutlineNodes.value.find(
+        (node, index) =>
+          node.id === selectedNodeId.value &&
+          `segment:${Math.floor(index / BRANCH_SEGMENT_SIZE)}` === segmentId,
+      )
+    : null
+  const firstNode =
+    currentSelected ||
+    flatOutlineNodes.value.find((node) => activeSegmentNodeIds.value.has(node.id))
   if (firstNode) {
     selectedNodeId.value = firstNode.id
     writerStore.setCurrentOutlineNode(firstNode)
@@ -430,22 +455,21 @@ function activateBranchSegment(segmentId: string) {
 }
 
 function handleBranchLocate() {
-  const query = branchLocatorQuery.value.trim().toLowerCase()
-  if (!query) return
-  const numberMatch = query.match(/\d+/)
-  const number = numberMatch ? Number(numberMatch[0]) : 0
-  const matchedIndex = flatOutlineNodes.value.findIndex((node, index) => {
-    if (number > 0 && index + 1 === number) return true
-    return (
-      node.title.toLowerCase().includes(query) ||
-      node.description?.toLowerCase().includes(query) ||
-      node.type?.toLowerCase().includes(query)
-    )
-  })
-  if (matchedIndex < 0) return
-  const matchedNode = flatOutlineNodes.value[matchedIndex]
+  const located = locateWriterCandidate(
+    outlineRows.value,
+    branchLocatorQuery.value,
+    (segmentId) => outlineRows.value.filter((row) => row.segmentId === segmentId),
+    {
+      beforeCount: 0,
+      afterCount: BRANCH_SEGMENT_SIZE - 1,
+      initialCount: BRANCH_SEGMENT_SIZE,
+    },
+  )
+  if (!located) return
+  const matchedNode = flatOutlineNodes.value.find((node) => node.id === located.candidate.id)
+  if (!matchedNode) return
   activeBranchId.value = ''
-  activeBranchSegmentId.value = `segment:${Math.floor(matchedIndex / BRANCH_SEGMENT_SIZE)}`
+  activeBranchSegmentId.value = located.segmentId
   selectedNodeId.value = matchedNode.id
   writerStore.setCurrentOutlineNode(matchedNode)
   requestAnimationFrame(() => {
@@ -622,13 +646,15 @@ watch(
 watch(
   () => branchSegments.value.map((segment) => segment.id).join('|'),
   () => {
-    if (
-      activeBranchSegmentId.value &&
-      branchSegments.value.some((segment) => segment.id === activeBranchSegmentId.value)
-    ) {
-      return
-    }
-    activeBranchSegmentId.value = branchSegments.value[0]?.id || ''
+    activeBranchSegmentId.value = resolveStableWriterSegmentId(
+      activeBranchSegmentId.value,
+      branchSegments.value.map((segment) => segment.id),
+      [
+        selectedNodeId.value
+          ? outlineRows.value.find((row) => row.id === selectedNodeId.value)?.segmentId
+          : null,
+      ],
+    )
   },
   { immediate: true },
 )

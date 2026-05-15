@@ -127,7 +127,6 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { message } from '@/design-system/services'
 import { useWriterAssetRefState } from '@/modules/writer/composables/useWriterAssetRefState'
 import { useWriterStore } from '@/modules/writer/stores/writerStore'
 import { loadCharacterGraphDraftState } from '@/modules/writer/utils/characterGraphDrafts'
@@ -147,7 +146,7 @@ import StructureStageContent from './StructureStageContent.vue'
 import StructureStageControls from './StructureStageControls.vue'
 import StructureInspectorPanel from './StructureInspectorPanel.vue'
 import StructureNodeEditorDialog, { type StructureNodeFormValue } from './StructureNodeEditorDialog.vue'
-import { useStructureStageActions } from './useStructureStageActions'
+import { useStructureStageActions, type WriterStoreLike } from './useStructureStageActions'
 import { useStructureStageBlueprint } from './useStructureStageBlueprint'
 import { useStructureStageFilters } from './useStructureStageFilters'
 import { useStructureStageFocus } from './useStructureStageFocus'
@@ -291,7 +290,6 @@ const {
   selectNode,
 })
 const {
-  creativeWorkflow,
   hasCreativeWorkflowBlueprint,
   creativeWorkflowTemplateName,
   creativeWorkflowPitch,
@@ -314,12 +312,6 @@ const {
   effectiveProjectId,
   workflowContext: computed(() => props.workflowContext),
 })
-
-function getNodeAssetCount(node: OutlineNode | null | undefined): number {
-  const chapterId = getBoundChapterId(node)
-  if (!chapterId) return 0
-  return assetSummaryByChapterId.value[chapterId]?.total || 0
-}
 
 function emitCreativeWorkflowToAI() {
   const payload = buildCreativeWorkflowToAIRequest()
@@ -365,7 +357,7 @@ const {
   handleCanvasEditNode,
   handleCanvasDeleteNode,
 } = useStructureStageActions({
-  writerStore,
+  writerStore: writerStore as unknown as WriterStoreLike,
   effectiveProjectId,
   currentChapterId: computed(() => props.currentChapterId),
   chapterOptions,
