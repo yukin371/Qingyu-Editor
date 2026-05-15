@@ -136,7 +136,12 @@
       <p v-else-if="!plannerErrorText" class="tool-panel__empty-copy">
         这里会生成可直接创建的卷/章节草案。
       </p>
-      <p v-if="plannerErrorText" class="tool-error">{{ plannerErrorText }}</p>
+      <WorkbenchErrorState
+        v-if="plannerErrorText"
+        :message="plannerErrorText"
+        title="结构生成失败"
+        badge="失败"
+      />
     </section>
 
     <div v-if="!summary && !errorText" class="tool-panel__empty">
@@ -177,12 +182,13 @@
       </div>
     </article>
 
-    <p v-if="errorText" class="tool-error">{{ errorText }}</p>
+    <WorkbenchErrorState v-if="errorText" :message="errorText" />
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import WorkbenchErrorState from './WorkbenchErrorState.vue'
 import {
   generateStructurePlan,
   summarizeChapter,

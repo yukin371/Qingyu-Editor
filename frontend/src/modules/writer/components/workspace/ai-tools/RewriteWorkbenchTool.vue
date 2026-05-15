@@ -85,12 +85,13 @@
       </div>
     </article>
 
-    <p v-if="errorText" class="tool-error">{{ errorText }}</p>
+    <WorkbenchErrorState v-if="errorText" :message="errorText" />
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import WorkbenchErrorState from './WorkbenchErrorState.vue'
 import { rewriteWithWorkbench } from '@/modules/ai/api/workbench'
 import type {
   WriterAIActionTrigger,

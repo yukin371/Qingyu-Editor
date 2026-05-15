@@ -316,10 +316,50 @@
   font-size: 13px;
 }
 
-.tool-error {
-  margin: 14px 0 0;
+.tool-state-card {
+  margin-top: 14px;
+  padding: 12px 13px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(117, 93, 67, 0.16)) 46%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-glass, var(--editor-bg-base, #fff)) 90%, transparent);
+  display: grid;
+  gap: 8px;
+}
+
+.tool-state-card--error {
+  border-color: rgba(143, 63, 47, 0.18);
+  background: linear-gradient(145deg, rgba(255, 240, 230, 0.94), rgba(255, 248, 242, 0.92));
+}
+
+.tool-state-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tool-state-card__header strong {
+  font-size: 13px;
+  color: var(--editor-text-primary, #2d302f);
+}
+
+.tool-state-card__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 238, 229, 0.95);
+  color: #7b3123;
+  border: 1px solid rgba(143, 63, 47, 0.12);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.tool-state-card__detail {
+  margin: 0;
   color: var(--editor-accent, #8c3426);
   font-size: 12px;
+  line-height: 1.6;
   font-weight: 700;
 }
 

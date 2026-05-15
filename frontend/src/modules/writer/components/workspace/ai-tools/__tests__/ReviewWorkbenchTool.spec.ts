@@ -161,6 +161,6 @@ describe('ReviewWorkbenchTool', () => {
     await wrapper.get('.tool-panel__primary').trigger('click')
     await flushPromises()
 
-    expect(wrapper.get('.tool-error').text()).toContain('AI 服务连接失败，请确认本地 AI 服务已启动。')
+    expect(wrapper.get('.tool-state-card--error').text()).toContain('AI 服务连接失败，请确认本地 AI 服务已启动。')
   })
 })
