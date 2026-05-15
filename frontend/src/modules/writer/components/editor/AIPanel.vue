@@ -467,6 +467,33 @@ function buildWriterAgentContext() {
   })
 }
 
+function buildCurrentDocumentCommandContext() {
+  return {
+    projectId: effectiveWorkflowContext.value?.projectId || props.sessionId,
+    currentDocumentId: effectiveWorkflowContext.value?.chapterId || null,
+    currentDocumentTitle: effectiveWorkflowContext.value?.chapterTitle || null,
+    currentSourceText: props.sourceText || '',
+  }
+}
+
+function resolvePanelPromptExecution(
+  instruction: string,
+  route: 'analysis' | 'edit',
+) {
+  return resolveWriterPromptExecution(instruction, {
+    interactionMode: route === 'analysis' ? interactionMode.value : 'edit',
+    canEditDirectly: canEditDirectly.value,
+    hasSelectionContext: isSelectionContext(selectedChatContext.value),
+  })
+}
+
+async function resolveSelectedDocumentTarget(documentId: string) {
+  return writerDocumentAgentService.resolveTargetById(documentId, {
+    ...buildCurrentDocumentCommandContext(),
+    selectedContext: selectedChatContext.value,
+  })
+}
+
 async function runResolvedAnalysis(
   instruction: string,
   intent: WriterPromptIntent,
@@ -535,12 +562,7 @@ async function sendMessage(content: string) {
   const trimmedContent = content.trim()
   const handledDocumentCommand = await runWriterDocumentCommand({
     content: trimmedContent,
-    context: {
-      projectId: effectiveWorkflowContext.value?.projectId || props.sessionId,
-      currentDocumentId: effectiveWorkflowContext.value?.chapterId || null,
-      currentDocumentTitle: effectiveWorkflowContext.value?.chapterTitle || null,
-      currentSourceText: props.sourceText || '',
-    },
+    context: buildCurrentDocumentCommandContext(),
     executeCommand: executeWriterDocumentCommand,
     onUserMessage: async (message) => {
       await pushUserMessage(message, { clearInput: true, scroll: true })
@@ -902,23 +924,12 @@ async function handleSelectDocumentTarget(payload: DocumentTargetSelectionPayloa
     return
   }
 
-  const resolvedTarget = await writerDocumentAgentService.resolveTargetById(payload.documentId, {
-    projectId: effectiveWorkflowContext.value?.projectId || props.sessionId,
-    currentDocumentId: effectiveWorkflowContext.value?.chapterId || null,
-    currentDocumentTitle: effectiveWorkflowContext.value?.chapterTitle || null,
-    currentSourceText: props.sourceText || '',
-    selectedContext: selectedChatContext.value,
-  })
+  const resolvedTarget = await resolveSelectedDocumentTarget(payload.documentId)
 
   await runWriterSelectedDocumentRoute({
     payload,
     resolvedTarget,
-    resolvePromptExecution: (instruction, route) =>
-      resolveWriterPromptExecution(instruction, {
-        interactionMode: route === 'analysis' ? interactionMode.value : 'edit',
-        canEditDirectly: canEditDirectly.value,
-        hasSelectionContext: isSelectionContext(selectedChatContext.value),
-      }),
+    resolvePromptExecution: resolvePanelPromptExecution,
     onInvalidTarget: (resolvedTarget) =>
       pushAssistantMessage(resolvedTarget.assistantMessage || '目标章节读取失败，请稍后重试。'),
     onInvalidAnalysisIntent: () =>
