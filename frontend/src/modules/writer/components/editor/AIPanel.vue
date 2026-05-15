@@ -98,9 +98,7 @@ import {
   resolveWriterAnalysisText,
 } from '@/modules/writer/utils/writerAIAnalysis'
 import {
-  buildGeneralChatHistory,
   buildTargetResolutionResult,
-  resolveGeneralChatReply,
 } from '@/modules/writer/utils/writerAIConversation'
 import { buildHandledDocumentCommandResult } from '@/modules/writer/utils/writerAIDocumentCommand'
 import {
@@ -109,6 +107,10 @@ import {
   buildDirectEditResultCandidate,
   buildDirectEditUserPrompt,
 } from '@/modules/writer/utils/writerAIDirectEdit'
+import {
+  runWriterAnalysisRoute,
+  runWriterGeneralChatRoute,
+} from '@/modules/writer/utils/writerAIRouteRunner'
 import {
   executeWriterTextAction,
   extractWriterGeneratedText,
@@ -687,30 +689,37 @@ async function sendMessage(content: string) {
 }
 
 async function runAnalysisRoute(instruction: string, intent: WriterPromptIntent) {
-  const resolvedTarget = await resolveDocumentTarget(instruction)
-  if (resolvedTarget.status !== 'ready' || !resolvedTarget.sourceText?.trim()) {
-    addMessage('user', instruction)
-    appendTargetResolutionMessage(instruction, 'analysis', resolvedTarget)
-    isTyping.value = false
-    await scrollToBottom()
-    return
-  }
-
-  isTyping.value = false
-  await runResolvedAnalysis(instruction, intent, resolvedTarget)
+  await runWriterAnalysisRoute({
+    instruction,
+    intent,
+    resolveTarget: resolveDocumentTarget,
+    onUnresolved: async (resolvedTarget) => {
+      addMessage('user', instruction)
+      appendTargetResolutionMessage(instruction, 'analysis', resolvedTarget)
+      isTyping.value = false
+      await scrollToBottom()
+    },
+    onResolved: async (resolvedTarget) => {
+      isTyping.value = false
+      await runResolvedAnalysis(instruction, intent, resolvedTarget)
+    },
+  })
 }
 
 async function runGeneralChatRoute(finalRequestMessage: string) {
-  const history = buildGeneralChatHistory(messages.value)
-  const response = await chatWithAI(finalRequestMessage, history)
-  const aiResponseText = resolveGeneralChatReply(response.reply)
-
-  addMessage('assistant', aiResponseText)
-  if (selectedChatContext.value) {
-    handleClearSelectedContext()
-  }
-  isTyping.value = false
-  await scrollToBottom()
+  await runWriterGeneralChatRoute({
+    finalRequestMessage,
+    messages: messages.value,
+    requestChat: chatWithAI,
+    onReply: async (aiResponseText) => {
+      addMessage('assistant', aiResponseText)
+      if (selectedChatContext.value) {
+        handleClearSelectedContext()
+      }
+      isTyping.value = false
+      await scrollToBottom()
+    },
+  })
 }
 
 async function runResolvedDirectEdit(
