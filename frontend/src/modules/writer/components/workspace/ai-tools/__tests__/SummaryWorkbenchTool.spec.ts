@@ -246,6 +246,46 @@ describe('SummaryWorkbenchTool', () => {
     await wrapper.get('.tool-panel__primary').trigger('click')
     await flushPromises()
 
-    expect(wrapper.get('.tool-state-card--error').text()).toContain('AI 服务连接失败，请确认本地 AI 服务已启动。')
+    expect(wrapper.get('.tool-state-card--error').text()).toContain(
+      'AI 服务连接失败，请确认本地 AI 服务已启动。',
+    )
+  })
+
+  it('falls back to selection summary when chapter summary is unavailable but seed text exists', async () => {
+    summarizeChapter.mockRejectedValue(
+      new Error('用户 API 模式下章节摘要需要正文上下文，请改用片段摘要。'),
+    )
+    summarizeSelection.mockResolvedValue({
+      summary: '改为基于正文片段提炼出的章节摘要。',
+      keyPoints: ['继续沿用当前正文上下文'],
+    })
+
+    const wrapper = mount(SummaryWorkbenchTool, {
+      props: {
+        projectId: 'project-1',
+        chapterId: 'chapter-1',
+        chapterTitle: '第一章',
+        seedText: '这是当前章节的正文片段。',
+        actionTrigger: null,
+      },
+    })
+
+    await wrapper.get('.tool-panel__primary').trigger('click')
+    await flushPromises()
+    await nextTick()
+
+    expect(summarizeChapter).toHaveBeenCalledTimes(1)
+    expect(summarizeSelection).toHaveBeenCalledWith({
+      content: '这是当前章节的正文片段。',
+      projectId: 'project-1',
+      chapterId: 'chapter-1',
+      summaryType: 'detailed',
+    })
+    expect(wrapper.text()).toContain('改为基于正文片段提炼出的章节摘要。')
+    expect(wrapper.find('.tool-state-card--error').exists()).toBe(false)
+    expect(wrapper.emitted('resultCandidate')?.[0]?.[0]).toMatchObject({
+      action: 'summarize_chapter',
+      title: '章节方向提案',
+    })
   })
 })

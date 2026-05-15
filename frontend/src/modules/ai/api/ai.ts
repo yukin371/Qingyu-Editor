@@ -3,7 +3,9 @@
  * 提供对话、续写、润色、扩写、改写等AI功能
  */
 
+import { isUserProviderModeEnabled } from '../config/provider'
 import { aiDirectApi, isDirectModeEnabled } from './ai-direct'
+import { userAIProviderApi } from './ai-user-provider'
 import { postAIRequest, putAIRequest } from './request'
 
 export interface ChatMessage {
@@ -97,6 +99,10 @@ export const chatWithAI = async (
   message: string,
   history?: ChatMessage[],
 ): Promise<{ reply: string; usage?: any }> => {
+  if (isUserProviderModeEnabled()) {
+    return userAIProviderApi.chat(message, history)
+  }
+
   if (isDirectModeEnabled()) {
     return aiDirectApi.chat(message, history)
   }
@@ -134,6 +140,10 @@ export const continueWriting = async (
   length: number = 200,
   instructions?: string,
 ): Promise<AIGenerateResponse> => {
+  if (isUserProviderModeEnabled()) {
+    return userAIProviderApi.writing.continue(projectId, currentText, length, instructions)
+  }
+
   if (isDirectModeEnabled()) {
     return aiDirectApi.writing.continue(projectId, currentText, length, instructions)
   }
@@ -171,6 +181,10 @@ export const polishText = async (
   text: string,
   instructions?: string,
 ): Promise<AIGenerateResponse> => {
+  if (isUserProviderModeEnabled()) {
+    return userAIProviderApi.writing.polish(text, instructions)
+  }
+
   if (isDirectModeEnabled()) {
     return aiDirectApi.writing.polish(text, instructions)
   }
@@ -204,6 +218,10 @@ export const expandText = async (
   instructions?: string,
   targetLength?: number,
 ): Promise<AIGenerateResponse> => {
+  if (isUserProviderModeEnabled()) {
+    return userAIProviderApi.writing.expand(text, instructions, targetLength)
+  }
+
   if (isDirectModeEnabled()) {
     return aiDirectApi.writing.expand(text, instructions, targetLength)
   }
@@ -238,6 +256,10 @@ export const rewriteText = async (
   mode: 'polish' | 'simplify' | 'formal' | 'casual',
   instructions?: string,
 ): Promise<AIGenerateResponse> => {
+  if (isUserProviderModeEnabled()) {
+    return userAIProviderApi.writing.rewrite(text, instructions || mode)
+  }
+
   if (isDirectModeEnabled()) {
     return aiDirectApi.writing.rewrite(text, instructions || mode)
   }
@@ -262,6 +284,14 @@ export const summarizeText = async (
     includeQuotes?: boolean
   },
 ): Promise<AISummaryResponse> => {
+  if (isUserProviderModeEnabled()) {
+    return userAIProviderApi.writing.summarize(text, {
+      maxLength: options?.maxLength,
+      summaryType: options?.summaryType,
+      includeQuotes: options?.includeQuotes,
+    })
+  }
+
   if (isDirectModeEnabled()) {
     return aiDirectApi.writing.summarize(text, {
       maxLength: options?.maxLength,
@@ -293,7 +323,8 @@ export const summarizeText = async (
   })
 
   const data = response as unknown as Record<string, any>
-  const keyPointsSource = data?.keyPoints || data?.key_points || data?.data?.keyPoints || data?.data?.key_points
+  const keyPointsSource =
+    data?.keyPoints || data?.key_points || data?.data?.keyPoints || data?.data?.key_points
   return {
     summary: String(data?.summary || data?.data?.summary || '').trim(),
     keyPoints: Array.isArray(keyPointsSource)
@@ -310,6 +341,10 @@ export const proofreadText = async (
     chapterId?: string
   },
 ): Promise<AIProofreadResponse> => {
+  if (isUserProviderModeEnabled()) {
+    return userAIProviderApi.writing.proofread(text)
+  }
+
   if (isDirectModeEnabled()) {
     return aiDirectApi.writing.proofread(text)
   }
@@ -341,7 +376,11 @@ export const proofreadText = async (
   const data = response as unknown as Record<string, any>
   const issuesSource = data?.issues || data?.data?.issues
   const fallbackMessage = String(
-    data?.proofread_result || data?.data?.proofread_result || data?.rewritten_text || data?.data?.rewritten_text || '',
+    data?.proofread_result ||
+      data?.data?.proofread_result ||
+      data?.rewritten_text ||
+      data?.data?.rewritten_text ||
+      '',
   ).trim()
   const normalizedIssues: AIProofreadIssue[] = Array.isArray(issuesSource)
     ? issuesSource.reduce<AIProofreadIssue[]>((acc, item, index) => {
@@ -359,7 +398,9 @@ export const proofreadText = async (
           severity: String(record.severity || record.level || 'medium'),
           message,
           suggestions: Array.isArray(record.suggestions)
-            ? record.suggestions.map((suggestion: unknown) => String(suggestion).trim()).filter(Boolean)
+            ? record.suggestions
+                .map((suggestion: unknown) => String(suggestion).trim())
+                .filter(Boolean)
             : [],
         })
         return acc
@@ -372,19 +413,20 @@ export const proofreadText = async (
         : typeof data?.data?.score === 'number'
           ? data.data.score
           : undefined,
-    issues: normalizedIssues.length > 0
-      ? normalizedIssues
-      : fallbackMessage
-        ? [
-            {
-              id: 'proofread-fallback',
-              type: '审校',
-              severity: 'info',
-              message: fallbackMessage,
-              suggestions: [],
-            },
-          ]
-        : [],
+    issues:
+      normalizedIssues.length > 0
+        ? normalizedIssues
+        : fallbackMessage
+          ? [
+              {
+                id: 'proofread-fallback',
+                type: '审校',
+                severity: 'info',
+                message: fallbackMessage,
+                suggestions: [],
+              },
+            ]
+          : [],
     usage: data?.usage,
   }
 }
@@ -399,6 +441,10 @@ export function storyGenerate(data: {
   instruction?: string
   selectedText?: string
 }) {
+  if (isUserProviderModeEnabled()) {
+    return userAIProviderApi.story.generate(data)
+  }
+
   return postAIRequest('/ai/story/generate', data)
 }
 

@@ -1,14 +1,38 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const summarizeText = vi.fn()
-const proofreadText = vi.fn()
-const chatWithAI = vi.fn()
-const postAIRequest = vi.fn()
+const {
+  summarizeText,
+  proofreadText,
+  chatWithAI,
+  postAIRequest,
+  isUserProviderModeEnabled,
+  userAIProviderApi,
+} = vi.hoisted(() => ({
+  summarizeText: vi.fn(),
+  proofreadText: vi.fn(),
+  chatWithAI: vi.fn(),
+  postAIRequest: vi.fn(),
+  isUserProviderModeEnabled: vi.fn(() => false),
+  userAIProviderApi: {
+    workbench: {
+      rewrite: vi.fn(),
+      auditSensitiveWords: vi.fn(),
+    },
+  },
+}))
+
+vi.mock('../../config/provider', () => ({
+  isUserProviderModeEnabled,
+}))
 
 vi.mock('../ai', () => ({
   chatWithAI: (...args: unknown[]) => chatWithAI(...args),
   summarizeText: (...args: unknown[]) => summarizeText(...args),
   proofreadText: (...args: unknown[]) => proofreadText(...args),
+}))
+
+vi.mock('../ai-user-provider', () => ({
+  userAIProviderApi,
 }))
 
 vi.mock('../request', () => ({
@@ -27,10 +51,14 @@ import {
 
 describe('ai workbench api', () => {
   beforeEach(() => {
+    isUserProviderModeEnabled.mockReset()
+    isUserProviderModeEnabled.mockReturnValue(false)
     summarizeText.mockReset()
     proofreadText.mockReset()
     chatWithAI.mockReset()
     postAIRequest.mockReset()
+    userAIProviderApi.workbench.rewrite.mockReset()
+    userAIProviderApi.workbench.auditSensitiveWords.mockReset()
   })
 
   it('routes rewrite workbench requests through the shared ai request helper', async () => {
@@ -97,6 +125,39 @@ describe('ai workbench api', () => {
     })
     expect(result.isSafe).toBe(false)
     expect(result.sensitiveWords).toEqual([{ word: '禁词' }])
+  })
+
+  it('routes workbench rewrite and sensitive audit through user provider when user api mode is enabled', async () => {
+    isUserProviderModeEnabled.mockReturnValue(true)
+    userAIProviderApi.workbench.rewrite.mockResolvedValue({
+      rewritten_text: '精简后的文本',
+    })
+    userAIProviderApi.workbench.auditSensitiveWords.mockResolvedValue({
+      totalMatches: 0,
+      isSafe: true,
+      sensitiveWords: [],
+    })
+
+    const rewriteResult = await rewriteWithWorkbench({
+      projectId: 'project-1',
+      originalText: '原文',
+      mode: 'shorten',
+    })
+    const auditResult = await auditSensitiveWords({
+      content: '正常内容',
+    })
+
+    expect(userAIProviderApi.workbench.rewrite).toHaveBeenCalledWith({
+      projectId: 'project-1',
+      originalText: '原文',
+      mode: 'shorten',
+    })
+    expect(userAIProviderApi.workbench.auditSensitiveWords).toHaveBeenCalledWith({
+      content: '正常内容',
+    })
+    expect(postAIRequest).not.toHaveBeenCalled()
+    expect(rewriteResult.rewrittenText).toBe('精简后的文本')
+    expect(auditResult.isSafe).toBe(true)
   })
 
   it('keeps selection summary and proofread on the shared ai api facade', async () => {
@@ -181,5 +242,16 @@ describe('ai workbench api', () => {
         reason: '把压力前置到下一段。',
       },
     ])
+  })
+
+  it('throws a clear error for chapter summary in user api mode', async () => {
+    isUserProviderModeEnabled.mockReturnValue(true)
+
+    await expect(
+      summarizeChapter({
+        projectId: 'project-1',
+        chapterId: 'chapter-1',
+      }),
+    ).rejects.toThrow('章节摘要需要正文上下文')
   })
 })

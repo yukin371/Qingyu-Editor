@@ -8,13 +8,14 @@
 
 - 对接 `/api/v1/ai/*` 写作辅助接口
 - 提供 writer 可直接消费的 facade 与 workbench 工具函数
-- 保持 direct mode / request 封装等运行时适配
+- 保持 system remote / 用户 API / legacy direct 的运行时适配
 
 ## Owns
 
 - `api/ai.ts`：通用 AI 写作能力 facade
 - `api/workbench.ts`：工作区工具化封装
-- `api/request.ts`、`api/ai-direct.ts`：请求与直连适配
+- `api/request.ts`、`api/ai-direct.ts`、`api/ai-user-provider.ts`：请求与 provider 适配
+- `config/provider.ts`、`stores/aiProviderStore.ts`：AI 接入模式与本地配置
 - `utils/apikey.ts`：本地 AI key 相关辅助
 
 ## Must not own
@@ -26,4 +27,5 @@
 ## 约定
 
 - 运行态默认从 `api/index.ts` 暴露手写 facade，不依赖 `generated/`
+- 用户 API 模式当前以 OpenAI 兼容接口为准，最小配置为 `服务地址 + 接口路径 + 模型`
 - 任何新增 AI 能力都先判断是否属于 writer 工作区主链路；如果不是，标记 `TBD` 并补确认路径

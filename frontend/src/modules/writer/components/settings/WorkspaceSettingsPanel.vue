@@ -2,7 +2,11 @@
   <div class="workspace-settings-panel">
     <header class="workspace-settings-panel__header">
       <h2>外观与写作偏好</h2>
-      <button type="button" class="workspace-settings-panel__reset" @click="appearanceStore.resetAppearance()">
+      <button
+        type="button"
+        class="workspace-settings-panel__reset"
+        @click="appearanceStore.resetAppearance()"
+      >
         恢复默认
       </button>
     </header>
@@ -23,6 +27,14 @@
         @click="activeTab = 'shortcuts'"
       >
         快捷键
+      </button>
+      <button
+        type="button"
+        class="workspace-settings-panel__tab"
+        :class="{ 'is-active': activeTab === 'ai' }"
+        @click="activeTab = 'ai'"
+      >
+        AI
       </button>
     </div>
 
@@ -62,7 +74,13 @@
 
         <label class="workspace-settings-panel__field">
           <span>字号 {{ appearanceStore.fontSize }}px</span>
-          <input v-model.number="appearanceStore.fontSize" type="range" min="16" max="26" step="1" />
+          <input
+            v-model.number="appearanceStore.fontSize"
+            type="range"
+            min="16"
+            max="26"
+            step="1"
+          />
         </label>
 
         <label class="workspace-settings-panel__field">
@@ -97,8 +115,107 @@
       </div>
     </section>
 
-    <section v-else class="workspace-settings-panel__body workspace-settings-panel__body--shortcuts">
+    <section
+      v-else-if="activeTab === 'shortcuts'"
+      class="workspace-settings-panel__body workspace-settings-panel__body--shortcuts"
+    >
       <ShortcutSettingsPanel />
+    </section>
+
+    <section v-else class="workspace-settings-panel__body">
+      <div class="workspace-settings-panel__section">
+        <div class="workspace-settings-panel__section-title">接入模式</div>
+        <div class="workspace-settings-panel__mode-grid">
+          <button
+            type="button"
+            class="workspace-settings-panel__mode-card"
+            :class="{ 'is-active': aiProviderStore.mode === 'system_remote' }"
+            @click="aiProviderStore.mode = 'system_remote'"
+          >
+            <strong>系统服务</strong>
+            <span>使用系统配置的远程 AI 服务</span>
+          </button>
+          <button
+            type="button"
+            class="workspace-settings-panel__mode-card"
+            :class="{ 'is-active': aiProviderStore.mode === 'user_api' }"
+            @click="aiProviderStore.mode = 'user_api'"
+          >
+            <strong>用户 API</strong>
+            <span>接入本地或自有 OpenAI 兼容 provider</span>
+          </button>
+        </div>
+      </div>
+
+      <div v-if="aiProviderStore.mode === 'user_api'" class="workspace-settings-panel__section">
+        <div
+          class="workspace-settings-panel__section-title workspace-settings-panel__section-title--split"
+        >
+          <span>Provider 配置</span>
+          <button
+            type="button"
+            class="workspace-settings-panel__link"
+            @click="aiProviderStore.resetUserProvider()"
+          >
+            清空
+          </button>
+        </div>
+
+        <label class="workspace-settings-panel__field">
+          <span>服务地址</span>
+          <input
+            v-model="aiProviderStore.baseURL"
+            type="text"
+            placeholder="http://127.0.0.1:11434"
+          />
+        </label>
+
+        <label class="workspace-settings-panel__field">
+          <span>接口路径</span>
+          <input
+            v-model="aiProviderStore.endpointPath"
+            type="text"
+            placeholder="/v1/chat/completions"
+          />
+        </label>
+
+        <label class="workspace-settings-panel__field">
+          <span>模型</span>
+          <input
+            v-model="aiProviderStore.model"
+            type="text"
+            placeholder="gpt-4o-mini / qwen3 / llama3"
+          />
+        </label>
+
+        <label class="workspace-settings-panel__field">
+          <span>API Key（可空）</span>
+          <input v-model="aiProviderStore.apiKey" type="password" placeholder="sk-..." />
+        </label>
+
+        <label class="workspace-settings-panel__field">
+          <span>温度 {{ aiProviderStore.temperature.toFixed(2) }}</span>
+          <input
+            v-model.number="aiProviderStore.temperature"
+            type="range"
+            min="0"
+            max="2"
+            step="0.05"
+          />
+        </label>
+
+        <div class="workspace-settings-panel__status-row">
+          <span
+            class="workspace-settings-panel__status-pill"
+            :class="{ 'is-ready': aiProviderStore.providerReady }"
+          >
+            {{ aiProviderStore.providerReady ? '配置就绪' : '待补全' }}
+          </span>
+          <span class="workspace-settings-panel__status-meta">
+            {{ aiProviderStore.hasApiKey ? '已保存 API Key' : '未填写 API Key' }}
+          </span>
+        </div>
+      </div>
     </section>
   </div>
 </template>
@@ -106,15 +223,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import ShortcutSettingsPanel from './ShortcutSettingsPanel.vue'
-import {
-  useEditorThemeStore,
-  type EditorThemeName,
-} from '@/modules/writer/stores/editorThemeStore'
+import { useEditorThemeStore, type EditorThemeName } from '@/modules/writer/stores/editorThemeStore'
 import { useEditorAppearanceStore } from '@/modules/writer/stores/editorAppearanceStore'
+import { useAIProviderStore } from '@/modules/ai/stores/aiProviderStore'
 
-const activeTab = ref<'appearance' | 'shortcuts'>('appearance')
+const activeTab = ref<'appearance' | 'shortcuts' | 'ai'>('appearance')
 const editorThemeStore = useEditorThemeStore()
 const appearanceStore = useEditorAppearanceStore()
+const aiProviderStore = useAIProviderStore()
 </script>
 
 <style scoped lang="scss">
@@ -202,10 +318,55 @@ const appearanceStore = useEditorAppearanceStore()
   color: var(--editor-text-secondary, #334155);
 }
 
+.workspace-settings-panel__section-title--split {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .workspace-settings-panel__theme-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+
+.workspace-settings-panel__mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.workspace-settings-panel__mode-card {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--editor-border, #e2e8f0);
+  border-radius: 12px;
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--editor-transition-fast, 120ms ease-out),
+    background var(--editor-transition-fast, 120ms ease-out);
+
+  strong {
+    font-size: 13px;
+    color: var(--editor-text-primary, #0f172a);
+  }
+
+  span {
+    font-size: 12px;
+    color: var(--editor-text-muted, #64748b);
+  }
+
+  &.is-active {
+    border-color: var(--editor-accent, #2563eb);
+    background: color-mix(
+      in srgb,
+      var(--editor-layer-panel, var(--editor-bg-base, #ffffff)) 86%,
+      var(--editor-accent-soft, #eff6ff) 14%
+    );
+  }
 }
 
 .workspace-settings-panel__theme-card {
@@ -281,13 +442,25 @@ const appearanceStore = useEditorAppearanceStore()
   }
 
   select,
-  input[type='range'] {
+  input[type='range'],
+  input[type='text'],
+  input[type='password'] {
     width: 100%;
   }
 
   select {
     height: 36px;
     padding: 0 10px;
+    border: 1px solid var(--editor-border, #dbe3ee);
+    border-radius: 10px;
+    background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
+    color: var(--editor-text-primary, #0f172a);
+  }
+
+  input[type='text'],
+  input[type='password'] {
+    height: 38px;
+    padding: 0 12px;
     border: 1px solid var(--editor-border, #dbe3ee);
     border-radius: 10px;
     background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
@@ -302,5 +475,44 @@ const appearanceStore = useEditorAppearanceStore()
   font-size: 13px;
   font-weight: 600;
   color: var(--editor-text-secondary, #334155);
+}
+
+.workspace-settings-panel__status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.workspace-settings-panel__status-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--editor-bg-elevated, #eef2f7);
+  color: var(--editor-text-muted, #64748b);
+  font-size: 12px;
+  font-weight: 700;
+
+  &.is-ready {
+    background: color-mix(in srgb, var(--editor-accent-soft, #dcfce7) 68%, transparent);
+    color: var(--editor-accent-strong, #166534);
+  }
+}
+
+.workspace-settings-panel__status-meta {
+  font-size: 12px;
+  color: var(--editor-text-muted, #64748b);
+}
+
+.workspace-settings-panel__link {
+  border: none;
+  background: transparent;
+  color: var(--editor-accent, #2563eb);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
 }
 </style>

@@ -1,5 +1,7 @@
 import { chatWithAI, summarizeText, proofreadText } from './ai'
+import { isUserProviderModeEnabled } from '../config/provider'
 import { postAIRequest } from './request'
+import { userAIProviderApi } from './ai-user-provider'
 
 export interface RewriteToolRequest {
   projectId: string
@@ -90,6 +92,14 @@ export interface SensitiveAuditResult {
 export async function rewriteWithWorkbench(
   payload: RewriteToolRequest,
 ): Promise<RewriteToolResult> {
+  if (isUserProviderModeEnabled()) {
+    const response = await userAIProviderApi.workbench.rewrite(payload)
+    return {
+      rewrittenText: String(response.rewritten_text || '').trim(),
+      raw: response as unknown as Record<string, unknown>,
+    }
+  }
+
   const response = await postAIRequest<Record<string, unknown>>('/api/v1/ai/writing/rewrite', {
     projectId: payload.projectId,
     chapterId: payload.chapterId,
@@ -128,6 +138,10 @@ export async function summarizeSelection(payload: SummaryToolRequest): Promise<S
 }
 
 export async function summarizeChapter(payload: ChapterSummaryRequest): Promise<SummaryToolResult> {
+  if (isUserProviderModeEnabled()) {
+    throw new Error('用户 API 模式下章节摘要需要正文上下文，请改用片段摘要。')
+  }
+
   const response = await postAIRequest<Record<string, unknown>>(
     '/api/v1/ai/writing/summarize-chapter',
     {
@@ -273,6 +287,16 @@ export async function proofreadContent(payload: ReviewToolRequest): Promise<Revi
 export async function auditSensitiveWords(
   payload: ReviewToolRequest,
 ): Promise<SensitiveAuditResult> {
+  if (isUserProviderModeEnabled()) {
+    const response = await userAIProviderApi.workbench.auditSensitiveWords(payload)
+    return {
+      totalMatches: response.totalMatches,
+      isSafe: response.isSafe,
+      sensitiveWords: response.sensitiveWords,
+      raw: response as unknown as Record<string, unknown>,
+    }
+  }
+
   const response = await postAIRequest<Record<string, unknown>>(
     '/api/v1/ai/audit/sensitive-words',
     {
