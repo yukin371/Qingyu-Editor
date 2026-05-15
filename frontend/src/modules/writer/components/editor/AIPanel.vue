@@ -673,39 +673,44 @@ async function sendMessage(content: string) {
   isTyping.value = true
   try {
     if (promptExecution.route === 'analysis' && intent) {
-      const resolvedTarget = await resolveDocumentTarget(trimmedContent)
-      if (resolvedTarget.status !== 'ready' || !resolvedTarget.sourceText?.trim()) {
-        addMessage('user', trimmedContent)
-        appendTargetResolutionMessage(trimmedContent, 'analysis', resolvedTarget)
-        isTyping.value = false
-        await scrollToBottom()
-        return
-      }
-      isTyping.value = false
-      await runResolvedAnalysis(trimmedContent, intent, resolvedTarget)
+      await runAnalysisRoute(trimmedContent, intent)
       return
     }
 
-    // ── 通用聊天（无匹配意图或无选中文本）──
-    const history = buildGeneralChatHistory(messages.value)
-    const response = await chatWithAI(finalRequestMessage, history)
-    const aiResponseText = resolveGeneralChatReply(response.reply)
-
-    // 通用对话：只在聊天气泡中显示，不触发编辑器候选
-    addMessage('assistant', aiResponseText)
-    if (selectedChatContext.value) {
-      handleClearSelectedContext()
-    }
-    isTyping.value = false
-
-    // 滚动到底部
-    await scrollToBottom()
+    await runGeneralChatRoute(finalRequestMessage)
   } catch (error) {
     console.error('[AIPanel] Failed to get AI response:', error)
     const resolvedError = resolveWriterAIErrorState(error)
     addMessage('assistant', resolvedError.message, false, resolvedError.meta)
     isTyping.value = false
   }
+}
+
+async function runAnalysisRoute(instruction: string, intent: WriterPromptIntent) {
+  const resolvedTarget = await resolveDocumentTarget(instruction)
+  if (resolvedTarget.status !== 'ready' || !resolvedTarget.sourceText?.trim()) {
+    addMessage('user', instruction)
+    appendTargetResolutionMessage(instruction, 'analysis', resolvedTarget)
+    isTyping.value = false
+    await scrollToBottom()
+    return
+  }
+
+  isTyping.value = false
+  await runResolvedAnalysis(instruction, intent, resolvedTarget)
+}
+
+async function runGeneralChatRoute(finalRequestMessage: string) {
+  const history = buildGeneralChatHistory(messages.value)
+  const response = await chatWithAI(finalRequestMessage, history)
+  const aiResponseText = resolveGeneralChatReply(response.reply)
+
+  addMessage('assistant', aiResponseText)
+  if (selectedChatContext.value) {
+    handleClearSelectedContext()
+  }
+  isTyping.value = false
+  await scrollToBottom()
 }
 
 async function runResolvedDirectEdit(
