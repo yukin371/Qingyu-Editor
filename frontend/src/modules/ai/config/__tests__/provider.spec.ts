@@ -3,24 +3,41 @@ import {
   DEFAULT_AI_PROVIDER_SETTINGS,
   getUserProviderRuntimeConfig,
   hasUsableUserProviderConfig,
+  hasSessionApiKey,
   loadAIProviderSettings,
   saveAIProviderSettings,
 } from '../provider'
 
 describe('ai provider settings', () => {
   beforeEach(() => {
-    const storage = new Map<string, string>()
-    vi.mocked(localStorage.getItem).mockImplementation((key: string) => storage.get(key) ?? null)
+    const localStorageData = new Map<string, string>()
+    const sessionStorageData = new Map<string, string>()
+    vi.mocked(localStorage.getItem).mockImplementation(
+      (key: string) => localStorageData.get(key) ?? null,
+    )
     vi.mocked(localStorage.setItem).mockImplementation((key: string, value: string) => {
-      storage.set(key, value)
+      localStorageData.set(key, value)
     })
     vi.mocked(localStorage.removeItem).mockImplementation((key: string) => {
-      storage.delete(key)
+      localStorageData.delete(key)
     })
     vi.mocked(localStorage.clear).mockImplementation(() => {
-      storage.clear()
+      localStorageData.clear()
+    })
+    vi.mocked(sessionStorage.getItem).mockImplementation(
+      (key: string) => sessionStorageData.get(key) ?? null,
+    )
+    vi.mocked(sessionStorage.setItem).mockImplementation((key: string, value: string) => {
+      sessionStorageData.set(key, value)
+    })
+    vi.mocked(sessionStorage.removeItem).mockImplementation((key: string) => {
+      sessionStorageData.delete(key)
+    })
+    vi.mocked(sessionStorage.clear).mockImplementation(() => {
+      sessionStorageData.clear()
     })
     localStorage.clear()
+    sessionStorage.clear()
   })
 
   it('loads default settings when storage is empty', () => {
@@ -35,7 +52,7 @@ describe('ai provider settings', () => {
         baseURL: 'http://127.0.0.1:11434///',
         endpointPath: 'v1/chat/completions',
         model: ' qwen3 ',
-        apiKey: '  secret-token  ',
+        apiKey: '  sk-1234567890abcdefghijkl  ',
         temperature: 1.9,
       },
     })
@@ -43,9 +60,11 @@ describe('ai provider settings', () => {
     expect(saved.userProvider.baseURL).toBe('http://127.0.0.1:11434')
     expect(saved.userProvider.endpointPath).toBe('/v1/chat/completions')
     expect(saved.userProvider.model).toBe('qwen3')
-    expect(saved.userProvider.apiKey).toBe('secret-token')
+    expect(saved.userProvider.apiKey).toContain('****')
     expect(saved.userProvider.temperature).toBe(1.9)
-    expect(loadAIProviderSettings()).toEqual(saved)
+    expect(loadAIProviderSettings().userProvider.apiKey).toBe('sk-1234567890abcdefghijkl')
+    expect(hasSessionApiKey()).toBe(true)
+    expect(getUserProviderRuntimeConfig().apiKey).toBe('sk-1234567890abcdefghijkl')
   })
 
   it('requires mode and ready config before exposing runtime settings', () => {

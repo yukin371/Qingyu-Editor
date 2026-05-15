@@ -190,7 +190,13 @@
 
         <label class="workspace-settings-panel__field">
           <span>API Key（可空）</span>
-          <input v-model="aiProviderStore.apiKey" type="password" placeholder="sk-..." />
+          <input
+            v-model="apiKeyDraft"
+            type="password"
+            placeholder="sk-..."
+            @blur="commitApiKeyDraft"
+            @change="commitApiKeyDraft"
+          />
         </label>
 
         <label class="workspace-settings-panel__field">
@@ -212,7 +218,15 @@
             {{ aiProviderStore.providerReady ? '配置就绪' : '待补全' }}
           </span>
           <span class="workspace-settings-panel__status-meta">
-            {{ aiProviderStore.hasApiKey ? '已保存 API Key' : '未填写 API Key' }}
+            {{
+              aiProviderStore.hasRuntimeApiKey
+                ? 'API Key 已载入本次会话'
+                : aiProviderStore.apiKeyNeedsRefresh
+                  ? '仅保留掩码，若需鉴权请重新输入'
+                  : aiProviderStore.hasApiKey
+                    ? '已记录 API Key 标记'
+                    : '未填写 API Key'
+            }}
           </span>
         </div>
       </div>
@@ -221,7 +235,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import ShortcutSettingsPanel from './ShortcutSettingsPanel.vue'
 import { useEditorThemeStore, type EditorThemeName } from '@/modules/writer/stores/editorThemeStore'
 import { useEditorAppearanceStore } from '@/modules/writer/stores/editorAppearanceStore'
@@ -231,6 +245,20 @@ const activeTab = ref<'appearance' | 'shortcuts' | 'ai'>('appearance')
 const editorThemeStore = useEditorThemeStore()
 const appearanceStore = useEditorAppearanceStore()
 const aiProviderStore = useAIProviderStore()
+const apiKeyDraft = ref(aiProviderStore.apiKey)
+
+watch(
+  () => aiProviderStore.apiKey,
+  (value) => {
+    apiKeyDraft.value = value
+  },
+  { immediate: true },
+)
+
+function commitApiKeyDraft() {
+  aiProviderStore.apiKey = apiKeyDraft.value
+  apiKeyDraft.value = aiProviderStore.apiKey
+}
 </script>
 
 <style scoped lang="scss">

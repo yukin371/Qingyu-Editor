@@ -2,10 +2,13 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import {
   DEFAULT_USER_PROVIDER_CONFIG,
+  hasSessionApiKey,
+  isUserProviderModeEnabled,
   loadAIProviderSettings,
   saveAIProviderSettings,
   type AIAccessMode,
 } from '../config/provider'
+import { hasValidApiKey, isApiKeyMasked } from '../utils/apikey'
 
 export const useAIProviderStore = defineStore('writer-ai-provider-settings', () => {
   const snapshot = ref(loadAIProviderSettings())
@@ -70,6 +73,18 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
   )
 
   const hasApiKey = computed(() => snapshot.value.userProvider.apiKey.trim().length > 0)
+  const hasRuntimeApiKey = computed(() => {
+    void snapshot.value.userProvider.apiKey
+    return hasSessionApiKey()
+  })
+  const apiKeyMasked = computed(() => isApiKeyMasked(snapshot.value.userProvider.apiKey))
+  const apiKeyNeedsRefresh = computed(
+    () =>
+      apiKeyMasked.value &&
+      !hasValidApiKey(snapshot.value.userProvider.apiKey) &&
+      !hasRuntimeApiKey.value,
+  )
+  const userModeEnabled = computed(() => isUserProviderModeEnabled(snapshot.value))
 
   const resetUserProvider = () => {
     snapshot.value.userProvider = { ...DEFAULT_USER_PROVIDER_CONFIG }
@@ -85,6 +100,10 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     temperature,
     providerReady,
     hasApiKey,
+    hasRuntimeApiKey,
+    apiKeyMasked,
+    apiKeyNeedsRefresh,
+    userModeEnabled,
     resetUserProvider,
   }
 })

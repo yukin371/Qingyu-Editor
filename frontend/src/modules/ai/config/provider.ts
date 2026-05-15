@@ -1,3 +1,5 @@
+import { hasValidApiKey, isApiKeyMasked, maskApiKey } from '../utils/apikey'
+
 export type AIAccessMode = 'system_remote' | 'user_api'
 export type AIUserProviderType = 'openai-compatible'
 
@@ -16,6 +18,7 @@ export interface AIProviderSettings {
 }
 
 const STORAGE_KEY = 'qingyu-ai-provider-settings'
+const SESSION_API_KEY_STORAGE_KEY = 'qingyu-ai-provider-session-api-key'
 const DEFAULT_ENDPOINT_PATH = '/v1/chat/completions'
 
 export const DEFAULT_USER_PROVIDER_CONFIG: AIUserProviderConfig = {
@@ -75,6 +78,27 @@ function normalizeUserProvider(
   }
 }
 
+function loadSessionApiKey(): string {
+  try {
+    const raw = sessionStorage.getItem(SESSION_API_KEY_STORAGE_KEY)
+    return typeof raw === 'string' ? raw.trim() : ''
+  } catch {
+    return ''
+  }
+}
+
+function saveSessionApiKey(apiKey: string): void {
+  try {
+    if (apiKey.trim()) {
+      sessionStorage.setItem(SESSION_API_KEY_STORAGE_KEY, apiKey.trim())
+      return
+    }
+    sessionStorage.removeItem(SESSION_API_KEY_STORAGE_KEY)
+  } catch {
+    // ignore sessionStorage failures
+  }
+}
+
 export function loadAIProviderSettings(): AIProviderSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -85,9 +109,14 @@ export function loadAIProviderSettings(): AIProviderSettings {
       }
     }
     const parsed = JSON.parse(raw) as Partial<AIProviderSettings>
+    const sessionApiKey = loadSessionApiKey()
+    const normalizedUserProvider = normalizeUserProvider(parsed.userProvider)
     return {
       mode: normalizeMode(parsed.mode),
-      userProvider: normalizeUserProvider(parsed.userProvider),
+      userProvider: {
+        ...normalizedUserProvider,
+        apiKey: sessionApiKey || normalizedUserProvider.apiKey,
+      },
     }
   } catch {
     return {
@@ -98,9 +127,22 @@ export function loadAIProviderSettings(): AIProviderSettings {
 }
 
 export function saveAIProviderSettings(settings: AIProviderSettings): AIProviderSettings {
+  const sessionApiKey = loadSessionApiKey()
   const normalized: AIProviderSettings = {
     mode: normalizeMode(settings.mode),
     userProvider: normalizeUserProvider(settings.userProvider),
+  }
+  const nextApiKey = normalized.userProvider.apiKey
+
+  if (hasValidApiKey(nextApiKey)) {
+    saveSessionApiKey(nextApiKey)
+    normalized.userProvider.apiKey = maskApiKey(nextApiKey)
+  } else if (isApiKeyMasked(nextApiKey)) {
+    normalized.userProvider.apiKey = nextApiKey
+  } else if (!nextApiKey && sessionApiKey) {
+    saveSessionApiKey('')
+  } else {
+    normalized.userProvider.apiKey = ''
   }
 
   try {
@@ -131,6 +173,10 @@ export function hasUsableUserProviderConfig(
   )
 }
 
+export function hasSessionApiKey(): boolean {
+  return hasValidApiKey(loadSessionApiKey())
+}
+
 export function getUserProviderRuntimeConfig(): AIUserProviderConfig {
   const settings = loadAIProviderSettings()
   if (!isUserProviderModeEnabled(settings)) {
@@ -139,5 +185,8 @@ export function getUserProviderRuntimeConfig(): AIUserProviderConfig {
   if (!hasUsableUserProviderConfig(settings.userProvider)) {
     throw new Error('请先完成 AI provider 的地址、接口路径和模型配置。')
   }
-  return settings.userProvider
+  return {
+    ...settings.userProvider,
+    apiKey: loadSessionApiKey(),
+  }
 }
