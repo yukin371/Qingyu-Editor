@@ -41,6 +41,12 @@ vi.mock('@/modules/writer/composables/useToolOverlay', () => ({
   }),
 }))
 
+vi.mock('@/modules/writer/composables/useWriterAISummaryContext', () => ({
+  useWriterAISummaryContext: () => ({
+    aiSummaryContextText: computed(() => '创作蓝图与资产摘要：\n当前章节资产：角色 2；地点 1'),
+  }),
+}))
+
 const baseProps = {
   activeTool: 'assets' as const,
   projectId: 'project-1',
@@ -79,7 +85,11 @@ describe('ToolRightPanel', () => {
           AssetListPanel: { template: '<div data-testid="asset-list-panel" />' },
           AssetDetailPanel: { template: '<div data-testid="asset-detail-panel" />' },
           AssetQuickEditorDialog: { template: '<div data-testid="asset-quick-editor-dialog" />' },
-          AIChatPanel: true,
+          AIChatPanel: {
+            props: ['aiSummaryContextText'],
+            template:
+              '<div data-testid="ai-chat-panel-summary-context">{{ aiSummaryContextText }}</div>',
+          },
           ProofreadPanel: true,
           InspirationPanel: true,
         },
@@ -112,5 +122,36 @@ describe('ToolRightPanel', () => {
     await wrapper.get('.tool-right-panel__divider').trigger('mousedown')
 
     expect(startListResize).toHaveBeenCalledTimes(1)
+  })
+
+  it('passes merged ai summary context down to the ai chat panel', () => {
+    const wrapper = mount(ToolRightPanel, {
+      props: {
+        ...baseProps,
+        activeTool: 'ai',
+      },
+      global: {
+        stubs: {
+          QyIcon: true,
+          AssetListPanel: { template: '<div data-testid="asset-list-panel" />' },
+          AssetDetailPanel: { template: '<div data-testid="asset-detail-panel" />' },
+          AssetQuickEditorDialog: { template: '<div data-testid="asset-quick-editor-dialog" />' },
+          AIChatPanel: {
+            props: ['aiSummaryContextText'],
+            template:
+              '<div data-testid="ai-chat-panel-summary-context">{{ aiSummaryContextText }}</div>',
+          },
+          ProofreadPanel: true,
+          InspirationPanel: true,
+        },
+      },
+    })
+
+    expect(wrapper.get('[data-testid="ai-chat-panel-summary-context"]').text()).toContain(
+      '创作蓝图与资产摘要：',
+    )
+    expect(wrapper.get('[data-testid="ai-chat-panel-summary-context"]').text()).toContain(
+      '当前章节资产：角色 2；地点 1',
+    )
   })
 })

@@ -205,7 +205,22 @@ describe('AIPanel', () => {
   beforeEach(() => {
     messages.value = []
     addMessage.mockReset()
+    addMessage.mockImplementation(
+      (
+        role: string,
+        content: string,
+        typing?: boolean,
+        meta?: Record<string, unknown>,
+      ) => {
+        const message = { role, content, typing, meta }
+        messages.value.push(message)
+        return message
+      },
+    )
     clearHistory.mockReset()
+    clearHistory.mockImplementation(() => {
+      messages.value = []
+    })
     save.mockReset()
     load.mockReset()
     setSessionId.mockReset()
@@ -405,6 +420,31 @@ describe('AIPanel', () => {
     expect(vi.mocked(chatWithAI).mock.calls[0]?.[0]).toContain('创作蓝图与资产摘要：')
     expect(vi.mocked(chatWithAI).mock.calls[0]?.[0]).toContain('当前章节资产：角色 2；地点 1')
     expect(vi.mocked(chatWithAI).mock.calls[0]?.[0]).toContain('聊聊这章的节奏问题')
+    expect(vi.mocked(chatWithAI).mock.calls[0]?.[1]).toEqual([])
+  })
+
+  it('does not duplicate the current user message in general chat history', async () => {
+    vi.mocked(chatWithAI).mockResolvedValue({
+      reply: '收到，我们继续讨论。',
+    } as never)
+
+    messages.value = [
+      { role: 'user', content: '上一轮问题' },
+      { role: 'assistant', content: '上一轮回答' },
+    ]
+
+    const wrapper = mountPanel()
+    const input = wrapper.findComponent(AIInputAreaStub)
+    input.vm.$emit('update:modelValue', '这章整体给人的感觉怎么样')
+    await nextTick()
+    input.vm.$emit('send')
+    await flushPromises()
+
+    expect(vi.mocked(chatWithAI)).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(chatWithAI).mock.calls[0]?.[1]).toEqual([
+      { role: 'user', content: '上一轮问题' },
+      { role: 'assistant', content: '上一轮回答' },
+    ])
   })
 
   it('routes explicit expand-length requests into direct edit diff flow', async () => {

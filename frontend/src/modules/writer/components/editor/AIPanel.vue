@@ -940,6 +940,7 @@ async function sendMessage(content: string) {
     // ── 通用聊天（无匹配意图或无选中文本）──
     // 构建对话历史
     const history = messages.value
+      .slice(0, -1)
       .filter((m) => m.role !== 'system')
       .map((m) => ({
         role: m.role as 'user' | 'assistant',
