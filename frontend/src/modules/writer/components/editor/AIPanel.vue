@@ -596,7 +596,7 @@ async function sendMessage(content: string) {
   await pushUserMessage(trimmedContent, { clearInput: true, scroll: true })
 
   // 调用真实AI API
-  isTyping.value = true
+  startTyping()
   try {
     if (promptExecution.route === 'analysis' && intent) {
       await runAnalysisRoute(trimmedContent, intent)
@@ -605,10 +605,7 @@ async function sendMessage(content: string) {
 
     await runGeneralChatRoute(finalRequestMessage || trimmedContent)
   } catch (error) {
-    console.error('[AIPanel] Failed to get AI response:', error)
-    const resolvedError = resolveWriterAIErrorState(error)
-    addMessage('assistant', resolvedError.message, false, resolvedError.meta)
-    isTyping.value = false
+    await failWithResolvedAIError('[AIPanel] Failed to get AI response:', error)
   }
 }
 
@@ -662,7 +659,7 @@ async function runResolvedDirectEdit(
       !!resolvedTarget.useSelectionContext,
     )) as EditorApplyMode
 
-  isTyping.value = true
+  startTyping()
   try {
     const retrievalMeta = plan ? buildWriterRetrievalMeta(plan) : undefined
     if (retrievalMeta && plan?.route === 'search_then_edit') {
@@ -738,9 +735,9 @@ async function runResolvedDirectEdit(
     })
   } catch (error) {
     console.error('[AIPanel] Failed to run direct edit:', error)
-    addMessage('assistant', '直接修改失败，请稍后重试。')
+    await failWithAssistantMessage('直接修改失败，请稍后重试。')
   } finally {
-    isTyping.value = false
+    await finishTyping()
   }
 }
 
@@ -767,7 +764,7 @@ async function runSelectionAction(action: string, selectedText: string, instruct
   if (!selectedText.trim()) return
   if (isTyping.value) return
 
-  isTyping.value = true
+  startTyping()
   updateSelectionNotice(action, selectedText, instructions, 'running')
   try {
     await runWriterSelectionAction({
@@ -799,10 +796,10 @@ async function runSelectionAction(action: string, selectedText: string, instruct
     })
   } catch (error) {
     console.error('[AIPanel] Failed to run selection action:', error)
-    addMessage('assistant', '处理失败，请稍后重试。')
+    await failWithAssistantMessage('处理失败，请稍后重试。')
     updateSelectionNotice(action, selectedText, instructions, 'error')
   } finally {
-    isTyping.value = false
+    await finishTyping()
   }
 }
 
@@ -850,6 +847,21 @@ async function pushAssistantMessage(
   if (options.scroll) {
     await scrollToBottom()
   }
+}
+
+function startTyping() {
+  isTyping.value = true
+}
+
+async function failWithResolvedAIError(prefix: string, error: unknown) {
+  console.error(prefix, error)
+  const resolvedError = resolveWriterAIErrorState(error)
+  await pushAssistantMessage(resolvedError.message, resolvedError.meta)
+  await finishTyping()
+}
+
+async function failWithAssistantMessage(message: string) {
+  await pushAssistantMessage(message)
 }
 
 async function finishTyping(options: { scroll?: boolean } = {}) {
