@@ -95,6 +95,7 @@ import {
   buildWriterAgentContext as createWriterAgentContext,
   resolveWriterAnalysisText,
 } from '@/modules/writer/utils/writerAIAnalysis'
+import { buildHandledDocumentCommandResult } from '@/modules/writer/utils/writerAIDocumentCommand'
 import {
   buildDirectEditApplyPayload,
   buildDirectEditLoadingMessage,
@@ -590,21 +591,29 @@ async function sendMessage(content: string) {
   })
 
   if (documentCommand.handled) {
-    addMessage('user', documentCommand.userEcho || trimmedContent)
+    const handledCommand = buildHandledDocumentCommandResult({
+      fallbackUserMessage: trimmedContent,
+      userEcho: documentCommand.userEcho,
+      assistantMessage: documentCommand.assistantMessage,
+      assistantMeta: documentCommand.assistantMeta,
+      patchPayload: documentCommand.patchPayload,
+    })
+
+    addMessage('user', handledCommand.userMessage)
     inputText.value = ''
     await scrollToBottom()
 
-    if (documentCommand.assistantMessage?.trim()) {
+    if (handledCommand.assistantMessage) {
       addMessage(
         'assistant',
-        documentCommand.assistantMessage,
+        handledCommand.assistantMessage,
         false,
-        documentCommand.assistantMeta,
+        handledCommand.assistantMeta,
       )
     }
 
-    if (documentCommand.patchPayload) {
-      emit('applyGeneratedText', documentCommand.patchPayload)
+    if (handledCommand.patchPayload) {
+      emit('applyGeneratedText', handledCommand.patchPayload)
     }
 
     await scrollToBottom()
