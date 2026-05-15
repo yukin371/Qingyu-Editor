@@ -82,81 +82,13 @@ import {
   type WriterEditorPlan,
   type WriterResolvedDocumentTarget,
 } from '@/modules/writer/services/writerDocumentAgent.service'
+import { resolveWriterAIErrorState } from '@/modules/writer/utils/writerAIError'
 
 type EditorApplyMode =
   | 'replace_selection'
   | 'insert_after_selection'
   | 'append_paragraph'
   | 'replace_document'
-
-interface ResolvedAIErrorState {
-  message: string
-  meta?:
-    | {
-        kind: 'writer_connection_status'
-        status: 'offline' | 'error'
-        statusText: string
-        targetLabel: string
-        detail?: string
-      }
-    | undefined
-}
-
-function resolveAIErrorState(error: unknown): ResolvedAIErrorState {
-  const fallback = '抱歉，我遇到了一些问题。请稍后再试。'
-  if (!error || typeof error !== 'object') {
-    return { message: fallback }
-  }
-
-  const record = error as {
-    code?: string
-    message?: string
-    response?: {
-      status?: number
-      data?: Record<string, unknown> | string
-    }
-  }
-
-  const status = record.response?.status
-  const responseData = record.response?.data
-  const responseMessage =
-    typeof responseData === 'string'
-      ? responseData
-      : typeof responseData?.message === 'string'
-        ? responseData.message
-        : typeof responseData?.detail === 'string'
-          ? responseData.detail
-          : typeof responseData?.error === 'string'
-            ? responseData.error
-            : ''
-
-  if (status === 401) {
-    return { message: 'AI 请求未通过鉴权，请刷新页面后重试。' }
-  }
-  if (status === 404) {
-    return { message: '当前 AI 接口不可用，请检查服务配置后重试。' }
-  }
-  if (status && status >= 500) {
-    return { message: responseMessage || 'AI 服务暂时不可用，请稍后再试。' }
-  }
-  if (record.code === 'ECONNABORTED' || /timeout/i.test(record.message || '')) {
-    return { message: 'AI 请求超时，请稍后重试。' }
-  }
-  if (/network error/i.test(record.message || '')) {
-    return {
-      message: 'AI 服务连接失败，请确认本地 AI 服务已启动。',
-      meta: {
-        kind: 'writer_connection_status',
-        status: 'offline',
-        statusText: '服务未连接',
-        targetLabel: 'AI 服务不可用',
-        detail: '当前请求已经发出，但本地 AI 服务未启动或无法连接到配置地址。',
-      },
-    }
-  }
-
-  return { message: responseMessage || fallback }
-}
 import type {
   WriterPromptIntent,
   WriterAIActionTrigger,
@@ -785,7 +717,7 @@ async function runResolvedAnalysis(
     await scrollToBottom()
   } catch (error) {
     console.error('[AIPanel] Failed to get AI response:', error)
-    const resolvedError = resolveAIErrorState(error)
+    const resolvedError = resolveWriterAIErrorState(error)
     addMessage('assistant', resolvedError.message, false, resolvedError.meta)
   } finally {
     isTyping.value = false
@@ -984,7 +916,7 @@ async function sendMessage(content: string) {
     await scrollToBottom()
   } catch (error) {
     console.error('[AIPanel] Failed to get AI response:', error)
-    const resolvedError = resolveAIErrorState(error)
+    const resolvedError = resolveWriterAIErrorState(error)
     addMessage('assistant', resolvedError.message, false, resolvedError.meta)
     isTyping.value = false
   }

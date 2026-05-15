@@ -175,4 +175,24 @@ describe('RewriteWorkbenchTool', () => {
     expect(wrapper.get('.tool-panel__status').text()).toContain('已就绪')
     expect(wrapper.find('.result-card').exists()).toBe(true)
   })
+
+  it('shows unified offline message when ai service is unavailable', async () => {
+    rewriteWithWorkbench.mockRejectedValue({ message: 'Network Error' })
+
+    const wrapper = mount(RewriteWorkbenchTool, {
+      props: {
+        projectId: 'project-1',
+        chapterId: 'chapter-1',
+        chapterTitle: '第一章',
+        seedText: '原始文本',
+        actionTrigger: null,
+        workflowContext: null,
+      },
+    })
+
+    await wrapper.get('.tool-panel__primary').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('.tool-error').text()).toContain('AI 服务连接失败，请确认本地 AI 服务已启动。')
+  })
 })

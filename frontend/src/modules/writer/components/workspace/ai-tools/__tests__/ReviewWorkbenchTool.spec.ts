@@ -144,4 +144,23 @@ describe('ReviewWorkbenchTool', () => {
     expect(wrapper.get('.tool-panel__status').classes()).toContain('tool-panel__status--warning')
     expect(wrapper.get('.tool-panel__status').text()).toContain('已同步')
   })
+
+  it('shows unified offline message when audit service is unavailable', async () => {
+    auditSensitiveWords.mockRejectedValue({ message: 'Network Error' })
+
+    const wrapper = mount(ReviewWorkbenchTool, {
+      props: {
+        projectId: 'project-1',
+        chapterId: 'chapter-1',
+        chapterTitle: '第一章',
+        seedText: '张三在雨夜里盯着李四，情绪极端。',
+        actionTrigger: null,
+      },
+    })
+
+    await wrapper.get('.tool-panel__primary').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('.tool-error').text()).toContain('AI 服务连接失败，请确认本地 AI 服务已启动。')
+  })
 })

@@ -97,6 +97,7 @@ import type {
   WriterWorkflowContext,
 } from '@/modules/writer/types/workflow'
 import { mergeWriterAIInstructions } from '@/modules/writer/utils/writerAIContext'
+import { resolveWriterAIErrorState } from '@/modules/writer/utils/writerAIError'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 
 const props = defineProps<{
@@ -214,7 +215,7 @@ async function handleRun() {
     resultText.value = result.rewrittenText
   } catch (error) {
     console.error('[RewriteWorkbenchTool] run failed:', error)
-    errorText.value = '改写失败，请稍后重试。'
+    errorText.value = resolveWriterAIErrorState(error).message
   } finally {
     loading.value = false
   }

@@ -196,6 +196,7 @@ import type {
   WriterWorkflowContext,
 } from '@/modules/writer/types/workflow'
 import { buildWriterAIContextBlock } from '@/modules/writer/utils/writerAIContext'
+import { resolveWriterAIErrorState } from '@/modules/writer/utils/writerAIError'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 
 const props = defineProps<{
@@ -341,7 +342,7 @@ async function handleSelectionSummary() {
     emitResultCandidate(result.summary, result.keyPoints)
   } catch (error) {
     console.error('[SummaryWorkbenchTool] selection summarize failed:', error)
-    errorText.value = '总结失败，请稍后重试。'
+    errorText.value = resolveWriterAIErrorState(error).message
   } finally {
     loading.value = false
   }
@@ -380,7 +381,7 @@ async function handleChapterSummary() {
         console.error('[SummaryWorkbenchTool] chapter summarize fallback failed:', fallbackError)
       }
     }
-    errorText.value = '章节总结失败，请稍后重试。'
+    errorText.value = resolveWriterAIErrorState(error).message
   } finally {
     loading.value = false
   }
@@ -412,7 +413,7 @@ async function handleGenerateStructure(mode: WriterStructurePlanMode) {
     }
   } catch (error) {
     console.error('[SummaryWorkbenchTool] structure planning failed:', error)
-    plannerErrorText.value = '结构生成失败，请稍后重试。'
+    plannerErrorText.value = resolveWriterAIErrorState(error).message
   } finally {
     planning.value = false
   }

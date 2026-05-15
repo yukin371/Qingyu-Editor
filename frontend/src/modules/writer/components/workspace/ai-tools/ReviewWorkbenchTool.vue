@@ -109,6 +109,7 @@ import type {
   WriterAIActionTrigger,
   WriterResultCandidate,
 } from '@/modules/writer/types/workflow'
+import { resolveWriterAIErrorState } from '@/modules/writer/utils/writerAIError'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 
 const props = defineProps<{
@@ -253,7 +254,7 @@ async function handleProofread() {
     emitProofreadCandidate(result.issues, result.score)
   } catch (error) {
     console.error('[ReviewWorkbenchTool] proofread failed:', error)
-    errorText.value = '文本校对失败，请稍后重试。'
+    errorText.value = resolveWriterAIErrorState(error).message
   } finally {
     loading.value = false
   }
@@ -274,7 +275,7 @@ async function handleAudit() {
     emitAuditCandidate(result.sensitiveWords)
   } catch (error) {
     console.error('[ReviewWorkbenchTool] audit failed:', error)
-    errorText.value = '敏感词检测失败，请稍后重试。'
+    errorText.value = resolveWriterAIErrorState(error).message
   } finally {
     loading.value = false
   }

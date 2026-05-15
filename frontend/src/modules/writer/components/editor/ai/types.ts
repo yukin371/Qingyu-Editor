@@ -2,6 +2,7 @@ import type {
   ChatMessage as BaseChatMessage,
   ChatMessageMeta as BaseChatMessageMeta,
 } from '@/composables/useChatHistory'
+import type { WriterAIConnectionStatusMeta } from '@/modules/writer/utils/writerAIError'
 
 export interface WriterRetrievalHit {
   documentId: string
@@ -57,20 +58,12 @@ export interface WriterApplyCheckpointMeta {
   stages: WriterApplyCheckpointItem[]
 }
 
-export interface WriterConnectionStatusMeta {
-  kind: 'writer_connection_status'
-  status: 'offline' | 'error'
-  statusText: string
-  targetLabel: string
-  detail?: string
-}
-
 export type WriterChatMessageMeta =
   | BaseChatMessageMeta
   | WriterRetrievalSummaryMeta
   | WriterPlanPreviewMeta
   | WriterApplyCheckpointMeta
-  | WriterConnectionStatusMeta
+  | WriterAIConnectionStatusMeta
 
 export type WriterChatMessage = Omit<BaseChatMessage, 'meta'> & {
   meta?: WriterChatMessageMeta
