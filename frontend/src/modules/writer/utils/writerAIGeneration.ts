@@ -6,7 +6,11 @@ import {
 } from '@/modules/ai/api'
 import type { AIApplyMode, WriterPromptIntent } from '@/modules/writer/types/workflow'
 import type { WriterAIContextOptions } from './writerAIContext'
-import { buildWriterEditInstructions, type WriterInstructionApplyMode } from './writerAIInstructionBuilder'
+import {
+  buildWriterEditInstructions,
+  buildWriterSelectionInstructions,
+  type WriterInstructionApplyMode,
+} from './writerAIInstructionBuilder'
 
 export type WriterGenerationAction = 'continue' | 'polish' | 'expand' | 'rewrite'
 
@@ -122,5 +126,24 @@ export async function requestWriterContextualEditIntent(params: {
       applyMode: params.applyMode,
       context: params.context,
     }),
+  })
+}
+
+export async function requestWriterContextualSelectionAction(params: {
+  projectId: string
+  action: WriterGenerationAction
+  selectedText: string
+  instructions?: string
+  context: WriterAIContextOptions
+}): Promise<Record<string, any>> {
+  return executeWriterTextAction({
+    projectId: params.projectId,
+    action: params.action,
+    sourceText: params.selectedText,
+    instructions: buildWriterSelectionInstructions({
+      instructions: params.instructions,
+      context: params.context,
+    }),
+    targetLength: params.action === 'continue' ? 200 : undefined,
   })
 }

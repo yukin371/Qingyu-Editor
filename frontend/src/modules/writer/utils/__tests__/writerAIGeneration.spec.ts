@@ -3,6 +3,7 @@ import {
   executeWriterTextAction,
   extractWriterGeneratedText,
   requestWriterContextualEditIntent,
+  requestWriterContextualSelectionAction,
   requestWriterEditIntent,
   resolveWriterActionLabel,
 } from '../writerAIGeneration'
@@ -102,5 +103,37 @@ describe('writerAIGeneration', () => {
       generatedText: '改写结果',
       applyMode: 'replace_document',
     })
+  })
+
+  it('builds contextual selection action request', async () => {
+    expandText.mockResolvedValue({ expanded_text: '扩写结果' })
+
+    const result = await requestWriterContextualSelectionAction({
+      projectId: 'project-1',
+      action: 'expand',
+      selectedText: '原文片段',
+      instructions: '增加环境压迫感',
+      context: {
+        workflowContext: {
+          signature: 'sig',
+          projectId: 'project-1',
+          chapterId: 'chapter-1',
+          chapterTitle: '第一章',
+          activeCharacters: [],
+          activeRelations: [],
+          pendingChangeRequests: [],
+          pendingChangeRequestCount: 0,
+        },
+        aiSummaryContextText: '前文摘要',
+      },
+    })
+
+    expect(expandText).toHaveBeenCalledWith(
+      'project-1',
+      '原文片段',
+      expect.stringContaining('增加环境压迫感'),
+      undefined,
+    )
+    expect(result).toEqual({ expanded_text: '扩写结果' })
   })
 })

@@ -92,9 +92,6 @@ import {
 import { buildWriterMessageDispatch } from '@/modules/writer/utils/writerAIMessageDispatch'
 import { runWriterDocumentCommand } from '@/modules/writer/utils/writerAIDocumentCommandRunner'
 import { runWriterDirectEdit } from '@/modules/writer/utils/writerAIDirectEditRunner'
-import {
-  buildWriterSelectionInstructions,
-} from '@/modules/writer/utils/writerAIInstructionBuilder'
 import { runWriterPlanOnly } from '@/modules/writer/utils/writerAIPlanRunner'
 import {
   runWriterAnalysisRoute,
@@ -102,8 +99,8 @@ import {
   runWriterGeneralChatRoute,
 } from '@/modules/writer/utils/writerAIRouteRunner'
 import {
-  executeWriterTextAction,
   requestWriterContextualEditIntent,
+  requestWriterContextualSelectionAction,
 } from '@/modules/writer/utils/writerAIGeneration'
 import { resolveWriterAIErrorState } from '@/modules/writer/utils/writerAIError'
 import {
@@ -795,26 +792,20 @@ async function runSelectionAction(action: string, selectedText: string, instruct
   isTyping.value = true
   updateSelectionNotice(action, selectedText, instructions, 'running')
   try {
-    const mergedInstructions = buildWriterSelectionInstructions({
-      instructions,
-      context: {
-      workflowContext: effectiveWorkflowContext.value,
-      aiSummaryContextText: props.aiSummaryContextText,
-      },
-    })
     await runWriterSelectionAction({
       action: action as 'continue' | 'polish' | 'expand' | 'rewrite',
       selectedText,
       instructions,
-      mergedInstructions: mergedInstructions || undefined,
-      executeAction: async ({ action: nextAction, selectedText: nextSelectedText, mergedInstructions: nextInstructions }) => {
-        const projectId = props.sessionId || 'demo-project'
-        return executeWriterTextAction({
-          projectId,
+      executeAction: async ({ action: nextAction, selectedText: nextSelectedText }) => {
+        return requestWriterContextualSelectionAction({
+          projectId: props.sessionId || 'demo-project',
           action: nextAction,
-          sourceText: nextSelectedText,
-          instructions: nextInstructions,
-          targetLength: nextAction === 'continue' ? 200 : undefined,
+          selectedText: nextSelectedText,
+          instructions,
+          context: {
+            workflowContext: effectiveWorkflowContext.value,
+            aiSummaryContextText: props.aiSummaryContextText,
+          },
         })
       },
       onUserMessage: (userPrompt) => {
