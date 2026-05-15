@@ -1,10 +1,13 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import {
+  clearAIProviderSettingsFromDesktop,
   DEFAULT_USER_PROVIDER_CONFIG,
   hasSessionApiKey,
+  hydrateAIProviderSettingsFromDesktop,
   isUserProviderModeEnabled,
   loadAIProviderSettings,
+  persistAIProviderSettingsToDesktop,
   saveAIProviderSettings,
   type AIAccessMode,
 } from '../config/provider'
@@ -12,9 +15,11 @@ import { hasValidApiKey, isApiKeyMasked } from '../utils/apikey'
 
 export const useAIProviderStore = defineStore('writer-ai-provider-settings', () => {
   const snapshot = ref(loadAIProviderSettings())
+  const hydrated = ref(false)
 
   const persist = () => {
     snapshot.value = saveAIProviderSettings(snapshot.value)
+    void persistAIProviderSettingsToDesktop(snapshot.value)
   }
 
   const mode = computed<AIAccessMode>({
@@ -91,6 +96,25 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     persist()
   }
 
+  const hydrate = async () => {
+    if (hydrated.value) {
+      return
+    }
+    const desktopSnapshot = await hydrateAIProviderSettingsFromDesktop()
+    if (desktopSnapshot) {
+      snapshot.value = desktopSnapshot
+    }
+    hydrated.value = true
+  }
+
+  const resetAll = async () => {
+    snapshot.value = saveAIProviderSettings({
+      mode: 'system_remote',
+      userProvider: { ...DEFAULT_USER_PROVIDER_CONFIG },
+    })
+    await clearAIProviderSettingsFromDesktop()
+  }
+
   return {
     mode,
     baseURL,
@@ -104,6 +128,8 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     apiKeyMasked,
     apiKeyNeedsRefresh,
     userModeEnabled,
+    hydrate,
+    resetAll,
     resetUserProvider,
   }
 })

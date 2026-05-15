@@ -235,7 +235,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import ShortcutSettingsPanel from './ShortcutSettingsPanel.vue'
 import { useEditorThemeStore, type EditorThemeName } from '@/modules/writer/stores/editorThemeStore'
 import { useEditorAppearanceStore } from '@/modules/writer/stores/editorAppearanceStore'
@@ -246,6 +246,10 @@ const editorThemeStore = useEditorThemeStore()
 const appearanceStore = useEditorAppearanceStore()
 const aiProviderStore = useAIProviderStore()
 const apiKeyDraft = ref(aiProviderStore.apiKey)
+
+onMounted(() => {
+  void aiProviderStore.hydrate()
+})
 
 watch(
   () => aiProviderStore.apiKey,

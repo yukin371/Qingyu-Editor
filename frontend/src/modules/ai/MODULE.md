@@ -28,5 +28,5 @@
 
 - 运行态默认从 `api/index.ts` 暴露手写 facade，不依赖 `generated/`
 - 用户 API 模式当前以 OpenAI 兼容接口为准，最小配置为 `服务地址 + 接口路径 + 模型`
-- 用户 API 的真实 API Key 当前仅保留在 `sessionStorage`，`localStorage` 只保留掩码和非敏感配置，避免长期明文落盘
+- Wails 桌面宿主下，用户 API 的真实 API Key 通过系统 secret store 持久化；`localStorage` / SQLite settings 只保留掩码和非敏感配置，浏览器环境仍退回 `sessionStorage`
 - 任何新增 AI 能力都先判断是否属于 writer 工作区主链路；如果不是，标记 `TBD` 并补确认路径

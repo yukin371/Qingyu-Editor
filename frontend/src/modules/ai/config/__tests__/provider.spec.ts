@@ -1,10 +1,31 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const { GetAppSetting, SetAppSetting, DeleteAppSetting, GetAppSecret, SetAppSecret, DeleteAppSecret } = vi.hoisted(() => ({
+  GetAppSetting: vi.fn(),
+  SetAppSetting: vi.fn(),
+  DeleteAppSetting: vi.fn(),
+  GetAppSecret: vi.fn(),
+  SetAppSecret: vi.fn(),
+  DeleteAppSecret: vi.fn(),
+}))
+
+vi.mock('../../../../wailsjs/go/main/App', () => ({
+  GetAppSetting,
+  SetAppSetting,
+  DeleteAppSetting,
+  GetAppSecret,
+  SetAppSecret,
+  DeleteAppSecret,
+}))
+
 import {
   DEFAULT_AI_PROVIDER_SETTINGS,
   getUserProviderRuntimeConfig,
   hasUsableUserProviderConfig,
   hasSessionApiKey,
+  hydrateAIProviderSettingsFromDesktop,
   loadAIProviderSettings,
+  persistAIProviderSettingsToDesktop,
   saveAIProviderSettings,
 } from '../provider'
 
@@ -38,6 +59,12 @@ describe('ai provider settings', () => {
     })
     localStorage.clear()
     sessionStorage.clear()
+    GetAppSetting.mockReset()
+    SetAppSetting.mockReset()
+    DeleteAppSetting.mockReset()
+    GetAppSecret.mockReset()
+    SetAppSecret.mockReset()
+    DeleteAppSecret.mockReset()
   })
 
   it('loads default settings when storage is empty', () => {
@@ -91,5 +118,130 @@ describe('ai provider settings', () => {
         temperature: 0.7,
       }),
     ).toBe(true)
+  })
+
+  it('hydrates provider settings from desktop storage when wails runtime is available', async () => {
+    vi.stubGlobal('window', {
+      ...window,
+      go: {
+        main: {
+          App: {
+            GetAppSetting,
+            GetAppSecret,
+          },
+        },
+      },
+    })
+    GetAppSetting.mockResolvedValue(
+      JSON.stringify({
+        mode: 'user_api',
+        userProvider: {
+          providerType: 'openai-compatible',
+          baseURL: 'http://127.0.0.1:11434',
+          endpointPath: '/v1/chat/completions',
+          model: 'qwen3',
+          apiKey: 'sk-****...****',
+          temperature: 0.8,
+        },
+      }),
+    )
+    GetAppSecret.mockResolvedValue('sk-1234567890abcdefghijkl')
+
+    const hydrated = await hydrateAIProviderSettingsFromDesktop()
+
+    expect(GetAppSetting).toHaveBeenCalledWith('ai.provider.settings')
+    expect(GetAppSecret).toHaveBeenCalledWith('ai.provider.api-key')
+    expect(hydrated?.mode).toBe('user_api')
+    expect(hydrated?.userProvider.baseURL).toBe('http://127.0.0.1:11434')
+    expect(hydrated?.userProvider.apiKey).toBe('sk-1234567890abcdefghijkl')
+  })
+
+  it('persists sanitized provider settings to desktop storage', async () => {
+    vi.stubGlobal('window', {
+      ...window,
+      go: {
+        main: {
+          App: {
+            SetAppSetting,
+            SetAppSecret,
+          },
+        },
+      },
+    })
+
+    await persistAIProviderSettingsToDesktop({
+      mode: 'user_api',
+      userProvider: {
+        providerType: 'openai-compatible',
+        baseURL: 'http://127.0.0.1:11434',
+        endpointPath: '/v1/chat/completions',
+        model: 'qwen3',
+        apiKey: 'sk-1234567890abcdefghijkl',
+        temperature: 0.7,
+      },
+    })
+
+    expect(SetAppSetting).toHaveBeenCalledTimes(1)
+    expect(SetAppSecret).toHaveBeenCalledWith('ai.provider.api-key', 'sk-1234567890abcdefghijkl')
+    const payload = JSON.parse(SetAppSetting.mock.calls[0]![1])
+    expect(payload.userProvider.apiKey).toContain('****')
+    expect(payload.userProvider.baseURL).toBe('http://127.0.0.1:11434')
+  })
+
+  it('does not delete desktop secret when only masked api key is present', async () => {
+    vi.stubGlobal('window', {
+      ...window,
+      go: {
+        main: {
+          App: {
+            SetAppSetting,
+            DeleteAppSecret,
+          },
+        },
+      },
+    })
+
+    await persistAIProviderSettingsToDesktop({
+      mode: 'user_api',
+      userProvider: {
+        providerType: 'openai-compatible',
+        baseURL: 'http://127.0.0.1:11434',
+        endpointPath: '/v1/chat/completions',
+        model: 'qwen3',
+        apiKey: 'sk-****...****',
+        temperature: 0.7,
+      },
+    })
+
+    expect(SetAppSetting).toHaveBeenCalledTimes(1)
+    expect(DeleteAppSecret).not.toHaveBeenCalled()
+  })
+
+  it('deletes desktop secret when api key is explicitly cleared', async () => {
+    vi.stubGlobal('window', {
+      ...window,
+      go: {
+        main: {
+          App: {
+            SetAppSetting,
+            DeleteAppSecret,
+          },
+        },
+      },
+    })
+
+    await persistAIProviderSettingsToDesktop({
+      mode: 'user_api',
+      userProvider: {
+        providerType: 'openai-compatible',
+        baseURL: 'http://127.0.0.1:11434',
+        endpointPath: '/v1/chat/completions',
+        model: 'qwen3',
+        apiKey: '',
+        temperature: 0.7,
+      },
+    })
+
+    expect(DeleteAppSecret).toHaveBeenCalledWith('ai.provider.api-key')
   })
 })

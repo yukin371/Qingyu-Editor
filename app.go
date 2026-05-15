@@ -16,6 +16,8 @@ type appServices struct {
 	chapter          *services.ChapterService
 	character        *services.CharacterService
 	location         *services.LocationService
+	secretStore      *services.SecretStoreService
+	settings         *services.SettingsService
 	template         *services.TemplateService
 	creativeWorkflow *services.CreativeWorkflowService
 	inspiration      *services.InspirationService
@@ -71,6 +73,54 @@ func (a *App) AICall(cfg ai.Config, prompt string, context string) (string, erro
 		return "", err
 	}
 	return provider.Call(prompt, context)
+}
+
+func (a *App) GetAppSetting(key string) (string, error) {
+	settingsService, err := a.settingsService()
+	if err != nil {
+		return "", err
+	}
+	return settingsService.Get(key)
+}
+
+func (a *App) SetAppSetting(key string, value string) error {
+	settingsService, err := a.settingsService()
+	if err != nil {
+		return err
+	}
+	return settingsService.Set(key, value)
+}
+
+func (a *App) DeleteAppSetting(key string) error {
+	settingsService, err := a.settingsService()
+	if err != nil {
+		return err
+	}
+	return settingsService.Delete(key)
+}
+
+func (a *App) GetAppSecret(key string) (string, error) {
+	secretStoreService, err := a.secretStoreService()
+	if err != nil {
+		return "", err
+	}
+	return secretStoreService.Get(key)
+}
+
+func (a *App) SetAppSecret(key string, value string) error {
+	secretStoreService, err := a.secretStoreService()
+	if err != nil {
+		return err
+	}
+	return secretStoreService.Set(key, value)
+}
+
+func (a *App) DeleteAppSecret(key string) error {
+	secretStoreService, err := a.secretStoreService()
+	if err != nil {
+		return err
+	}
+	return secretStoreService.Delete(key)
 }
 
 func (a *App) CreateProject(input database.CreateProjectInput) (database.Project, error) {
@@ -637,6 +687,28 @@ func (a *App) locationService() (*services.LocationService, error) {
 		a.services.location = services.NewLocationService(db)
 	}
 	return a.services.location, nil
+}
+
+func (a *App) settingsService() (*services.SettingsService, error) {
+	db, err := a.serviceDB()
+	if err != nil {
+		return nil, err
+	}
+	a.serviceMu.Lock()
+	defer a.serviceMu.Unlock()
+	if a.services.settings == nil {
+		a.services.settings = services.NewSettingsService(db)
+	}
+	return a.services.settings, nil
+}
+
+func (a *App) secretStoreService() (*services.SecretStoreService, error) {
+	a.serviceMu.Lock()
+	defer a.serviceMu.Unlock()
+	if a.services.secretStore == nil {
+		a.services.secretStore = services.NewSecretStoreService(a.appName)
+	}
+	return a.services.secretStore, nil
 }
 
 func (a *App) templateService() (*services.TemplateService, error) {

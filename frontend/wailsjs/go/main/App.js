@@ -74,6 +74,14 @@ export function DeleteLocationRelation(arg1) {
   return window['go']['main']['App']['DeleteLocationRelation'](arg1);
 }
 
+export function DeleteAppSetting(arg1) {
+  return window['go']['main']['App']['DeleteAppSetting'](arg1);
+}
+
+export function DeleteAppSecret(arg1) {
+  return window['go']['main']['App']['DeleteAppSecret'](arg1);
+}
+
 export function DeleteProject(arg1) {
   return window['go']['main']['App']['DeleteProject'](arg1);
 }
@@ -92,6 +100,14 @@ export function DeleteVolume(arg1) {
 
 export function GetChapter(arg1) {
   return window['go']['main']['App']['GetChapter'](arg1);
+}
+
+export function GetAppSetting(arg1) {
+  return window['go']['main']['App']['GetAppSetting'](arg1);
+}
+
+export function GetAppSecret(arg1) {
+  return window['go']['main']['App']['GetAppSecret'](arg1);
 }
 
 export function GetCharacter(arg1) {
@@ -208,6 +224,14 @@ export function ReorderVolumes(arg1) {
 
 export function SaveCreativeWorkflow(arg1, arg2) {
   return window['go']['main']['App']['SaveCreativeWorkflow'](arg1, arg2);
+}
+
+export function SetAppSetting(arg1, arg2) {
+  return window['go']['main']['App']['SetAppSetting'](arg1, arg2);
+}
+
+export function SetAppSecret(arg1, arg2) {
+  return window['go']['main']['App']['SetAppSecret'](arg1, arg2);
 }
 
 export function TriggerStoryHarnessIndex(arg1, arg2) {

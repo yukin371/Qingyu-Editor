@@ -22,6 +22,7 @@ import '@/styles/common.scss'
 import { vLazy } from '@/directives/lazy'
 import { vSafeHtml } from '@/directives/safeHtml'
 import { isRemoteWriterMode } from '@/modules/writer/data-bridge/wails'
+import { useAIProviderStore } from '@/modules/ai/stores/aiProviderStore'
 
 // 全局错误处理
 import { createVueErrorHandler, createPromiseRejectionHandler } from './utils/errorHandler'
@@ -67,6 +68,7 @@ if (isDev) {
 
 // 先注册 Pinia，确保 store 可用
 app.use(pinia)
+void useAIProviderStore(pinia).hydrate()
 // 再注册 Router，路由守卫需要访问 store
 app.use(router)
 // 注册 Qingyu 全局服务（保留历史全局 API 别名）

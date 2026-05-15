@@ -1,4 +1,12 @@
 import { hasValidApiKey, isApiKeyMasked, maskApiKey } from '../utils/apikey'
+import {
+  DeleteAppSetting,
+  DeleteAppSecret,
+  GetAppSetting,
+  GetAppSecret,
+  SetAppSetting,
+  SetAppSecret,
+} from '../../../../wailsjs/go/main/App'
 
 export type AIAccessMode = 'system_remote' | 'user_api'
 export type AIUserProviderType = 'openai-compatible'
@@ -19,6 +27,8 @@ export interface AIProviderSettings {
 
 const STORAGE_KEY = 'qingyu-ai-provider-settings'
 const SESSION_API_KEY_STORAGE_KEY = 'qingyu-ai-provider-session-api-key'
+const DESKTOP_SETTING_KEY = 'ai.provider.settings'
+const DESKTOP_SECRET_KEY = 'ai.provider.api-key'
 const DEFAULT_ENDPOINT_PATH = '/v1/chat/completions'
 
 export const DEFAULT_USER_PROVIDER_CONFIG: AIUserProviderConfig = {
@@ -78,6 +88,30 @@ function normalizeUserProvider(
   }
 }
 
+function isDesktopBridgeAvailable(): boolean {
+  if (typeof window === 'undefined') {
+    return false
+  }
+  const candidate = window as typeof window & { go?: { main?: { App?: Record<string, unknown> } } }
+  return Boolean(candidate.go?.main?.App)
+}
+
+function parseAIProviderSettings(raw: string | null | undefined): AIProviderSettings | null {
+  if (!raw || !raw.trim()) {
+    return null
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<AIProviderSettings>
+    return {
+      mode: normalizeMode(parsed.mode),
+      userProvider: normalizeUserProvider(parsed.userProvider),
+    }
+  } catch {
+    return null
+  }
+}
+
 function loadSessionApiKey(): string {
   try {
     const raw = sessionStorage.getItem(SESSION_API_KEY_STORAGE_KEY)
@@ -102,13 +136,13 @@ function saveSessionApiKey(apiKey: string): void {
 export function loadAIProviderSettings(): AIProviderSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) {
+    const parsed = parseAIProviderSettings(raw)
+    if (!parsed) {
       return {
         ...DEFAULT_AI_PROVIDER_SETTINGS,
         userProvider: { ...DEFAULT_USER_PROVIDER_CONFIG },
       }
     }
-    const parsed = JSON.parse(raw) as Partial<AIProviderSettings>
     const sessionApiKey = loadSessionApiKey()
     const normalizedUserProvider = normalizeUserProvider(parsed.userProvider)
     return {
@@ -152,6 +186,85 @@ export function saveAIProviderSettings(settings: AIProviderSettings): AIProvider
   }
 
   return normalized
+}
+
+export async function hydrateAIProviderSettingsFromDesktop(): Promise<AIProviderSettings | null> {
+  if (!isDesktopBridgeAvailable()) {
+    return null
+  }
+
+  try {
+    const [raw, secret] = await Promise.all([
+      GetAppSetting(DESKTOP_SETTING_KEY),
+      GetAppSecret(DESKTOP_SECRET_KEY),
+    ])
+    const parsed = parseAIProviderSettings(raw)
+    if (!parsed) {
+      return null
+    }
+
+    const hydrated = saveAIProviderSettings(parsed)
+    if (hasValidApiKey(secret)) {
+      saveSessionApiKey(secret)
+    }
+    return {
+      ...hydrated,
+      userProvider: {
+        ...hydrated.userProvider,
+        apiKey: loadSessionApiKey() || hydrated.userProvider.apiKey,
+      },
+    }
+  } catch {
+    return null
+  }
+}
+
+export async function persistAIProviderSettingsToDesktop(
+  settings: AIProviderSettings,
+): Promise<void> {
+  if (!isDesktopBridgeAvailable()) {
+    return
+  }
+
+  const sanitized = saveAIProviderSettings(settings)
+  const inputApiKey = sanitizeText(settings.userProvider.apiKey, 500)
+  const runtimeApiKey = loadSessionApiKey()
+  const payload = JSON.stringify({
+    mode: sanitized.mode,
+    userProvider: {
+      ...sanitized.userProvider,
+      apiKey: isApiKeyMasked(sanitized.userProvider.apiKey) ? sanitized.userProvider.apiKey : '',
+    },
+  } satisfies AIProviderSettings)
+
+  try {
+    await SetAppSetting(DESKTOP_SETTING_KEY, payload)
+
+    if (hasValidApiKey(runtimeApiKey)) {
+      await SetAppSecret(DESKTOP_SECRET_KEY, runtimeApiKey)
+      return
+    }
+
+    if (!inputApiKey || !isApiKeyMasked(inputApiKey)) {
+      await DeleteAppSecret(DESKTOP_SECRET_KEY)
+    }
+  } catch {
+    // ignore desktop persistence failures and keep browser/session fallback available
+  }
+}
+
+export async function clearAIProviderSettingsFromDesktop(): Promise<void> {
+  if (!isDesktopBridgeAvailable()) {
+    return
+  }
+  try {
+    await Promise.all([
+      DeleteAppSetting(DESKTOP_SETTING_KEY),
+      DeleteAppSecret(DESKTOP_SECRET_KEY),
+    ])
+  } catch {
+    // ignore desktop cleanup failures
+  }
 }
 
 export function isUserProviderModeEnabled(
