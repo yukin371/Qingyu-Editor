@@ -514,8 +514,8 @@ async function runResolvedAnalysis(
               )
             : undefined,
         )
-        emit('resultCandidate', resultCandidate)
-        if (selectedChatContext.value) handleClearSelectedContext()
+        emitResultCandidate(resultCandidate)
+        clearSelectedContextIfAny()
         await scrollToBottom()
       },
     })
@@ -633,9 +633,7 @@ async function runGeneralChatRoute(finalRequestMessage: string) {
     requestChat: chatWithAI,
     onReply: async (aiResponseText) => {
       await pushAssistantMessage(aiResponseText)
-      if (selectedChatContext.value) {
-        handleClearSelectedContext()
-      }
+      clearSelectedContextIfAny()
       await finishTyping({ scroll: true })
     },
   })
@@ -725,9 +723,9 @@ async function runResolvedDirectEdit(
             ),
           )
         }
-        emit('resultCandidate', resultCandidate)
-        emit('applyGeneratedText', applyPayload)
-        if (context) {
+        emitResultCandidate(resultCandidate)
+        emitApplyPayload(applyPayload)
+        if (context?.text?.trim()) {
           handleClearSelectedContext()
         }
         await scrollToBottom()
@@ -788,8 +786,8 @@ async function runSelectionAction(action: string, selectedText: string, instruct
       },
       onSuccess: async ({ generatedText, resultCandidate, applyPayload }) => {
         await pushAssistantMessage(generatedText)
-        emit('resultCandidate', resultCandidate)
-        emit('applyGeneratedText', applyPayload)
+        emitResultCandidate(resultCandidate)
+        emitApplyPayload(applyPayload)
         updateSelectionNotice(action, selectedText, instructions, 'done')
         await scrollToBottom()
       },
@@ -846,6 +844,20 @@ async function pushAssistantMessage(
   addMessage('assistant', content, false, meta)
   if (options.scroll) {
     await scrollToBottom()
+  }
+}
+
+function emitResultCandidate(candidate: WriterResultCandidate) {
+  emit('resultCandidate', candidate)
+}
+
+function emitApplyPayload(payload: WriterAIApplyPayload) {
+  emit('applyGeneratedText', payload)
+}
+
+function clearSelectedContextIfAny() {
+  if (selectedChatContext.value) {
+    handleClearSelectedContext()
   }
 }
 
