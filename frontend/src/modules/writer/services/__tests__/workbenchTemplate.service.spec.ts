@@ -3,12 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const {
   createProjectMock,
   createDocumentMock,
-  updateDocumentContentMock,
   saveCreativeWorkflowMock,
 } = vi.hoisted(() => ({
   createProjectMock: vi.fn(),
   createDocumentMock: vi.fn(),
-  updateDocumentContentMock: vi.fn(),
   saveCreativeWorkflowMock: vi.fn(),
 }))
 
@@ -20,10 +18,6 @@ vi.mock('@/modules/writer/api/project', () => ({
 
 vi.mock('@/modules/writer/api/document', () => ({
   createDocument: createDocumentMock,
-}))
-
-vi.mock('@/modules/writer/api/editor', () => ({
-  updateDocumentContent: updateDocumentContentMock,
 }))
 
 vi.mock('../creativeWorkflow.service', async () => {
@@ -46,7 +40,6 @@ describe('workbenchTemplate.service', () => {
   beforeEach(() => {
     createProjectMock.mockReset()
     createDocumentMock.mockReset()
-    updateDocumentContentMock.mockReset()
     saveCreativeWorkflowMock.mockReset()
     saveCreativeWorkflowMock.mockResolvedValue(undefined)
   })
@@ -79,7 +72,6 @@ describe('workbenchTemplate.service', () => {
       .mockResolvedValueOnce({ id: 'chapter-1' })
       .mockResolvedValueOnce({ id: 'chapter-2' })
       .mockResolvedValueOnce({ id: 'chapter-3' })
-    updateDocumentContentMock.mockResolvedValue(undefined)
 
     const result = await createProjectFromTemplate({
       templateId: 'comeback',
@@ -95,7 +87,12 @@ describe('workbenchTemplate.service', () => {
     )
     expect(saveCreativeWorkflowMock).toHaveBeenCalledWith('project-77', { templateId: 'comeback' })
     expect(createDocumentMock).toHaveBeenCalledTimes(4)
-    expect(updateDocumentContentMock).toHaveBeenCalledTimes(3)
+    expect(createDocumentMock).not.toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        content: expect.any(String),
+      }),
+    )
     expect(result).toEqual({
       projectId: 'project-77',
       chapterId: 'chapter-1',

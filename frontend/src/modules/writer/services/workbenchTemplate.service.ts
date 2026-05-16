@@ -1,6 +1,5 @@
 import { createDocument } from '../api/document'
 import { projectApi } from '../api/project'
-import { updateDocumentContent } from '../api/editor'
 import { isWailsWriterAvailable, wailsWriterBridge } from '../data-bridge/wails'
 import {
   saveCreativeWorkflow,
@@ -13,7 +12,6 @@ import {
 } from './templateCatalog.fallback'
 import { getWriterAIPromptPreset } from '../config/writerAIPromptPresets'
 import { DocumentType } from '../types/document'
-import { buildEditorContentFromPlainText } from '../utils/editorContent'
 import type {
   CreateProjectFromTemplateInput,
   TemplateCatalogItem,
@@ -21,22 +19,6 @@ import type {
 } from '../types/workbench'
 
 type RemoteTemplateSource = TemplateCatalogFallbackEntry
-
-function buildTemplateChapterDraft(
-  templateName: string,
-  chapter: TemplateDetailPayload['previewTabs']['outline'][number],
-): string {
-  return buildEditorContentFromPlainText(
-    [
-      `【模板开局：${templateName}】`,
-      `本章目标：${chapter.summary}`,
-      `推进钩子：${chapter.hook}`,
-      `兑现点：${chapter.payoff}`,
-      '',
-      '待写正文：',
-    ].join('\n\n'),
-  )
-}
 
 function mapTemplateToCatalogItem(template: TemplateCatalogFallbackEntry): TemplateCatalogItem {
   return {
@@ -191,6 +173,7 @@ export async function createProjectFromTemplate(
   })
 
   let firstChapterId = ''
+  // 模板只生成项目骨架和大纲种子；正文留空，避免把大纲内容复制成章节正文。
   for (const [index, chapter] of detail.previewTabs.outline.entries()) {
     const createdChapter = await createDocument(projectId, {
       projectId,
@@ -203,8 +186,6 @@ export async function createProjectFromTemplate(
     if (!firstChapterId) {
       firstChapterId = createdChapter.id
     }
-
-    await updateDocumentContent(createdChapter.id, buildTemplateChapterDraft(detail.name, chapter))
   }
 
   return {

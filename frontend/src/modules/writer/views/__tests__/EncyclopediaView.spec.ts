@@ -4,7 +4,16 @@ import { flushPromises, mount } from '@vue/test-utils'
 const loadCharacters = vi.fn().mockResolvedValue(undefined)
 const loadLocations = vi.fn().mockResolvedValue(undefined)
 const listEntities = vi.fn()
+const createCharacter = vi.fn()
+const updateCharacter = vi.fn()
+const deleteCharacter = vi.fn()
+const createLocalEntity = vi.fn()
+const updateLocalEntity = vi.fn()
+const deleteLocalEntity = vi.fn()
 const listConcepts = vi.fn()
+const messageSuccess = vi.fn()
+const messageError = vi.fn()
+const messageConfirm = vi.fn()
 
 const writerStoreState = {
   currentProjectId: 'project-1',
@@ -58,6 +67,23 @@ vi.mock('../api/entities', () => ({
 }))
 vi.mock('@/modules/writer/api/entities', () => ({
   listEntities: (...args: unknown[]) => listEntities(...args),
+  createLocalEntity: (...args: unknown[]) => createLocalEntity(...args),
+  updateLocalEntity: (...args: unknown[]) => updateLocalEntity(...args),
+  deleteLocalEntity: (...args: unknown[]) => deleteLocalEntity(...args),
+}))
+
+vi.mock('@/modules/writer/api/character', () => ({
+  createCharacter: (...args: unknown[]) => createCharacter(...args),
+  updateCharacter: (...args: unknown[]) => updateCharacter(...args),
+  deleteCharacter: (...args: unknown[]) => deleteCharacter(...args),
+}))
+
+vi.mock('@/modules/writer/api/location', () => ({
+  locationApi: {
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  },
 }))
 
 vi.mock('../api/concept', () => ({
@@ -68,6 +94,19 @@ vi.mock('../api/concept', () => ({
 vi.mock('@/modules/writer/api/concept', () => ({
   conceptApi: {
     list: (...args: unknown[]) => listConcepts(...args),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  },
+}))
+
+vi.mock('@/design-system/services', () => ({
+  message: {
+    success: (...args: unknown[]) => messageSuccess(...args),
+    error: (...args: unknown[]) => messageError(...args),
+  },
+  messageBox: {
+    confirm: (...args: unknown[]) => messageConfirm(...args),
   },
 }))
 vi.mock('../utils/writerAssetRefs', () => ({
@@ -299,7 +338,23 @@ describe('EncyclopediaView', () => {
     loadCharacters.mockClear()
     loadLocations.mockClear()
     listEntities.mockReset()
+    createCharacter.mockReset()
+    updateCharacter.mockReset()
+    deleteCharacter.mockReset()
+    createLocalEntity.mockReset()
+    updateLocalEntity.mockReset()
+    deleteLocalEntity.mockReset()
     listConcepts.mockReset()
+    messageSuccess.mockReset()
+    messageError.mockReset()
+    messageConfirm.mockReset()
+    createCharacter.mockResolvedValue({ id: 'char-new' })
+    updateCharacter.mockResolvedValue(undefined)
+    deleteCharacter.mockResolvedValue(undefined)
+    createLocalEntity.mockResolvedValue({ id: 'entity-new' })
+    updateLocalEntity.mockResolvedValue(undefined)
+    deleteLocalEntity.mockResolvedValue(undefined)
+    messageConfirm.mockResolvedValue(undefined)
 
     listEntities.mockImplementation((_projectId: string, entityType?: string) => {
       if (entityType === 'item') {
@@ -364,6 +419,12 @@ describe('EncyclopediaView', () => {
           SystemStatCard: {
             props: ['label', 'value'],
             template: '<div class="stat-card">{{ label }} {{ value }}</div>',
+          },
+          AssetQuickEditorDialog: {
+            props: ['visible', 'mode', 'category', 'asset', 'submitting'],
+            emits: ['update:visible', 'submit'],
+            template:
+              '<div v-if="visible" data-testid="asset-dialog"><button data-testid="submit-asset" @click="$emit(\'submit\', { category, name: mode === \'edit\' ? \'林舟改\' : \'新角色\', summary: \'摘要\' })">submit</button></div>',
           },
         },
       },
@@ -441,5 +502,60 @@ describe('EncyclopediaView', () => {
     await chapterButton!.trigger('click')
 
     expect(wrapper.emitted('jump-to-chapter')?.[0]).toEqual(['chapter-1'])
+  })
+
+  it('支持在资产总览中新建、编辑和删除全局资产', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    await wrapper.get('.assets-view__primary-action').trigger('click')
+    expect(wrapper.find('[data-testid="asset-dialog"]').exists()).toBe(true)
+    await wrapper.get('[data-testid="submit-asset"]').trigger('click')
+    await flushPromises()
+
+    expect(createCharacter).toHaveBeenCalledWith(
+      'project-1',
+      expect.objectContaining({
+        name: '新角色',
+        summary: '摘要',
+      }),
+    )
+    expect(messageSuccess).toHaveBeenCalledWith('资产已创建')
+
+    const characterCard = wrapper.findAll('button').find((button) => button.text().includes('林舟'))
+    await characterCard!.trigger('click')
+    await flushPromises()
+
+    const editButton = wrapper
+      .findAll('button')
+      .find((button) => button.attributes('title') === '编辑资产')
+    expect(editButton).toBeTruthy()
+    await editButton!.trigger('click')
+    await wrapper.get('[data-testid="submit-asset"]').trigger('click')
+    await flushPromises()
+
+    expect(updateCharacter).toHaveBeenCalledWith(
+      'char-1',
+      'project-1',
+      expect.objectContaining({
+        name: '林舟改',
+      }),
+    )
+    expect(messageSuccess).toHaveBeenCalledWith('资产已更新')
+
+    const deleteButton = wrapper
+      .findAll('button')
+      .find((button) => button.attributes('title') === '删除资产')
+    expect(deleteButton).toBeTruthy()
+    await deleteButton!.trigger('click')
+    await flushPromises()
+
+    expect(messageConfirm).toHaveBeenCalledWith(
+      expect.stringContaining('确定删除资产「林舟」吗？'),
+      '删除资产',
+      expect.objectContaining({ type: 'warning' }),
+    )
+    expect(deleteCharacter).toHaveBeenCalledWith('char-1', 'project-1')
+    expect(messageSuccess).toHaveBeenCalledWith('资产已删除')
   })
 })

@@ -119,7 +119,7 @@ onUnmounted(() => {
 .qy-modal {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: var(--theme-z-modal, 11000);
   display: flex;
   align-items: center;
   justify-content: center;

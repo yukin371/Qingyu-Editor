@@ -59,7 +59,7 @@ const dialogClasses = computed(() =>
 // Overlay classes
 const overlayClasses = computed(() =>
   cn(
-    'fixed inset-0 z-[9998] flex justify-center px-4 py-6',
+    'qy-dialog__overlay fixed inset-0 flex justify-center px-4 py-6',
     props.size === 'full' ? 'items-stretch' : props.center ? 'items-center' : 'items-start pt-20',
     props.modal ? 'bg-black/30 backdrop-blur-sm' : '',
     props.modalClass,
@@ -222,7 +222,7 @@ defineExpose({
             v-if="isVisible"
             ref="dialogContent"
             :class="dialogClasses"
-            class="relative z-[9999]"
+            class="qy-dialog__content relative"
             role="dialog"
             aria-modal="true"
             :aria-labelledby="title ? titleId : undefined"
@@ -278,3 +278,13 @@ defineExpose({
     </Transition>
   </Teleport>
 </template>
+
+<style scoped>
+.qy-dialog__overlay {
+  z-index: var(--theme-z-dialog, 11000);
+}
+
+.qy-dialog__content {
+  z-index: calc(var(--theme-z-dialog, 11000) + 1);
+}
+</style>

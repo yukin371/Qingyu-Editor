@@ -5,7 +5,7 @@
     width="560px"
     @update:visible="handleVisibilityChange"
   >
-    <div class="space-y-4">
+    <form :id="formId" class="space-y-4" @submit.prevent="handleSubmit">
       <label class="block space-y-2">
         <span class="text-sm font-medium text-slate-700">名称</span>
         <QyInput v-model="form.name" :maxlength="80" :placeholder="template.name" />
@@ -69,11 +69,19 @@
         <span class="text-sm font-medium text-slate-700">分类</span>
         <QyInput v-model="form.conceptCategory" :maxlength="60" :placeholder="template.conceptCategory" />
       </label>
-    </div>
+    </form>
 
     <template #footer>
       <QyButton variant="ghost" @click="handleVisibilityChange(false)">取消</QyButton>
-      <QyButton :loading="submitting" @click="handleSubmit">{{ submitText }}</QyButton>
+      <button
+        class="asset-quick-editor-dialog__submit"
+        type="submit"
+        :form="formId"
+        :disabled="submitting || !form.name.trim()"
+        @click.prevent.stop="handleSubmit"
+      >
+        {{ submitting ? '保存中…' : submitText }}
+      </button>
     </template>
   </QyModal>
 </template>
@@ -105,6 +113,8 @@ const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void
   (e: 'submit', payload: WriterAssetMutationInput): void
 }>()
+
+const formId = `asset-quick-editor-form-${Math.random().toString(36).slice(2)}`
 
 const form = reactive({
   name: '',
@@ -241,7 +251,7 @@ function handleVisibilityChange(value: boolean) {
 
 function handleSubmit() {
   const name = form.name.trim()
-  if (!name) return
+  if (!name || props.submitting) return
 
   emit('submit', {
     category: props.category,
@@ -258,3 +268,29 @@ function handleSubmit() {
   })
 }
 </script>
+
+<style scoped>
+.asset-quick-editor-dialog__submit {
+  min-height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--editor-accent, #1d4ed8) 36%, transparent);
+  background: var(--editor-accent, #1d4ed8);
+  color: var(--editor-accent-contrast, #ffffff);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.asset-quick-editor-dialog__submit:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--editor-accent, #1d4ed8) 88%, var(--editor-text-primary, #111827));
+}
+
+.asset-quick-editor-dialog__submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+</style>

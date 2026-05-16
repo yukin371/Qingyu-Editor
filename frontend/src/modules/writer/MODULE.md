@@ -30,6 +30,7 @@
 - **入口动作 owner 是 `useWriterProjectEntryActions`**：工作台、项目列表、模板中心涉及“进入项目 / 继续创作 / 新建后进入 / 导入后进入”时，应复用这个 composable；不要在页面里各自拼 `writer-project` 路由或复制 ZIP 导入成功跳转逻辑。
 - **模板中心的 owner 是“新建项目工具”，不是模板后台**：模板页允许浏览分类、打开 `大纲 / 角色 / 设定` 抽屉，并把模板应用到新建项目；不要在这里偷偷长出模板编辑器、模板发布系统或第二套项目创建协议。
 - **模板可携带商业机制与 AI prompt 协议**：`templateCatalog.fallback` / Wails template 可提供主角原型、核心驱动、世界压力、章节循环、读者收益、质量约束和推荐 prompt preset；模板中心只展示和应用这些协议，不在模板页直接生成正文。
+- **模板创建项目只生成骨架，不预写正文**：模板应用可以创建默认卷、黄金三章标题和 sidecar 蓝图，但章节正文必须保持空白，由作者进入章节后再写；不要把模板大纲、钩子或兑现点复制进正文区。
 - **AI prompt preset owner 是 `config/writerAIPromptPresets.ts`**：右栏快捷入口、模板推荐提示词和后续回审工具应复用该 preset，不要继续把写/审/整理提示词散落在组件或 mock helper 中。
 - **工作台壳必须保持模块化和简洁**：`WorkbenchShell` 负责左侧主导航和右侧主内容区的基础骨架；首页、项目页、模板页优先复用 `QyCard / QyButton / QyInput / QySelect / QyDrawer / QyModal` 等设计系统原件，不要再堆叠装饰性卡片、大段说明或自定义平台式大壳。
 - **工作台壳桌面端必须分离滚动**：`WorkbenchShell` 在 `lg` 及以上视口下应保持“左侧导航整列固定高度 + 右侧主内容独立滚动”；不要再让 `/writer`、`/writer/projects`、`/writer/templates` 通过整页文档滚动把左侧导航一起带走。
@@ -111,6 +112,7 @@
 - **资产总览优先复用统一实体口径**：`EncyclopediaView` 当前已被复用为 Phase 4 资产总览 MVP，数据源应优先拼接 `writerStore.characters / locations`、统一实体接口 `api/entities.ts`（至少 item / organization）与 `conceptApi`，不要再额外新建影子资产 store。若后续要升级为独立 `AssetsOverviewView`，也必须先保持这套聚合口径不变。
 - **右栏设定速查与 overlay 资产总览共用同一套资产聚合口径**：右栏 `AssetListPanel / AssetDetailPanel` 与 `EncyclopediaView` 必须继续复用统一资产数据来源和分类口径；不要让右栏为了方便再维护一套单独的资产 store 或分类枚举。
 - **右栏设定区与项目资产共用同一口径**：`ToolRightPanel` 的设定列表、详情和快速 CRUD 必须继续复用 `useWriterAssetCatalog` 与现有本地资产 API；允许做当前分类下的新建 / 编辑 / 删除，但不得在右栏再维护第二套资产 store、分类枚举或脱离项目资产的表单协议。
+- **资产总览与右栏 CRUD 共用同一套能力**：`EncyclopediaView` 的全局资产增删改查必须继续复用 `useWriterAssetCatalog`、`AssetQuickEditorDialog` 与统一确认流程；overlay 只是在更大视图里消费同一套 owner，不得再分裂出第二套资产编辑协议。
 - **`@资产` 是正文内的统一轻量引用格式**：`QyTipTapEditor` 的自动补全、创建实体、章节资产自动检测都必须优先支持统一 `@名称`，并能覆盖 `角色 / 地点 / 物件 / 组织 / 概念`；`#地点`、`%物件` 只作为兼容输入保留，不能再成为默认主路径。
 - **编辑器外观偏好 owner 是 `editorAppearanceStore`**：字号、行距、版心、字体族与紧凑工具栏都应统一走 `editorAppearanceStore` 本地偏好；`TipTapEditorView` 只负责输出 CSS variables，`QyTipTapEditor` 只消费 `toolbarPreset`，不要再在组件内各自维护一份主题/排版状态。
 - **颜色主题 owner 已收口到 design-system**：writer 工作区的 `WorkspaceSettingsPanel`、`WorkspaceShell` 与 overlay/tool 视图只消费 `src/design-system/tokens/theme.ts` 的统一主题；`editorThemeStore` 只做设置面板状态接线，不再定义第二套 `light/sepia/dark/focus` 独立主题真相。

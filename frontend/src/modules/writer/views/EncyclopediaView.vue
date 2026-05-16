@@ -13,6 +13,10 @@
         <QyIcon name="Search" :size="16" />
         <input v-model.trim="searchKeyword" type="search" placeholder="搜索资产名称、摘要或分类" />
       </label>
+      <button type="button" class="assets-view__primary-action" @click="handleCreateAsset()">
+        <QyIcon name="Plus" :size="14" />
+        <span>新建{{ currentCategoryCreateLabel }}</span>
+      </button>
       <div class="assets-view__categories">
         <button
           v-for="category in categoryOptions"
@@ -72,6 +76,16 @@
           </div>
           <div class="assets-view__detail-actions">
             <button
+              v-if="canMutateSelectedAsset"
+              type="button"
+              class="assets-view__detail-icon-btn"
+              title="编辑资产"
+              aria-label="编辑资产"
+              @click="handleEditAsset"
+            >
+              <QyIcon name="Edit" :size="14" />
+            </button>
+            <button
               type="button"
               class="assets-view__detail-icon-btn"
               title="关系图谱"
@@ -99,6 +113,16 @@
             >
               <QyIcon name="Close" :size="14" />
             </button>
+            <button
+              v-if="canMutateSelectedAsset"
+              type="button"
+              class="assets-view__detail-icon-btn is-danger"
+              title="删除资产"
+              aria-label="删除资产"
+              @click="handleDeleteAsset"
+            >
+              <QyIcon name="Delete" :size="14" />
+            </button>
           </div>
         </div>
 
@@ -125,16 +149,30 @@
         </section>
       </aside>
     </section>
+
+    <AssetQuickEditorDialog
+      v-model:visible="assetEditorVisible"
+      :mode="assetEditorMode"
+      :category="assetEditorCategory"
+      :asset="assetEditorMode === 'edit' ? selectedAsset : null"
+      :submitting="assetEditorSubmitting"
+      @submit="handleAssetEditorSubmit"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
+import { message, messageBox } from '@/design-system/services'
+import AssetQuickEditorDialog from '@/modules/writer/components/workspace/tool-right/AssetQuickEditorDialog.vue'
 import type { EncyclopediaCategory, GraphFocusTarget } from '@/modules/writer/composables/types'
 import type { ToolType } from '@/modules/writer/composables/useToolOverlay'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
-import { useWriterAssetCatalog } from '@/modules/writer/composables/useWriterAssetCatalog'
+import {
+  useWriterAssetCatalog,
+  type WriterAssetMutationInput,
+} from '@/modules/writer/composables/useWriterAssetCatalog'
 
 interface Props {
   embedded?: boolean
@@ -173,12 +211,31 @@ const {
   selectAsset,
   ensureSelectedAsset,
   buildGraphFocusTarget,
+  createAsset,
+  updateAsset,
+  deleteAsset,
 } = useWriterAssetCatalog({
   projectId: computed(() => props.projectId || ''),
   chapters: computed(() => props.chapters || []),
   activeCategory,
   searchKeyword,
 })
+const assetEditorVisible = ref(false)
+const assetEditorMode = ref<'create' | 'edit'>('create')
+const assetEditorSubmitting = ref(false)
+const assetEditorCategory = ref<EncyclopediaCategory>(activeCategory.value)
+
+const currentCategoryCreateLabel = computed(() => {
+  if (activeCategory.value === 'characters') return '角色'
+  if (activeCategory.value === 'locations') return '地点'
+  if (activeCategory.value === 'items') return '物件'
+  if (activeCategory.value === 'organizations') return '组织'
+  return '概念'
+})
+
+const canMutateSelectedAsset = computed(
+  () => Boolean(selectedAsset.value) && !selectedAsset.value?.unresolved,
+)
 
 const handleOpenGraph = () => {
   if (!selectedAsset.value) return
@@ -189,6 +246,67 @@ const handleOpenGraph = () => {
 const setActiveCategory = (category: EncyclopediaCategory) => {
   activeCategory.value = category
   emit('update:activeCategory', category)
+}
+
+const handleCreateAsset = (category: EncyclopediaCategory = activeCategory.value) => {
+  assetEditorCategory.value = category
+  activeCategory.value = category
+  emit('update:activeCategory', category)
+  assetEditorMode.value = 'create'
+  assetEditorVisible.value = true
+}
+
+const handleEditAsset = () => {
+  if (!canMutateSelectedAsset.value || !selectedAsset.value) return
+  assetEditorCategory.value = selectedAsset.value.category
+  assetEditorMode.value = 'edit'
+  assetEditorVisible.value = true
+}
+
+const handleDeleteAsset = async () => {
+  if (!canMutateSelectedAsset.value || !selectedAsset.value) return
+  const asset = selectedAsset.value
+  const chapterImpact = asset.chapterReferenceCount
+    ? `将影响 ${asset.chapterReferenceCount} 个章节引用`
+    : '当前没有章节引用记录'
+  const volumeImpact = asset.volumeReferenceCount ? `，涉及 ${asset.volumeReferenceCount} 个卷级投影` : ''
+
+  try {
+    await messageBox.confirm(
+      `确定删除资产「${asset.name}」吗？${chapterImpact}${volumeImpact}。此操作不可恢复。`,
+      '删除资产',
+      { type: 'warning' },
+    )
+  } catch {
+    return
+  }
+
+  try {
+    await deleteAsset(asset)
+    message.success('资产已删除')
+  } catch (error) {
+    message.error((error as Error).message || '删除资产失败')
+  }
+}
+
+const handleAssetEditorSubmit = async (payload: WriterAssetMutationInput) => {
+  assetEditorSubmitting.value = true
+  try {
+    if (assetEditorMode.value === 'edit' && selectedAsset.value) {
+      await updateAsset(selectedAsset.value, payload)
+      message.success('资产已更新')
+    } else {
+      await createAsset(payload)
+      activeCategory.value = payload.category
+      emit('update:activeCategory', payload.category)
+      message.success('资产已创建')
+    }
+    assetEditorVisible.value = false
+  } catch (error) {
+    message.error((error as Error).message || '保存资产失败')
+  } finally {
+    assetEditorSubmitting.value = false
+  }
 }
 
 watch(
@@ -283,6 +401,24 @@ watch(
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.assets-view__primary-action {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--editor-accent, #1d4ed8) 34%, transparent);
+  border-radius: 4px;
+  background: var(--editor-accent, #1d4ed8);
+  color: var(--editor-accent-contrast, #ffffff);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13px;
+
+  &:hover {
+    background: color-mix(in srgb, var(--editor-accent, #1d4ed8) 88%, var(--editor-text-primary, #111827));
+  }
 }
 
 .assets-view__category-chip {
@@ -432,6 +568,11 @@ watch(
   &:hover {
     background: var(--editor-layer-soft, #f8fafc);
     color: var(--editor-text-primary, #111827);
+  }
+
+  &.is-danger:hover {
+    background: var(--color-danger-50, #fef2f2);
+    color: var(--color-danger-700, #b91c1c);
   }
 }
 

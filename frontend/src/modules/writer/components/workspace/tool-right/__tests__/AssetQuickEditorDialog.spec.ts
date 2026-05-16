@@ -42,4 +42,32 @@ describe('AssetQuickEditorDialog', () => {
     expect(wrapper.html()).toContain('如：青铜钥匙')
     expect(wrapper.html()).toContain('用途 / 限制 / 归属 / 第一次出现章节')
   })
+
+  it('submits through the native form submit button', async () => {
+    const wrapper = mount(AssetQuickEditorDialog, {
+      props: {
+        visible: true,
+        mode: 'create',
+        category: 'characters',
+      },
+      global: {
+        stubs: {
+          QyModal: QyModalStub,
+          QyInput: QyInputStub,
+          QyTextarea: QyTextareaStub,
+          QyButton: { template: '<button type="button"><slot /></button>' },
+        },
+      },
+    })
+
+    await wrapper.find('input[placeholder="如：林舟"]').setValue('新角色')
+    await wrapper.find('button[type="submit"]').trigger('click')
+
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toEqual(
+      expect.objectContaining({
+        category: 'characters',
+        name: '新角色',
+      }),
+    )
+  })
 })
