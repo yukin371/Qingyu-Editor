@@ -97,7 +97,10 @@ import type {
   WriterAIActionTrigger,
   WriterWorkflowContext,
 } from '@/modules/writer/types/workflow'
-import { mergeWriterAIInstructions } from '@/modules/writer/utils/writerAIContext'
+import {
+  mergeWriterAIInstructions,
+  type WriterAIAssetSummary,
+} from '@/modules/writer/utils/writerAIContext'
 import { resolveWriterAIErrorState } from '@/modules/writer/utils/writerAIError'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 
@@ -110,6 +113,7 @@ const props = defineProps<{
   actionTrigger: WriterAIActionTrigger | null
   workflowContext?: WriterWorkflowContext | null
   aiSummaryContextText?: string
+  aiAssetSummaries?: WriterAIAssetSummary[]
 }>()
 
 const emit = defineEmits<{
@@ -203,8 +207,15 @@ async function handleRun() {
   errorText.value = ''
   try {
     const mergedInstructions = mergeWriterAIInstructions([instructions.value.trim()], {
+      projectId: props.projectId,
+      currentDocument: {
+        documentId: props.chapterId,
+        documentTitle: props.chapterTitle,
+        sourceText: props.seedText,
+      },
       workflowContext: effectiveWorkflowContext.value,
       aiSummaryContextText: props.aiSummaryContextText,
+      assets: props.aiAssetSummaries,
     })
     const result = await rewriteWithWorkbench({
       projectId: props.projectId,

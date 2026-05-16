@@ -44,6 +44,7 @@
           :ai-apply-feedback="aiApplyFeedback"
           :workflow-context="workflowContext"
           :ai-summary-context-text="aiSummaryContextText"
+          :ai-asset-summaries="aiAssetSummaries"
           :draft-proposals="draftProposals"
           @ai-apply="(payload) => $emit('ai-apply', payload)"
           @proposal-draft="(payload) => $emit('proposal-draft', payload)"
@@ -160,7 +161,7 @@ const {
   projectId: computed(() => props.projectId),
   chapters: computed(() => props.chapters),
 })
-const { aiSummaryContextText } = useWriterAISummaryContext({
+const { aiSummaryContextText, aiAssetSummaries } = useWriterAISummaryContext({
   projectId: computed(() => props.projectId),
   chapterId: computed(() => props.chapterId),
   chapters: computed(() => props.chapters),

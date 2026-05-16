@@ -1,10 +1,7 @@
 import type { WriterResolvedDocumentTarget } from '@/modules/writer/services/writerDocumentAgent.service'
 import type { WriterPromptIntent } from '@/modules/writer/types/workflow'
 import { buildAnalysisCandidate } from './writerAIChatMeta'
-import {
-  resolveWriterAnalysisText,
-  type WriterProofreadIssueLike,
-} from './writerAIAnalysis'
+import { resolveWriterAnalysisText, type WriterProofreadIssueLike } from './writerAIAnalysis'
 
 export interface WriterAnalysisSummaryResult {
   summary?: string
@@ -21,8 +18,16 @@ export interface WriterAnalysisRunnerInput {
   resolvedTarget: WriterResolvedDocumentTarget
   currentDocumentId?: string | null
   projectId: string
-  requestProofread: (sourceText: string, projectId: string) => Promise<WriterAnalysisProofreadResult>
+  requestProofread: (
+    sourceText: string,
+    projectId: string,
+  ) => Promise<WriterAnalysisProofreadResult>
   requestSummary: (sourceText: string, projectId: string) => Promise<WriterAnalysisSummaryResult>
+  requestAnalysisText?: (params: {
+    sourceText: string
+    projectId: string
+    intent: WriterPromptIntent
+  }) => Promise<string>
   onMissingSource: () => void | Promise<void>
   onUserMessage: (message: string) => void | Promise<void>
   onEmptyResult: () => void | Promise<void>
@@ -42,6 +47,7 @@ export async function runWriterResolvedAnalysis({
   projectId,
   requestProofread,
   requestSummary,
+  requestAnalysisText,
   onMissingSource,
   onUserMessage,
   onEmptyResult,
@@ -56,7 +62,9 @@ export async function runWriterResolvedAnalysis({
   await onUserMessage(instruction)
 
   let generatedText = ''
-  if (intent.action === 'proofread') {
+  if (requestAnalysisText) {
+    generatedText = await requestAnalysisText({ sourceText, projectId, intent })
+  } else if (intent.action === 'proofread') {
     const proofread = await requestProofread(sourceText, projectId)
     generatedText = resolveWriterAnalysisText({
       proofreadIssues: proofread.issues,

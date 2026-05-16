@@ -112,6 +112,7 @@ import type {
 } from '@/modules/writer/types/workflow'
 import { resolveWriterAIErrorState } from '@/modules/writer/utils/writerAIError'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
+import type { WriterAIAssetSummary } from '@/modules/writer/utils/writerAIContext'
 
 const props = defineProps<{
   projectId: string
@@ -121,6 +122,7 @@ const props = defineProps<{
   seedText: string
   actionTrigger: WriterAIActionTrigger | null
   aiSummaryContextText?: string
+  aiAssetSummaries?: WriterAIAssetSummary[]
 }>()
 
 const emit = defineEmits<{

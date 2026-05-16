@@ -1,6 +1,6 @@
 # Writer Module
 
-> 最后更新：2026-05-13
+> 最后更新：2026-05-16
 
 ## 职责
 
@@ -75,7 +75,13 @@
 - **AI 工作台头部只保留一层模式切换**：`AIWorkbench` 不再渲染独立“AI 助手”标题，`AIPanel` 也不再额外渲染“对话协作”子头；聊天、改写、总结、审校统一收敛到 `AIWorkbench` 的 tab row，避免右栏出现双头部与重复层级。
 - **对话、改写、总结、审校要共享同一套工作台视觉语言**：`AIPanel`、`RewriteWorkbenchTool`、`SummaryWorkbenchTool`、`ReviewWorkbenchTool` 的 header、说明文案、状态栏和主按钮布局应复用统一样式 token，不要让右栏看起来像四套不同产品拼接。
 - **`/doc patch` 预览也要走统一右栏视觉语言**：命令桥返回的章节 patch 预览不能只是一大段 markdown 说明；`AIChatMessages` 应把它渲染成与当前简约主题一致的状态条 + 变更块卡片，至少展示目标章节、执行状态、变更块摘要与 before/after 片段。
-- **writer 侧 AI 请求必须走统一 API facade**：聊天、续写、改写、扩写、总结、审校，以及 workbench 的章节总结/敏感词检测，都应先收敛到 `src/modules/ai/api` 下的统一 request helper，再决定是直连 AI 服务还是走后端 `/api/v1/ai/*`。不要在组件里各自直接 new axios、各自写 timeout，避免再次出现 15s / 60s / 默认值混杂。
+- **writer 侧 AI 主链路必须走统一 API facade**：右栏聊天、自然语言单章编辑、跨章节单目标编辑、总结与审校都应先构造 `WriterAIPlan` 并调用 `requestWriterAI(plan)`，再由 `src/modules/ai/api` 决定 provider 与具体生成路径。Workbench 兼容工具若暂时保留旧 facade，也不得在组件里各自直接 new axios、各自写 timeout，避免再次出现 15s / 60s / 默认值混杂。
+- **普通聊天历史由 plan 显式携带**：`WriterAIPlan.history` 只保留已存在的 user/assistant 往返，不包含当前发送内容；这样既能走统一 facade，又不会把当前 prompt 重复塞进 provider history。
+- **AI 上下文包 owner 是 `utils/writerAIContext.ts`**：右栏聊天、Workbench 工具、资产摘要和结构/时间线/分支简化摘要都应先构造成 `WriterAIContextPacket`，再进入 prompt 或 `modules/ai/api` facade；不要在组件内各自拼全量 prompt。
+- **AI 默认只消费简化上下文**：上下文包默认包含当前章节正文、选区/候选稿、目标条、资产简表、创作蓝图/节奏摘要和证据卡，并受字符预算截断；禁止默认把全书全文或深度资产详情塞进 prompt。
+- **跨章节 resolved target 必须覆盖当前章节上下文**：当 `writerDocumentAgent` 已解析到目标章节时，AI prompt 和结果证据条必须使用目标章节标题与正文；不要继续把当前打开章节误作为主要正文上下文。
+- **上下文证据只做可见提示，不替代 owner**：`AIInputArea` 的发送前提示和 `AIChatMessages` 的结果证据条只说明本次 AI 可见了哪些上下文来源；正文 diff、资产 CRUD、结构舞台/时间线/分支数据仍分别由原 owner 处理。
+- **资产进入 AI 只能走摘要投影**：AI 使用 `WriterAIAssetSummary` 的类型、名称、摘要、最近章节、引用次数与 unresolved 标记；需要详情时跳转资产工具或专业 overlay，不在 AI 面板复制第二套资产编辑/删除逻辑。
 - **文档工具协议优先复用 writer 文档树与内容接口**：`list_documents / read_document / search_document / patch_document` 这类 agent 能力，优先复用 `getDocumentTree / getDocumentContent(s) / updateDocumentContent` 及其 service 封装，不要再造第二套“AI 文件系统”。`patch_document` 即使后续接入真实 tool calling，也必须保留版本校验，并继续走正文 diff / 编辑器确认链路，不能让 AI 直接静默落盘。
 - **`/doc` 命令桥只做轻量演示接入**：`AIPanel` 内的 `/doc list/read/search/patch` 目前是面向当前 writer 工作区的本地命令桥。`list/read/search` 可直接返回文本结果；`patch` 必须统一转换成 `applyGeneratedText -> ProjectWorkspace.handleAIApplyGeneratedText` 的正文 diff。若目标不是当前章节，只允许先读取目标章节内容、生成预览，再通过 `targetDocumentId/targetDocumentTitle` 让宿主切章后挂起 diff，不允许绕过编辑器直接静默保存。
 - **会话操作应并入工具栏，不再回到独立头部**：清空当前对话、重命名、新建会话等动作统一放在 `AIConversationToolbar`，不要为了单个会话动作再长回额外标题栏。

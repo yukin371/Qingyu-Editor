@@ -310,6 +310,39 @@ describe('AIChatMessages', () => {
     expect(wrapper.find('.message-tool-card__detail').text()).toContain('本地 AI 服务未启动')
   })
 
+  it('should render compact context evidence on assistant messages', () => {
+    const messages: ChatMessage[] = [
+      {
+        id: '1',
+        role: 'assistant',
+        content: '已完成分析。',
+        timestamp: Date.now(),
+        meta: {
+          kind: 'writer_context_evidence',
+          statusText: '上下文证据',
+          contextEvidence: [
+            {
+              label: '第1章',
+              detail: '作为本次请求的主要正文上下文',
+              source: 'current_document',
+            },
+            {
+              label: '林舟 · chapter',
+              detail: 'character，引用 2',
+              source: 'asset',
+            },
+          ],
+        },
+      },
+    ]
+
+    const wrapper = buildWrapper({ messages })
+
+    expect(wrapper.find('.message-context-evidence').text()).toContain('参考')
+    expect(wrapper.find('.message-context-evidence').text()).toContain('第1章')
+    expect(wrapper.find('.message-context-evidence').text()).toContain('林舟')
+  })
+
   it('should show pending assistant bubble when panel is typing without persisted typing message', () => {
     const messages: ChatMessage[] = [
       { id: '1', role: 'user', content: '继续写', timestamp: Date.now() },

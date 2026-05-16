@@ -1,6 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
+
+const { checkAIProviderHealth } = vi.hoisted(() => ({
+  checkAIProviderHealth: vi.fn(),
+}))
+
+vi.mock('@/modules/ai/api/ai', () => ({
+  checkAIProviderHealth,
+}))
+
 import WorkspaceSettingsPanel from '../WorkspaceSettingsPanel.vue'
 
 describe('WorkspaceSettingsPanel', () => {
@@ -33,6 +42,7 @@ describe('WorkspaceSettingsPanel', () => {
     })
     localStorage.clear()
     sessionStorage.clear()
+    checkAIProviderHealth.mockReset()
   })
 
   it('switches to ai settings and marks user provider ready after minimal config', async () => {
@@ -90,5 +100,33 @@ describe('WorkspaceSettingsPanel', () => {
     expect((resetInputs[1]!.element as HTMLInputElement).value).toBe('/v1/chat/completions')
     expect((resetInputs[2]!.element as HTMLInputElement).value).toBe('')
     expect(wrapper.text()).toContain('待补全')
+  })
+
+  it('shows provider health result from ai settings', async () => {
+    checkAIProviderHealth.mockResolvedValue({
+      mode: 'system_remote',
+      ok: true,
+      configured: true,
+      hasRuntimeSecret: false,
+      message: '系统远程 AI 服务可用。',
+      checkedAt: Date.now(),
+    })
+
+    const wrapper = mount(WorkspaceSettingsPanel, {
+      global: {
+        plugins: [createPinia()],
+        stubs: {
+          ShortcutSettingsPanel: {
+            template: '<div data-testid="shortcut-settings-stub" />',
+          },
+        },
+      },
+    })
+
+    await wrapper.findAll('.workspace-settings-panel__tab')[2]!.trigger('click')
+    await wrapper.get('.workspace-settings-panel__link').trigger('click')
+
+    expect(checkAIProviderHealth).toHaveBeenCalled()
+    expect(wrapper.text()).toContain('系统远程 AI 服务可用。')
   })
 })

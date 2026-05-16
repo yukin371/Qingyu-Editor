@@ -1,9 +1,6 @@
 import { computed, ref, type ComputedRef } from 'vue'
 import { useToolRightAssetActions } from '@/modules/writer/composables/useToolRightAssetActions'
-import {
-  useWriterAssetCatalog,
-  type WriterAssetMutationInput,
-} from '@/modules/writer/composables/useWriterAssetCatalog'
+import { useWriterAssetCatalog } from '@/modules/writer/composables/useWriterAssetCatalog'
 import type { EncyclopediaCategory, SidebarChapterSummary } from '@/modules/writer/composables/types'
 
 interface UseToolRightAssetsOptions {
@@ -27,14 +24,9 @@ export const useToolRightAssets = ({ projectId, chapters }: UseToolRightAssetsOp
     filteredAssets: catalog.filteredAssets,
     selectedAsset: catalog.selectedAsset,
     selectAsset: catalog.selectAsset,
-    createAsset: catalog.createAsset as (payload: WriterAssetMutationInput) => Promise<void>,
-    updateAsset: catalog.updateAsset as (
-      asset: Parameters<typeof catalog.updateAsset>[0],
-      payload: WriterAssetMutationInput,
-    ) => Promise<void>,
-    deleteAsset: catalog.deleteAsset as (
-      asset: Parameters<typeof catalog.deleteAsset>[0],
-    ) => Promise<void>,
+    createAsset: catalog.createAsset,
+    updateAsset: catalog.updateAsset,
+    deleteAsset: catalog.deleteAsset,
     buildGraphFocusTarget: catalog.buildGraphFocusTarget,
   })
 

@@ -58,12 +58,30 @@ export interface WriterApplyCheckpointMeta {
   stages: WriterApplyCheckpointItem[]
 }
 
+export interface WriterContextEvidenceItem {
+  label: string
+  detail?: string
+  source: 'current_document' | 'selection' | 'revision' | 'asset' | 'workflow' | string
+}
+
+export interface WriterContextEvidenceMeta {
+  kind: 'writer_context_evidence'
+  statusText: string
+  contextEvidence: WriterContextEvidenceItem[]
+}
+
+export interface WriterContextEvidenceCarrier {
+  contextEvidence?: WriterContextEvidenceItem[]
+}
+
 export type WriterChatMessageMeta =
-  | BaseChatMessageMeta
-  | WriterRetrievalSummaryMeta
-  | WriterPlanPreviewMeta
-  | WriterApplyCheckpointMeta
-  | WriterAIConnectionStatusMeta
+  | ((BaseChatMessageMeta
+      | WriterRetrievalSummaryMeta
+      | WriterPlanPreviewMeta
+      | WriterApplyCheckpointMeta
+      | WriterAIConnectionStatusMeta) &
+      WriterContextEvidenceCarrier)
+  | WriterContextEvidenceMeta
 
 export type WriterChatMessage = Omit<BaseChatMessage, 'meta'> & {
   meta?: WriterChatMessageMeta

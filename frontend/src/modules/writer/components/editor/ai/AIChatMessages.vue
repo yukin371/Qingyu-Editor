@@ -227,6 +227,20 @@
             </div>
           </div>
           <div
+            v-if="contextEvidenceItems(message.meta).length > 0"
+            class="message-context-evidence"
+          >
+            <span class="message-context-evidence__label">参考</span>
+            <span
+              v-for="item in contextEvidenceItems(message.meta)"
+              :key="`${item.source}:${item.label}:${item.detail || ''}`"
+              class="message-context-evidence__chip"
+              :title="item.detail || item.label"
+            >
+              {{ item.label }}
+            </span>
+          </div>
+          <div
             class="message-content"
             :class="{ 'message-content--pending': message.typing }"
             v-safe-html="renderAssistantMessage(message)"
@@ -351,6 +365,10 @@ function checkpointStageLabel(stage: string): string {
     failed: '失败',
   }
   return labels[stage] || stage
+}
+
+function contextEvidenceItems(meta: ChatMessage['meta']) {
+  return meta?.contextEvidence?.slice(0, 6) || []
 }
 
 /**
@@ -668,6 +686,35 @@ watch(
   font-size: 12px;
   line-height: 1.6;
   color: var(--ai-text-muted, #64748b);
+}
+
+.message-context-evidence {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 8px;
+  color: var(--ai-text-muted, #64748b);
+  font-size: 11px;
+}
+
+.message-context-evidence__label {
+  font-weight: 700;
+}
+
+.message-context-evidence__chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 148px;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--ai-border, #e2e8f0) 72%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 82%, transparent);
+  color: var(--ai-text-muted, #64748b);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .message-tool-card__blocks {

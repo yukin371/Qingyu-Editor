@@ -3,10 +3,17 @@
  * 提供对话、续写、润色、扩写、改写等AI功能
  */
 
-import { isUserProviderModeEnabled } from '../config/provider'
+import {
+  hasSessionApiKey,
+  hasUsableUserProviderConfig,
+  isUserProviderModeEnabled,
+  loadAIProviderSettings,
+  type AIProviderSettings,
+} from '../config/provider'
+import type { WriterAIPlan } from '@/modules/writer/utils/writerAIContext'
 import { aiDirectApi, isDirectModeEnabled } from './ai-direct'
 import { userAIProviderApi } from './ai-user-provider'
-import { postAIRequest, putAIRequest } from './request'
+import { getAIRequest, postAIRequest, putAIRequest } from './request'
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
@@ -80,6 +87,25 @@ export interface AIExpandRequest {
   originalText: string
   instructions?: string
   targetLength?: number
+}
+
+export interface AIProviderHealth {
+  mode: AIProviderSettings['mode'] | 'legacy_direct'
+  ok: boolean
+  configured: boolean
+  hasRuntimeSecret: boolean
+  message: string
+  checkedAt: number
+}
+
+export interface WriterAIResult {
+  route: WriterAIPlan['route']
+  mutationMode: WriterAIPlan['mutationMode']
+  message: string
+  generatedText?: string
+  usage?: unknown
+  requiresConfirmation: boolean
+  evidence: WriterAIPlan['context']['evidence']
 }
 
 /**
@@ -459,6 +485,267 @@ export function updateSceneState(
   return putAIRequest(`/ai/story/documents/${documentId}/scene-state`, data)
 }
 
+function formatWriterPlanPrompt(plan: WriterAIPlan): string {
+  const lines = [plan.userVisibleSummary]
+  if (plan.intent?.action) {
+    const actionLabelMap: Record<NonNullable<WriterAIPlan['intent']>['action'] & string, string> = {
+      summarize: '总结',
+      rewrite: '改写',
+      continue: '续写',
+      proofread: '审校',
+      expand: '扩写',
+    }
+    lines.push(`任务：${actionLabelMap[plan.intent.action] || plan.intent.action}`)
+  }
+  if (plan.context.currentDocument?.documentTitle) {
+    lines.push(`当前章节：${plan.context.currentDocument.documentTitle}`)
+  }
+  if (plan.context.target?.label || plan.context.target?.documentTitle) {
+    lines.push(`目标：${plan.context.target.label || plan.context.target.documentTitle}`)
+  }
+  if (plan.context.workflowSummary.length > 0) {
+    lines.push('上下文摘要：')
+    lines.push(...plan.context.workflowSummary.slice(0, 8).map((line) => `- ${line}`))
+  }
+  if (plan.context.assets.length > 0) {
+    lines.push('资产简表：')
+    lines.push(
+      ...plan.context.assets.slice(0, 12).map((asset) => {
+        const scope = asset.scope === 'chapter' ? '章节' : asset.scope === 'volume' ? '卷' : '全局'
+        return `- [${scope}] ${asset.assetName}（${asset.assetType}，引用 ${asset.referenceCount}）`
+      }),
+    )
+  }
+  return lines.filter(Boolean).join('\n')
+}
+
+function formatProofreadIssues(issues: AIProofreadIssue[]): string {
+  if (issues.length === 0) {
+    return '未发现明显错别字、语病或标点问题。'
+  }
+  return issues
+    .map((issue, index) => {
+      const suggestions =
+        Array.isArray(issue.suggestions) && issue.suggestions.length > 0
+          ? ` 建议：${issue.suggestions.join('；')}`
+          : ''
+      return `${index + 1}. ${issue.message || '检测到可优化项。'}${suggestions}`
+    })
+    .join('\n')
+}
+
+function formatSummaryResponse(response: AISummaryResponse): string {
+  const lines = [response.summary, ...(response.keyPoints || []).map((item) => `- ${item}`)]
+  return lines
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .join('\n')
+}
+
+export async function requestWriterAI(plan: WriterAIPlan): Promise<WriterAIResult> {
+  if (plan.mutationMode === 'multi_document_plan' || plan.mutationMode === 'chapter_create_plan') {
+    return {
+      route: plan.route,
+      mutationMode: plan.mutationMode,
+      message: plan.userVisibleSummary,
+      requiresConfirmation: true,
+      evidence: plan.context.evidence,
+    }
+  }
+
+  if (plan.mutationMode === 'single_document_diff') {
+    const sourceText = plan.context.currentDocument?.sourceText?.trim() || ''
+    if (!sourceText) {
+      return {
+        route: plan.route,
+        mutationMode: plan.mutationMode,
+        message: '缺少可改写的章节正文，已停止生成正文 diff。',
+        requiresConfirmation: true,
+        evidence: plan.context.evidence,
+      }
+    }
+
+    const prompt = formatWriterPlanPrompt(plan)
+    const action = plan.intent?.action
+    const response =
+      action === 'continue'
+        ? await continueWriting(
+            plan.context.projectId,
+            sourceText,
+            plan.intent?.targetLength ?? 200,
+            prompt,
+          )
+        : action === 'expand'
+          ? await expandText(plan.context.projectId, sourceText, prompt, plan.intent?.targetLength)
+          : await rewriteText(plan.context.projectId, sourceText, 'polish', prompt)
+    const generatedText =
+      response.generated_text ||
+      response.expanded_text ||
+      response.rewritten_text ||
+      response.polished_text ||
+      ''
+    return {
+      route: plan.route,
+      mutationMode: plan.mutationMode,
+      message: generatedText
+        ? '已生成单章候选正文，请交由编辑器 diff 确认。'
+        : 'AI 未返回可用正文。',
+      generatedText,
+      usage: response.usage,
+      requiresConfirmation: true,
+      evidence: plan.context.evidence,
+    }
+  }
+
+  if (plan.route === 'analysis') {
+    const sourceText = plan.context.currentDocument?.sourceText?.trim() || ''
+    if (!sourceText) {
+      return {
+        route: plan.route,
+        mutationMode: plan.mutationMode,
+        message: '缺少可分析的章节正文。',
+        requiresConfirmation: plan.requiresConfirmation,
+        evidence: plan.context.evidence,
+      }
+    }
+
+    if (plan.intent?.action === 'proofread') {
+      const response = await proofreadText(sourceText, {
+        projectId: plan.context.projectId,
+        chapterId: plan.context.currentDocument?.documentId || undefined,
+      })
+      return {
+        route: plan.route,
+        mutationMode: plan.mutationMode,
+        message: formatProofreadIssues(response.issues || []),
+        usage: response.usage,
+        requiresConfirmation: plan.requiresConfirmation,
+        evidence: plan.context.evidence,
+      }
+    }
+
+    const response = await summarizeText(sourceText, {
+      projectId: plan.context.projectId,
+      chapterId: plan.context.currentDocument?.documentId || undefined,
+      summaryType: 'detailed',
+    })
+    return {
+      route: plan.route,
+      mutationMode: plan.mutationMode,
+      message: formatSummaryResponse(response),
+      usage: response.usage,
+      requiresConfirmation: plan.requiresConfirmation,
+      evidence: plan.context.evidence,
+    }
+  }
+
+  const response = await chatWithAI(formatWriterPlanPrompt(plan), plan.history)
+  return {
+    route: plan.route,
+    mutationMode: plan.mutationMode,
+    message: response.reply,
+    usage: response.usage,
+    requiresConfirmation: plan.requiresConfirmation,
+    evidence: plan.context.evidence,
+  }
+}
+
+export async function checkAIProviderHealth(
+  settings: AIProviderSettings = loadAIProviderSettings(),
+): Promise<AIProviderHealth> {
+  const checkedAt = Date.now()
+
+  if (settings.mode === 'user_api') {
+    const configured = hasUsableUserProviderConfig(settings.userProvider)
+    const hasRuntimeSecret = hasSessionApiKey()
+    if (!configured) {
+      return {
+        mode: 'user_api',
+        ok: false,
+        configured,
+        hasRuntimeSecret,
+        message: '请先补全服务地址、接口路径和模型。',
+        checkedAt,
+      }
+    }
+    if (!hasRuntimeSecret) {
+      return {
+        mode: 'user_api',
+        ok: false,
+        configured,
+        hasRuntimeSecret,
+        message: 'API Key 尚未保存到当前运行时，请重新输入并保存。',
+        checkedAt,
+      }
+    }
+
+    try {
+      await userAIProviderApi.chat('请只回复 OK，用于连接测试。', [])
+      return {
+        mode: 'user_api',
+        ok: true,
+        configured,
+        hasRuntimeSecret,
+        message: '用户 API provider 可用。',
+        checkedAt,
+      }
+    } catch (error) {
+      return {
+        mode: 'user_api',
+        ok: false,
+        configured,
+        hasRuntimeSecret,
+        message: error instanceof Error ? error.message : '用户 API provider 连接失败。',
+        checkedAt,
+      }
+    }
+  }
+
+  if (isDirectModeEnabled()) {
+    try {
+      await aiDirectApi.health()
+      return {
+        mode: 'legacy_direct',
+        ok: true,
+        configured: true,
+        hasRuntimeSecret: false,
+        message: '直连 AI 服务可用。',
+        checkedAt,
+      }
+    } catch (error) {
+      return {
+        mode: 'legacy_direct',
+        ok: false,
+        configured: true,
+        hasRuntimeSecret: false,
+        message: error instanceof Error ? error.message : '直连 AI 服务不可用。',
+        checkedAt,
+      }
+    }
+  }
+
+  try {
+    await getAIRequest('/api/v1/ai/health')
+    return {
+      mode: 'system_remote',
+      ok: true,
+      configured: true,
+      hasRuntimeSecret: false,
+      message: '系统远程 AI 服务可用。',
+      checkedAt,
+    }
+  } catch (error) {
+    return {
+      mode: 'system_remote',
+      ok: false,
+      configured: true,
+      hasRuntimeSecret: false,
+      message: error instanceof Error ? error.message : '系统远程 AI 服务暂不可用。',
+      checkedAt,
+    }
+  }
+}
+
 export default {
   // 写作辅助
   chatWithAI,
@@ -468,6 +755,8 @@ export default {
   rewriteText,
   summarizeText,
   proofreadText,
+  checkAIProviderHealth,
+  requestWriterAI,
   // 故事上下文写作
   storyGenerate,
   updateSceneState,

@@ -41,6 +41,7 @@
         :action-trigger="actionTrigger"
         :workflow-context="workflowContext"
         :ai-summary-context-text="aiSummaryContextText"
+        :ai-asset-summaries="aiAssetSummaries"
         @apply="handleApplyPayload"
       />
 
@@ -54,6 +55,7 @@
         :action-trigger="actionTrigger"
         :workflow-context="workflowContext"
         :ai-summary-context-text="aiSummaryContextText"
+        :ai-asset-summaries="aiAssetSummaries"
         @result-candidate="handleResultCandidate"
         @apply-structure-plan="(payload) => emit('applyStructurePlan', payload)"
       />
@@ -67,6 +69,7 @@
         :seed-text="sourceText"
         :action-trigger="actionTrigger"
         :ai-summary-context-text="aiSummaryContextText"
+        :ai-asset-summaries="aiAssetSummaries"
         @result-candidate="handleResultCandidate"
       />
 
@@ -78,6 +81,7 @@
         :workflow-context="workflowContext"
         :chapters="chapters"
         :ai-summary-context-text="aiSummaryContextText"
+        :ai-asset-summaries="aiAssetSummaries"
         :revision-seed="revisionSeed"
         @apply-generated-text="handleApplyPayload"
         @result-candidate="handleResultCandidate"
@@ -95,6 +99,7 @@ import SummaryWorkbenchTool from '@/modules/writer/components/workspace/ai-tools
 import ReviewWorkbenchTool from '@/modules/writer/components/workspace/ai-tools/ReviewWorkbenchTool.vue'
 import { useAIWorkbenchRail } from '@/modules/writer/composables/useAIWorkbenchRail'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
+import type { WriterAIAssetSummary } from '@/modules/writer/utils/writerAIContext'
 import type {
   WriterAIActionTrigger,
   WriterAIApplyFeedback,
@@ -117,9 +122,11 @@ const props = withDefaults(defineProps<{
   aiApplyFeedback: WriterAIApplyFeedback | null
   workflowContext: WriterWorkflowContext
   aiSummaryContextText?: string
+  aiAssetSummaries?: WriterAIAssetSummary[]
   draftProposals: WriterDraftProposal[]
 }>(), {
   chapters: () => [],
+  aiAssetSummaries: () => [],
 })
 
 const emit = defineEmits<{

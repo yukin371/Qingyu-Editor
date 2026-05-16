@@ -201,7 +201,10 @@ import type {
   WriterStructurePlanPayload,
   WriterWorkflowContext,
 } from '@/modules/writer/types/workflow'
-import { buildWriterAIContextBlock } from '@/modules/writer/utils/writerAIContext'
+import {
+  buildWriterAIContextBlock,
+  type WriterAIAssetSummary,
+} from '@/modules/writer/utils/writerAIContext'
 import { resolveWriterAIErrorState } from '@/modules/writer/utils/writerAIError'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 
@@ -214,6 +217,7 @@ const props = defineProps<{
   actionTrigger: WriterAIActionTrigger | null
   workflowContext?: WriterWorkflowContext | null
   aiSummaryContextText?: string
+  aiAssetSummaries?: WriterAIAssetSummary[]
 }>()
 
 const emit = defineEmits<{
@@ -408,8 +412,15 @@ async function handleGenerateStructure(mode: WriterStructurePlanMode) {
       count: structurePlanCount.value,
       prompt: planningPrompt.value,
       workflowContextPrompt: buildWriterAIContextBlock({
+        projectId: props.projectId,
+        currentDocument: {
+          documentId: props.chapterId,
+          documentTitle: props.chapterTitle,
+          sourceText: props.seedText || content.value,
+        },
         workflowContext: effectiveWorkflowContext.value,
         aiSummaryContextText: props.aiSummaryContextText,
+        assets: props.aiAssetSummaries,
       }),
     })
     structurePlanSummary.value = result.summary

@@ -12,10 +12,17 @@ import {
   type AIAccessMode,
 } from '../config/provider'
 import { hasValidApiKey, isApiKeyMasked } from '../utils/apikey'
+import { checkAIProviderHealth, type AIProviderHealth } from '../api/ai'
 
 export const useAIProviderStore = defineStore('writer-ai-provider-settings', () => {
   const snapshot = ref(loadAIProviderSettings())
   const hydrated = ref(false)
+  const health = ref<AIProviderHealth | null>(null)
+  const healthChecking = ref(false)
+
+  const clearHealth = () => {
+    health.value = null
+  }
 
   const persist = () => {
     snapshot.value = saveAIProviderSettings(snapshot.value)
@@ -26,6 +33,7 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     get: () => snapshot.value.mode,
     set: (value) => {
       snapshot.value.mode = value === 'user_api' ? 'user_api' : 'system_remote'
+      clearHealth()
       persist()
     },
   })
@@ -34,6 +42,7 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     get: () => snapshot.value.userProvider.baseURL,
     set: (value: string) => {
       snapshot.value.userProvider.baseURL = value
+      clearHealth()
       persist()
     },
   })
@@ -42,6 +51,7 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     get: () => snapshot.value.userProvider.endpointPath,
     set: (value: string) => {
       snapshot.value.userProvider.endpointPath = value
+      clearHealth()
       persist()
     },
   })
@@ -50,6 +60,7 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     get: () => snapshot.value.userProvider.model,
     set: (value: string) => {
       snapshot.value.userProvider.model = value
+      clearHealth()
       persist()
     },
   })
@@ -58,6 +69,7 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     get: () => snapshot.value.userProvider.apiKey,
     set: (value: string) => {
       snapshot.value.userProvider.apiKey = value
+      clearHealth()
       persist()
     },
   })
@@ -66,6 +78,7 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     get: () => snapshot.value.userProvider.temperature,
     set: (value: number) => {
       snapshot.value.userProvider.temperature = value
+      clearHealth()
       persist()
     },
   })
@@ -93,6 +106,7 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
 
   const resetUserProvider = () => {
     snapshot.value.userProvider = { ...DEFAULT_USER_PROVIDER_CONFIG }
+    clearHealth()
     persist()
   }
 
@@ -103,6 +117,7 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     const desktopSnapshot = await hydrateAIProviderSettingsFromDesktop()
     if (desktopSnapshot) {
       snapshot.value = desktopSnapshot
+      clearHealth()
     }
     hydrated.value = true
   }
@@ -112,7 +127,18 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
       mode: 'system_remote',
       userProvider: { ...DEFAULT_USER_PROVIDER_CONFIG },
     })
+    health.value = null
     await clearAIProviderSettingsFromDesktop()
+  }
+
+  const checkHealth = async () => {
+    healthChecking.value = true
+    try {
+      health.value = await checkAIProviderHealth(snapshot.value)
+      return health.value
+    } finally {
+      healthChecking.value = false
+    }
   }
 
   return {
@@ -128,6 +154,9 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     apiKeyMasked,
     apiKeyNeedsRefresh,
     userModeEnabled,
+    health,
+    healthChecking,
+    checkHealth,
     hydrate,
     resetAll,
     resetUserProvider,

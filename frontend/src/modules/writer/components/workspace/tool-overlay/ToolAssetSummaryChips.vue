@@ -1,17 +1,26 @@
 <template>
   <div v-if="items.length > 0" class="tool-asset-summary-chips">
-    <span v-for="item in items" :key="item.key" class="tool-asset-summary-chips__item">
+    <span
+      v-for="item in items"
+      :key="item.key || item.type || item.label"
+      class="tool-asset-summary-chips__item"
+    >
       {{ item.label }} {{ item.count }}
     </span>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { WriterAssetSummaryItem } from '@/modules/writer/composables/useWriterAssetSummary'
+interface ToolAssetSummaryChipItem {
+  key?: string
+  type?: string
+  label: string
+  count: number
+}
 
 withDefaults(
   defineProps<{
-    items?: WriterAssetSummaryItem[]
+    items?: ToolAssetSummaryChipItem[]
   }>(),
   {
     items: () => [],

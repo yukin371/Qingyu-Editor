@@ -5,6 +5,9 @@
       <span class="target-scope-bar__value">{{ targetLabel }}</span>
       <span v-if="targetDetail" class="target-scope-bar__detail">{{ targetDetail }}</span>
     </div>
+    <div v-if="contextEvidence" class="context-evidence-bar">
+      {{ contextEvidence }}
+    </div>
     <div v-if="context" class="chat-context-chip">
       <div class="context-copy">
         <div class="context-header">
@@ -79,6 +82,7 @@ const props = withDefaults(
     context?: ChatContextSnippet | null
     targetLabel?: string
     targetDetail?: string
+    contextEvidence?: string
     mode?: 'chat' | 'edit'
     canEdit?: boolean
     disabled?: boolean
@@ -90,6 +94,7 @@ const props = withDefaults(
     context: null,
     targetLabel: '',
     targetDetail: '',
+    contextEvidence: '',
     mode: 'chat',
     canEdit: false,
     disabled: false,
@@ -276,6 +281,17 @@ defineExpose({
   .target-scope-bar__detail {
     flex-shrink: 0;
     color: var(--editor-accent, #2563eb);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .context-evidence-bar {
+    margin: -2px 0 8px;
+    padding: 0 2px;
+    color: var(--editor-text-muted, #64748b);
+    font-size: 11px;
+    line-height: 1.5;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

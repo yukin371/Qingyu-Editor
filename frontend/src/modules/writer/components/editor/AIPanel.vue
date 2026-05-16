@@ -47,6 +47,7 @@
         :context="selectedChatContext"
         :target-label="writerTargetLabel"
         :target-detail="writerTargetDetail"
+        :context-evidence="writerContextEvidence"
         v-model:mode="interactionMode"
         :can-edit="canEditDirectly"
         :disabled="isTyping"
@@ -68,7 +69,7 @@ import { useChatHistory } from '@/composables/useChatHistory'
 import { useTypewriter } from '@/composables/useTypewriter'
 import { message } from '@/design-system/services'
 import { QUICK_ACTION_PROMPTS, getQuickActionPrompt } from '@/utils/mockAIResponse'
-import { chatWithAI, summarizeText, proofreadText } from '@/modules/ai/api'
+import { requestWriterAI, summarizeText, proofreadText } from '@/modules/ai/api'
 import { executeWriterDocumentCommand } from '@/modules/writer/services/documentToolCommands.service'
 import {
   writerDocumentAgentService,
@@ -76,19 +77,15 @@ import {
   type WriterResolvedDocumentTarget,
 } from '@/modules/writer/services/writerDocumentAgent.service'
 import {
-  buildTargetCandidatesMeta,
   buildTargetStatusMeta,
   buildWriterCheckpointMeta,
-  buildWriterPlanMeta,
   buildWriterRetrievalMeta,
   type DocumentTargetRoute,
   type DocumentTargetSelectionPayload,
 } from '@/modules/writer/utils/writerAIChatMeta'
 import { buildWriterAgentContext as createWriterAgentContext } from '@/modules/writer/utils/writerAIAnalysis'
 import { runWriterResolvedAnalysis } from '@/modules/writer/utils/writerAIAnalysisRunner'
-import {
-  buildTargetResolutionResult,
-} from '@/modules/writer/utils/writerAIConversation'
+import { buildTargetResolutionResult } from '@/modules/writer/utils/writerAIConversation'
 import { buildWriterMessageDispatch } from '@/modules/writer/utils/writerAIMessageDispatch'
 import { runWriterDocumentCommand } from '@/modules/writer/utils/writerAIDocumentCommandRunner'
 import { runWriterDirectEdit } from '@/modules/writer/utils/writerAIDirectEditRunner'
@@ -104,9 +101,7 @@ import {
   requestWriterContextualSelectionAction,
 } from '@/modules/writer/utils/writerAIGeneration'
 import { resolveWriterAIErrorState } from '@/modules/writer/utils/writerAIError'
-import {
-  buildSelectionNotice,
-} from '@/modules/writer/utils/writerAISelection'
+import { buildSelectionNotice } from '@/modules/writer/utils/writerAISelection'
 import { runWriterSelectionAction } from '@/modules/writer/utils/writerAISelectionRunner'
 
 type EditorApplyMode =
@@ -117,6 +112,7 @@ type EditorApplyMode =
 import type {
   WriterPromptIntent,
   WriterAIActionTrigger,
+  WriterAIApplyPayload,
   WriterRevisionSeed,
   WriterResultCandidate,
   WriterWorkflowContext,
@@ -127,7 +123,12 @@ import {
   resolveWriterPromptExecution,
 } from '@/modules/writer/types/workflow'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
-import type { WriterAIContextOptions } from '@/modules/writer/utils/writerAIContext'
+import {
+  buildWriterAIContextPacket,
+  type WriterAIAssetSummary,
+  type WriterAIContextOptions,
+} from '@/modules/writer/utils/writerAIContext'
+import type { WriterContextEvidenceItem } from './ai/types'
 
 // 子组件
 import AIConversationToolbar from './ai/AIConversationToolbar.vue'
@@ -156,6 +157,7 @@ interface Props {
   revisionSeed?: WriterRevisionSeed | null
   chapters?: SidebarChapterSummary[]
   aiSummaryContextText?: string
+  aiAssetSummaries?: WriterAIAssetSummary[]
 }
 
 interface Emits {
@@ -181,6 +183,7 @@ interface Emits {
 const props = withDefaults(defineProps<Props>(), {
   sessionId: 'default',
   width: 320,
+  aiAssetSummaries: () => [],
 })
 
 const emit = defineEmits<Emits>()
@@ -306,6 +309,22 @@ const writerTargetDetail = computed(() => {
   }
 
   return '分析/聊天不会静默改正文'
+})
+const writerContextPacket = computed(() =>
+  buildWriterAIContextPacket({
+    ...buildAIContextOptions(),
+    maxContextChars: 2400,
+  }),
+)
+const writerContextEvidence = computed(() => {
+  const evidence = writerContextPacket.value.evidence
+  if (evidence.length === 0) {
+    return ''
+  }
+
+  const assetCount = writerContextPacket.value.assets.length
+  const truncatedHint = writerContextPacket.value.budget.truncated ? '，正文已截断' : ''
+  return `参考 ${evidence.length} 类上下文${assetCount ? `，资产 ${assetCount}` : ''}${truncatedHint}`
 })
 
 // ==================== 对话管理方法 ====================
@@ -444,12 +463,7 @@ function appendTargetResolutionMessage(
   target: WriterResolvedDocumentTarget,
 ) {
   const resolutionResult = buildTargetResolutionResult(instruction, route, target)
-  addMessage(
-    'assistant',
-    resolutionResult.assistantMessage,
-    false,
-    resolutionResult.assistantMeta,
-  )
+  addMessage('assistant', resolutionResult.assistantMessage, false, resolutionResult.assistantMeta)
 }
 
 async function resolveDocumentTarget(instruction: string) {
@@ -476,10 +490,7 @@ function buildCurrentDocumentCommandContext() {
   }
 }
 
-function resolvePanelPromptExecution(
-  instruction: string,
-  route: 'analysis' | 'edit',
-) {
+function resolvePanelPromptExecution(instruction: string, route: 'analysis' | 'edit') {
   return resolveWriterPromptExecution(instruction, {
     interactionMode: route === 'analysis' ? interactionMode.value : 'edit',
     canEditDirectly: canEditDirectly.value,
@@ -514,8 +525,31 @@ async function runResolvedAnalysis(
       requestSummary: (sourceText, projectId) =>
         summarizeText(sourceText, {
           projectId,
-        summaryType: 'detailed',
+          summaryType: 'detailed',
         }),
+      requestAnalysisText: async ({ intent }) => {
+        const contextPacket = buildWriterAIContextPacket({
+          ...buildAIContextOptions(resolvedTarget),
+          projectId: props.sessionId || 'demo-project',
+        })
+        const result = await requestWriterAI({
+          route: 'analysis',
+          mutationMode: 'none',
+          target: contextPacket.target || {
+            kind: 'current_document',
+            documentId: contextPacket.currentDocument?.documentId || undefined,
+            documentTitle: contextPacket.currentDocument?.documentTitle || undefined,
+          },
+          context: contextPacket,
+          intent: {
+            action: intent.action,
+            targetLength: intent.targetLength,
+          },
+          requiresConfirmation: false,
+          userVisibleSummary: instruction,
+        })
+        return result.message
+      },
       onMissingSource: () => {
         return pushAssistantMessage('当前没有可供分析的正文内容，请先确认目标章节。')
       },
@@ -526,6 +560,7 @@ async function runResolvedAnalysis(
         return pushAssistantMessage('未返回有效结果，请重试。')
       },
       onSuccess: async ({ generatedText, resultCandidate, isCrossDocument }) => {
+        const targetContext = buildAIContextOptions(resolvedTarget)
         await pushAssistantMessage(
           generatedText,
           isCrossDocument
@@ -536,6 +571,7 @@ async function runResolvedAnalysis(
                 '这是基于异章节正文生成的结果；若继续改写，将沿用该目标章节。',
               )
             : undefined,
+          { contextEvidence: targetContext },
         )
         emitResultCandidate(resultCandidate)
         clearSelectedContextIfAny()
@@ -646,9 +682,28 @@ async function runGeneralChatRoute(finalRequestMessage: string) {
   await runWriterGeneralChatRoute({
     finalRequestMessage,
     messages: messages.value,
-    requestChat: chatWithAI,
+    requestChat: async (message, history) => {
+      const contextPacket = buildWriterAIContextPacket({
+        ...buildAIContextOptions(),
+        projectId: props.sessionId || 'demo-project',
+      })
+      const result = await requestWriterAI({
+        route: 'chat',
+        mutationMode: 'none',
+        target: contextPacket.target || {
+          kind: 'current_document',
+          documentId: contextPacket.currentDocument?.documentId || undefined,
+          documentTitle: contextPacket.currentDocument?.documentTitle || undefined,
+        },
+        context: contextPacket,
+        history,
+        requiresConfirmation: false,
+        userVisibleSummary: message,
+      })
+      return { reply: result.message }
+    },
     onReply: async (aiResponseText) => {
-      await pushAssistantMessage(aiResponseText)
+      await pushAssistantMessage(aiResponseText, undefined, { contextEvidence: true })
       clearSelectedContextIfAny()
       await finishTyping({ scroll: true })
     },
@@ -676,6 +731,7 @@ async function runResolvedDirectEdit(
   startTyping()
   try {
     const retrievalMeta = plan ? buildWriterRetrievalMeta(plan) : undefined
+    const targetContext = buildAIContextOptions(resolvedTarget)
     if (retrievalMeta && plan?.route === 'search_then_edit') {
       await pushAssistantMessage(plan.userVisibleSummary, retrievalMeta, { scroll: true })
     }
@@ -696,7 +752,7 @@ async function runResolvedDirectEdit(
           intent,
           applyMode: applyMode as EditorApplyMode,
           baseInstructions,
-          context: buildAIContextOptions(),
+          context: targetContext,
         }),
       onUserMessage: async (message) => {
         await pushUserMessage(message, { clearInput: true, scroll: true })
@@ -727,6 +783,7 @@ async function runResolvedDirectEdit(
                 '宿主会自动切换到目标章节，并在正文编辑器中展示可接受/放弃的 diff。',
               )
             : undefined,
+          { contextEvidence: targetContext },
         )
         if (isCrossDocument) {
           await pushAssistantMessage(
@@ -827,8 +884,54 @@ function handleQuickAction(action: QuickAction) {
   sendMessage(prompt)
 }
 
-function buildAIContextOptions(): WriterAIContextOptions {
+function buildAIContextOptions(
+  resolvedTarget?: WriterResolvedDocumentTarget,
+): WriterAIContextOptions {
+  const selection = selectedChatContext.value?.text.trim()
+    ? ({
+        kind: selectedChatContext.value.kind === 'revision' ? 'revision' : 'selection',
+        text: selectedChatContext.value.text.trim(),
+        instructions: selectedChatContext.value.instructions,
+      } as const)
+    : null
+  const targetDocumentId =
+    resolvedTarget?.targetDocumentId || effectiveWorkflowContext.value?.chapterId
+  const targetDocumentTitle =
+    resolvedTarget?.targetDocumentTitle || effectiveWorkflowContext.value?.chapterTitle
+  const targetSourceText = resolvedTarget?.sourceText || props.sourceText
+  const targetKind =
+    resolvedTarget?.targetKind === 'selection'
+      ? 'selection'
+      : resolvedTarget?.targetKind === 'revision'
+        ? 'revision_candidate'
+        : resolvedTarget?.targetKind === 'resolved_document'
+          ? 'resolved_document'
+          : selectedChatContext.value?.kind === 'revision'
+            ? 'revision_candidate'
+            : selectedChatContext.value?.kind === 'selection'
+              ? 'selection'
+              : 'current_document'
+  const targetLabel =
+    resolvedTarget?.requestLabel ||
+    (resolvedTarget?.targetKind === 'resolved_document' && targetDocumentTitle
+      ? `目标章节：${targetDocumentTitle}`
+      : writerTargetLabel.value)
+
   return {
+    projectId: effectiveWorkflowContext.value?.projectId || props.sessionId,
+    currentDocument: {
+      documentId: targetDocumentId,
+      documentTitle: targetDocumentTitle,
+      sourceText: targetSourceText,
+    },
+    target: {
+      kind: targetKind,
+      documentId: targetDocumentId,
+      documentTitle: targetDocumentTitle,
+      label: targetLabel,
+    },
+    selection,
+    assets: props.aiAssetSummaries,
     workflowContext: effectiveWorkflowContext.value,
     aiSummaryContextText: props.aiSummaryContextText,
   }
@@ -855,12 +958,54 @@ async function pushAssistantMessage(
   meta?: ChatMessage['meta'],
   options: {
     scroll?: boolean
+    contextEvidence?: boolean | WriterAIContextOptions
   } = {},
 ) {
-  addMessage('assistant', content, false, meta)
+  addMessage(
+    'assistant',
+    content,
+    false,
+    options.contextEvidence ? withContextEvidence(meta, options.contextEvidence) : meta,
+  )
   if (options.scroll) {
     await scrollToBottom()
   }
+}
+
+function buildContextEvidenceItems(options?: WriterAIContextOptions): WriterContextEvidenceItem[] {
+  const packet = options
+    ? buildWriterAIContextPacket({ ...options, maxContextChars: 2400 })
+    : writerContextPacket.value
+  return packet.evidence.slice(0, 6).map((item) => ({
+    label: item.label,
+    detail: item.detail,
+    source: item.source,
+  }))
+}
+
+function withContextEvidence(
+  meta: ChatMessage['meta'] | undefined,
+  contextOptions: true | WriterAIContextOptions,
+): ChatMessage['meta'] | undefined {
+  const contextEvidence = buildContextEvidenceItems(
+    contextOptions === true ? undefined : contextOptions,
+  )
+  if (contextEvidence.length === 0) {
+    return meta
+  }
+
+  if (!meta) {
+    return {
+      kind: 'writer_context_evidence',
+      statusText: '上下文证据',
+      contextEvidence,
+    }
+  }
+
+  return {
+    ...meta,
+    contextEvidence,
+  } as ChatMessage['meta']
 }
 
 function emitResultCandidate(candidate: WriterResultCandidate) {

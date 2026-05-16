@@ -320,6 +320,7 @@
 
 <script setup lang="ts">
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
+import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 import type { ToolType } from '@/modules/writer/composables/useToolOverlay'
 import type { WriterStructureDuplicateStrategy, WriterStructureImportTarget } from '@/modules/writer/types/workflow'
 import type { OutlineNode } from '@/types/writer'

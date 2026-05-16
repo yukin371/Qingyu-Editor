@@ -229,6 +229,47 @@
             }}
           </span>
         </div>
+        <div class="workspace-settings-panel__health-row">
+          <button
+            type="button"
+            class="workspace-settings-panel__health-button"
+            :disabled="aiProviderStore.healthChecking"
+            @click="aiProviderStore.checkHealth()"
+          >
+            {{ aiProviderStore.healthChecking ? '检测中…' : '检测连接' }}
+          </button>
+          <span
+            v-if="aiProviderStore.health"
+            class="workspace-settings-panel__health-text"
+            :class="{ 'is-ok': aiProviderStore.health.ok }"
+          >
+            {{ aiProviderStore.health.message }}
+          </span>
+        </div>
+      </div>
+
+      <div v-else class="workspace-settings-panel__section">
+        <div class="workspace-settings-panel__section-title workspace-settings-panel__section-title--split">
+          <span>系统远程服务</span>
+          <button
+            type="button"
+            class="workspace-settings-panel__link"
+            :disabled="aiProviderStore.healthChecking"
+            @click="aiProviderStore.checkHealth()"
+          >
+            {{ aiProviderStore.healthChecking ? '检测中…' : '检测连接' }}
+          </button>
+        </div>
+        <p class="workspace-settings-panel__helper">
+          使用系统配置的远程 AI 服务，不需要在本机保存用户 API Key。
+        </p>
+        <p
+          v-if="aiProviderStore.health"
+          class="workspace-settings-panel__health-text"
+          :class="{ 'is-ok': aiProviderStore.health.ok }"
+        >
+          {{ aiProviderStore.health.message }}
+        </p>
       </div>
     </section>
   </div>
@@ -537,6 +578,42 @@ function commitApiKeyDraft() {
 .workspace-settings-panel__status-meta {
   font-size: 12px;
   color: var(--editor-text-muted, #64748b);
+}
+
+.workspace-settings-panel__health-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.workspace-settings-panel__health-button {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--editor-border, #dbe3ee);
+  border-radius: 999px;
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
+  color: var(--editor-text-secondary, #334155);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+.workspace-settings-panel__helper,
+.workspace-settings-panel__health-text {
+  margin: 0;
+  color: var(--editor-text-muted, #64748b);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.workspace-settings-panel__health-text.is-ok {
+  color: var(--editor-accent-strong, #166534);
 }
 
 .workspace-settings-panel__link {

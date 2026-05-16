@@ -1,7 +1,7 @@
 import { computed, ref, type ComputedRef, type Ref } from 'vue'
 import { message, messageBox } from '@/design-system/services'
 import { useToolOverlay } from '@/modules/writer/composables/useToolOverlay'
-import type { EncyclopediaCategory } from '@/modules/writer/composables/types'
+import type { EncyclopediaCategory, GraphFocusTarget } from '@/modules/writer/composables/types'
 import type {
   WriterAssetListItem,
   WriterAssetMutationInput,
@@ -12,10 +12,10 @@ interface UseToolRightAssetActionsOptions {
   filteredAssets: ComputedRef<WriterAssetListItem[]>
   selectedAsset: Ref<WriterAssetListItem | null>
   selectAsset: (asset: WriterAssetListItem | null) => void
-  createAsset: (payload: WriterAssetMutationInput) => Promise<void>
-  updateAsset: (asset: WriterAssetListItem, payload: WriterAssetMutationInput) => Promise<void>
+  createAsset: (payload: WriterAssetMutationInput) => Promise<unknown>
+  updateAsset: (asset: WriterAssetListItem, payload: WriterAssetMutationInput) => Promise<unknown>
   deleteAsset: (asset: WriterAssetListItem) => Promise<void>
-  buildGraphFocusTarget: (asset: WriterAssetListItem) => unknown
+  buildGraphFocusTarget: (asset: WriterAssetListItem) => GraphFocusTarget
 }
 
 export const useToolRightAssetActions = ({

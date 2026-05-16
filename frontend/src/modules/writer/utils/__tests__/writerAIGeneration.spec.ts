@@ -12,11 +12,13 @@ const continueWriting = vi.fn()
 const polishText = vi.fn()
 const expandText = vi.fn()
 const rewriteText = vi.fn()
+const requestWriterAI = vi.fn()
 
 vi.mock('@/modules/ai/api', () => ({
   continueWriting: (...args: unknown[]) => continueWriting(...args),
   polishText: (...args: unknown[]) => polishText(...args),
   expandText: (...args: unknown[]) => expandText(...args),
+  requestWriterAI: (...args: unknown[]) => requestWriterAI(...args),
   rewriteText: (...args: unknown[]) => rewriteText(...args),
 }))
 
@@ -26,6 +28,7 @@ describe('writerAIGeneration', () => {
     polishText.mockReset()
     expandText.mockReset()
     rewriteText.mockReset()
+    requestWriterAI.mockReset()
   })
 
   it('resolves action labels and generated text consistently', () => {
@@ -68,7 +71,7 @@ describe('writerAIGeneration', () => {
   })
 
   it('builds contextual rewrite request with merged instructions', async () => {
-    rewriteText.mockResolvedValue({ rewritten_text: '改写结果' })
+    requestWriterAI.mockResolvedValue({ generatedText: '改写结果' })
 
     const result = await requestWriterContextualEditIntent({
       projectId: 'project-1',
@@ -92,11 +95,13 @@ describe('writerAIGeneration', () => {
       },
     })
 
-    expect(rewriteText).toHaveBeenCalledWith(
-      'project-1',
-      '原文',
-      'polish',
-      expect.stringContaining('请直接输出可替换整章正文的完整版本。'),
+    expect(requestWriterAI).toHaveBeenCalledWith(
+      expect.objectContaining({
+        route: 'single_document_edit',
+        mutationMode: 'single_document_diff',
+        intent: expect.objectContaining({ action: 'rewrite' }),
+        userVisibleSummary: expect.stringContaining('请直接输出可替换整章正文的完整版本。'),
+      }),
     )
     expect(result).toMatchObject({
       emittedAction: 'rewrite',

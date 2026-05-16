@@ -3,7 +3,14 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { defineComponent, nextTick, ref } from 'vue'
 import AIPanel from '../AIPanel.vue'
 import type { WriterWorkflowContext } from '@/modules/writer/types/workflow'
-import { chatWithAI, continueWriting, expandText, rewriteText, summarizeText } from '@/modules/ai/api'
+import {
+  chatWithAI,
+  continueWriting,
+  expandText,
+  requestWriterAI,
+  rewriteText,
+  summarizeText,
+} from '@/modules/ai/api'
 
 const messages = ref<Array<{ role: string; content: string }>>([])
 const addMessage = vi.fn()
@@ -52,6 +59,7 @@ vi.mock('@/modules/ai/api', () => ({
   continueWriting: vi.fn(),
   polishText: vi.fn(),
   expandText: vi.fn(),
+  requestWriterAI: vi.fn(),
   rewriteText: vi.fn(),
   summarizeText: vi.fn(),
   proofreadText: vi.fn(),
@@ -198,7 +206,9 @@ function mountPanel() {
 }
 
 function getFirstApplyGeneratedPayload(wrapper: ReturnType<typeof mountPanel>) {
-  return (wrapper.emitted('applyGeneratedText') as Array<[Record<string, unknown>]> | undefined)?.[0]?.[0]
+  return (
+    wrapper.emitted('applyGeneratedText') as Array<[Record<string, unknown>]> | undefined
+  )?.[0]?.[0]
 }
 
 describe('AIPanel', () => {
@@ -206,12 +216,7 @@ describe('AIPanel', () => {
     messages.value = []
     addMessage.mockReset()
     addMessage.mockImplementation(
-      (
-        role: string,
-        content: string,
-        typing?: boolean,
-        meta?: Record<string, unknown>,
-      ) => {
+      (role: string, content: string, typing?: boolean, meta?: Record<string, unknown>) => {
         const message = { role, content, typing, meta }
         messages.value.push(message)
         return message
@@ -228,6 +233,59 @@ describe('AIPanel', () => {
     vi.mocked(rewriteText).mockReset()
     vi.mocked(summarizeText).mockReset()
     vi.mocked(chatWithAI).mockReset()
+    vi.mocked(requestWriterAI).mockReset()
+    vi.mocked(requestWriterAI).mockImplementation(async (plan) => {
+      const sourceText = plan.context.currentDocument?.sourceText || ''
+      if (plan.mutationMode === 'single_document_diff') {
+        const action = plan.intent?.action
+        const response =
+          action === 'expand'
+            ? await expandText(
+                plan.context.projectId,
+                sourceText,
+                plan.userVisibleSummary,
+                plan.intent?.targetLength,
+              )
+            : await rewriteText(
+                plan.context.projectId,
+                sourceText,
+                'polish',
+                plan.userVisibleSummary,
+              )
+        return {
+          route: plan.route,
+          mutationMode: plan.mutationMode,
+          message: '已生成单章候选正文，请交由编辑器 diff 确认。',
+          generatedText:
+            (response as Record<string, string>).expanded_text ||
+            (response as Record<string, string>).rewritten_text ||
+            '',
+          requiresConfirmation: true,
+          evidence: plan.context.evidence,
+        }
+      }
+      if (plan.route === 'analysis') {
+        const response = await summarizeText(sourceText, {
+          projectId: plan.context.projectId,
+          summaryType: 'detailed',
+        })
+        return {
+          route: plan.route,
+          mutationMode: plan.mutationMode,
+          message: (response as Record<string, string>).summary || '',
+          requiresConfirmation: false,
+          evidence: plan.context.evidence,
+        }
+      }
+      const response = await chatWithAI(plan.userVisibleSummary, plan.history || [])
+      return {
+        route: plan.route,
+        mutationMode: plan.mutationMode,
+        message: response.reply || '',
+        requiresConfirmation: false,
+        evidence: plan.context.evidence,
+      }
+    })
     mockExecuteWriterDocumentCommand.mockReset()
     mockExecuteWriterDocumentCommand.mockResolvedValue({ handled: false })
     mockListDocuments.mockReset()
@@ -715,8 +773,10 @@ describe('AIPanel', () => {
       'project-1',
       '雨夜章节正文',
       'polish',
-      expect.any(String),
+      expect.stringContaining('当前章节：雨夜'),
     )
+    expect(vi.mocked(rewriteText).mock.calls[0]?.[3]).toContain('雨夜章节正文')
+    expect(vi.mocked(rewriteText).mock.calls[0]?.[3]).not.toContain('当前章节：章节 chapter-1')
     expect(getFirstApplyGeneratedPayload(wrapper)).toMatchObject({
       action: 'rewrite',
       sourceText: '雨夜章节正文',
@@ -836,6 +896,8 @@ describe('AIPanel', () => {
       targetDocumentId: 'chapter-2',
       generatedText: '第二章补强后正文',
     })
+    expect(vi.mocked(rewriteText).mock.calls[0]?.[3]).toContain('当前章节：第二章')
+    expect(vi.mocked(rewriteText).mock.calls[0]?.[3]).toContain('第二章正文')
   })
 
   it('shows candidate selection meta for ambiguous cross-chapter search and resolves chosen chapter', async () => {

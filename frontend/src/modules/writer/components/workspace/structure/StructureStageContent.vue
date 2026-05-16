@@ -74,7 +74,7 @@
         @create-child-node="emit('create-child-node', $event)"
         @bind-current-chapter="emit('bind-current-chapter', $event)"
         @unbind-chapter="emit('unbind-chapter', $event)"
-        @update-status="emit('update-status', $event[0], $event[1])"
+        @update-status="(node, status) => emit('update-status', node, status)"
         @open-graph="emit('open-graph', $event)"
         @jump-to-chapter="emit('jump-to-chapter', $event)"
       />
@@ -96,7 +96,7 @@
         @move-down="emit('move-down', $event)"
         @create-child-node="emit('create-child-node', $event)"
         @delete-node="emit('canvas-delete-node', $event)"
-        @update-status="emit('update-status', $event[0], $event[1])"
+        @update-status="(node, status) => emit('update-status', node, status)"
         @open-graph="emit('open-graph', $event)"
         @jump-to-chapter="emit('jump-to-chapter', $event)"
       />
@@ -119,7 +119,7 @@
         @create-child-node="emit('create-child-node', $event)"
         @bind-current-chapter="emit('bind-current-chapter', $event)"
         @unbind-chapter="emit('unbind-chapter', $event)"
-        @update-status="emit('update-status', $event[0], $event[1])"
+        @update-status="(node, status) => emit('update-status', node, status)"
         @open-graph="emit('open-graph', $event)"
         @jump-to-chapter="emit('jump-to-chapter', $event)"
         @reorder="emit('reorder', $event)"
