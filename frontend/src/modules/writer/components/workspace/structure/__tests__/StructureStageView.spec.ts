@@ -225,10 +225,10 @@ describe('StructureStageView', () => {
     expect(wrapper.text()).toContain('全书节奏表')
     expect(wrapper.text()).not.toContain('大多数规划都在这里完成')
     expect(wrapper.text()).not.toContain('用章节/情节点做主行')
-    expect(wrapper.text()).toContain('蓝图输入')
+    expect(wrapper.text()).not.toContain('蓝图输入')
     expect(wrapper.text()).toContain('逆袭打脸')
-    expect(wrapper.text()).toContain('首次打脸')
-    expect(wrapper.text()).toContain('进入写作')
+    expect(wrapper.text()).not.toContain('首次打脸')
+    expect(wrapper.text()).toContain('写作')
     expect(wrapper.find('[data-testid="structure-stage-default"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="structure-rhythm-board"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="structure-stage-default-list"]').exists()).toBe(true)
@@ -400,11 +400,8 @@ describe('StructureStageView', () => {
     })
 
     await flushPromises()
-
-    expect(
-      (wrapper.get('[data-testid="structure-import-target"]').element as HTMLSelectElement).value,
-    ).toBe('current-volume')
-    expect(wrapper.text()).toContain('当前导入到：当前卷：第一卷')
+    expect(wrapper.text()).not.toContain('导入位置')
+    expect(wrapper.text()).not.toContain('重复策略')
 
     await wrapper.get('[data-testid="structure-blueprint-import"]').trigger('click')
 
@@ -414,7 +411,7 @@ describe('StructureStageView', () => {
     })
   })
 
-  it('当前节点已绑定章节时，当前聚焦主动作应跳转到写作章节', async () => {
+  it('当前章节已入纲时，表格写作动作应跳转到写作章节', async () => {
     const wrapper = mount(StructureStageView, {
       props: {
         projectId: 'project-1',
@@ -447,13 +444,13 @@ describe('StructureStageView', () => {
 
     await flushPromises()
     await wrapper
-      .get('.structure-stage-view__selected-actions .focus-card__action--primary')
+      .get('.structure-stage-view__rhythm-action.is-primary')
       .trigger('click')
 
     expect(wrapper.emitted('jumpToChapter')?.[0]).toEqual(['chapter-1'])
   })
 
-  it('未绑定节点在默认队列中应突出绑定当前章节动作', async () => {
+  it('未入纲章节在默认节奏表中仍应作为章节显示', async () => {
     mockWriterStore.outline.tree = [
       {
         id: 'node-2',
@@ -499,11 +496,11 @@ describe('StructureStageView', () => {
 
     await flushPromises()
 
-    expect(wrapper.text()).toContain('绑定当前章节')
-    expect(wrapper.find('.structure-stage-view__rhythm-action.is-primary').exists()).toBe(false)
+    expect(wrapper.text()).toContain('未入纲 1')
+    expect(wrapper.find('.structure-stage-view__rhythm-action.is-primary').exists()).toBe(true)
   })
 
-  it('全书节奏表应保持大纲原始顺序，选中节点不应跳到首行', async () => {
+  it('全书节奏表应保持章节原始顺序，选中行不应跳到首行', async () => {
     mockWriterStore.outline.tree = [
       {
         id: 'node-1',
@@ -620,15 +617,12 @@ describe('StructureStageView', () => {
     await flushPromises()
 
     const queueNodes = wrapper.findAll('.structure-stage-view__rhythm-title')
-    expect(queueNodes).toHaveLength(6)
-    expect(wrapper.text()).toContain('当前章节节点')
+    expect(queueNodes).toHaveLength(3)
+    expect(wrapper.text()).toContain('第一章')
     expect(queueNodes.map((node) => node.text())).toEqual([
-      expect.stringContaining('当前章节节点'),
-      expect.stringContaining('推进中节点'),
-      expect.stringContaining('已绑定节点 A'),
-      expect.stringContaining('已绑定节点 B'),
-      expect.stringContaining('草稿节点 A'),
-      expect.stringContaining('草稿节点 B'),
+      expect.stringContaining('第一章'),
+      expect.stringContaining('第二章'),
+      expect.stringContaining('第三章'),
     ])
 
     await wrapper.findAll('.structure-stage-view__rhythm-row')[1].trigger('click')
@@ -636,16 +630,13 @@ describe('StructureStageView', () => {
     expect(
       wrapper.findAll('.structure-stage-view__rhythm-title').map((node) => node.text()),
     ).toEqual([
-      expect.stringContaining('当前章节节点'),
-      expect.stringContaining('推进中节点'),
-      expect.stringContaining('已绑定节点 A'),
-      expect.stringContaining('已绑定节点 B'),
-      expect.stringContaining('草稿节点 A'),
-      expect.stringContaining('草稿节点 B'),
+      expect.stringContaining('第一章'),
+      expect.stringContaining('第二章'),
+      expect.stringContaining('第三章'),
     ])
   })
 
-  it('长篇默认按 50 节点分段，并只展示当前章节附近窗口', async () => {
+  it('长篇默认按 50 章分段，并只展示当前章节附近窗口', async () => {
     mockWriterStore.outline.tree = Array.from({ length: 120 }, (_, index) => ({
       id: `node-${index + 1}`,
       projectId: 'project-1',
@@ -691,22 +682,28 @@ describe('StructureStageView', () => {
     expect(
       wrapper.findAll('.structure-stage-view__segment-node').map((node) => node.text()),
     ).toEqual([
-      expect.stringContaining('第 1-50 节点'),
-      expect.stringContaining('第 51-100 节点'),
-      expect.stringContaining('第 101-120 节点'),
+      expect.stringContaining('第1章-第50章'),
+      expect.stringContaining('第51章-第100章'),
+      expect.stringContaining('第101章-第120章'),
     ])
-    expect(wrapper.text()).toContain('第 51-100 节点')
-    expect(wrapper.text()).toContain('#60-#100')
-    expect(wrapper.text()).toContain('第60章节点')
-    expect(wrapper.text()).toContain('第100章节点')
-    expect(wrapper.text()).not.toContain('第59章节点')
-    expect(wrapper.text()).not.toContain('第101章节点')
+    expect(wrapper.text()).toContain('第51章-第100章')
+    expect(wrapper.text()).toContain('第 60 章-第 100 章')
+    const windowTitles = wrapper.findAll('.structure-stage-view__rhythm-title').map((node) => node.text())
+    expect(windowTitles).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('第76章'),
+        expect.stringContaining('第80章'),
+        expect.stringContaining('第84章'),
+      ]),
+    )
+    expect(windowTitles).not.toEqual(expect.arrayContaining([expect.stringContaining('第60章')]))
+    expect(windowTitles).not.toEqual(expect.arrayContaining([expect.stringContaining('第100章')]))
 
     await wrapper.findAll('.structure-stage-view__segment-node')[2].trigger('click')
 
-    expect(wrapper.text()).toContain('#101-#120')
-    expect(wrapper.text()).toContain('第101章节点')
-    expect(wrapper.text()).toContain('第120章节点')
+    expect(wrapper.text()).toContain('第 101 章-第 120 章')
+    expect(wrapper.text()).toContain('第101章')
+    expect(wrapper.text()).toContain('第120章')
   })
 
   it('定位章节号时应切换到命中区段并选中目标行', async () => {
@@ -754,9 +751,9 @@ describe('StructureStageView', () => {
     await wrapper.get('.structure-stage-view__locator-input input').setValue('115')
     await wrapper.get('.structure-stage-view__locator-action').trigger('click')
 
-    expect(wrapper.text()).toContain('#101-#120')
+    expect(wrapper.text()).toContain('第101章-第120章')
     expect(wrapper.find('.structure-stage-view__rhythm-row.is-selected').text()).toContain(
-      '第115章节点',
+      '第115章',
     )
   })
 

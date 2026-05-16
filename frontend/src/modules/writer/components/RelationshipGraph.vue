@@ -13,7 +13,7 @@
       <div title="拖拽节点移动位置，双击节点释放回布局">
         <QyTag size="sm" type="info">
           <QyIcon name="QuestionFilled" :size="14" />
-          拖拽移动 | 双击释放
+          拖拽移动 | Shift 拖拽连线
         </QyTag>
       </div>
     </div>

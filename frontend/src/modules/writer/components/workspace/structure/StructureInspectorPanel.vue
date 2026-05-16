@@ -1,24 +1,20 @@
 <template>
   <section class="structure-inspector-panel">
     <div class="structure-inspector-panel__header">
-      <p class="structure-inspector-panel__eyebrow">Inspector</p>
       <h3 class="structure-inspector-panel__title">结构检视</h3>
+      <span v-if="selectedNode" class="structure-inspector-panel__status">{{ statusText }}</span>
     </div>
 
     <div v-if="selectedNode" class="structure-inspector-panel__body">
       <article class="inspector-hero">
         <div class="inspector-hero__level">L{{ selectedNode.level || 1 }}</div>
         <h4>{{ selectedNode.title }}</h4>
-        <p>{{ selectedNode.description || '该节点还没有补充细纲说明。' }}</p>
+        <p v-if="selectedNode.description">{{ selectedNode.description }}</p>
       </article>
 
       <div class="inspector-stats">
         <div class="inspector-stat">
-          <span>状态</span>
-          <strong>{{ statusText }}</strong>
-        </div>
-        <div class="inspector-stat">
-          <span>预估字数</span>
+          <span>字数</span>
           <strong>{{ selectedNode.wordCount || 0 }}</strong>
         </div>
         <div class="inspector-stat">
@@ -30,43 +26,12 @@
           <strong>{{ bindingState.label }}</strong>
         </div>
         <div class="inspector-stat">
-          <span>关系图谱</span>
+          <span>图谱</span>
           <strong>{{ graphState.label }}</strong>
         </div>
       </div>
 
-      <div class="inspector-outline">
-        <div class="inspector-outline__title">结构建议</div>
-        <ul>
-          <li>
-            {{
-              childCount > 0
-                ? '已有细纲支节，可优先检查信息密度是否均衡。'
-                : '当前节点缺少细纲支节，建议拆出冲突、转折与收束。'
-            }}
-          </li>
-          <li>
-            {{
-              selectedNode.level <= 1
-                ? '作为主干节点，优先明确事件目标、阻力与结果。'
-                : '作为细纲节点，优先明确动作、信息与情绪推进。'
-            }}
-          </li>
-          <li>{{ linkedChapterHint }}</li>
-          <li>{{ graphHint }}</li>
-        </ul>
-      </div>
-
       <div class="inspector-binding">
-        <div class="inspector-binding__title">章节绑定</div>
-        <p class="inspector-binding__hint">
-          {{
-            boundChapter
-              ? `当前已绑定「${boundChapter.title}」`
-              : '为该结构节点指定一个落地章节，形成结构到正文的稳定映射。'
-          }}
-        </p>
-
         <div class="inspector-binding__controls">
           <select
             class="inspector-binding__select"
@@ -113,6 +78,14 @@
       <div class="inspector-actions">
         <button
           type="button"
+          class="inspector-action inspector-action--primary"
+          :disabled="!boundChapter"
+          @click="boundChapter && emit('jumpToChapter', boundChapter.id)"
+        >
+          进入章节
+        </button>
+        <button
+          type="button"
           class="inspector-action inspector-action--secondary"
           data-testid="structure-send-to-ai"
           @click="emitStructureNodeToAI"
@@ -125,7 +98,7 @@
           data-testid="structure-open-assets"
           @click="emit('switch-tool', 'assets')"
         >
-          查看全局资产
+          资产
         </button>
         <button
           type="button"
@@ -133,15 +106,7 @@
           :disabled="!boundChapter"
           @click="boundChapter && emit('openGraph', boundChapter.id)"
         >
-          {{ graphState.tone === 'missing' ? '创建关系图谱' : '查看关系图谱' }}
-        </button>
-        <button
-          type="button"
-          class="inspector-action inspector-action--primary"
-          :disabled="!boundChapter"
-          @click="boundChapter && emit('jumpToChapter', boundChapter.id)"
-        >
-          跳转到关联章节
+          {{ graphState.tone === 'missing' ? '建图谱' : '图谱' }}
         </button>
       </div>
     </div>
@@ -154,7 +119,7 @@
     </div>
 
     <div v-else class="structure-inspector-panel__empty">
-      选择左侧树节点或鱼骨节点后，这里会显示层级、状态和结构建议。
+      选择结构节点后查看绑定与操作。
     </div>
   </section>
 </template>
@@ -213,29 +178,6 @@ const graphState = computed(() =>
 const chapterOptions = computed(() =>
   props.chapters.filter((chapter) => chapter.nodeType !== 'directory'),
 )
-
-const linkedChapterHint = computed(() => {
-  if (props.boundChapter) {
-    return '该节点已经和具体章节建立关联，可从这里直接回到正文修订。'
-  }
-  if (!props.currentChapterTitle || props.currentChapterTitle === '未选择章节') {
-    return '当前未锁定章节，可从目录选择章节后回看结构映射。'
-  }
-  return `当前工作章节是「${props.currentChapterTitle}」，下一步可把这个节点绑定到对应章节。`
-})
-
-const graphHint = computed(() => {
-  if (graphState.value.tone === 'ready') {
-    return '该章节已建立独立关系图谱，可继续补充局部角色关系。'
-  }
-  if (graphState.value.tone === 'inherit') {
-    return '该章节当前使用继承图谱，适合在全局关系基础上追加章节特有连线。'
-  }
-  if (graphState.value.tone === 'missing') {
-    return '该章节已经绑定，但尚未建关系图谱，建议去关系图页创建。'
-  }
-  return '节点尚未绑定章节，暂时无法挂接章节关系图谱。'
-})
 
 function emitStructureNodeToAI() {
   if (!props.selectedNode) return
@@ -298,23 +240,31 @@ function emitStructureNodeToAI() {
 .structure-inspector-panel__header {
   position: relative;
   z-index: 1;
-  padding: 18px 18px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
   border-bottom: 1px solid color-mix(in srgb, var(--editor-border, rgba(91, 72, 50, 0.1)) 68%, transparent);
 }
 
-.structure-inspector-panel__eyebrow {
+.structure-inspector-panel__title {
   margin: 0;
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--editor-accent, #8f3f2f);
-  font-weight: 800;
+  font-size: 18px;
+  color: var(--editor-text-primary, #2e2b27);
 }
 
-.structure-inspector-panel__title {
-  margin: 6px 0 0;
-  font-size: 22px;
-  color: var(--editor-text-primary, #2e2b27);
+.structure-inspector-panel__status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--editor-accent, #8f3f2f) 22%, transparent);
+  background: color-mix(in srgb, var(--editor-accent-soft, #fff7ed) 62%, transparent);
+  color: var(--editor-accent, #8f3f2f);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .structure-inspector-panel__body {
@@ -323,17 +273,21 @@ function emitStructureNodeToAI() {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 16px;
+  padding: 14px;
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .inspector-hero {
   position: relative;
   border-radius: 18px;
-  background: linear-gradient(135deg, rgba(143, 63, 47, 0.95), rgba(183, 109, 56, 0.92));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--editor-accent, #8f3f2f) 92%, var(--editor-layer-panel, #fff) 8%),
+    color-mix(in srgb, var(--color-warning-600, #b76d38) 82%, var(--editor-accent, #8f3f2f) 18%)
+  );
   color: color-mix(in srgb, var(--editor-text-inverse, #fff9f3) 94%, var(--editor-text-secondary, #334155) 6%);
-  padding: 16px;
+  padding: 14px;
   overflow: hidden;
   box-shadow: var(--editor-shadow-lg, 0 18px 30px rgba(99, 60, 30, 0.14));
 }
@@ -356,14 +310,14 @@ function emitStructureNodeToAI() {
 }
 
 .inspector-hero h4 {
-  margin: 8px 0 0;
-  font-size: 20px;
+  margin: 6px 0 0;
+  font-size: 18px;
 }
 
 .inspector-hero p {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.5;
   opacity: 0.94;
 }
 
@@ -374,10 +328,10 @@ function emitStructureNodeToAI() {
 }
 
 .inspector-stat {
-  border-radius: 16px;
+  border-radius: 14px;
   background: color-mix(in srgb, var(--editor-layer-panel, #fffcf7) 92%, transparent);
   border: 1px solid color-mix(in srgb, var(--editor-border, rgba(117, 93, 67, 0.14)) 72%, transparent);
-  padding: 12px;
+  padding: 10px;
   transition:
     transform 0.16s ease,
     box-shadow 0.16s ease,
@@ -398,70 +352,24 @@ function emitStructureNodeToAI() {
 
 .inspector-stat strong {
   display: block;
-  margin-top: 6px;
-  font-size: 18px;
+  margin-top: 4px;
+  font-size: 15px;
   color: var(--editor-text-primary, #2d2b29);
 }
 
-.inspector-outline {
-  border-radius: 18px;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--editor-layer-panel, #fffcf8) 94%, transparent),
-    color-mix(in srgb, var(--editor-layer-strong, #faf3ea) 90%, transparent)
-  );
-  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(117, 93, 67, 0.14)) 72%, transparent);
-  padding: 14px 16px;
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--editor-text-inverse, #ffffff) 12%, transparent);
-}
-
-.inspector-outline__title {
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-weight: 800;
-  color: var(--editor-accent, #8f3f2f);
-}
-
-.inspector-outline ul {
-  margin: 10px 0 0;
-  padding-left: 18px;
-  display: grid;
-  gap: 8px;
-  color: var(--editor-text-secondary, #5f5348);
-  font-size: 13px;
-  line-height: 1.6;
-}
-
 .inspector-binding {
-  border-radius: 18px;
+  border-radius: 16px;
   background: linear-gradient(
     180deg,
     color-mix(in srgb, var(--editor-layer-panel, #fffcf8) 94%, transparent),
     color-mix(in srgb, var(--editor-layer-strong, #faf3ea) 90%, transparent)
   );
   border: 1px solid color-mix(in srgb, var(--editor-border, rgba(117, 93, 67, 0.14)) 72%, transparent);
-  padding: 14px 16px;
+  padding: 12px 14px;
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--editor-text-inverse, #ffffff) 12%, transparent);
-}
-
-.inspector-binding__title {
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-weight: 800;
-  color: var(--editor-accent, #8f3f2f);
-}
-
-.inspector-binding__hint {
-  margin: 8px 0 0;
-  color: var(--editor-text-muted, #6a5d52);
-  font-size: 12px;
-  line-height: 1.6;
 }
 
 .inspector-binding__controls {
-  margin-top: 12px;
   display: grid;
   gap: 10px;
 }
@@ -469,7 +377,7 @@ function emitStructureNodeToAI() {
 .inspector-binding__select {
   width: 100%;
   border-radius: 12px;
-  border: 1px solid rgba(117, 93, 67, 0.16);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(117, 93, 67, 0.16)) 82%, transparent);
   background: var(--editor-layer-panel, #fffdf9);
   color: var(--editor-text-primary, #2d2b29);
   padding: 10px 12px;
@@ -495,23 +403,25 @@ function emitStructureNodeToAI() {
 .structure-inspector-panel__empty {
   margin: 16px;
   border-radius: 18px;
-  border: 1px dashed rgba(117, 93, 67, 0.2);
+  border: 1px dashed color-mix(in srgb, var(--editor-border, rgba(117, 93, 67, 0.2)) 82%, transparent);
   background: color-mix(in srgb, var(--editor-layer-panel, #fffcf7) 92%, transparent);
   padding: 20px;
-  color: #74675d;
+  color: var(--editor-text-muted, #74675d);
   font-size: 13px;
   line-height: 1.6;
 }
 
 .structure-inspector-panel__empty--loading {
   border-style: solid;
-  border-color: rgba(54, 80, 107, 0.18);
-  background: rgba(235, 244, 249, 0.92);
-  color: #32536a;
+  border-color: color-mix(in srgb, var(--editor-accent, #32536a) 18%, transparent);
+  background: color-mix(in srgb, var(--editor-accent-soft, #ebf4f9) 70%, var(--editor-layer-panel, #fff) 30%);
+  color: var(--editor-accent, #32536a);
 }
 
 .inspector-actions {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .inspector-action {
@@ -529,19 +439,19 @@ function emitStructureNodeToAI() {
 
 .inspector-action--primary {
   border: 0;
-  background: linear-gradient(135deg, #8f3f2f, #b76d38);
-  color: #fff9f3;
+  background: linear-gradient(135deg, var(--editor-accent, #8f3f2f), var(--color-warning-600, #b76d38));
+  color: var(--editor-text-inverse, #fff9f3);
   box-shadow: 0 12px 20px rgba(99, 60, 30, 0.12);
 }
 
 .inspector-action--secondary {
-  border: 1px solid rgba(117, 93, 67, 0.16);
-  background: rgba(255, 252, 247, 0.92);
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(117, 93, 67, 0.16)) 84%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #fffcf7) 92%, transparent);
   color: var(--editor-text-secondary, #453b31);
 }
 
 .inspector-action--ghost {
-  border: 1px dashed rgba(117, 93, 67, 0.26);
+  border: 1px dashed color-mix(in srgb, var(--editor-border, rgba(117, 93, 67, 0.26)) 86%, transparent);
   background: transparent;
   color: var(--editor-text-muted, #7a6250);
 }

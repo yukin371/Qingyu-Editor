@@ -67,6 +67,9 @@ describe('StructureInspectorPanel', () => {
 
     await wrapper.get('[data-testid="structure-send-to-ai"]').trigger('click')
 
+    expect(wrapper.text()).not.toContain('下一步')
+    expect(wrapper.text()).not.toContain('Inspector')
+    expect(wrapper.text()).not.toContain('结构建议')
     expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0]).toMatchObject({
       source: 'workspace',
       action: 'add_to_chat',

@@ -1,10 +1,12 @@
 import type {
   ChapterGraph,
   ChapterRelation,
+  CharacterRelation,
   RelationType,
   VolumeGraph,
   VolumeRelation,
 } from '../types/character'
+import type { WriterAssetRefState } from './writerAssetRefs'
 
 const STORAGE_PREFIX = 'qingyu_writer_character_graph_drafts'
 type GraphScopeType = 'chapter' | 'volume'
@@ -15,6 +17,12 @@ export interface CharacterGraphDraftState {
   chapterRelations: Record<string, ChapterRelation[]>
   volumeGraphs: VolumeGraph[]
   volumeRelations: Record<string, VolumeRelation[]>
+}
+
+export interface CharacterGraphAutoScopeIds {
+  globalIds: Set<string>
+  volumeIds: Set<string>
+  chapterIds: Set<string>
 }
 
 const createDefaultState = (): CharacterGraphDraftState => ({
@@ -256,6 +264,63 @@ export function setGlobalGraphInitialized(projectId: string, initialized = true)
     ...state,
     globalGraphInitialized: initialized,
   }))
+}
+
+export function buildCharacterGraphAutoScopeIds(params: {
+  assetRefState: WriterAssetRefState
+  chapterId?: string
+  volumeId?: string
+  volumeChapterIds?: string[]
+  globalRelations?: CharacterRelation[]
+}): CharacterGraphAutoScopeIds {
+  const globalIds = new Set<string>()
+  const volumeIds = new Set<string>()
+  const chapterIds = new Set<string>()
+
+  const addCharacterRef = (target: Set<string>, ref: { assetType: string; assetId?: string; unresolved?: boolean }) => {
+    if (ref.assetType !== 'character' || ref.unresolved || !ref.assetId) return
+    target.add(ref.assetId)
+  }
+
+  for (const relation of params.globalRelations || []) {
+    if (relation.fromId) globalIds.add(relation.fromId)
+    if (relation.toId) globalIds.add(relation.toId)
+  }
+
+  for (const refs of Object.values(params.assetRefState.chapterRefs || {})) {
+    for (const ref of refs) {
+      addCharacterRef(globalIds, ref)
+    }
+  }
+
+  for (const refs of Object.values(params.assetRefState.volumeRefs || {})) {
+    for (const ref of refs) {
+      addCharacterRef(globalIds, ref)
+    }
+  }
+
+  if (params.volumeId) {
+    for (const ref of params.assetRefState.volumeRefs[params.volumeId] || []) {
+      addCharacterRef(volumeIds, ref)
+    }
+    for (const chapterId of params.volumeChapterIds || []) {
+      for (const ref of params.assetRefState.chapterRefs[chapterId] || []) {
+        addCharacterRef(volumeIds, ref)
+      }
+    }
+  }
+
+  if (params.chapterId) {
+    for (const ref of params.assetRefState.chapterRefs[params.chapterId] || []) {
+      addCharacterRef(chapterIds, ref)
+    }
+  }
+
+  return {
+    globalIds,
+    volumeIds,
+    chapterIds,
+  }
 }
 
 export function appendChapterRelationDraft(params: {

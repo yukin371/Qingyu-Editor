@@ -99,8 +99,8 @@
 - **结构舞台只读消费阶段 1 sidecar，不接管持久化**：`StructureStageView` 当前可以读取 `creativeWorkflow` sidecar 作为阶段 3 接力卡与 AI handoff 输入，但它只能消费和展示，不得反向成为模板/黄金三章的新 owner。
 - **黄金三章导入必须复用现有结构草案链**：从阶段 3 接力卡导入黄金三章时，只能发 `create-structure-plan` 交给 `ProjectWorkspace.handleCreateStructurePlan` 统一创建章节与 outline 节点；不要在 `StructureStageView` 里直接写文档或大纲。
 - **黄金三章导入控制项仍由宿主兜底**：阶段 3 接力卡可以补 `导入位置（当前卷 / 项目根目录）` 与 `重复策略（跳过 / 允许重复）`，但最终 parent 解析、同名跳过与成功提示都必须落在 `ProjectWorkspace.handleCreateStructurePlan`，不要在结构舞台局部自行分叉创建逻辑。
-- **结构舞台默认层是“全书节奏表”聚合视图**：`StructureStageView` 默认只展示章节/情节点、正文绑定、状态、简化资产/图谱/时间线摘要和行级 handoff；完整事件排序、人物关系、资产详情、分支推演仍跳转到 overlay 内的专业工具，不允许在结构舞台复制第二套深度编辑 owner。
-- **长篇结构舞台必须用区段和窗口承载**：几百章以上的作品不得默认铺开完整列表；`StructureStageView` 应按卷或固定区段展示节奏地图，并只渲染当前章节附近的工作窗口，章节号/标题定位和问题筛选只改变窗口范围，不改变大纲原始顺序。
+- **结构舞台默认层是章节级全局管理视图**：`StructureStageView` 默认只展示章节范围、附近章节卡片、字数、入纲状态和写作 handoff；结构节点、资产、图谱、时间线、分支等深层信息只在检视面板或专业 overlay 中展开，不允许把默认层重新做成长表格或第二套深度编辑 owner。
+- **长篇结构舞台必须用范围地图和附近窗口承载**：几百章以上的作品不得默认铺开完整顺序列表；`StructureStageView` 应按卷或固定章节范围展示全局地图，并只渲染当前/定位章节附近的少量章节卡片，章节号/标题定位和问题筛选只改变当前窗口，不改变章节原始顺序。
 - **长篇深度工具也必须按区段定位**：`TimelineOutlineView` 和 `StoryBranchView` 不得默认渲染全量事件/全量分支节点；应按固定区段提供地图、定位输入和当前窗口，避免几千章作品在辅助工具中重新变成长列表或全量画布。
 - **右栏不再伪装成通用 layout area**：布局 store 里的通用区域只剩 `left / bottom / overlay`，右侧常驻工具单独归 `rightToolArea` owner。不要再往 `workspaceLayoutStore.areas` 恢复历史 `right` 区域状态。
 - **Overlay 继续承接深度工具，不回流常驻右栏**：`structure / assets-fullscreen / relations / timeline / branches` 仍由 `WorkspaceToolOverlay` owner 管理；右栏只负责快速查阅和“展开全屏 →” handoff，不要复制第二套全屏宿主状态。
@@ -120,6 +120,7 @@
 - **资产总览图谱深链由 overlay 接管**：`EncyclopediaView` 只负责发 `focus-graph-asset + switch-tool` 事件，不自己持有图谱 focus 状态；`WorkspaceToolOverlay` 是这条 focus payload 的 owner，并只把一次性聚焦参数透传给 `CharacterGraphView`。不要把图谱定点跳转状态再塞回路由、store 或资产视图本身。
 - **最近章节/节点数属于前端聚合口径**：资产总览里的“最近出现章节 / 关联结构节点数”目前由 `writerAssetRefs` 与 `OutlineNode.documentId` 绑定推导，只代表当前前端已知引用，不等同于后端统一事实。若未来后端补正式字段，必须先明确新 owner，再替换这层前端聚合逻辑。
 - **资产深链当前默认落全局图谱**：从资产总览点进“关系图谱”时，`CharacterGraphView` 当前会切到全局图谱并高亮目标节点，以保证角色/地点/物件最小可达；组织/概念若尚无图谱节点，只允许提示“未接入”，不要伪造成已接线成功。
+- **关系图谱节点消费资产引用投影**：`CharacterGraphView` 的全局/卷级/章节级角色节点应优先由 `writerAssetRefs` 的已建档角色引用自动推导；进入图谱不再要求用户选择“从零开始 / 继承全局”，拖拽连线时再自动写入现有全局关系或章节/卷草稿关系，不得新增第二套“图谱资产”存储。
 - **概念优先复用 smart keyword 类型，不走纯文本猜测**：`writerAssetRefs` 当前已支持 `organization/concept`，但章节候选里这两类只应优先来自 TipTap smart keyword 的已解析类型或已确认绑定，避免把普通 `@文本` 误判成概念/组织。纯文本模糊提取当前仍只覆盖角色/地点/物件。
 - **未建档 `@名称` 不默认推断为角色**：纯文本 `@名称` 未命中任何已建档资产时，只能进入 `unresolved + requiresTypeSelection` 候选；建档绑定前必须由补全推断或作者最小选择 `角色 / 地点 / 物品 / 组织 / 概念`，避免资产闭环从第一步就分类错误。
 - **组织当前只进引用链路，不补创建器**：`CharacterGraphView` 已能展示并绑定已建档组织节点，但“组织建档”不在当前 writer 图谱面板 owner 范围内；不要在这里临时发散出第二套组织创建流程。

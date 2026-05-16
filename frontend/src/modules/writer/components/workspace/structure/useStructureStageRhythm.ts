@@ -34,6 +34,7 @@ export interface RhythmRow {
   index: number
   title: string
   description: string
+  hasStructurePlan: boolean
   chapterId?: string
   orderLabel: string
   segmentId: string
@@ -74,36 +75,13 @@ export function useStructureStageRhythm(options: UseStructureStageRhythmOptions)
   const rhythmLocatorQuery = ref('')
   const rhythmFilterMode = ref<RhythmFilterMode>('nearby')
   const rhythmFilterOptions: Array<{ value: RhythmFilterMode; label: string }> = [
-    { value: 'nearby', label: '当前窗口' },
-    { value: 'all', label: '整段' },
-    { value: 'unlinked', label: '待绑定' },
+    { value: 'nearby', label: '附近' },
+    { value: 'all', label: '全部' },
+    { value: 'unlinked', label: '未入纲' },
     { value: 'asset-missing', label: '待补资产' },
     { value: 'writing', label: '推进中' },
     { value: 'completed', label: '已完成' },
   ]
-
-  const rhythmBoardSummary = computed(() => {
-    let boundChapters = 0
-    let writing = 0
-    let unbound = 0
-    let assets = 0
-
-    for (const node of options.flattenedNodes.value) {
-      const chapterId = getBoundChapterId(node)
-      if (chapterId) {
-        boundChapters += 1
-        assets += options.assetSummaryByChapterId.value[chapterId]?.total || 0
-      } else {
-        unbound += 1
-      }
-
-      if ((node.status || 'planned') === 'writing') {
-        writing += 1
-      }
-    }
-
-    return { boundChapters, writing, unbound, assets }
-  })
 
   const volumeTitleById = computed(() => {
     const map: Record<string, string> = {}
@@ -117,40 +95,109 @@ export function useStructureStageRhythm(options: UseStructureStageRhythmOptions)
 
   const hasVolumeSegments = computed(() => Object.keys(volumeTitleById.value).length > 0)
 
-  const rhythmAllRows = computed<RhythmRow[]>(() =>
-    options.flattenedNodes.value.map((node, index) => {
+  const chapterRows = computed(() =>
+    options.chapterOptions.value.filter((chapter) => chapter.nodeType !== 'directory'),
+  )
+
+  const chapterById = computed(() => {
+    const map: Record<string, SidebarChapterSummary> = {}
+    for (const chapter of chapterRows.value) {
+      map[chapter.id] = chapter
+    }
+    return map
+  })
+
+  const structureNodeByChapterId = computed(() => {
+    const map: Record<string, OutlineNode> = {}
+    for (const node of options.flattenedNodes.value) {
       const chapterId = getBoundChapterId(node)
-      const chapter = chapterId
-        ? options.chapterOptions.value.find((item) => item.id === chapterId) || null
-        : null
-      const assetCount = chapterId
-        ? options.assetSummaryByChapterId.value[chapterId]?.total || 0
-        : 0
-      const statusLabel = getStructureNodeStatusText(node)
-      const statusTone = getStructureNodeLane(node)
+      if (chapterId && chapterById.value[chapterId] && !map[chapterId]) {
+        map[chapterId] = node
+      }
+    }
+    return map
+  })
+
+  const rhythmAllRows = computed<RhythmRow[]>(() =>
+    chapterRows.value.map((chapter, index) => {
+      const linkedStructureNode = structureNodeByChapterId.value[chapter.id] || null
+      const node = linkedStructureNode || {
+        id: `chapter-row:${chapter.id}`,
+        projectId: chapter.projectId,
+        documentId: chapter.id,
+        title: chapter.title || `第${chapter.chapterNum || index + 1}章`,
+        description: '',
+        order: index,
+        level: 1,
+        status: chapter.status === 'published' ? 'completed' : 'draft',
+        type: 'chapter',
+        wordCount: chapter.wordCount,
+      } as OutlineNode
+      const assetCount = options.assetSummaryByChapterId.value[chapter.id]?.total || 0
+      const statusLabel = linkedStructureNode
+        ? getStructureNodeStatusText(node)
+        : chapter.status === 'published'
+          ? '已完成'
+          : chapter.wordCount > 0
+            ? '写作中'
+            : '草稿'
+      const statusTone = linkedStructureNode
+        ? getStructureNodeLane(node)
+        : chapter.status === 'published'
+          ? 'completed'
+          : chapter.wordCount > 0
+            ? 'writing'
+            : 'draft'
       const segmentId = hasVolumeSegments.value
-        ? `volume:${chapter?.parentId || 'ungrouped'}`
+        ? `volume:${chapter.parentId || 'ungrouped'}`
         : `segment:${Math.floor(index / RHYTHM_SEGMENT_SIZE) + 1}`
 
       return {
         id: node.id,
         node,
         index,
-        title: node.title || '未命名节点',
-        description: node.description || '补充这一节的目标、阻力与结果。',
-        chapterId: chapter?.id,
-        orderLabel: `#${index + 1}`,
+        title: chapter.title || node.title || `第${chapter.chapterNum || index + 1}章`,
+        description: linkedStructureNode?.description || '',
+        hasStructurePlan: !!linkedStructureNode,
+        chapterId: chapter.id,
+        orderLabel: chapter.chapterNum ? `第 ${chapter.chapterNum} 章` : `章节 ${index + 1}`,
         segmentId,
         statusTone,
         statusLabel,
         hookLabel: node.description?.slice(0, 24) || '待补钩子',
-        timelineLabel: chapter ? (options.currentChapterId.value === chapter.id ? '当前章节' : '查看时间线') : '待接时间线',
+        timelineLabel: options.currentChapterId.value === chapter.id ? '当前章节' : '查看时间线',
         assetCount,
         assetLabel: assetCount > 0 ? `${assetCount} 项资产` : '待补资产',
-        wordCountLabel: chapter?.wordCount ? `${chapter.wordCount} 字` : '未写正文',
+        wordCountLabel: chapter.wordCount ? `${chapter.wordCount} 字` : '未写正文',
       }
     }),
   )
+
+  const rhythmBoardSummary = computed(() => {
+    const chapterIds = new Set(chapterRows.value.map((chapter) => chapter.id))
+    const boundChapterIds = new Set<string>()
+    let writing = 0
+    let assets = 0
+
+    for (const row of rhythmAllRows.value) {
+      if (row.chapterId && structureNodeByChapterId.value[row.chapterId]) {
+        boundChapterIds.add(row.chapterId)
+      }
+      if (row.chapterId) {
+        assets += options.assetSummaryByChapterId.value[row.chapterId]?.total || 0
+      }
+      if (row.statusTone === 'writing') {
+        writing += 1
+      }
+    }
+
+    return {
+      boundChapters: boundChapterIds.size,
+      writing,
+      unbound: Math.max(0, chapterIds.size - boundChapterIds.size),
+      assets,
+    }
+  })
 
   const rhythmSegments = computed<RhythmSegment[]>(() => {
     if (!rhythmAllRows.value.length) return []
@@ -173,7 +220,9 @@ export function useStructureStageRhythm(options: UseStructureStageRhythmOptions)
               ? '未归卷章节'
               : volumeTitleById.value[volumeId] || first?.title || '未命名卷',
           total: rows.length,
-          unbound: rows.filter((row) => !row.chapterId).length,
+          unbound: rows.filter(
+            (row) => row.chapterId && !structureNodeByChapterId.value[row.chapterId],
+          ).length,
           assetMissing: rows.filter((row) => row.assetCount === 0).length,
           startIndex: first?.index ?? 0,
           endIndex: rows[rows.length - 1]?.index ?? first?.index ?? 0,
@@ -185,13 +234,17 @@ export function useStructureStageRhythm(options: UseStructureStageRhythmOptions)
     for (let start = 0; start < rhythmAllRows.value.length; start += RHYTHM_SEGMENT_SIZE) {
       const rows = rhythmAllRows.value.slice(start, start + RHYTHM_SEGMENT_SIZE)
       const endIndex = rows[rows.length - 1]?.index ?? start
-      const startLabel = start + 1
-      const endLabel = endIndex + 1
+      const firstChapter = rows[0]
+      const lastChapter = rows[rows.length - 1]
+      const startLabel = firstChapter?.orderLabel.replace(/\s+/g, '') || `章节${start + 1}`
+      const endLabel = lastChapter?.orderLabel.replace(/\s+/g, '') || `章节${endIndex + 1}`
       segments.push({
         id: `segment:${Math.floor(start / RHYTHM_SEGMENT_SIZE) + 1}`,
-        title: `第 ${startLabel}-${endLabel} 节点`,
+        title: `${startLabel}-${endLabel}`,
         total: rows.length,
-        unbound: rows.filter((row) => !row.chapterId).length,
+        unbound: rows.filter(
+          (row) => row.chapterId && !structureNodeByChapterId.value[row.chapterId],
+        ).length,
         assetMissing: rows.filter((row) => row.assetCount === 0).length,
         startIndex: start,
         endIndex,
@@ -247,7 +300,9 @@ export function useStructureStageRhythm(options: UseStructureStageRhythmOptions)
       )
     }
     if (rhythmFilterMode.value === 'unlinked') {
-      rows = rows.filter((row) => !row.chapterId)
+      rows = rows.filter(
+        (row) => row.chapterId && !structureNodeByChapterId.value[row.chapterId],
+      )
     }
     if (rhythmFilterMode.value === 'asset-missing') {
       rows = rows.filter((row) => row.assetCount === 0)
@@ -263,11 +318,11 @@ export function useStructureStageRhythm(options: UseStructureStageRhythmOptions)
   })
 
   const rhythmWindowRangeLabel = computed(() => {
-    if (!activeRhythmSegment.value) return '无可用区段'
-    if (!rhythmWindowRows.value.length) return `${activeRhythmSegment.value.title} · 无匹配`
+    if (!activeRhythmSegment.value) return '无章节'
+    if (!rhythmWindowRows.value.length) return '无匹配'
     const first = rhythmWindowRows.value[0]
     const last = rhythmWindowRows.value[rhythmWindowRows.value.length - 1]
-    return `${activeRhythmSegment.value.title} · ${first.orderLabel}-${last.orderLabel}`
+    return `显示 ${first.orderLabel}-${last.orderLabel}`
   })
 
   function activateRhythmSegment(segmentId: string) {

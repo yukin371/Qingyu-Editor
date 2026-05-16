@@ -4,12 +4,6 @@
       <div class="structure-stage-controls__header-main">
         <div class="structure-stage-controls__title-block">
           <h2>结构舞台</h2>
-          <div class="structure-stage-controls__summary">
-            <span>{{ `当前章节 ${currentChapterTitle || '未锁定'}` }}</span>
-            <span>{{ `节点 ${selectedNodeTitle || '未选择'}` }}</span>
-            <span>{{ `下一步 ${defaultStageActionText}` }}</span>
-            <span v-if="selectedNodeAssetCount > 0">{{ `资产 ${selectedNodeAssetCount}` }}</span>
-          </div>
         </div>
 
         <div class="structure-stage-controls__actions">

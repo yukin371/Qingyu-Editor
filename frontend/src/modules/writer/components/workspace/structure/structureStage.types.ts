@@ -44,6 +44,7 @@ export interface RhythmRow {
   node: OutlineNode
   title: string
   description: string
+  hasStructurePlan?: boolean
   chapterId?: string
   orderLabel: string
   statusTone: string

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick } from 'vue'
 
 const toastMocks = vi.hoisted(() => ({
@@ -205,6 +205,14 @@ const QyProgressStub = defineComponent({
 const RelationshipGraphStub = defineComponent({
   name: 'RelationshipGraphStub',
   props: {
+    nodes: {
+      type: Array,
+      default: () => [],
+    },
+    links: {
+      type: Array,
+      default: () => [],
+    },
     focusedNodeId: {
       type: String,
       default: '',
@@ -218,6 +226,8 @@ const RelationshipGraphStub = defineComponent({
         {
           'data-testid': 'relationship-graph',
           'data-focused-node-id': props.focusedNodeId,
+          'data-node-count': (props.nodes as unknown[]).length,
+          'data-link-count': (props.links as unknown[]).length,
           onClick: () => emit('node-click', 'char-1'),
         },
         'graph',
@@ -351,6 +361,7 @@ describe('CharacterGraphView asset candidates', () => {
     expect(bulkButton).toBeTruthy()
 
     await bulkButton!.trigger('click')
+    await flushPromises()
     await nextTick()
     await nextTick()
 

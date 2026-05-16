@@ -44,21 +44,9 @@
 
           <!-- 图谱视图 -->
           <div v-if="viewMode === 'graph'" class="graph-view-content">
-            <!-- 全局图谱（无数据 - 创建引导） -->
-            <CharacterGraphActionStateCard
-              v-if="shouldShowGlobalCreationGuide"
-              mode="guide"
-              icon-name="Connection"
-              :icon-size="36"
-              title="全局关系图谱"
-              description="尚未创建关系图谱，请选择创建方式"
-              :actions="globalCreationGuideActions"
-              @action="handleGlobalCreationGuideAction"
-            />
-
-            <!-- 全局图谱（有数据） -->
+            <!-- 全局图谱 -->
             <CharacterGraphStagePanel
-              v-else-if="!currentChapterId"
+              v-if="!currentChapterId"
               title="全局关系图谱"
               :tag-text="globalGraphTitleTag"
               :tag-type="isGlobalGraphCreatedEmpty ? 'warning' : 'info'"
@@ -71,8 +59,8 @@
                 mode="empty"
                 icon-name="Connection"
                 :icon-size="28"
-                title="空白全局图谱已创建"
-                description="当前还没有角色关系。你可以先从角色卡引入，再继续补充关系。"
+                title="全局图谱暂时为空"
+                description="图谱会自动接入已建档角色和正文检出的角色引用。也可以先新建角色，再用 Shift 拖拽连线补关系。"
                 test-id="global-empty-graph-state"
                 :actions="globalEmptyStateActions"
                 @action="handleGlobalEmptyStateAction"
@@ -89,9 +77,9 @@
               />
             </CharacterGraphStagePanel>
 
-            <!-- 卷/章节图谱（已创建） -->
+            <!-- 卷/章节图谱 -->
             <CharacterGraphStagePanel
-              v-else-if="currentChapterId && hasCurrentScopeGraph"
+              v-else-if="currentChapterId"
               :title="currentScopeGraphTitle"
               :tag-text="currentChapterGraphTag"
               :tag-type="currentChapterGraphTagType"
@@ -121,18 +109,6 @@
                 @add-node="handleAddNodeAt"
               />
             </CharacterGraphStagePanel>
-
-            <!-- 卷/章节图谱（未创建 - 创建引导） -->
-            <CharacterGraphActionStateCard
-              v-else-if="currentChapterId"
-              mode="guide"
-              icon-name="Document"
-              :icon-size="36"
-              :title="currentScopeTitle || (currentScopeType === 'volume' ? '该卷' : '该章节')"
-              :description="`该${currentScopeType === 'volume' ? '卷' : '章节'}尚未创建专属关系图谱`"
-              :actions="currentScopeCreationGuideActions"
-              @action="handleCurrentScopeCreationGuideAction"
-            />
           </div>
 
           <!-- 故事线视图 -->
@@ -254,6 +230,7 @@ import CharacterStoryLine from '../components/editor/CharacterStoryLine.vue'
 import {
   appendChapterRelationDraft,
   appendVolumeRelationDraft,
+  buildCharacterGraphAutoScopeIds,
   createChapterGraphDraft,
   createVolumeGraphDraft,
   deleteChapterRelationDraft,
@@ -527,13 +504,6 @@ const chapterDraftRelations = computed<ChapterRelation[]>(() => {
   return graphDraftState.value.chapterRelations[currentChapterId.value] || []
 })
 
-const hasCurrentScopeGraph = computed(() => Boolean(currentScopeGraph.value))
-const shouldShowGlobalCreationGuide = computed(
-  () =>
-    !currentChapterId.value &&
-    !graphDraftState.value.globalGraphInitialized &&
-    globalRelations.value.length === 0,
-)
 const chapterBoundAssetRefs = computed<WriterAssetRef[]>(() => {
   if (!currentChapterId.value || currentScopeType.value !== 'chapter') return []
   return assetRefState.value.chapterRefs[currentChapterId.value] || []
@@ -655,16 +625,18 @@ const chapterCandidateHint = computed(() => {
 })
 
 const currentChapterGraphTag = computed(() => {
-  if (!currentScopeGraph.value) return '未创建'
+  if (!currentScopeGraph.value && hasCurrentScopeAutoCharacters.value) return '自动检出'
+  if (!currentScopeGraph.value) return '自动图谱'
   const draftRelations =
     currentScopeType.value === 'volume' ? volumeDraftRelations.value : chapterDraftRelations.value
   if (draftRelations.length > 0)
     return currentScopeType.value === 'volume' ? '卷已扩展' : '章节已扩展'
-  if (currentScopeGraph.value.parentGraphId === 'global') return '继承全局'
-  return '空图谱'
+  if (currentScopeGraph.value.parentGraphId === 'global') return '全局同步'
+  return '自动图谱'
 })
 
 const currentChapterGraphTagType = computed<'info' | 'success' | 'warning'>(() => {
+  if (!currentScopeGraph.value && hasCurrentScopeAutoCharacters.value) return 'info'
   if (!currentScopeGraph.value) return 'warning'
   const draftRelations =
     currentScopeType.value === 'volume' ? volumeDraftRelations.value : chapterDraftRelations.value
@@ -673,13 +645,6 @@ const currentChapterGraphTagType = computed<'info' | 'success' | 'warning'>(() =
   return 'warning'
 })
 
-const globalCreationGuideActions = computed(() => [
-  { id: 'create-empty', label: '从零开始', variant: 'primary' as const },
-  { id: 'inherit', label: '继承其他图谱', variant: 'secondary' as const },
-  { id: 'import', label: '从角色卡引入', variant: 'secondary' as const },
-  { id: 'create-character', label: '新建角色', variant: 'secondary' as const },
-])
-
 const globalEmptyStateActions = computed(() => [
   { id: 'import', label: '从角色卡引入', variant: 'primary' as const },
   { id: 'create-character', label: '新建角色', variant: 'secondary' as const },
@@ -687,9 +652,9 @@ const globalEmptyStateActions = computed(() => [
 
 const currentScopeEmptyDescription = computed(() => {
   if (currentScopeGraph.value?.parentGraphId === 'global') {
-    return `当前${currentScopeType.value === 'volume' ? '卷' : '章节'}图谱已接入全局继承链，但继承源里还没有可展示的关系。`
+    return `当前${currentScopeType.value === 'volume' ? '卷' : '章节'}图谱会自动同步全局关系，并叠加本作用域正文检出的角色。`
   }
-  return `当前${currentScopeType.value === 'volume' ? '卷' : '章节'}图谱已创建，但还没有角色或关系。你可以继续继承全局，或先补充角色关系。`
+  return `当前${currentScopeType.value === 'volume' ? '卷' : '章节'}还没有可展示的角色或关系。正文出现 @角色 后会自动进入图谱，也可以先从角色卡引入。`
 })
 
 const currentScopeEmptyStateActions = computed(() => {
@@ -699,15 +664,6 @@ const currentScopeEmptyStateActions = computed(() => {
     variant: 'primary' | 'secondary'
     disabled?: boolean
   }> = []
-
-  if (currentScopeGraph.value?.parentGraphId !== 'global') {
-    actions.push({
-      id: 'inherit',
-      label: '继承全局',
-      variant: 'secondary',
-      disabled: globalRelations.value.length === 0,
-    })
-  }
 
   actions.push({ id: 'import', label: '从角色卡引入', variant: 'primary' })
   actions.push({
@@ -719,11 +675,6 @@ const currentScopeEmptyStateActions = computed(() => {
 
   return actions
 })
-
-const currentScopeCreationGuideActions = computed(() => [
-  { id: 'create-empty', label: '从零开始', variant: 'primary' as const },
-  { id: 'inherit', label: '继承全局', variant: 'secondary' as const },
-])
 
 const globalGraphTitleTag = computed(() =>
   isGlobalGraphCreatedEmpty.value ? '空图谱' : `${characters.value.length} 个角色`,
@@ -766,119 +717,6 @@ function hasScopeGraph(scopeId: string, scopeType: GraphScopeType) {
   return graphDraftState.value.globalGraphInitialized
 }
 
-const handleCreateVolumeGraph = (mode: 'empty' | 'inherit') => {
-  const volumeId = currentChapterId.value
-  const projectId = activeProjectId.value
-  if (!volumeId || !projectId) return
-
-  let parentGraphId: string | undefined = undefined
-  if (mode === 'inherit') {
-    // 继承模式：直接继承全局
-    parentGraphId = 'global'
-  }
-
-  // 获取全局关系数据（仅当需要继承全局时）
-  const inheritedRelations =
-    parentGraphId === 'global'
-      ? mapToScopedRelations<VolumeRelation>(writerStore.characters.relations || [], volumeId)
-      : undefined
-
-  graphDraftState.value = createVolumeGraphDraft({
-    projectId,
-    volumeId,
-    volumeTitle: currentScopeTitle.value,
-    parentGraphId,
-    globalRelations: inheritedRelations as VolumeRelation[] | undefined,
-  })
-  currentGraphId.value = volumeId
-  const inheritSource =
-    parentGraphId === 'global'
-      ? '全局'
-      : parentGraphId
-        ? `卷 ${parentGraphId.slice(0, 8)}...`
-        : '父图谱'
-  message.success(
-    mode === 'empty' ? '已创建卷级空白图谱' : `已创建继承自${inheritSource}的卷级图谱`,
-  )
-}
-
-const handleCreateChapterGraph = (mode: 'empty' | 'inherit') => {
-  const chapterId = currentChapterId.value
-  const projectId = activeProjectId.value
-  if (!chapterId || !projectId) return
-
-  let parentGraphId: string | undefined = undefined
-  if (mode === 'inherit') {
-    // 继承模式：直接继承全局
-    // 这样可以确保获取最新的全局关系数据（54条）
-    parentGraphId = 'global'
-  }
-
-  // 获取全局关系数据（仅当需要继承全局时）
-  const inheritedRelations =
-    parentGraphId === 'global'
-      ? mapToScopedRelations<ChapterRelation>(writerStore.characters.relations || [], chapterId)
-      : undefined
-
-  graphDraftState.value = createChapterGraphDraft({
-    projectId,
-    chapterId,
-    chapterTitle: getChapterInfo(chapterId)?.chapter || chapterId,
-    parentGraphId,
-    globalRelations: inheritedRelations as ChapterRelation[] | undefined,
-  })
-  currentGraphId.value = chapterId
-  const inheritSource =
-    parentGraphId === 'global'
-      ? '全局'
-      : parentGraphId
-        ? `章节 ${parentGraphId.slice(0, 8)}...`
-        : '父图谱'
-  message.success(
-    mode === 'empty' ? '已创建章节空白图谱' : `已创建继承自${inheritSource}的章节图谱`,
-  )
-}
-
-const handleCreateGlobalGraph = (mode: 'empty' | 'inherit') => {
-  const projectId = activeProjectId.value
-  if (!projectId) return
-
-  graphDraftState.value = setGlobalGraphInitialized(projectId, true)
-  message.success(mode === 'empty' ? '已创建空白全局关系图谱' : '已启用全局关系图谱')
-}
-
-const showInheritDialog = () => {
-  if (!currentChapterId.value || currentScopeType.value === 'global') {
-    message.info('全局图谱没有可继承来源，请先创建章节图谱后再扩展继承链。')
-    return
-  }
-
-  if (currentScopeType.value === 'volume') {
-    handleCreateVolumeGraph('inherit')
-    return
-  }
-
-  handleCreateChapterGraph('inherit')
-}
-
-const handleGlobalCreationGuideAction = (actionId: string) => {
-  if (actionId === 'create-empty') {
-    handleCreateGlobalGraph('empty')
-    return
-  }
-  if (actionId === 'inherit') {
-    showInheritDialog()
-    return
-  }
-  if (actionId === 'import') {
-    void handleImportFromCharacters()
-    return
-  }
-  if (actionId === 'create-character') {
-    openCreateCharacterDialog()
-  }
-}
-
 const handleGlobalEmptyStateAction = (actionId: string) => {
   if (actionId === 'import') {
     void handleImportFromCharacters()
@@ -890,32 +728,12 @@ const handleGlobalEmptyStateAction = (actionId: string) => {
 }
 
 const handleCurrentScopeEmptyStateAction = (actionId: string) => {
-  if (actionId === 'inherit') {
-    currentScopeType.value === 'volume'
-      ? handleCreateVolumeGraph('inherit')
-      : handleCreateChapterGraph('inherit')
-    return
-  }
   if (actionId === 'import') {
     void handleImportFromCharacters()
     return
   }
   if (actionId === 'bind-existing') {
     handleBindExistingCharactersToScope()
-  }
-}
-
-const handleCurrentScopeCreationGuideAction = (actionId: string) => {
-  if (actionId === 'create-empty') {
-    currentScopeType.value === 'volume'
-      ? handleCreateVolumeGraph('empty')
-      : handleCreateChapterGraph('empty')
-    return
-  }
-  if (actionId === 'inherit') {
-    currentScopeType.value === 'volume'
-      ? handleCreateVolumeGraph('inherit')
-      : handleCreateChapterGraph('inherit')
   }
 }
 
@@ -987,6 +805,21 @@ const characters = computed(() => {
   return writerStore.characters.list || []
 })
 
+const autoCharacterScopeIds = computed(() =>
+  buildCharacterGraphAutoScopeIds({
+    assetRefState: assetRefState.value,
+    chapterId: currentScopeType.value === 'chapter' ? currentChapterId.value || undefined : undefined,
+    volumeId: currentScopeVolumeId.value || undefined,
+    volumeChapterIds: currentVolumeChapterIds.value,
+    globalRelations: globalRelations.value,
+  }),
+)
+const hasCurrentScopeAutoCharacters = computed(() => {
+  if (!currentChapterId.value) return false
+  return currentScopeType.value === 'volume'
+    ? autoCharacterScopeIds.value.volumeIds.size > 0
+    : autoCharacterScopeIds.value.chapterIds.size > 0
+})
 const relations = computed<VisibleRelation[]>(() => {
   if (isGlobalGraph.value) {
     return globalRelations.value
@@ -998,7 +831,7 @@ const relations = computed<VisibleRelation[]>(() => {
 
   const localRelations =
     currentScopeType.value === 'volume' ? volumeDraftRelations.value : chapterDraftRelations.value
-  const inherited = currentScopeGraph.value.parentGraphId
+  const inherited = currentScopeGraph.value?.parentGraphId
     ? globalRelations.value.map((relation) => ({ ...relation, isInherited: true }))
     : []
   const local = localRelations.map((relation) => ({ ...relation, isInherited: false }))
@@ -1016,7 +849,7 @@ const isGlobalGraphCreatedEmpty = computed(
 
 const isCurrentChapterGraphEmpty = computed(
   () =>
-    hasCurrentScopeGraph.value && graphNodes.value.length === 0 && graphLinks.value.length === 0,
+    Boolean(currentChapterId.value) && graphNodes.value.length === 0 && graphLinks.value.length === 0,
 )
 
 const strongRelationsCount = computed(
@@ -1037,34 +870,12 @@ const graphStatusChips = computed(() => {
 
 // 当前卷内各章节已@引用（已绑定）的角色 ID 集合
 const volumeAppearedCharacterIds = computed<Set<string>>(() => {
-  const result = new Set<string>()
-  if (!currentScopeVolumeId.value) return result
-
-  const mergedRefs = mergeWriterAssetRefs({
-    chapterRefs: currentVolumeChapterIds.value.flatMap(
-      (chapterId) => assetRefState.value.chapterRefs[chapterId] || [],
-    ),
-    volumeRefs: volumeBoundAssetRefs.value,
-  })
-
-  for (const asset of mergedRefs) {
-      if (asset.assetType === 'character' && asset.assetId) {
-        result.add(asset.assetId)
-      }
-  }
-  return result
+  return autoCharacterScopeIds.value.volumeIds
 })
 
 // 当前章节已@引用（已绑定）的角色 ID 集合
 const chapterAppearedCharacterIds = computed<Set<string>>(() => {
-  const result = new Set<string>()
-  if (!currentChapterId.value || currentScopeType.value !== 'chapter') return result
-  for (const asset of chapterBoundAssetRefs.value) {
-    if (asset.assetType === 'character' && asset.assetId) {
-      result.add(asset.assetId)
-    }
-  }
-  return result
+  return autoCharacterScopeIds.value.chapterIds
 })
 
 // 当前作用域下已登场的角色 ID 集合（根据 entityScopeTab 切换）
@@ -1152,14 +963,24 @@ const graphNodes = computed<GraphNode[]>(() => {
   const appearedIds = currentScopeAppearedIds.value
 
   if (isGlobalGraph.value) {
+    const autoGlobalIds = autoCharacterScopeIds.value.globalIds
     return [
-      ...characters.value.map((character) =>
+      ...characters.value
+        .filter(
+          (character) =>
+            graphDraftState.value.globalGraphInitialized ||
+            autoGlobalIds.has(character.id) ||
+            globalRelations.value.some(
+              (relation) => relation.fromId === character.id || relation.toId === character.id,
+            ),
+        )
+        .map((character) =>
         buildGraphAssetNode({
           assetType: 'character',
           assetId: character.id,
           assetName: character.name,
           importance: character.traits?.length || 0,
-          isAppeared: appearedIds.has(character.id),
+          isAppeared: autoGlobalIds.has(character.id),
         }),
       ),
       ...writerStore.locations.list.map((location) =>
@@ -1224,6 +1045,9 @@ const graphNodes = computed<GraphNode[]>(() => {
   const visibleCharIds = new Set([
     ...chapterCharIds,
     ...inheritedCharIds,
+    ...(currentScopeType.value === 'volume'
+      ? autoCharacterScopeIds.value.volumeIds
+      : autoCharacterScopeIds.value.chapterIds),
     ...localBoundCharIds,
     ...inheritedBoundCharIds,
   ])
@@ -1886,7 +1710,8 @@ const handleCreateRelation = async () => {
 
   relationSubmitting.value = true
   try {
-    if (currentChapterId.value && currentScopeGraph.value) {
+    if (currentChapterId.value) {
+      ensureScopeGraphForBinding()
       if (currentScopeType.value === 'volume' && currentVolumeGraph.value) {
         graphDraftState.value = appendVolumeRelationDraft({
           projectId,
