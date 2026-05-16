@@ -225,6 +225,11 @@ describe('ai api facade', () => {
           documentTitle: '雨夜',
           sourceText: '原正文',
         },
+        chapterTask: {
+          goal: '完成第一次反击',
+          readerPayoff: '读者看到主角拿回主动权',
+          hook: '章末出现新的阻力',
+        },
         assets: [],
         workflowSummary: ['节奏：压迫感'],
         evidence: [
@@ -249,6 +254,11 @@ describe('ai api facade', () => {
       rewriteMode: 'polish',
       instructions: expect.stringContaining('计划：对《雨夜》生成单章 diff。'),
     })
+    expect(postAIRequest.mock.calls[0]?.[1].instructions).toContain('本章任务卡：')
+    expect(postAIRequest.mock.calls[0]?.[1].instructions).toContain('目标：完成第一次反击')
+    expect(postAIRequest.mock.calls[0]?.[1].instructions).toContain(
+      '读者收益：读者看到主角拿回主动权',
+    )
     expect(result.generatedText).toBe('改写后的正文')
     expect(result.requiresConfirmation).toBe(true)
   })

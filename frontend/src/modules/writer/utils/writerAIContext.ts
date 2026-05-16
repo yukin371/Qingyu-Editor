@@ -48,7 +48,17 @@ export interface WriterAIContextEvidence {
   id: string
   label: string
   detail?: string
-  source: 'current_document' | 'selection' | 'revision' | 'asset' | 'workflow'
+  source: 'current_document' | 'selection' | 'revision' | 'asset' | 'workflow' | 'chapter_task'
+}
+
+export interface WriterChapterTaskCard {
+  goal?: string
+  emotionalFunction?: string
+  readerPayoff?: string
+  protagonistAction?: string
+  conflict?: string
+  hook?: string
+  assetChanges?: string
 }
 
 export interface WriterAIContextPacket {
@@ -56,6 +66,7 @@ export interface WriterAIContextPacket {
   currentDocument?: WriterDocumentContext
   target?: WriterDocumentTarget
   selection?: WriterSelectionContext
+  chapterTask?: WriterChapterTaskCard
   assets: WriterAIAssetSummary[]
   workflowSummary: string[]
   evidence: WriterAIContextEvidence[]
@@ -85,6 +96,7 @@ export interface WriterAIContextOptions {
   target?: WriterDocumentTarget | null
   selection?: WriterSelectionContext | null
   assets?: WriterAIAssetSummary[] | null
+  chapterTask?: WriterChapterTaskCard | null
   workflowContext?: WriterWorkflowContext | null
   aiSummaryContextText?: string | null | undefined
   maxContextChars?: number
@@ -119,6 +131,63 @@ function buildWorkflowSummary(options: WriterAIContextOptions): string[] {
     ...splitSummaryLines(buildWriterWorkflowContextPrompt(options.workflowContext)),
     ...splitSummaryLines(options.aiSummaryContextText),
   ].slice(0, 12)
+}
+
+function hasChapterTask(task: WriterChapterTaskCard | null | undefined): task is WriterChapterTaskCard {
+  return Boolean(
+    task &&
+      Object.values(task).some((value) => typeof value === 'string' && value.trim().length > 0),
+  )
+}
+
+export function inferWriterChapterTaskCard(
+  value: string | null | undefined,
+): WriterChapterTaskCard | undefined {
+  const lines = splitSummaryLines(value)
+  if (lines.length === 0) return undefined
+
+  const task: WriterChapterTaskCard = {}
+  const matchers: Array<[keyof WriterChapterTaskCard, RegExp]> = [
+    ['goal', /^(?:本章)?(?:目标|任务|章节目标)[：:]\s*(.+)$/],
+    ['emotionalFunction', /^(?:情绪|情绪功能|情绪价值|章节情绪)[：:]\s*(.+)$/],
+    ['readerPayoff', /^(?:读者收益|爽点|看点|兑现)[：:]\s*(.+)$/],
+    ['protagonistAction', /^(?:主角行动|主角选择|人物选择)[：:]\s*(.+)$/],
+    ['conflict', /^(?:冲突|阻力|对抗对象)[：:]\s*(.+)$/],
+    ['hook', /^(?:钩子|章末钩子|断章|悬念)[：:]\s*(.+)$/],
+    ['assetChanges', /^(?:资产变更|新增资产|设定变更)[：:]\s*(.+)$/],
+  ]
+
+  for (const line of lines) {
+    for (const [key, matcher] of matchers) {
+      const match = line.match(matcher)
+      if (match?.[1]) {
+        task[key] = match[1].trim()
+      }
+    }
+  }
+
+  return hasChapterTask(task) ? task : undefined
+}
+
+function formatChapterTaskLines(task: WriterChapterTaskCard | null | undefined): string[] {
+  if (!hasChapterTask(task)) return []
+
+  const fields: Array<[keyof WriterChapterTaskCard, string]> = [
+    ['goal', '目标'],
+    ['emotionalFunction', '情绪功能'],
+    ['readerPayoff', '读者收益'],
+    ['protagonistAction', '主角行动'],
+    ['conflict', '冲突'],
+    ['hook', '章末钩子'],
+    ['assetChanges', '资产变更'],
+  ]
+
+  return fields
+    .map(([key, label]) => {
+      const text = task[key]?.trim()
+      return text ? `- ${label}：${text}` : ''
+    })
+    .filter(Boolean)
 }
 
 function buildContextEvidence(
@@ -164,6 +233,15 @@ function buildContextEvidence(
     })
   }
 
+  if (hasChapterTask(options.chapterTask)) {
+    evidence.push({
+      id: 'chapter-task',
+      label: '本章任务卡',
+      detail: '用于约束创作冲刺与质量回审',
+      source: 'chapter_task',
+    })
+  }
+
   return evidence
 }
 
@@ -180,6 +258,8 @@ export function buildWriterAIContextPacket(options: WriterAIContextOptions): Wri
     options.currentDocument.sourceText.length > (options.maxContextChars ?? DEFAULT_CONTEXT_BUDGET),
   )
   const workflowSummary = buildWorkflowSummary(options)
+  const chapterTask =
+    options.chapterTask || inferWriterChapterTaskCard(options.aiSummaryContextText) || undefined
 
   return {
     projectId:
@@ -189,9 +269,10 @@ export function buildWriterAIContextPacket(options: WriterAIContextOptions): Wri
     currentDocument,
     target: options.target || undefined,
     selection: options.selection || undefined,
+    chapterTask,
     assets: (options.assets || []).slice(0, 24),
     workflowSummary,
-    evidence: buildContextEvidence(options, workflowSummary),
+    evidence: buildContextEvidence({ ...options, chapterTask }, workflowSummary),
     budget: {
       maxChars,
       truncated,
@@ -234,6 +315,12 @@ export function formatWriterAIContextPacket(packet: WriterAIContextPacket): stri
         .trim()
         .slice(0, 240)}`,
     )
+  }
+
+  const chapterTaskLines = formatChapterTaskLines(packet.chapterTask)
+  if (chapterTaskLines.length > 0) {
+    lines.push('本章任务卡：')
+    lines.push(...chapterTaskLines)
   }
 
   if (packet.workflowSummary.length > 0) {

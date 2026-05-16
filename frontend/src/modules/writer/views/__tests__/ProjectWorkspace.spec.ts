@@ -45,6 +45,11 @@ const { loadDocumentTreeMock, saveParagraphsMock } = vi.hoisted(() => ({
 const { documentStoreCreateMock } = vi.hoisted(() => ({
   documentStoreCreateMock: vi.fn().mockResolvedValue({ id: 'generated-doc-1' }),
 }))
+const { listEntitiesMock, conceptListMock, replaceScopeAssetRefsMock } = vi.hoisted(() => ({
+  listEntitiesMock: vi.fn().mockResolvedValue([]),
+  conceptListMock: vi.fn().mockResolvedValue([]),
+  replaceScopeAssetRefsMock: vi.fn(),
+}))
 const editorStoreState = reactive({
   activeTool: 'writing',
   editorContent: '',
@@ -104,6 +109,24 @@ vi.mock('@/modules/writer/api/document', () => ({
   updateDocument: vi.fn(),
   deleteDocument: vi.fn(),
 }))
+
+vi.mock('@/modules/writer/api/entities', () => ({
+  listEntities: (...args: unknown[]) => listEntitiesMock(...args),
+}))
+
+vi.mock('@/modules/writer/api/concept', () => ({
+  conceptApi: {
+    list: (...args: unknown[]) => conceptListMock(...args),
+  },
+}))
+
+vi.mock('@/modules/writer/utils/writerAssetRefs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/modules/writer/utils/writerAssetRefs')>()
+  return {
+    ...actual,
+    replaceScopeAssetRefs: (...args: unknown[]) => replaceScopeAssetRefsMock(...args),
+  }
+})
 
 vi.mock('@/design-system/components', () => {
   const stub = defineComponent({
@@ -533,6 +556,18 @@ const AutosaveEditorContentStub = defineComponent({
   },
 })
 
+const EntityScanEditorContentStub = defineComponent({
+  emits: ['entity-scan'],
+  setup(_, { emit }) {
+    return () =>
+      h('button', {
+        'data-testid': 'emit-entity-scan',
+        onClick: () =>
+          emit('entity-scan', [{ id: 'char-1', name: '林舟', type: 'character' }]),
+      })
+  },
+})
+
 const openFullscreenToolSpy = vi.fn()
 const closeFullscreenSpy = vi.fn()
 const focusTitleInputMock = vi.fn().mockResolvedValue(undefined)
@@ -657,6 +692,8 @@ describe('ProjectWorkspace Refactor', () => {
     editorStoreState.markSaved.mockClear()
     editorStoreState.reset.mockClear()
     mockFlatDocs.splice(0, mockFlatDocs.length, ...baseFlatDocs)
+    writerStoreState.characters.list = []
+    writerStoreState.locations.list = []
     createDocumentMock.mockReset()
     createDocumentMock.mockResolvedValue({ id: 'generated-doc-1' })
     documentStoreCreateMock.mockReset()
@@ -667,7 +704,15 @@ describe('ProjectWorkspace Refactor', () => {
     messageError.mockClear()
     messageBoxConfirm.mockClear()
     loadCharacters.mockClear()
+    loadCharacters.mockResolvedValue(undefined)
     loadCharacterRelations.mockClear()
+    loadLocations.mockClear()
+    loadLocations.mockResolvedValue(undefined)
+    listEntitiesMock.mockClear()
+    listEntitiesMock.mockResolvedValue([])
+    conceptListMock.mockClear()
+    conceptListMock.mockResolvedValue([])
+    replaceScopeAssetRefsMock.mockClear()
     loadProjectDetailMock.mockReset()
     loadProjectDetailMock.mockResolvedValue(undefined)
     loadDocumentTreeMock.mockClear()
@@ -748,6 +793,40 @@ describe('ProjectWorkspace Refactor', () => {
     expect(saveParagraphsMock).toHaveBeenCalledTimes(1)
     expect(loadDocumentTreeMock).toHaveBeenCalledWith('project-1')
     expect(loadProjectDetailMock).toHaveBeenCalledWith('project-1')
+  })
+
+  it('@ 创建资产后即时扫描时应刷新资产源并同步章节引用', async () => {
+    editorStoreState.editorContent = JSON.stringify({
+      type: 'doc',
+      content: [{ type: 'paragraph', content: [{ type: 'text', text: '@林舟 登场。' }] }],
+    })
+    loadCharacters.mockImplementationOnce(async () => {
+      writerStoreState.characters.list = [{ id: 'char-1', name: '林舟' }]
+    })
+    const wrapper = mountProjectWorkspace({
+      WorkspaceEditorContent: EntityScanEditorContentStub,
+    })
+
+    await wrapper.find('[data-testid="emit-entity-scan"]').trigger('click')
+    await Promise.resolve()
+    await nextTick()
+
+    expect(loadCharacters).toHaveBeenCalledWith('project-1')
+    expect(replaceScopeAssetRefsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projectId: 'project-1',
+        scopeType: 'chapter',
+        scopeId: 'chapter-1',
+        candidates: [
+          expect.objectContaining({
+            assetType: 'character',
+            assetId: 'char-1',
+            assetName: '林舟',
+            unresolved: false,
+          }),
+        ],
+      }),
+    )
   })
 
   it('在第二卷新增章节时应压栈追加到该卷末尾', async () => {

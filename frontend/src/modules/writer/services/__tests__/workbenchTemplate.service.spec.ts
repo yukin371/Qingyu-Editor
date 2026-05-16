@@ -52,11 +52,14 @@ describe('workbenchTemplate.service', () => {
   })
 
   it('模板详情应提供大纲/角色/设定三类结构化预览', async () => {
-    const detail = await getWorkbenchTemplateDetail('mystery')
+    const detail = await getWorkbenchTemplateDetail('cautious-mortal')
 
     expect(detail?.previewTabs.outline).toHaveLength(3)
     expect(detail?.previewTabs.characters.length).toBeGreaterThan(0)
     expect(detail?.previewTabs.settings.length).toBeGreaterThan(0)
+    expect(detail?.commercialMechanism?.protagonistArchetype).toContain('凡人')
+    expect(detail?.commercialMechanism?.promptPresetIds).toContain('chapterReview')
+    expect(detail?.commercialMechanism?.promptPresets?.map((preset) => preset.label)).toContain('审本章')
   })
 
   it('模板分类列表应包含全部模板入口', async () => {
@@ -65,7 +68,7 @@ describe('workbenchTemplate.service', () => {
     expect(categories[0]).toEqual({
       id: 'all',
       label: '全部模板',
-      count: 5,
+      count: 8,
     })
   })
 

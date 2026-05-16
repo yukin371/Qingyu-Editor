@@ -509,6 +509,27 @@ function formatWriterPlanPrompt(plan: WriterAIPlan): string {
   if (plan.context.target?.label || plan.context.target?.documentTitle) {
     lines.push(`目标：${plan.context.target.label || plan.context.target.documentTitle}`)
   }
+  const chapterTask = plan.context.chapterTask
+  if (chapterTask && Object.values(chapterTask).some((value) => String(value || '').trim())) {
+    lines.push('本章任务卡：')
+    const taskFields: Array<[keyof typeof chapterTask, string]> = [
+      ['goal', '目标'],
+      ['emotionalFunction', '情绪功能'],
+      ['readerPayoff', '读者收益'],
+      ['protagonistAction', '主角行动'],
+      ['conflict', '冲突'],
+      ['hook', '章末钩子'],
+      ['assetChanges', '资产变更'],
+    ]
+    lines.push(
+      ...taskFields
+        .map(([key, label]) => {
+          const text = String(chapterTask[key] || '').trim()
+          return text ? `- ${label}：${text}` : ''
+        })
+        .filter(Boolean),
+    )
+  }
   if (plan.context.workflowSummary.length > 0) {
     lines.push('上下文摘要：')
     lines.push(...plan.context.workflowSummary.slice(0, 8).map((line) => `- ${line}`))

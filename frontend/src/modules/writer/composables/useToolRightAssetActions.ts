@@ -1,4 +1,4 @@
-import { computed, ref, type ComputedRef, type Ref } from 'vue'
+import { ref, type ComputedRef, type Ref } from 'vue'
 import { message, messageBox } from '@/design-system/services'
 import { useToolOverlay } from '@/modules/writer/composables/useToolOverlay'
 import type { EncyclopediaCategory, GraphFocusTarget } from '@/modules/writer/composables/types'
@@ -35,23 +35,26 @@ export const useToolRightAssetActions = ({
   const assetEditorVisible = ref(false)
   const assetEditorMode = ref<'create' | 'edit'>('create')
   const assetEditorSubmitting = ref(false)
-  const assetEditorCategory = computed(() => assetCategory.value)
+  const assetEditorCategory = ref<EncyclopediaCategory>(assetCategory.value)
 
   const handleAssetSelect = (assetId: string) => {
     const nextAsset = filteredAssets.value.find((asset) => asset.id === assetId) || null
     selectAsset(nextAsset)
   }
 
-  const handleCreateAsset = () => {
+  const handleCreateAsset = (category?: EncyclopediaCategory) => {
     if (assetScopeView) {
       assetScopeView.value = 'global'
     }
+    assetEditorCategory.value = category || assetCategory.value
+    assetCategory.value = assetEditorCategory.value
     assetEditorMode.value = 'create'
     assetEditorVisible.value = true
   }
 
   const handleEditAsset = () => {
     if (!selectedAsset.value || selectedAsset.value.unresolved) return
+    assetEditorCategory.value = selectedAsset.value.category
     assetEditorMode.value = 'edit'
     assetEditorVisible.value = true
   }
@@ -90,6 +93,7 @@ export const useToolRightAssetActions = ({
           assetScopeView.value = 'global'
         }
         await createAsset(payload)
+        assetCategory.value = payload.category
         message.success('资产已创建')
       }
       assetEditorVisible.value = false

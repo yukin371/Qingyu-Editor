@@ -248,8 +248,12 @@ const selectedChatContextScope = ref<{
 // ==================== 快捷操作 ====================
 const quickActions = computed<QuickAction[]>(() => [
   { id: 'continue', ...QUICK_ACTION_PROMPTS.continue },
+  { id: 'scene', ...QUICK_ACTION_PROMPTS.scene },
   { id: 'polish', ...QUICK_ACTION_PROMPTS.polish },
-  { id: 'summary', ...QUICK_ACTION_PROMPTS.summary },
+  { id: 'chapterReview', ...QUICK_ACTION_PROMPTS.chapterReview },
+  { id: 'recentReview', ...QUICK_ACTION_PROMPTS.recentReview },
+  { id: 'taskCard', ...QUICK_ACTION_PROMPTS.taskCard },
+  { id: 'assets', ...QUICK_ACTION_PROMPTS.assets },
 ])
 
 // ==================== 计算属性 ====================
@@ -881,6 +885,7 @@ function handleSend() {
 
 function handleQuickAction(action: QuickAction) {
   const prompt = getQuickActionPrompt(action.id)
+  interactionMode.value = action.group === 'write' && canEditDirectly.value ? 'edit' : 'chat'
   sendMessage(prompt)
 }
 

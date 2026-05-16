@@ -1,6 +1,9 @@
 export type CreativeWorkflowTemplateId =
   | 'comeback'
   | 'power-up'
+  | 'cautious-mortal'
+  | 'rebirth-revenge'
+  | 'infinite-survival'
   | 'mystery'
   | 'building'
   | 'emotion'
@@ -11,6 +14,16 @@ export interface GoldenChapterPlan {
   summary: string
   hook: string
   payoff: string
+}
+
+export interface TemplateCommercialMechanism {
+  protagonistArchetype: string
+  coreDrive: string
+  worldPressure: string
+  chapterLoop: string[]
+  readerPayoff: string[]
+  qualityConstraints: string[]
+  promptPresetIds: string[]
 }
 
 export interface CreativeWorkflowTemplate {
@@ -24,6 +37,7 @@ export interface CreativeWorkflowTemplate {
   defaultPromises: string[]
   defaultPaceContract: string
   blueprintHints: string[]
+  commercialMechanism: TemplateCommercialMechanism
   goldenChapterSeeds: GoldenChapterPlan[]
 }
 
@@ -60,6 +74,15 @@ const TEMPLATE_CATALOG_FALLBACKS: TemplateCatalogFallbackEntry[] = [
     defaultPromises: ['主角不会一直吃瘪', '前三章必须建立反击节奏'],
     defaultPaceContract: '前 3000 字完成羞辱建压，第三章必须出现首次打脸兑现。',
     blueprintHints: ['尽快立反派嘴脸', '第三章后埋更大阶层冲突', '兑现后保留下一轮更高目标'],
+    commercialMechanism: {
+      protagonistArchetype: '被低估但有底牌的反击者',
+      coreDrive: '拿回尊严、资源和选择权',
+      worldPressure: '阶层、身份或财富压制制造持续羞辱',
+      chapterLoop: ['被误判/受压', '发现反击窗口', '隐藏底牌蓄势', '小范围爆发', '抬升更高敌人'],
+      readerPayoff: ['羞辱反转', '信息差打脸', '身份或实力被迫承认'],
+      qualityConstraints: ['压抑不能拖过久', '反派不能纯降智', '每次反击后要留下更高压力'],
+      promptPresetIds: ['taskCard', 'scene', 'chapterReview'],
+    },
     goldenChapterSeeds: [
       {
         chapterNumber: 1,
@@ -123,6 +146,15 @@ const TEMPLATE_CATALOG_FALLBACKS: TemplateCatalogFallbackEntry[] = [
     defaultPromises: ['成长有因果', '前三章必须看到金手指生效'],
     defaultPaceContract: '第一章建立困境和规则，第二章给能力入口，第三章完成首次跨级压制。',
     blueprintHints: ['先立世界规则再破局', '金手指代价要写清', '第一次胜利同时打开更大地图'],
+    commercialMechanism: {
+      protagonistArchetype: '被规则压住但拥有成长杠杆的潜力者',
+      coreDrive: '突破层级限制，获得更强资源与认可',
+      worldPressure: '境界、等级、装备或系统规则形成可视化差距',
+      chapterLoop: ['暴露弱势', '发现成长入口', '付出代价试用', '跨级小胜', '进入更高门槛'],
+      readerPayoff: ['成长可预期', '跨级压制', '资源收益肉眼可见'],
+      qualityConstraints: ['外挂必须有代价', '升级不能跳过因果', '胜利要打开新目标而非清空压力'],
+      promptPresetIds: ['taskCard', 'continue', 'chapterReview'],
+    },
     goldenChapterSeeds: [
       {
         chapterNumber: 1,
@@ -173,6 +205,222 @@ const TEMPLATE_CATALOG_FALLBACKS: TemplateCatalogFallbackEntry[] = [
     openingLine: '先交代规则，再让优势生效，第一次碾压必须成为世界承认主角的节点。',
   },
   {
+    id: 'cautious-mortal',
+    name: '谨慎凡人流',
+    tagline: '弱者先活下来，再靠资源、底牌和判断一点点拿回选择权。',
+    category: '凡人逆袭',
+    templateType: '长线升级模板',
+    recommendedLabel: '适合修仙 / 废土 / 星际底层',
+    applicableTo: ['凡人流', '修仙', '废土求生', '星际底层', '克苏鲁调查'],
+    emotionCurve: '资源焦虑 → 谨慎布局 → 脱身获利',
+    payoffFocus: ['低调捡漏', '风险判断', '底牌反杀'],
+    defaultAudience: ['喜欢理性主角', '期待弱者靠判断胜出'],
+    defaultPromises: ['主角不会无脑冒险', '每次收益都伴随风险判断'],
+    defaultPaceContract: '每 3-5 章完成一次“缺资源-冒险获取-危机脱身-实力增长”的闭环。',
+    blueprintHints: ['先写清资源缺口', '出手前必须有风险评估', '收益后立即引出更高安全焦虑'],
+    commercialMechanism: {
+      protagonistArchetype: '极度自保、理性、底层出身的凡人',
+      coreDrive: '活下去，并为自己争取更大的安全缓冲区',
+      worldPressure: '资源有限、强者掠夺弱者、规则偏向有背景者',
+      chapterLoop: ['缺资源', '发现机会', '评估风险', '低调布局', '遭遇危机', '脱身获利'],
+      readerPayoff: ['弱者靠脑子活下来', '底牌延迟揭示', '资源积累带来安全感'],
+      qualityConstraints: ['主角不能无理由莽撞', '收益不能没有代价', '强者不能为了主角降智'],
+      promptPresetIds: ['taskCard', 'assets', 'chapterReview'],
+    },
+    goldenChapterSeeds: [
+      {
+        chapterNumber: 1,
+        title: '资源缺口',
+        summary: '让主角处在规则不利的位置，明确当前最缺的资源或保命手段。',
+        hook: '出现一件低阶人物不该碰、但可能改变处境的机会。',
+        payoff: '读者理解主角为什么必须冒险，却也理解他为什么不能鲁莽。',
+      },
+      {
+        chapterNumber: 2,
+        title: '谨慎试探',
+        summary: '主角先不出手，用观察、试探或替身确认风险。',
+        hook: '机会背后出现更强者或隐藏陷阱。',
+        payoff: '兑现理性主角的辨识度：他先活下来，再考虑获利。',
+      },
+      {
+        chapterNumber: 3,
+        title: '低调获利',
+        summary: '主角用提前准备的后手脱离危机，并拿到第一份收益。',
+        hook: '收益暴露出更高层地图或更稀缺资源。',
+        payoff: '完成第一次“谨慎不是怂，而是能赢”的爽点。',
+      },
+    ],
+    characters: [
+      {
+        id: 'survivor',
+        title: '谨慎凡人主角',
+        summary: '他的魅力来自风险判断、底牌管理和长期积累，不来自热血硬莽。',
+        bullets: ['每次出手有收益理由', '每次冒险前有退路', '性格底色稳定但能力持续增强'],
+      },
+      {
+        id: 'first-threat',
+        title: '初始威胁者',
+        summary: '负责教会主角世界没有无缘无故的好。',
+        bullets: ['给予第一课', '制造信任破裂', '让主角形成留后手习惯'],
+      },
+    ],
+    settings: [
+      {
+        id: 'scarcity',
+        title: '资源稀缺规则',
+        summary: '资源、境界、身份差距必须共同制造“不得不争但不能乱争”的压力。',
+        bullets: ['资源缺口可见', '强者威胁具体', '每次成长增加但不消除焦虑'],
+      },
+    ],
+    projectCategory: '仙侠',
+    volumeTitle: '凡人求生骨架',
+    openingLine: '先让弱者看见资源缺口，再让谨慎成为他唯一能活下来的能力。',
+  },
+  {
+    id: 'rebirth-revenge',
+    name: '重生复仇',
+    tagline: '先给前世代价，再用信息差重写第一次命运节点。',
+    category: '复仇爽感',
+    templateType: '信息差开局模板',
+    recommendedLabel: '适合重生 / 宅斗 / 商战',
+    applicableTo: ['重生', '复仇', '宅斗', '商战', '权谋'],
+    emotionCurve: '遗憾痛感 → 信息差布局 → 首次改命',
+    payoffFocus: ['预判反击', '命运改写', '敌人自食其果'],
+    defaultAudience: ['喜欢信息差', '期待压抑后的精准复仇'],
+    defaultPromises: ['主角不再重蹈覆辙', '前三章必须改写一个关键节点'],
+    defaultPaceContract: '第一章交代前世代价，第二章布局信息差，第三章完成第一次改命。',
+    blueprintHints: ['前世痛点要具体', '信息差不能万能', '复仇要伴随后果和新变数'],
+    commercialMechanism: {
+      protagonistArchetype: '带着失败记忆回来的清醒复仇者',
+      coreDrive: '改写命运，保护关键人或夺回失去的一切',
+      worldPressure: '原有关系网、阶层秩序和旧敌人仍在运转',
+      chapterLoop: ['前世伤口触发', '识别命运节点', '提前布置', '敌人按旧剧本行动', '主角改写结果'],
+      readerPayoff: ['预判快感', '精准打脸', '命运节点被重写'],
+      qualityConstraints: ['信息差不能解释一切', '敌人不能全程降智', '改命后必须产生新蝴蝶效应'],
+      promptPresetIds: ['taskCard', 'scene', 'recentReview'],
+    },
+    goldenChapterSeeds: [
+      {
+        chapterNumber: 1,
+        title: '前世代价',
+        summary: '用一个具体失去让读者理解主角为何必须重来。',
+        hook: '主角在关键节点前醒来，旧局即将重演。',
+        payoff: '建立复仇和改命的情绪燃料。',
+      },
+      {
+        chapterNumber: 2,
+        title: '旧局重现',
+        summary: '让敌人或局势按前世路径推进，主角开始提前布局。',
+        hook: '主角发现一个前世也不知道的新变量。',
+        payoff: '兑现“我知道你下一步”的信息差快感。',
+      },
+      {
+        chapterNumber: 3,
+        title: '首次改命',
+        summary: '主角让敌人的第一轮设计反噬自身。',
+        hook: '改命成功后，引出更大敌人或更复杂后果。',
+        payoff: '完成第一次命运翻盘，让读者相信主角这次能赢。',
+      },
+    ],
+    characters: [
+      {
+        id: 'reborn',
+        title: '重生主角',
+        summary: '必须既有痛感也有冷静，不只是开挂复读答案。',
+        bullets: ['前世伤口具体', '行动目标清楚', '改命后会处理新变量'],
+      },
+      {
+        id: 'old-enemy',
+        title: '旧敌人',
+        summary: '敌人应按自身利益行动，而不是为了被打脸而存在。',
+        bullets: ['旧剧本合理', '第一次反噬痛快', '失败后能升级压迫'],
+      },
+    ],
+    settings: [
+      {
+        id: 'fate-node',
+        title: '命运节点表',
+        summary: '把前世关键事件拆成可提前干预的节点。',
+        bullets: ['节点有时限', '干预有成本', '蝴蝶效应产生新问题'],
+      },
+    ],
+    projectCategory: '重生',
+    volumeTitle: '改命开局骨架',
+    openingLine: '先让读者痛恨旧命运，再让第一次改写来得精准而克制。',
+  },
+  {
+    id: 'infinite-survival',
+    name: '无限求生',
+    tagline: '先给规则压力，再让主角用一次聪明选择活过副本。',
+    category: '高压副本',
+    templateType: '副本循环模板',
+    recommendedLabel: '适合无限流 / 规则怪谈',
+    applicableTo: ['无限流', '规则怪谈', '生存游戏', '末日副本'],
+    emotionCurve: '规则压迫 → 试错代价 → 聪明生还',
+    payoffFocus: ['规则破解', '生存反转', '副本奖励'],
+    defaultAudience: ['喜欢高压推理', '期待每轮副本有明确收益'],
+    defaultPromises: ['规则可复盘', '主角靠选择而非作者偏爱活下来'],
+    defaultPaceContract: '每个副本必须包含规则、代价、破局、奖励和下一轮更高风险。',
+    blueprintHints: ['规则必须可验证', '牺牲或惩罚要真实', '奖励必须改变下一轮策略'],
+    commercialMechanism: {
+      protagonistArchetype: '压力下仍能观察和选择的求生者',
+      coreDrive: '活过副本，获得足以应对下一轮的情报和资源',
+      worldPressure: '规则不透明、试错成本高、队友和环境都可能成为变量',
+      chapterLoop: ['进入副本', '规则出现', '错误试错', '线索拼合', '破局生还', '奖励变数'],
+      readerPayoff: ['一起推理', '规则反转', '高压生还后的奖励'],
+      qualityConstraints: ['规则不能事后硬补', '破局必须基于已给线索', '死亡/惩罚不能廉价'],
+      promptPresetIds: ['taskCard', 'assets', 'chapterReview'],
+    },
+    goldenChapterSeeds: [
+      {
+        chapterNumber: 1,
+        title: '进入副本',
+        summary: '主角被抛入规则不明的高压空间。',
+        hook: '第一条规则看似简单，却马上出现反例。',
+        payoff: '建立危险、规则和读者一起解谜的欲望。',
+      },
+      {
+        chapterNumber: 2,
+        title: '试错代价',
+        summary: '有人触犯规则，主角获得关键线索。',
+        hook: '线索指向规则背后的隐藏条件。',
+        payoff: '让读者知道风险真实，推理也有材料。',
+      },
+      {
+        chapterNumber: 3,
+        title: '第一次生还',
+        summary: '主角用已知线索做出关键选择，活过第一轮。',
+        hook: '奖励附带新的副作用或下一副本提示。',
+        payoff: '兑现智力求生爽点，建立循环期待。',
+      },
+    ],
+    characters: [
+      {
+        id: 'survivor',
+        title: '求生视角者',
+        summary: '他不一定最强，但必须能观察、记录并承担选择后果。',
+        bullets: ['会怕但不乱', '能复盘规则', '每次生还都改变下一次策略'],
+      },
+      {
+        id: 'variable',
+        title: '变量队友',
+        summary: '用于制造合作、背叛、试错和信息差。',
+        bullets: ['有自保逻辑', '不是单纯工具人', '能改变副本走向'],
+      },
+    ],
+    settings: [
+      {
+        id: 'rules',
+        title: '副本规则与奖励',
+        summary: '每轮副本都要有明确规则、代价、破局证据和奖励副作用。',
+        bullets: ['规则可复盘', '代价可感知', '奖励服务下一轮'],
+      },
+    ],
+    projectCategory: '无限流',
+    volumeTitle: '第一副本骨架',
+    openingLine: '先让规则压住所有人，再让主角靠一次正确选择活下来。',
+  },
+  {
     id: 'mystery',
     name: '求知解谜',
     tagline: '异常先出现，规则尽早亮，第三章要看到第一次破局。',
@@ -186,6 +434,15 @@ const TEMPLATE_CATALOG_FALLBACKS: TemplateCatalogFallbackEntry[] = [
     defaultPromises: ['线索可复盘', '前三章必须给出第一次有效解'],
     defaultPaceContract: '开篇 2000 字内亮异常和规则代价，第三章结尾必须完成首轮破局。',
     blueprintHints: ['规则不要一次说完', '每章至少有一条新线索', '破局要基于前文已给信息'],
+    commercialMechanism: {
+      protagonistArchetype: '能把异常拆成线索的破局视角者',
+      coreDrive: '理解规则，解决眼前谜团并活着离开',
+      worldPressure: '异常规则、信息缺口和试错代价共同压迫',
+      chapterLoop: ['异常出现', '试错受罚', '获得线索', '推理验证', '小范围破局', '抛出更大谜团'],
+      readerPayoff: ['线索复盘', '智力破局', '真相露出一角'],
+      qualityConstraints: ['谜底必须可回溯', '规则不能一次讲完', '每章要有新线索或新代价'],
+      promptPresetIds: ['taskCard', 'chapterReview', 'recentReview'],
+    },
     goldenChapterSeeds: [
       {
         chapterNumber: 1,
@@ -249,6 +506,15 @@ const TEMPLATE_CATALOG_FALLBACKS: TemplateCatalogFallbackEntry[] = [
     defaultPromises: ['资源增长看得见', '前三章必须出现第一轮建设回报'],
     defaultPaceContract: '第一章明确资源缺口，第二章引入核心工具或资源，第三章交付第一份建设成果。',
     blueprintHints: ['把困局量化', '核心资源链尽早成形', '成果要引出下一轮扩张空间'],
+    commercialMechanism: {
+      protagonistArchetype: '能把烂摊子拆成资源链的经营者',
+      coreDrive: '让地盘、团队或产业进入正向循环',
+      worldPressure: '资源短缺、外部竞争和内部低效持续消耗主角',
+      chapterLoop: ['盘点缺口', '找到杠杆', '投入资源', '产生成果', '引来新需求或竞争'],
+      readerPayoff: ['建设成果可视化', '资源增长', '从无到有的掌控感'],
+      qualityConstraints: ['成果要可量化', '资源不能凭空出现', '慢热也要持续给正反馈'],
+      promptPresetIds: ['taskCard', 'assets', 'recentReview'],
+    },
     goldenChapterSeeds: [
       {
         chapterNumber: 1,
@@ -312,6 +578,15 @@ const TEMPLATE_CATALOG_FALLBACKS: TemplateCatalogFallbackEntry[] = [
     defaultPromises: ['角色关系持续升温', '前三章必须让关系线有一次实质推进'],
     defaultPaceContract: '第一章建立孤独/遗憾，第二章让关键关系闯入，第三章给出因关系而发生的第一次改变。',
     blueprintHints: ['冲突源头要情绪化而非纯信息', '关系推进要有双向作用', '每次靠近都伴随新的风险'],
+    commercialMechanism: {
+      protagonistArchetype: '带着情感缺口或遗憾的人',
+      coreDrive: '被理解、被选择，或重新拥有靠近他人的能力',
+      worldPressure: '创伤、现实阻力和关系误解制造靠近成本',
+      chapterLoop: ['暴露痛点', '关系闯入', '发生误解/试探', '做出不同选择', '关系推进并带来新代价'],
+      readerPayoff: ['情绪共鸣', '关系升温', '人物因彼此发生改变'],
+      qualityConstraints: ['甜/虐都要有原因', '关系推进必须双向', '情绪不能只靠解释，要落到选择'],
+      promptPresetIds: ['taskCard', 'scene', 'chapterReview'],
+    },
     goldenChapterSeeds: [
       {
         chapterNumber: 1,
@@ -384,6 +659,13 @@ function cloneTemplateCatalogFallback(
     defaultAudience: [...template.defaultAudience],
     defaultPromises: [...template.defaultPromises],
     blueprintHints: [...template.blueprintHints],
+    commercialMechanism: {
+      ...template.commercialMechanism,
+      chapterLoop: [...template.commercialMechanism.chapterLoop],
+      readerPayoff: [...template.commercialMechanism.readerPayoff],
+      qualityConstraints: [...template.commercialMechanism.qualityConstraints],
+      promptPresetIds: [...template.commercialMechanism.promptPresetIds],
+    },
     goldenChapterSeeds: template.goldenChapterSeeds.map(cloneGoldenChapterSeed),
     characters: template.characters.map(cloneTemplateSection),
     settings: template.settings.map(cloneTemplateSection),
@@ -405,6 +687,7 @@ function cloneCreativeWorkflowTemplate(
     defaultPromises: cloned.defaultPromises,
     defaultPaceContract: cloned.defaultPaceContract,
     blueprintHints: cloned.blueprintHints,
+    commercialMechanism: cloned.commercialMechanism,
     goldenChapterSeeds: cloned.goldenChapterSeeds,
   }
 }

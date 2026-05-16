@@ -123,7 +123,15 @@ const AIChatMessagesStub = defineComponent({
 })
 
 const AIQuickActionsStub = defineComponent({
-  template: '<div data-testid="quick-actions" />',
+  props: {
+    actions: {
+      type: Array,
+      default: () => [],
+    },
+  },
+  emits: ['select'],
+  template:
+    '<div data-testid="quick-actions"><button v-for="action in actions" :key="action.id" :data-testid="`quick-action-${action.id}`" @click="$emit(\'select\', action)">{{ action.label }}</button></div>',
 })
 
 const AIInputAreaStub = defineComponent({
@@ -239,7 +247,14 @@ describe('AIPanel', () => {
       if (plan.mutationMode === 'single_document_diff') {
         const action = plan.intent?.action
         const response =
-          action === 'expand'
+          action === 'continue'
+            ? await continueWriting(
+                plan.context.projectId,
+                sourceText,
+                plan.intent?.targetLength ?? 200,
+                plan.userVisibleSummary,
+              )
+            : action === 'expand'
             ? await expandText(
                 plan.context.projectId,
                 sourceText,
@@ -257,6 +272,7 @@ describe('AIPanel', () => {
           mutationMode: plan.mutationMode,
           message: '已生成单章候选正文，请交由编辑器 diff 确认。',
           generatedText:
+            (response as Record<string, string>).generated_text ||
             (response as Record<string, string>).expanded_text ||
             (response as Record<string, string>).rewritten_text ||
             '',
@@ -289,6 +305,7 @@ describe('AIPanel', () => {
     mockExecuteWriterDocumentCommand.mockReset()
     mockExecuteWriterDocumentCommand.mockResolvedValue({ handled: false })
     mockListDocuments.mockReset()
+    mockListDocuments.mockResolvedValue({ documents: [] })
     mockReadDocument.mockReset()
     mockSearchDocument.mockReset()
     localStorage.clear()
@@ -1129,5 +1146,62 @@ describe('AIPanel', () => {
       applyMode: 'replace_document',
     })
     expect(vi.mocked(rewriteText)).not.toHaveBeenCalled()
+  })
+
+  it('routes write quick actions into the chapter diff flow', async () => {
+    vi.mocked(expandText).mockResolvedValue({
+      expanded_text: '补完场景后的正文',
+    } as never)
+
+    const wrapper = mount(AIPanel, {
+      props: {
+        sessionId: 'project-1',
+        sourceText: '当前整章正文',
+        workflowContext: buildWorkflowContext('chapter-1'),
+        actionTrigger: null,
+      },
+      global: {
+        stubs: {
+          AIConversationToolbar: AIConversationToolbarStub,
+          AISelectionNotice: AISelectionNoticeStub,
+          AIChatMessages: AIChatMessagesStub,
+          AIQuickActions: AIQuickActionsStub,
+          AIInputArea: AIInputAreaStub,
+        },
+      },
+    })
+
+    await wrapper.get('[data-testid="quick-action-scene"]').trigger('click')
+    await flushPromises()
+
+    expect(vi.mocked(expandText)).toHaveBeenCalledWith(
+      'project-1',
+      '当前整章正文',
+      expect.stringContaining('补一段场景描写'),
+      undefined,
+    )
+    expect(getFirstApplyGeneratedPayload(wrapper)).toMatchObject({
+      action: 'expand',
+      sourceText: '当前整章正文',
+      generatedText: '补完场景后的正文',
+      applyMode: 'replace_document',
+    })
+  })
+
+  it('keeps review quick actions in chat analysis without applying正文 diff', async () => {
+    vi.mocked(chatWithAI).mockResolvedValue({
+      reply: '必须修：章末钩子偏弱。',
+    } as never)
+
+    const wrapper = mountPanel()
+
+    await wrapper.get('[data-testid="quick-action-chapterReview"]').trigger('click')
+    await flushPromises()
+
+    expect(vi.mocked(chatWithAI)).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(chatWithAI).mock.calls[0]?.[0]).toContain('回审当前章节')
+    expect(vi.mocked(rewriteText)).not.toHaveBeenCalled()
+    expect(vi.mocked(expandText)).not.toHaveBeenCalled()
+    expect(wrapper.emitted('applyGeneratedText')).toBeUndefined()
   })
 })

@@ -6,6 +6,7 @@ import {
   type CreativeWorkflowTemplate,
   type CreativeWorkflowTemplateId,
   type GoldenChapterPlan,
+  type TemplateCommercialMechanism,
 } from './templateCatalog.fallback'
 
 export type { CreativeWorkflowTemplate, CreativeWorkflowTemplateId, GoldenChapterPlan } from './templateCatalog.fallback'
@@ -14,6 +15,7 @@ export interface CreativeWorkflowSnapshot {
   projectId: string
   templateId: CreativeWorkflowTemplateId | null
   templateName: string
+  commercialMechanism?: TemplateCommercialMechanism
   premise: string
   targetAudience: string[]
   corePromises: string[]
@@ -344,6 +346,15 @@ export function buildCreativeWorkflowSnapshot(
     projectId: record.projectId,
     templateId: record.templateId,
     templateName: template?.name || '',
+    commercialMechanism: template
+      ? {
+          ...template.commercialMechanism,
+          chapterLoop: [...template.commercialMechanism.chapterLoop],
+          readerPayoff: [...template.commercialMechanism.readerPayoff],
+          qualityConstraints: [...template.commercialMechanism.qualityConstraints],
+          promptPresetIds: [...template.commercialMechanism.promptPresetIds],
+        }
+      : undefined,
     premise: record.pitchLine,
     targetAudience: [...record.targetAudience],
     corePromises: [...record.corePromises],
@@ -362,6 +373,12 @@ export function buildCreativeWorkflowSummaryLines(
 
   return [
     snapshot.templateName ? `题材模板：${snapshot.templateName}` : '',
+    snapshot.commercialMechanism
+      ? `商业机制：${snapshot.commercialMechanism.protagonistArchetype}；${snapshot.commercialMechanism.coreDrive}`
+      : '',
+    snapshot.commercialMechanism
+      ? `章节循环：${snapshot.commercialMechanism.chapterLoop.slice(0, 6).join(' → ')}`
+      : '',
     snapshot.premise ? `定位声明：${snapshot.premise}` : '',
     snapshot.targetAudience.length ? `目标读者：${snapshot.targetAudience.slice(0, 2).join(' / ')}` : '',
     snapshot.corePromises.length ? `核心承诺：${snapshot.corePromises.join('；')}` : '',

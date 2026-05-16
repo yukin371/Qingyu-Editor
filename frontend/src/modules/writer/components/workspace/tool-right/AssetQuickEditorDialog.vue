@@ -8,7 +8,7 @@
     <div class="space-y-4">
       <label class="block space-y-2">
         <span class="text-sm font-medium text-slate-700">名称</span>
-        <QyInput v-model="form.name" :maxlength="80" placeholder="输入资产名称" />
+        <QyInput v-model="form.name" :maxlength="80" :placeholder="template.name" />
       </label>
 
       <label class="block space-y-2">
@@ -18,19 +18,19 @@
           :rows="3"
           :maxlength="400"
           show-count
-          :placeholder="summaryPlaceholder"
+          :placeholder="template.summary"
         />
       </label>
 
       <label v-if="showAliasField" class="block space-y-2">
         <span class="text-sm font-medium text-slate-700">别名</span>
-        <QyInput v-model="form.alias" :maxlength="160" placeholder="多个别名用逗号分隔" />
+        <QyInput v-model="form.alias" :maxlength="160" :placeholder="template.alias" />
       </label>
 
       <template v-if="category === 'characters'">
         <label class="block space-y-2">
           <span class="text-sm font-medium text-slate-700">性格特征</span>
-          <QyInput v-model="form.traits" :maxlength="160" placeholder="多个特征用逗号分隔" />
+          <QyInput v-model="form.traits" :maxlength="160" :placeholder="template.traits" />
         </label>
         <label class="block space-y-2">
           <span class="text-sm font-medium text-slate-700">背景</span>
@@ -39,7 +39,7 @@
             :rows="3"
             :maxlength="500"
             show-count
-            placeholder="快速记录角色出身、动机或关键经历"
+            :placeholder="template.background"
           />
         </label>
       </template>
@@ -48,26 +48,26 @@
         <div class="grid gap-4 md:grid-cols-2">
           <label class="block space-y-2">
             <span class="text-sm font-medium text-slate-700">气候</span>
-            <QyInput v-model="form.climate" :maxlength="60" placeholder="如：温润、寒冷" />
+            <QyInput v-model="form.climate" :maxlength="60" :placeholder="template.climate" />
           </label>
           <label class="block space-y-2">
             <span class="text-sm font-medium text-slate-700">氛围</span>
-            <QyInput v-model="form.atmosphere" :maxlength="60" placeholder="如：压抑、繁华" />
+            <QyInput v-model="form.atmosphere" :maxlength="60" :placeholder="template.atmosphere" />
           </label>
           <label class="block space-y-2">
             <span class="text-sm font-medium text-slate-700">文化</span>
-            <QyInput v-model="form.culture" :maxlength="80" placeholder="如：海港商贸文化" />
+            <QyInput v-model="form.culture" :maxlength="80" :placeholder="template.culture" />
           </label>
           <label class="block space-y-2">
             <span class="text-sm font-medium text-slate-700">地理</span>
-            <QyInput v-model="form.geography" :maxlength="80" placeholder="如：山口、海港、峡谷" />
+            <QyInput v-model="form.geography" :maxlength="80" :placeholder="template.geography" />
           </label>
         </div>
       </template>
 
       <label v-else-if="category === 'concepts'" class="block space-y-2">
         <span class="text-sm font-medium text-slate-700">分类</span>
-        <QyInput v-model="form.conceptCategory" :maxlength="60" placeholder="如：规则、势力、文化" />
+        <QyInput v-model="form.conceptCategory" :maxlength="60" :placeholder="template.conceptCategory" />
       </label>
     </div>
 
@@ -143,9 +143,44 @@ const showAliasField = computed(
 
 const summaryLabel = computed(() => (props.category === 'locations' ? '描述' : '摘要'))
 
-const summaryPlaceholder = computed(() =>
-  props.category === 'locations' ? '快速记录场景用途、视觉印象或功能' : '快速记录这个资产最核心的设定',
-)
+const templates: Record<
+  EncyclopediaCategory,
+  Partial<Record<keyof typeof form, string>>
+> = {
+  characters: {
+    name: '如：林舟',
+    summary: '一句话定位：目标、立场、当前状态',
+    alias: '如：小林、林队',
+    traits: '如：克制、敏锐、护短',
+    background: '出身 / 动机 / 秘密 / 与主线关系',
+  },
+  locations: {
+    name: '如：旧码头',
+    summary: '场景用途 / 视觉印象 / 会发生什么冲突',
+    climate: '如：潮湿、寒冷',
+    atmosphere: '如：压抑、繁华、危险',
+    culture: '如：帮派码头、商贸集散',
+    geography: '如：河湾、山口、地下城',
+  },
+  items: {
+    name: '如：青铜钥匙',
+    summary: '用途 / 限制 / 归属 / 第一次出现章节',
+    alias: '如：旧钥匙、门钥',
+  },
+  organizations: {
+    name: '如：巡夜司',
+    summary: '目标 / 权力范围 / 与主角关系',
+    alias: '如：夜司、巡司',
+  },
+  concepts: {
+    name: '如：灵契',
+    summary: '规则定义 / 代价 / 例外情况',
+    alias: '如：契印、魂契',
+    conceptCategory: '如：规则、能力、文化',
+  },
+}
+
+const template = computed(() => templates[props.category])
 
 function normalizeCsv(value: string) {
   return value

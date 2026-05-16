@@ -16,9 +16,16 @@ vi.mock('@/design-system/components/basic/QyIcon/QyIcon.vue', () => ({
 
 describe('AIQuickActions', () => {
   const mockActions: QuickAction[] = [
-    { id: 'continue', icon: 'Edit', label: '续写', prompt: '请帮我续写' },
-    { id: 'polish', icon: 'Star', label: '润色', prompt: '请帮我润色' },
-    { id: 'summary', icon: 'Document', label: '摘要', prompt: '请帮我总结' },
+    {
+      id: 'continue',
+      icon: 'Edit',
+      label: '续写',
+      prompt: '请帮我续写',
+      group: 'write',
+      description: '沿着当前章节继续推进',
+    },
+    { id: 'polish', icon: 'Star', label: '润色', prompt: '请帮我润色', group: 'write' },
+    { id: 'summary', icon: 'Document', label: '摘要', prompt: '请帮我总结', group: 'review' },
   ]
 
   it('should render all quick actions', () => {
@@ -37,6 +44,15 @@ describe('AIQuickActions', () => {
     expect(labels[0].text()).toBe('续写')
     expect(labels[1].text()).toBe('润色')
     expect(labels[2].text()).toBe('摘要')
+  })
+
+  it('should display compact group badges and descriptions', () => {
+    const wrapper = mount(AIQuickActions, {
+      props: { actions: mockActions },
+    })
+
+    expect(wrapper.findAll('.quick-action-group')[0].text()).toBe('写')
+    expect(wrapper.find('.quick-action-description').text()).toBe('沿着当前章节继续推进')
   })
 
   it('should emit select event with action when clicked', async () => {

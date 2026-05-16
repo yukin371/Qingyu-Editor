@@ -1,4 +1,13 @@
-import { computed, ref, unref, watch, type ComputedRef, type Ref } from 'vue'
+import {
+  computed,
+  getCurrentInstance,
+  onBeforeUnmount,
+  ref,
+  unref,
+  watch,
+  type ComputedRef,
+  type Ref,
+} from 'vue'
 import {
   createCharacter,
   deleteCharacter,
@@ -19,6 +28,7 @@ import { useWriterStore } from '@/modules/writer/stores/writerStore'
 import {
   buildWriterAssetReferenceProjection,
   createWriterAssetRefKey,
+  WRITER_ASSET_REFS_UPDATED_EVENT,
   type WriterAssetRef,
   type WriterAssetType,
 } from '@/modules/writer/utils/writerAssetRefs'
@@ -784,6 +794,24 @@ export function useWriterAssetCatalog(options: {
     },
     { immediate: true },
   )
+
+  const handleAssetRefsUpdated = (event: Event) => {
+    const updatedProjectId =
+      event instanceof CustomEvent ? String(event.detail?.projectId || '') : ''
+    const projectId = effectiveProjectId.value
+    if (!projectId || updatedProjectId !== projectId) return
+    void reloadAssetData()
+  }
+
+  if (getCurrentInstance() && typeof window !== 'undefined') {
+    window.addEventListener(WRITER_ASSET_REFS_UPDATED_EVENT, handleAssetRefsUpdated as EventListener)
+    onBeforeUnmount(() => {
+      window.removeEventListener(
+        WRITER_ASSET_REFS_UPDATED_EVENT,
+        handleAssetRefsUpdated as EventListener,
+      )
+    })
+  }
 
   watch([options.activeCategory, filteredAssets, effectiveScopeView], ([category, assets]) => {
     if (selectedAsset.value?.category !== category) {

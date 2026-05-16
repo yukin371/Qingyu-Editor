@@ -519,6 +519,8 @@ const handleEditorEntityScan = async (refs: Array<{ id?: string; name: string; t
       listEntities(currentProjectId.value, 'item').catch(() => []),
       listEntities(currentProjectId.value, 'organization').catch(() => []),
       conceptApi.list(currentProjectId.value).catch(() => []),
+      writerStore.loadCharacters(currentProjectId.value).catch(() => undefined),
+      writerStore.loadLocations(currentProjectId.value).catch(() => undefined),
     ])
 
     const candidates = extractWriterAssetCandidates({

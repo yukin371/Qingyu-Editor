@@ -19,6 +19,75 @@
       </div>
 
       <Tabs v-model="activeTab" type="card">
+        <TabPane name="mechanism" label="机制">
+          <div v-if="template.commercialMechanism" class="template-detail-drawer__mechanism space-y-4">
+            <section class="template-detail-drawer__panel space-y-2 rounded-2xl p-3">
+              <h3 class="template-detail-drawer__heading text-sm font-medium">商业机制卡</h3>
+              <p class="template-detail-drawer__secondary text-sm leading-6">
+                主角原型：{{ template.commercialMechanism.protagonistArchetype }}
+              </p>
+              <p class="template-detail-drawer__secondary text-sm leading-6">
+                核心驱动：{{ template.commercialMechanism.coreDrive }}
+              </p>
+              <p class="template-detail-drawer__secondary text-sm leading-6">
+                世界压力：{{ template.commercialMechanism.worldPressure }}
+              </p>
+            </section>
+
+            <section class="space-y-2">
+              <h3 class="template-detail-drawer__heading text-sm font-medium">章节循环</h3>
+              <ol class="template-detail-drawer__muted flex flex-wrap gap-2 text-xs">
+                <li
+                  v-for="step in template.commercialMechanism.chapterLoop"
+                  :key="step"
+                  class="template-detail-drawer__chip px-2 py-1"
+                >
+                  {{ step }}
+                </li>
+              </ol>
+            </section>
+
+            <section class="space-y-2">
+              <h3 class="template-detail-drawer__heading text-sm font-medium">质量约束</h3>
+              <ul class="template-detail-drawer__list divide-y border-y">
+                <li
+                  v-for="item in template.commercialMechanism.qualityConstraints"
+                  :key="item"
+                  class="template-detail-drawer__secondary py-2 text-sm"
+                >
+                  {{ item }}
+                </li>
+              </ul>
+            </section>
+
+            <section
+              v-if="template.commercialMechanism.promptPresets?.length"
+              class="space-y-2"
+            >
+              <h3 class="template-detail-drawer__heading text-sm font-medium">推荐 AI 协作</h3>
+              <ul class="grid gap-2">
+                <li
+                  v-for="preset in template.commercialMechanism.promptPresets"
+                  :key="preset.id"
+                  class="template-detail-drawer__prompt rounded-xl px-3 py-2"
+                >
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="template-detail-drawer__heading text-sm font-medium">
+                      {{ preset.label }}
+                    </span>
+                    <span class="template-detail-drawer__chip px-2 py-0.5 text-xs">
+                      {{ promptGroupLabels[preset.group] }}
+                    </span>
+                  </div>
+                  <p class="template-detail-drawer__muted mt-1 text-xs leading-5">
+                    {{ preset.description }}
+                  </p>
+                </li>
+              </ul>
+            </section>
+          </div>
+        </TabPane>
+
         <TabPane name="outline" label="大纲">
           <ul class="template-detail-drawer__list divide-y border-y">
             <li
@@ -122,7 +191,12 @@ const emit = defineEmits<{
   (e: 'apply'): void
 }>()
 
-const activeTab = ref<'outline' | 'characters' | 'settings'>('outline')
+const activeTab = ref<'mechanism' | 'outline' | 'characters' | 'settings'>('mechanism')
+const promptGroupLabels = {
+  write: '写',
+  review: '审',
+  organize: '整理',
+}
 
 const drawerVisible = computed({
   get: () => props.modelValue,
@@ -132,7 +206,7 @@ const drawerVisible = computed({
 watch(
   () => props.template?.id,
   () => {
-    activeTab.value = 'outline'
+    activeTab.value = 'mechanism'
   },
 )
 </script>
@@ -159,5 +233,15 @@ watch(
   border-radius: 999px;
   background: var(--editor-layer-strong, #f1f5f9);
   color: var(--editor-text-secondary, #334155);
+}
+
+.template-detail-drawer__panel {
+  border: 1px solid var(--editor-border, #e2e8f0);
+  background: var(--editor-layer-soft, #f8fafc);
+}
+
+.template-detail-drawer__prompt {
+  border: 1px solid var(--editor-border, #e2e8f0);
+  background: var(--editor-layer, #ffffff);
 }
 </style>

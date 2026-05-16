@@ -42,8 +42,10 @@
       :empty-message="emptyMessage"
       :assets="assets"
       :selected-asset-id="selectedAssetId"
+      :allow-category-create="scopeView === 'global'"
       @select-category="$emit('select-category', $event)"
       @select-asset="$emit('select-asset', $event)"
+      @create-category-asset="$emit('create-asset', $event)"
     />
   </div>
 </template>
@@ -70,9 +72,9 @@ defineProps<{
 }>()
 
 const scopeOptions: Array<{ id: WriterAssetScopeView; label: string }> = [
-  { id: 'global', label: '全局' },
   { id: 'chapter', label: '本章' },
   { id: 'volume', label: '本卷' },
+  { id: 'global', label: '全局' },
 ]
 
 defineEmits<{
@@ -80,7 +82,7 @@ defineEmits<{
   (e: 'update:scope-view', value: WriterAssetScopeView): void
   (e: 'select-category', category: EncyclopediaCategory): void
   (e: 'select-asset', assetId: string): void
-  (e: 'create-asset'): void
+  (e: 'create-asset', category?: EncyclopediaCategory): void
 }>()
 </script>
 

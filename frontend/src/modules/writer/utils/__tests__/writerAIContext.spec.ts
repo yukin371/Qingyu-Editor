@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildWriterAIContextBlock,
   buildWriterAIContextPacket,
+  inferWriterChapterTaskCard,
 } from '@/modules/writer/utils/writerAIContext'
 
 describe('writerAIContext', () => {
@@ -53,5 +54,48 @@ describe('writerAIContext', () => {
     expect(contextBlock).toContain('当前章节正文：')
     expect(contextBlock).toContain('上下文预算')
     expect(contextBlock.length).toBeLessThan(900)
+  })
+
+  it('infers chapter task card from compact writing metadata', () => {
+    const task = inferWriterChapterTaskCard(
+      [
+        '目标：主角拿到进入秘境的资格',
+        '情绪功能：先压抑后释放',
+        '爽点：当众反击质疑者',
+        '钩子：秘境入口出现异常光柱',
+      ].join('\n'),
+    )
+
+    expect(task).toMatchObject({
+      goal: '主角拿到进入秘境的资格',
+      emotionalFunction: '先压抑后释放',
+      readerPayoff: '当众反击质疑者',
+      hook: '秘境入口出现异常光柱',
+    })
+  })
+
+  it('adds chapter task evidence and formats it before source text', () => {
+    const packet = buildWriterAIContextPacket({
+      projectId: 'project-1',
+      currentDocument: {
+        documentId: 'chapter-2',
+        documentTitle: '第二章',
+        sourceText: '正文',
+      },
+      chapterTask: {
+        goal: '完成第一次反击',
+        readerPayoff: '读者看到主角拿回主动权',
+      },
+    })
+    const contextBlock = buildWriterAIContextBlock({
+      projectId: 'project-1',
+      currentDocument: packet.currentDocument,
+      chapterTask: packet.chapterTask,
+    })
+
+    expect(packet.evidence.map((item) => item.source)).toContain('chapter_task')
+    expect(contextBlock).toContain('本章任务卡：')
+    expect(contextBlock).toContain('目标：完成第一次反击')
+    expect(contextBlock).toContain('读者收益：读者看到主角拿回主动权')
   })
 })

@@ -6,15 +6,29 @@
       class="asset-list-tree__group"
       :class="{ 'is-active': activeCategory === category.id }"
     >
-      <button
-        type="button"
+      <div
         class="asset-list-tree__folder"
         :class="{ 'is-active': activeCategory === category.id }"
-        @click="$emit('select-category', category.id)"
       >
-        <span class="asset-list-tree__folder-name">{{ category.label }}</span>
-        <span class="asset-list-tree__folder-count">{{ category.count }}</span>
-      </button>
+        <button
+          type="button"
+          class="asset-list-tree__folder-main"
+          @click="$emit('select-category', category.id)"
+        >
+          <span class="asset-list-tree__folder-name">{{ category.label }}</span>
+          <span class="asset-list-tree__folder-count">{{ category.count }}</span>
+        </button>
+        <button
+          v-if="allowCategoryCreate"
+          type="button"
+          class="asset-list-tree__folder-create"
+          :title="`新建${category.label}`"
+          :aria-label="`新建${category.label}`"
+          @click.stop="$emit('create-category-asset', category.id)"
+        >
+          +
+        </button>
+      </div>
 
       <div v-if="activeCategory === category.id" class="asset-list-tree__group-body">
         <div v-if="loading" class="asset-list-tree__empty">正在加载设定…</div>
@@ -61,11 +75,13 @@ defineProps<{
   emptyMessage: string
   assets: WriterAssetListItem[]
   selectedAssetId?: string
+  allowCategoryCreate?: boolean
 }>()
 
 defineEmits<{
   (e: 'select-category', category: EncyclopediaCategory): void
   (e: 'select-asset', assetId: string): void
+  (e: 'create-category-asset', category: EncyclopediaCategory): void
 }>()
 </script>
 
@@ -87,21 +103,54 @@ defineEmits<{
   min-height: 28px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 6px;
-  padding: 0 8px;
   border: none;
   background: transparent;
   color: var(--editor-text-secondary, #374151);
   font-size: 12px;
   font-weight: 600;
-  cursor: pointer;
   text-align: left;
 
   &:hover,
   &.is-active {
     color: var(--editor-text-primary, #111827);
     background: var(--editor-bg-elevated, #f5f7fb);
+  }
+}
+
+.asset-list-tree__folder-main {
+  min-width: 0;
+  flex: 1;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 8px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.asset-list-tree__folder-create {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--editor-text-muted, #6b7280);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--editor-border, #d9dee6);
+    background: var(--editor-accent-soft, #eaf2ff);
+    color: var(--editor-accent, #1d4ed8);
   }
 }
 

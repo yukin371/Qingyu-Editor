@@ -43,6 +43,22 @@ export interface TemplateDetailSection {
   bullets: string[]
 }
 
+export interface TemplateCommercialMechanism {
+  protagonistArchetype: string
+  coreDrive: string
+  worldPressure: string
+  chapterLoop: string[]
+  readerPayoff: string[]
+  qualityConstraints: string[]
+  promptPresetIds: string[]
+  promptPresets?: Array<{
+    id: string
+    label: string
+    group: 'write' | 'review' | 'organize'
+    description: string
+  }>
+}
+
 export interface TemplateDetailOutlineNode {
   order: number
   title: string
@@ -61,6 +77,7 @@ export interface TemplateDetailPayload {
   recommendedLabel: string
   emotionCurve: string
   payoffFocus: string[]
+  commercialMechanism?: TemplateCommercialMechanism
   previewTabs: {
     outline: TemplateDetailOutlineNode[]
     characters: TemplateDetailSection[]

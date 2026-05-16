@@ -61,7 +61,14 @@ export interface WriterApplyCheckpointMeta {
 export interface WriterContextEvidenceItem {
   label: string
   detail?: string
-  source: 'current_document' | 'selection' | 'revision' | 'asset' | 'workflow' | string
+  source:
+    | 'current_document'
+    | 'selection'
+    | 'revision'
+    | 'asset'
+    | 'workflow'
+    | 'chapter_task'
+    | string
 }
 
 export interface WriterContextEvidenceMeta {
@@ -143,6 +150,8 @@ export interface QuickAction {
   icon: string
   label: string
   prompt: string
+  group?: 'write' | 'review' | 'organize'
+  description?: string
 }
 
 /**

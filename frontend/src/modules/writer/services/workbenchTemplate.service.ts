@@ -11,6 +11,7 @@ import {
   listTemplateCatalogFallbacks,
   type TemplateCatalogFallbackEntry,
 } from './templateCatalog.fallback'
+import { getWriterAIPromptPreset } from '../config/writerAIPromptPresets'
 import { DocumentType } from '../types/document'
 import { buildEditorContentFromPlainText } from '../utils/editorContent'
 import type {
@@ -51,6 +52,11 @@ function mapTemplateToCatalogItem(template: TemplateCatalogFallbackEntry): Templ
 }
 
 function mapRemoteTemplateDetail(template: RemoteTemplateSource): TemplateDetailPayload {
+  const mechanism = template.commercialMechanism
+  const promptPresets = mechanism?.promptPresetIds
+    .map((id) => getWriterAIPromptPreset(id))
+    .filter((preset): preset is NonNullable<ReturnType<typeof getWriterAIPromptPreset>> => Boolean(preset))
+
   return {
     id: template.id,
     name: template.name,
@@ -61,6 +67,23 @@ function mapRemoteTemplateDetail(template: RemoteTemplateSource): TemplateDetail
     recommendedLabel: template.recommendedLabel,
     emotionCurve: template.emotionCurve,
     payoffFocus: [...(template.payoffFocus || [])],
+    commercialMechanism: mechanism
+      ? {
+          protagonistArchetype: mechanism.protagonistArchetype,
+          coreDrive: mechanism.coreDrive,
+          worldPressure: mechanism.worldPressure,
+          chapterLoop: [...mechanism.chapterLoop],
+          readerPayoff: [...mechanism.readerPayoff],
+          qualityConstraints: [...mechanism.qualityConstraints],
+          promptPresetIds: promptPresets.map((preset) => preset.id),
+          promptPresets: promptPresets.map((preset) => ({
+            id: preset.id,
+            label: preset.label,
+            group: preset.group,
+            description: preset.description,
+          })),
+        }
+      : undefined,
     previewTabs: {
       outline: template.goldenChapterSeeds.map((chapter) => ({
         order: chapter.chapterNumber,

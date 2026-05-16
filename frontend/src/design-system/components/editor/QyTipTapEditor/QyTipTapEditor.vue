@@ -957,6 +957,8 @@ function insertEntityMark(name: string, type: string, id?: string) {
   } else {
     editor.value.chain().focus().insertContent(content).run()
   }
+
+  scanAndNotifyEntities(editor.value.getJSON())
 }
 
 onBeforeUnmount(() => {

@@ -148,46 +148,7 @@ export async function mockAIStreamResponse(
   }
 }
 
-/**
- * 获取预设快捷操作的提示词
- */
-export const QUICK_ACTION_PROMPTS = {
-  continue: {
-    label: '续写一段',
-    icon: 'Pencil',
-    prompt: '请根据当前内容续写一段话'
-  },
-  polish: {
-    label: '润色文字',
-    icon: 'Sparkles',
-    prompt: '请帮我润色这段文字'
-  },
-  summary: {
-    label: '总结内容',
-    icon: 'DocumentText',
-    prompt: '请总结当前内容'
-  },
-  suggestion: {
-    label: '写作建议',
-    icon: 'LightBulb',
-    prompt: '请给我一些写作建议'
-  },
-  brainstorm: {
-    label: '头脑风暴',
-    icon: 'Bolt',
-    prompt: '帮我进行头脑风暴'
-  },
-  character: {
-    label: '角色设定',
-    icon: 'User',
-    prompt: '帮我完善角色设定'
-  }
-}
-
-/**
- * 根据快捷操作ID获取对应的提示词
- */
-export function getQuickActionPrompt(actionId: string): string {
-  const action = (QUICK_ACTION_PROMPTS as Record<string, { prompt: string }>)[actionId]
-  return action?.prompt || '请提供帮助'
-}
+export {
+  WRITER_AI_PROMPT_PRESETS as QUICK_ACTION_PROMPTS,
+  getWriterAIPromptText as getQuickActionPrompt,
+} from '@/modules/writer/config/writerAIPromptPresets'

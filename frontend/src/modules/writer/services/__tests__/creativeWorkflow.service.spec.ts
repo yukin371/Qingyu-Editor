@@ -123,6 +123,9 @@ describe('creativeWorkflow.service', () => {
     expect(buildCreativeWorkflowSummaryLines(snapshot)).toContain(
       '核心承诺：前三章看到建设成果',
     )
+    expect(buildCreativeWorkflowSummaryLines(snapshot)).toContain(
+      '商业机制：能把烂摊子拆成资源链的经营者；让地盘、团队或产业进入正向循环',
+    )
   })
 
   it('can clear the sidecar workflow state', async () => {
@@ -142,6 +145,9 @@ describe('creativeWorkflow.service', () => {
     expect(templates.map((item) => item.id)).toEqual([
       'comeback',
       'power-up',
+      'cautious-mortal',
+      'rebirth-revenge',
+      'infinite-survival',
       'mystery',
       'building',
       'emotion',

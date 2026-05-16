@@ -73,7 +73,7 @@ describe('AssetListPanel', () => {
       },
     })
 
-    await wrapper.findAll('.asset-list-tree__folder')[1].trigger('click')
+    await wrapper.findAll('.asset-list-tree__folder-main')[1].trigger('click')
 
     expect(wrapper.emitted('select-category')).toEqual([['locations']])
   })
@@ -91,6 +91,43 @@ describe('AssetListPanel', () => {
     await wrapper.get('.asset-list-panel__create-btn').trigger('click')
 
     expect(wrapper.emitted('create-asset')).toEqual([[]])
+  })
+
+  it('renders scope tabs from local to global and emits category quick-create', async () => {
+    const wrapper = mount(AssetListPanel, {
+      props: baseProps,
+      global: {
+        stubs: {
+          QyIcon: true,
+        },
+      },
+    })
+
+    expect(wrapper.findAll('.asset-list-panel__scope-tab').map((node) => node.text())).toEqual([
+      '本章',
+      '本卷',
+      '全局',
+    ])
+
+    await wrapper.get('.asset-list-tree__folder-create').trigger('click')
+
+    expect(wrapper.emitted('create-asset')).toEqual([['characters']])
+  })
+
+  it('does not render category quick-create in local scope views', () => {
+    const wrapper = mount(AssetListPanel, {
+      props: {
+        ...baseProps,
+        scopeView: 'chapter',
+      },
+      global: {
+        stubs: {
+          QyIcon: true,
+        },
+      },
+    })
+
+    expect(wrapper.find('.asset-list-tree__folder-create').exists()).toBe(false)
   })
 
   it('emits scope selection and renders local projection badges', async () => {
@@ -121,7 +158,7 @@ describe('AssetListPanel', () => {
       },
     })
 
-    await wrapper.findAll('.asset-list-panel__scope-tab')[2].trigger('click')
+    await wrapper.findAll('.asset-list-panel__scope-tab')[1].trigger('click')
 
     expect(wrapper.emitted('update:scope-view')).toEqual([['volume']])
     expect(wrapper.text()).toContain('正文提及')

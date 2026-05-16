@@ -29,6 +29,8 @@
 - **项目列表与模板中心必须保持独立页职责**：工作台首页只展示最近项目和快捷动作；完整项目筛选、模板浏览与模板详情预览分别落到独立项目页与模板中心，不要把这些控件重新塞回首页。
 - **入口动作 owner 是 `useWriterProjectEntryActions`**：工作台、项目列表、模板中心涉及“进入项目 / 继续创作 / 新建后进入 / 导入后进入”时，应复用这个 composable；不要在页面里各自拼 `writer-project` 路由或复制 ZIP 导入成功跳转逻辑。
 - **模板中心的 owner 是“新建项目工具”，不是模板后台**：模板页允许浏览分类、打开 `大纲 / 角色 / 设定` 抽屉，并把模板应用到新建项目；不要在这里偷偷长出模板编辑器、模板发布系统或第二套项目创建协议。
+- **模板可携带商业机制与 AI prompt 协议**：`templateCatalog.fallback` / Wails template 可提供主角原型、核心驱动、世界压力、章节循环、读者收益、质量约束和推荐 prompt preset；模板中心只展示和应用这些协议，不在模板页直接生成正文。
+- **AI prompt preset owner 是 `config/writerAIPromptPresets.ts`**：右栏快捷入口、模板推荐提示词和后续回审工具应复用该 preset，不要继续把写/审/整理提示词散落在组件或 mock helper 中。
 - **工作台壳必须保持模块化和简洁**：`WorkbenchShell` 负责左侧主导航和右侧主内容区的基础骨架；首页、项目页、模板页优先复用 `QyCard / QyButton / QyInput / QySelect / QyDrawer / QyModal` 等设计系统原件，不要再堆叠装饰性卡片、大段说明或自定义平台式大壳。
 - **工作台壳桌面端必须分离滚动**：`WorkbenchShell` 在 `lg` 及以上视口下应保持“左侧导航整列固定高度 + 右侧主内容独立滚动”；不要再让 `/writer`、`/writer/projects`、`/writer/templates` 通过整页文档滚动把左侧导航一起带走。
 - **双壳模型要显式，不要伪装成同一页抖动**：顶层页壳只服务 `/writer`、`/writer/projects`、`/writer/templates`，并由页面显式传入 `activeNavId`；`/writer/project/:projectId` 只走 `WorkspaceShell` 编辑器壳。不要再让壳层通过路由猜测去兼容另一条主链。
@@ -80,6 +82,8 @@
 - **普通聊天历史由 plan 显式携带**：`WriterAIPlan.history` 只保留已存在的 user/assistant 往返，不包含当前发送内容；这样既能走统一 facade，又不会把当前 prompt 重复塞进 provider history。
 - **AI 上下文包 owner 是 `utils/writerAIContext.ts`**：右栏聊天、Workbench 工具、资产摘要和结构/时间线/分支简化摘要都应先构造成 `WriterAIContextPacket`，再进入 prompt 或 `modules/ai/api` facade；不要在组件内各自拼全量 prompt。
 - **AI 默认只消费简化上下文**：上下文包默认包含当前章节正文、选区/候选稿、目标条、资产简表、创作蓝图/节奏摘要和证据卡，并受字符预算截断；禁止默认把全书全文或深度资产详情塞进 prompt。
+- **AI 创作辅助采用“双节拍”入口**：右栏快捷入口按“写 / 审 / 整理”组织；写作冲刺入口可进入当前章节/选区 diff，回审和整理入口只输出分析、任务卡或资产候选，不静默改剧情、不批量改章。
+- **本章任务卡只进入上下文包，不成为新持久化 owner**：`WriterChapterTaskCard` 用于约束创作冲刺与质量回审，可从阶段摘要或显式上下文推导；持久化仍归结构舞台、章节/工作流 sidecar 或后续明确 owner。
 - **跨章节 resolved target 必须覆盖当前章节上下文**：当 `writerDocumentAgent` 已解析到目标章节时，AI prompt 和结果证据条必须使用目标章节标题与正文；不要继续把当前打开章节误作为主要正文上下文。
 - **上下文证据只做可见提示，不替代 owner**：`AIInputArea` 的发送前提示和 `AIChatMessages` 的结果证据条只说明本次 AI 可见了哪些上下文来源；正文 diff、资产 CRUD、结构舞台/时间线/分支数据仍分别由原 owner 处理。
 - **资产进入 AI 只能走摘要投影**：AI 使用 `WriterAIAssetSummary` 的类型、名称、摘要、最近章节、引用次数与 unresolved 标记；需要详情时跳转资产工具或专业 overlay，不在 AI 面板复制第二套资产编辑/删除逻辑。
