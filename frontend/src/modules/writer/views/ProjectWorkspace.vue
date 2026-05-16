@@ -71,7 +71,7 @@
             :handle-change-request-decision="handleChangeRequestDecision"
             :handle-trigger-index="handleStoryHarnessTriggerIndex"
             :is-triggering-index="isStoryHarnessTriggering"
-            v-model:content="tipTapContent"
+            v-model:content="visibleTipTapContent"
             @trigger-ai-action="handleWorkflowAction"
             @entity-scan="handleEditorEntityScan"
             @open-graph="handleOpenGraph"
@@ -223,7 +223,12 @@ import {
   appendPlainTextToEditorContent,
   buildEditorContentFromPlainText,
   extractPlainTextFromEditorContent,
+  stripLeadingTitleHeadingFromEditorContent,
 } from '@/modules/writer/utils/editorContent'
+import {
+  formatDefaultChapterTitle,
+  formatDefaultVolumeTitle,
+} from '@/modules/writer/utils/writerDocumentNaming'
 import {
   registerPendingDiff,
   clearPendingDiffs,
@@ -410,9 +415,6 @@ const applyLayoutPreset = (preset: WorkspaceLayoutPreset) => {
   panelStore.setRightCollapsed(false)
 }
 
-const currentChapterPlainText = computed(() =>
-  extractPlainTextFromEditorContent(tipTapContent.value),
-)
 const displayChapterId = computed({
   get: () => currentChapterId.value,
   set: (value: string) => {
@@ -427,6 +429,17 @@ const displayChapterId = computed({
   },
 })
 const displayChapterTitle = computed(() => currentChapterTitle.value)
+const visibleTipTapContent = computed({
+  get: () =>
+    stripLeadingTitleHeadingFromEditorContent(tipTapContent.value, displayChapterTitle.value),
+  set: (value: string) => {
+    tipTapContent.value = value
+  },
+})
+
+const currentChapterPlainText = computed(() =>
+  extractPlainTextFromEditorContent(visibleTipTapContent.value),
+)
 
 const {
   currentScopeLabel,
@@ -612,7 +625,7 @@ const buildDefaultChapterDraft = (parentId?: string) => {
   const siblingCount = getChapterSiblingsByParent(parentId).length
 
   return {
-    title: `第${siblingCount + 1}章`,
+    title: formatDefaultChapterTitle(siblingCount + 1),
     order: resolveNextChapterOrder(parentId),
   }
 }
@@ -871,7 +884,7 @@ const handleCreateOutlineRoot = async () => {
   try {
     // 生成默认标题
     const volumeCount = flatChapters.value.filter((ch) => ch.nodeType === 'directory').length
-    const defaultTitle = `卷 ${volumeCount + 1}`
+    const defaultTitle = formatDefaultVolumeTitle(volumeCount + 1)
 
     // 创建卷（volume），后端会自动同步创建对应的大纲节点
     await createDocument(currentProjectId.value, {
@@ -930,10 +943,10 @@ const handleConvertToChapter = async (payload: {
   try {
     const { outlineNode, volumeNode } = payload
 
-    // 获取目标卷下已有章节数量，用于生成"第X章"标题
+    // 获取目标卷下已有章节数量，用于生成默认章节标题
     const volumeChildren = flatChapters.value.filter((ch) => ch.parentId === volumeNode.documentId)
     const chapterCount = volumeChildren.length + 1
-    const defaultTitle = `第${chapterCount}章`
+    const defaultTitle = formatDefaultChapterTitle(chapterCount)
 
     // 在对应卷下创建新章节
     const newDoc = await createDocument(currentProjectId.value, {
@@ -972,6 +985,7 @@ const handleConvertToChapter = async (payload: {
       nextQuery.tool = 'writing'
       delete nextQuery.encyclopediaView
       await router.replace({ query: nextQuery })
+      await focusCurrentTitleInput()
     }
   } catch (error) {
     console.error('[ProjectWorkspace] 转为章节失败:', error)
@@ -1210,10 +1224,12 @@ const buildStructureDocumentTitle = (
     .trim()
 
   if (mode === 'volume') {
-    return cleaned ? `第${sequence}卷 ${cleaned}` : `第${sequence}卷`
+    const defaultTitle = formatDefaultVolumeTitle(sequence)
+    return cleaned ? `${defaultTitle} ${cleaned}` : defaultTitle
   }
 
-  return cleaned ? `第${sequence}章 ${cleaned}` : `第${sequence}章`
+  const defaultTitle = formatDefaultChapterTitle(sequence)
+  return cleaned ? `${defaultTitle} ${cleaned}` : defaultTitle
 }
 
 const normalizeStructureDocumentTitle = (rawTitle: string) =>
@@ -1303,6 +1319,7 @@ const handleCreateStructurePlan = async (payload: WriterStructurePlanPayload) =>
       nextQuery.tool = 'writing'
       delete nextQuery.encyclopediaView
       await router.replace({ query: nextQuery })
+      await focusCurrentTitleInput()
     }
 
     const createdCount = createdDocumentIds.length

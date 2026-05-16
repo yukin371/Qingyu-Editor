@@ -5,6 +5,7 @@ import { projectApi, type ProjectDetailResponse, type ProjectSummary } from '../
 import { WRITER_ROUTE_NAMES } from '../routes'
 import { DocumentType, type Document } from '../types/document'
 import type { WorkbenchRecentProjectCard } from '../types/workbench'
+import { formatDefaultChapterTitle, formatDefaultVolumeTitle } from '../utils/writerDocumentNaming'
 
 type ProjectDocumentSummary = ProjectDetailResponse['documents'][number]
 
@@ -135,7 +136,7 @@ export async function ensureProjectBaseSkeleton(projectId: string): Promise<{ ch
     existingVolume ||
     (await createDocument(projectId, {
       projectId,
-      title: '第一卷',
+      title: formatDefaultVolumeTitle(1),
       type: DocumentType.VOLUME,
       order: 0,
     }))
@@ -143,7 +144,7 @@ export async function ensureProjectBaseSkeleton(projectId: string): Promise<{ ch
   const chapter = await createDocument(projectId, {
     projectId,
     parentId: volume.id,
-    title: '第一章',
+    title: formatDefaultChapterTitle(1),
     type: DocumentType.CHAPTER,
     order: 0,
   })

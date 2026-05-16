@@ -57,6 +57,40 @@ export function buildEditorContentFromPlainText(text: string): string {
   })
 }
 
+function getNodePlainText(node: unknown): string {
+  return flattenNodeText(node).replace(/\s+/g, '').trim()
+}
+
+export function stripLeadingTitleHeadingFromEditorContent(
+  content: string | undefined | null,
+  title: string | undefined | null,
+): string {
+  const normalizedTitle = String(title || '').replace(/\s+/g, '').trim()
+  if (!content || !normalizedTitle) {
+    return content || ''
+  }
+
+  try {
+    const parsed = JSON.parse(content) as { type?: string; content?: unknown[] }
+    if (parsed.type !== 'doc' || !Array.isArray(parsed.content) || parsed.content.length === 0) {
+      return content
+    }
+
+    const [firstNode, ...restNodes] = parsed.content
+    const firstTyped = firstNode as { type?: string }
+    if (firstTyped?.type !== 'heading' || getNodePlainText(firstNode) !== normalizedTitle) {
+      return content
+    }
+
+    return JSON.stringify({
+      ...parsed,
+      content: restNodes.length ? restNodes : [{ type: 'paragraph' }],
+    })
+  } catch {
+    return content
+  }
+}
+
 export function appendPlainTextToEditorContent(
   existingContent: string | undefined | null,
   nextText: string,

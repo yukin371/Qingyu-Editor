@@ -269,15 +269,10 @@ function countWords(content: string): number {
   return calculateWritingWordCount(extractPlainText(content))
 }
 
-function buildDefaultDocumentContent(title: string): string {
+function buildDefaultDocumentContent(): string {
   return JSON.stringify({
     type: 'doc',
     content: [
-      {
-        type: 'heading',
-        attrs: { level: 1 },
-        content: [{ type: 'text', text: title }],
-      },
       {
         type: 'paragraph',
         content: [],
@@ -879,7 +874,7 @@ async function createDocument(projectId: string, data: CreateDocumentRequest): P
   state.documents.push(document)
   state.contents[document.id] = {
     documentId: document.id,
-    content: buildDefaultDocumentContent(document.title),
+    content: buildDefaultDocumentContent(),
     contentType: 'tiptap_json',
     version: 1,
     createdAt,
@@ -895,7 +890,6 @@ async function createDocument(projectId: string, data: CreateDocumentRequest): P
 async function updateDocument(documentId: string, data: UpdateDocumentMetaRequest): Promise<void> {
   const state = readState()
   const document = getDocumentOrThrow(state, documentId)
-  const previousTitle = document.title
 
   if (data.title?.trim()) {
     document.title = data.title.trim()
@@ -923,14 +917,6 @@ async function updateDocument(documentId: string, data: UpdateDocumentMetaReques
   }
 
   document.updatedAt = nowIso()
-
-  const contentRecord = state.contents[documentId]
-  if (contentRecord && contentRecord.content === buildDefaultDocumentContent(previousTitle)) {
-    contentRecord.content = buildDefaultDocumentContent(document.title)
-    contentRecord.version += 1
-    contentRecord.updatedAt = document.updatedAt
-    contentRecord.lastSavedAt = document.updatedAt
-  }
 
   touchProject(state, document.projectId)
   writeState(state)

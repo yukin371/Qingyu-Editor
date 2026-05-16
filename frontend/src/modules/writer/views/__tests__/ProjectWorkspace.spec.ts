@@ -535,6 +535,7 @@ const AutosaveEditorContentStub = defineComponent({
 
 const openFullscreenToolSpy = vi.fn()
 const closeFullscreenSpy = vi.fn()
+const focusTitleInputMock = vi.fn().mockResolvedValue(undefined)
 
 const OverlayAwareEditorContentStub = defineComponent({
   props: {
@@ -676,6 +677,7 @@ describe('ProjectWorkspace Refactor', () => {
     loadDocumentMock.mockClear()
     openFullscreenToolSpy.mockClear()
     closeFullscreenSpy.mockClear()
+    focusTitleInputMock.mockClear()
   })
 
   it('写作模式下应渲染工作区编辑宿主且不渲染旧 EditorPanel', async () => {
@@ -801,7 +803,7 @@ describe('ProjectWorkspace Refactor', () => {
     expect(documentStoreCreateMock).toHaveBeenCalledWith(
       'project-1',
       expect.objectContaining({
-        title: '第3章',
+        title: '第三章',
         type: 'chapter',
         parentId: 'volume-2',
         order: 9,
@@ -1152,7 +1154,7 @@ describe('ProjectWorkspace Refactor', () => {
       1,
       'project-1',
       expect.objectContaining({
-        title: '第3章 夜探旧仓库',
+        title: '第三章 夜探旧仓库',
         type: 'chapter',
       }),
     )
@@ -1160,16 +1162,46 @@ describe('ProjectWorkspace Refactor', () => {
       2,
       'project-1',
       expect.objectContaining({
-        title: '第4章 街口对峙',
+        title: '第四章 街口对峙',
         type: 'chapter',
       }),
     )
   })
 
+  it('新建章节后应自动跳转并聚焦标题输入框', async () => {
+    const FocusableWorkspaceEditorContentStub = defineComponent({
+      setup(_, { expose }) {
+        expose({
+          focusTitleInput: focusTitleInputMock,
+        })
+
+        return () => h('div', { 'data-testid': 'workspace-editor-content-focus-stub' })
+      },
+    })
+
+    const wrapper = mountProjectWorkspace({
+      WorkspaceEditorContent: FocusableWorkspaceEditorContentStub,
+    })
+
+    await wrapper.find('[data-testid="add-doc"]').trigger('click')
+    await Promise.resolve()
+    await nextTick()
+    await Promise.resolve()
+    await nextTick()
+
+    expect(routerReplace).toHaveBeenCalledWith({
+      query: expect.objectContaining({
+        chapterId: 'generated-doc-1',
+        tool: 'writing',
+      }),
+    })
+    expect(focusTitleInputMock).toHaveBeenCalled()
+  })
+
   it('跳过重复策略开启时应略过已有同名章节', async () => {
     mockFlatDocs.push({
       id: 'chapter-3',
-      title: '第3章 夜探旧仓库',
+      title: '第三章 夜探旧仓库',
       type: 'chapter',
       projectId: 'project-1',
     })
@@ -1182,12 +1214,14 @@ describe('ProjectWorkspace Refactor', () => {
     await nextTick()
     await Promise.resolve()
     await nextTick()
+    await Promise.resolve()
+    await nextTick()
 
     expect(createDocumentMock).toHaveBeenCalledTimes(1)
     expect(createDocumentMock).toHaveBeenCalledWith(
       'project-1',
       expect.objectContaining({
-        title: '第5章 街口对峙',
+        title: '第五章 街口对峙',
         type: 'chapter',
       }),
     )
