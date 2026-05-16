@@ -1,22 +1,33 @@
 import { computed, ref, type ComputedRef } from 'vue'
 import { useToolRightAssetActions } from '@/modules/writer/composables/useToolRightAssetActions'
-import { useWriterAssetCatalog } from '@/modules/writer/composables/useWriterAssetCatalog'
+import {
+  useWriterAssetCatalog,
+  type WriterAssetScopeView,
+} from '@/modules/writer/composables/useWriterAssetCatalog'
 import type { EncyclopediaCategory, SidebarChapterSummary } from '@/modules/writer/composables/types'
 
 interface UseToolRightAssetsOptions {
   projectId: ComputedRef<string>
+  chapterId: ComputedRef<string>
   chapters: ComputedRef<SidebarChapterSummary[]>
 }
 
-export const useToolRightAssets = ({ projectId, chapters }: UseToolRightAssetsOptions) => {
+export const useToolRightAssets = ({ projectId, chapterId, chapters }: UseToolRightAssetsOptions) => {
   const searchKeyword = ref('')
   const assetCategory = ref<EncyclopediaCategory>('characters')
+  const assetScopeView = ref<WriterAssetScopeView>('global')
+  const currentVolumeId = computed(
+    () => chapters.value.find((chapter) => chapter.id === chapterId.value)?.parentId,
+  )
 
   const catalog = useWriterAssetCatalog({
     projectId,
     chapters,
     activeCategory: assetCategory,
     searchKeyword,
+    scopeView: assetScopeView,
+    chapterId,
+    volumeId: currentVolumeId,
   })
 
   const actions = useToolRightAssetActions({
@@ -28,10 +39,16 @@ export const useToolRightAssets = ({ projectId, chapters }: UseToolRightAssetsOp
     updateAsset: catalog.updateAsset,
     deleteAsset: catalog.deleteAsset,
     buildGraphFocusTarget: catalog.buildGraphFocusTarget,
+    assetScopeView,
   })
 
   const handleAssetCategoryChange = (category: EncyclopediaCategory) => {
     assetCategory.value = category
+  }
+
+  const handleAssetScopeViewChange = (scopeView: WriterAssetScopeView) => {
+    assetScopeView.value = scopeView
+    catalog.selectAsset(null)
   }
 
   const handleAssetSearchKeywordChange = (value: string) => {
@@ -46,6 +63,7 @@ export const useToolRightAssets = ({ projectId, chapters }: UseToolRightAssetsOp
     emptyMessage: catalog.emptyMessage.value,
     assets: catalog.filteredAssets.value,
     selectedAssetId: catalog.selectedAsset.value?.id,
+    scopeView: assetScopeView.value,
   }))
 
   const assetDetailPanelProps = computed(() => ({
@@ -58,7 +76,9 @@ export const useToolRightAssets = ({ projectId, chapters }: UseToolRightAssetsOp
   return {
     searchKeyword,
     assetCategory,
+    assetScopeView,
     handleAssetCategoryChange,
+    handleAssetScopeViewChange,
     handleAssetSearchKeywordChange,
     assetListPanelProps,
     assetDetailPanelProps,

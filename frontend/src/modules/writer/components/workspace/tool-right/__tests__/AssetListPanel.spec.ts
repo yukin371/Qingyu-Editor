@@ -5,6 +5,7 @@ import AssetListPanel from '../AssetListPanel.vue'
 const baseProps = {
   loading: false,
   searchKeyword: '',
+  scopeView: 'global' as const,
   activeCategory: 'characters' as const,
   categoryOptions: [
     { id: 'characters' as const, label: '角色', count: 2 },
@@ -25,6 +26,7 @@ const baseProps = {
       typeLabel: '角色',
       badge: '主角',
       latestChapterId: 'chapter-1',
+      scopeView: 'global' as const,
     },
     {
       id: 'asset-2',
@@ -33,6 +35,7 @@ const baseProps = {
       typeLabel: '地点',
       badge: '',
       latestChapterId: 'chapter-2',
+      scopeView: 'global' as const,
     },
   ],
   selectedAssetId: 'asset-1',
@@ -49,9 +52,9 @@ describe('AssetListPanel', () => {
       },
     })
 
-    const items = wrapper.findAll('.asset-list-panel__item')
+    const items = wrapper.findAll('.asset-list-tree__item')
 
-    expect(wrapper.findAll('.asset-list-panel__folder')).toHaveLength(2)
+    expect(wrapper.findAll('.asset-list-tree__folder')).toHaveLength(2)
     expect(items).toHaveLength(2)
     expect(items[0].text()).toContain('林舟')
     expect(items[0].text()).toContain('角色')
@@ -70,7 +73,7 @@ describe('AssetListPanel', () => {
       },
     })
 
-    await wrapper.findAll('.asset-list-panel__folder')[1].trigger('click')
+    await wrapper.findAll('.asset-list-tree__folder')[1].trigger('click')
 
     expect(wrapper.emitted('select-category')).toEqual([['locations']])
   })
@@ -88,5 +91,41 @@ describe('AssetListPanel', () => {
     await wrapper.get('.asset-list-panel__create-btn').trigger('click')
 
     expect(wrapper.emitted('create-asset')).toEqual([[]])
+  })
+
+  it('emits scope selection and renders local projection badges', async () => {
+    const wrapper = mount(AssetListPanel, {
+      props: {
+        ...baseProps,
+        scopeView: 'chapter',
+        assets: [
+          {
+            ...baseProps.assets[0],
+            scopeView: 'chapter' as const,
+            isLocalProjection: true,
+            referenceSource: '正文提及',
+          },
+          {
+            ...baseProps.assets[1],
+            id: 'ref-unresolved',
+            scopeView: 'chapter' as const,
+            isLocalProjection: true,
+            unresolved: true,
+          },
+        ],
+      },
+      global: {
+        stubs: {
+          QyIcon: true,
+        },
+      },
+    })
+
+    await wrapper.findAll('.asset-list-panel__scope-tab')[2].trigger('click')
+
+    expect(wrapper.emitted('update:scope-view')).toEqual([['volume']])
+    expect(wrapper.text()).toContain('正文提及')
+    expect(wrapper.text()).toContain('待确认')
+    expect(wrapper.findAll('.asset-list-panel__create-btn')).toHaveLength(1)
   })
 })

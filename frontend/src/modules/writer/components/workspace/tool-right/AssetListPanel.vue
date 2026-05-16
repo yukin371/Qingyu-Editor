@@ -22,6 +22,19 @@
       </button>
     </div>
 
+    <div class="asset-list-panel__scope-tabs" role="tablist" aria-label="资产范围">
+      <button
+        v-for="option in scopeOptions"
+        :key="option.id"
+        type="button"
+        class="asset-list-panel__scope-tab"
+        :class="{ 'is-active': scopeView === option.id }"
+        @click="$emit('update:scope-view', option.id)"
+      >
+        {{ option.label }}
+      </button>
+    </div>
+
     <AssetListTree
       :loading="loading"
       :active-category="activeCategory"
@@ -42,11 +55,13 @@ import type { EncyclopediaCategory } from '@/modules/writer/composables/types'
 import type {
   WriterAssetCategoryOption,
   WriterAssetListItem,
+  WriterAssetScopeView,
 } from '@/modules/writer/composables/useWriterAssetCatalog'
 
 defineProps<{
   loading: boolean
   searchKeyword: string
+  scopeView: WriterAssetScopeView
   activeCategory: EncyclopediaCategory
   categoryOptions: WriterAssetCategoryOption[]
   emptyMessage: string
@@ -54,8 +69,15 @@ defineProps<{
   selectedAssetId?: string
 }>()
 
+const scopeOptions: Array<{ id: WriterAssetScopeView; label: string }> = [
+  { id: 'global', label: '全局' },
+  { id: 'chapter', label: '本章' },
+  { id: 'volume', label: '本卷' },
+]
+
 defineEmits<{
   (e: 'update:search-keyword', value: string): void
+  (e: 'update:scope-view', value: WriterAssetScopeView): void
   (e: 'select-category', category: EncyclopediaCategory): void
   (e: 'select-asset', assetId: string): void
   (e: 'create-asset'): void
@@ -115,6 +137,38 @@ defineEmits<{
   &:hover {
     background: var(--editor-bg-surface, #f8fafc);
     color: var(--editor-text-primary, #111827);
+  }
+}
+
+.asset-list-panel__scope-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0 10px 8px;
+  padding: 3px;
+  border: 1px solid var(--editor-border, #d9dee6);
+  border-radius: 6px;
+  background: var(--editor-bg-surface, #f8fafc);
+}
+
+.asset-list-panel__scope-tab {
+  height: 26px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--editor-text-muted, #6b7280);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--editor-text-primary, #111827);
+  }
+
+  &.is-active {
+    background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
+    color: var(--editor-accent, #1d4ed8);
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--editor-shadow, #0f172a) 12%, transparent);
   }
 }
 

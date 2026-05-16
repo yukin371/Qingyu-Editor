@@ -5,10 +5,17 @@
       <span class="asset-detail-header__type-chip">{{ asset.typeLabel }}</span>
     </div>
     <div class="asset-detail-header__actions">
-      <button type="button" class="asset-detail-header__ghost" title="快速编辑" @click="$emit('edit')">
+      <button
+        v-if="canMutate"
+        type="button"
+        class="asset-detail-header__ghost"
+        title="快速编辑全局资产"
+        @click="$emit('edit')"
+      >
         <QyIcon name="Edit" :size="14" />
       </button>
       <button
+        v-if="canOpenGraph"
         type="button"
         class="asset-detail-header__ghost"
         title="关系图谱"
@@ -34,9 +41,10 @@
         <QyIcon name="FullScreen" :size="14" />
       </button>
       <button
+        v-if="canMutate"
         type="button"
         class="asset-detail-header__ghost is-danger"
-        title="删除资产"
+        title="删除全局资产"
         @click="$emit('delete')"
       >
         <QyIcon name="Delete" :size="14" />
@@ -51,6 +59,8 @@ import type { WriterAssetListItem } from '@/modules/writer/composables/useWriter
 
 defineProps<{
   asset: WriterAssetListItem
+  canMutate?: boolean
+  canOpenGraph?: boolean
 }>()
 
 defineEmits<{

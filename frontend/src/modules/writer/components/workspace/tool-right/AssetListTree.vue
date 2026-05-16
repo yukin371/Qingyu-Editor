@@ -25,14 +25,21 @@
             :key="asset.id"
             type="button"
             class="asset-list-tree__item"
-            :class="{ 'is-active': selectedAssetId === asset.id }"
+            :class="{
+              'is-active': selectedAssetId === asset.id,
+              'is-unresolved': asset.unresolved,
+            }"
             @click="$emit('select-asset', asset.id)"
           >
             <div class="asset-list-tree__item-main">
               <strong class="asset-list-tree__item-name">{{ asset.name }}</strong>
               <span class="asset-list-tree__item-type">{{ asset.typeLabel }}</span>
             </div>
-            <span v-if="asset.badge" class="asset-list-tree__item-badge">{{ asset.badge }}</span>
+            <span v-if="asset.unresolved" class="asset-list-tree__item-badge is-warning">待确认</span>
+            <span v-else-if="asset.referenceSource" class="asset-list-tree__item-badge">
+              {{ asset.referenceSource }}
+            </span>
+            <span v-else-if="asset.badge" class="asset-list-tree__item-badge">{{ asset.badge }}</span>
           </button>
         </div>
       </div>
@@ -167,5 +174,13 @@ defineEmits<{
   color: var(--editor-text-ghost, #9ca3af);
   font-size: 11px;
   white-space: nowrap;
+}
+
+.asset-list-tree__item.is-unresolved {
+  color: var(--editor-text-secondary, #374151);
+}
+
+.asset-list-tree__item-badge.is-warning {
+  color: var(--color-warning-700, #a16207);
 }
 </style>

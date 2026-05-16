@@ -3,8 +3,8 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const assetRefState = ref({
-  chapterRefs: {} as Record<string, Array<{ assetType: string; assetId?: string; assetName: string }>>,
-  volumeRefs: {} as Record<string, Array<{ assetType: string; assetId?: string; assetName: string }>>,
+  chapterRefs: {} as Record<string, any[]>,
+  volumeRefs: {} as Record<string, any[]>,
 })
 
 const writerStoreState = {
@@ -147,6 +147,94 @@ describe('useWriterAssetCatalog', () => {
         { label: '最近章节', value: '第1章' },
         { label: '提及章节', value: '1 章' },
         { label: '关联结构节点', value: '1' },
+      ]),
+    )
+
+    wrapper.unmount()
+  })
+
+  it('应把章节自动检出引用映射为只读局部资产列表', async () => {
+    const activeCategory = ref<'characters'>('characters')
+    const searchKeyword = ref('')
+    const scopeView = ref<'chapter'>('chapter')
+    let catalog: ReturnType<typeof useWriterAssetCatalog> | null = null
+
+    assetRefState.value = {
+      chapterRefs: {
+        'chapter-1': [
+          {
+            id: 'ref-1',
+            assetType: 'character',
+            assetId: 'char-1',
+            assetName: '回归角色甲',
+            scopeType: 'chapter',
+            scopeId: 'chapter-1',
+            source: 'mention',
+            evidence: '回归角色甲',
+            createdAt: '2026-05-16T00:00:00.000Z',
+            updatedAt: '2026-05-16T00:00:00.000Z',
+          },
+          {
+            id: 'ref-2',
+            assetType: 'character',
+            assetName: '未建档角色',
+            scopeType: 'chapter',
+            scopeId: 'chapter-1',
+            source: 'mention',
+            evidence: '未建档角色',
+            unresolved: true,
+            createdAt: '2026-05-16T00:00:00.000Z',
+            updatedAt: '2026-05-16T00:00:00.000Z',
+          },
+        ],
+      },
+      volumeRefs: {},
+    }
+
+    const Harness = defineComponent({
+      setup() {
+        catalog = useWriterAssetCatalog({
+          projectId: computed(() => 'project-1'),
+          chapters: computed(() => [
+            {
+              id: 'chapter-1',
+              projectId: 'project-1',
+              chapterNum: 1,
+              title: '第1章',
+              wordCount: 9,
+              updatedAt: '2026-05-15T00:00:00.000Z',
+              status: 'draft',
+              nodeType: 'chapter',
+            },
+          ]),
+          activeCategory,
+          searchKeyword,
+          scopeView,
+          chapterId: computed(() => 'chapter-1'),
+        })
+        return () => null
+      },
+    })
+
+    const wrapper = mount(Harness)
+    await nextTick()
+    await nextTick()
+
+    expect(catalog?.categoryOptions.value[0].count).toBe(2)
+    expect(catalog?.filteredAssets.value).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'char-1',
+          isLocalProjection: true,
+          unresolved: false,
+          referenceSource: '正文提及',
+        }),
+        expect.objectContaining({
+          id: 'ref-2',
+          isLocalProjection: true,
+          unresolved: true,
+          badge: '待确认',
+        }),
       ]),
     )
 

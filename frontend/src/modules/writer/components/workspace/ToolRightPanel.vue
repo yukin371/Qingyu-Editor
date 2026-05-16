@@ -17,6 +17,7 @@
           <AssetListPanel
             v-bind="assetListPanelProps"
             @update:search-keyword="handleAssetSearchKeywordChange"
+            @update:scope-view="handleAssetScopeViewChange"
             @select-category="handleAssetCategoryChange"
             @select-asset="handleAssetSelect"
             @create-asset="handleCreateAsset"
@@ -142,6 +143,7 @@ const { activeConfig, showListPanel, listWidth, isResizingList, attachDetailPane
   useToolRightPanel(activeToolRef)
 const {
   handleAssetSearchKeywordChange,
+  handleAssetScopeViewChange,
   handleAssetCategoryChange,
   assetListPanelProps,
   assetDetailPanelProps,
@@ -159,6 +161,7 @@ const {
   handleOpenAssetGraph,
 } = useToolRightAssets({
   projectId: computed(() => props.projectId),
+  chapterId: computed(() => props.chapterId),
   chapters: computed(() => props.chapters),
 })
 const { aiSummaryContextText, aiAssetSummaries } = useWriterAISummaryContext({

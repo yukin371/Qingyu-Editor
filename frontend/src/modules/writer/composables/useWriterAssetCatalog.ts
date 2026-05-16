@@ -19,13 +19,16 @@ import { useWriterStore } from '@/modules/writer/stores/writerStore'
 import {
   buildWriterAssetReferenceProjection,
   createWriterAssetRefKey,
+  type WriterAssetRef,
   type WriterAssetType,
 } from '@/modules/writer/utils/writerAssetRefs'
 import type { Concept } from '@/modules/writer/types/entity'
 import type { Character, Location, OutlineNode } from '@/types/writer'
 
 type MaybeRef<T> = T | Ref<T> | ComputedRef<T>
-type AssetRecord = Character | Location | Concept | EntitySummary
+type AssetRecord = Character | Location | Concept | EntitySummary | WriterAssetRef
+
+export type WriterAssetScopeView = 'global' | 'chapter' | 'volume'
 
 export interface WriterAssetListItem {
   id: string
@@ -40,6 +43,13 @@ export interface WriterAssetListItem {
   chapterReferenceCount: number
   volumeReferenceCount: number
   totalReferenceCount: number
+  scopeView: WriterAssetScopeView
+  isLocalProjection?: boolean
+  unresolved?: boolean
+  referenceEvidence?: string
+  referenceSource?: string
+  referenceScopeId?: string
+  globalAssetId?: string
   raw: AssetRecord
 }
 
@@ -101,6 +111,9 @@ export function useWriterAssetCatalog(options: {
   chapters?: MaybeRef<SidebarChapterSummary[] | undefined>
   activeCategory: Ref<EncyclopediaCategory>
   searchKeyword: Ref<string>
+  scopeView?: Ref<WriterAssetScopeView>
+  chapterId?: MaybeRef<string | undefined>
+  volumeId?: MaybeRef<string | undefined>
 }) {
   const writerStore = useWriterStore()
   const loading = ref(false)
@@ -112,6 +125,9 @@ export function useWriterAssetCatalog(options: {
   const effectiveProjectId = computed(
     () => String(unref(options.projectId) || writerStore.currentProjectId || ''),
   )
+  const effectiveScopeView = computed<WriterAssetScopeView>(() => options.scopeView?.value || 'global')
+  const currentChapterId = computed(() => String(unref(options.chapterId) || ''))
+  const currentVolumeId = computed(() => String(unref(options.volumeId) || ''))
   const chapters = computed<SidebarChapterSummary[]>(() => unref(options.chapters) || [])
   const characters = computed<Character[]>(() => writerStore.characters.list ?? [])
   const locations = computed<Location[]>(() => writerStore.locations.list ?? [])
@@ -178,39 +194,71 @@ export function useWriterAssetCatalog(options: {
     }
   }
 
+  const toCategory = (assetType: WriterAssetType): EncyclopediaCategory => {
+    if (assetType === 'character') return 'characters'
+    if (assetType === 'location') return 'locations'
+    if (assetType === 'item') return 'items'
+    if (assetType === 'organization') return 'organizations'
+    return 'concepts'
+  }
+
+  const toAssetType = (category: EncyclopediaCategory): WriterAssetType => {
+    if (category === 'characters') return 'character'
+    if (category === 'locations') return 'location'
+    if (category === 'items') return 'item'
+    if (category === 'organizations') return 'organization'
+    return 'concept'
+  }
+
+  const toTypeLabel = (assetType: WriterAssetType) => {
+    if (assetType === 'character') return '角色'
+    if (assetType === 'location') return '地点'
+    if (assetType === 'item') return '物件'
+    if (assetType === 'organization') return '组织'
+    return '概念'
+  }
+
+  const localSourceLabel = (source: WriterAssetRef['source']) => {
+    if (source === 'mention') return '正文提及'
+    if (source === 'alias') return '别名命中'
+    if (source === 'name') return '名称命中'
+    if (source === 'manual') return '手动绑定'
+    return '卷级聚合'
+  }
+
   const categoryOptions = computed<WriterAssetCategoryOption[]>(() => [
     {
       id: 'characters',
       label: '角色',
-      count: characters.value.length,
+      count: visibleAssetCatalog.value.characters.length,
       hint: '角色卡与活跃人物',
       tone: 'info',
     },
     {
       id: 'locations',
       label: '地点',
-      count: locations.value.length,
+      count: visibleAssetCatalog.value.locations.length,
       hint: '场景与世界空间节点',
       tone: 'success',
     },
     {
       id: 'items',
       label: '物件',
-      count: items.value.length,
+      count: visibleAssetCatalog.value.items.length,
       hint: '道具与关键物品',
       tone: 'warning',
     },
     {
       id: 'organizations',
       label: '组织',
-      count: organizations.value.length,
+      count: visibleAssetCatalog.value.organizations.length,
       hint: '势力、公会与组织节点',
       tone: 'warning',
     },
     {
       id: 'concepts',
       label: '概念',
-      count: concepts.value.length,
+      count: visibleAssetCatalog.value.concepts.length,
       hint: '概念、设定与规则',
       tone: 'info',
     },
@@ -260,6 +308,7 @@ export function useWriterAssetCatalog(options: {
       summary: normalizeSummary(character.summary),
       badge: character.alias?.length ? `别名 ${character.alias.length}` : undefined,
       ...enrichAssetMeta('character', character.id, character.name),
+      scopeView: 'global',
       raw: character,
     })),
     locations: locations.value.map((location) => ({
@@ -270,6 +319,7 @@ export function useWriterAssetCatalog(options: {
       summary: normalizeSummary(location.description),
       badge: location.atmosphere || location.climate || undefined,
       ...enrichAssetMeta('location', location.id, location.name),
+      scopeView: 'global',
       raw: location,
     })),
     items: items.value.map((item) => ({
@@ -279,6 +329,7 @@ export function useWriterAssetCatalog(options: {
       typeLabel: '物件',
       summary: normalizeSummary(item.summary),
       ...enrichAssetMeta('item', item.id, item.name),
+      scopeView: 'global',
       raw: item,
     })),
     organizations: organizations.value.map((organization) => ({
@@ -288,6 +339,7 @@ export function useWriterAssetCatalog(options: {
       typeLabel: '组织',
       summary: normalizeSummary(organization.summary),
       ...enrichAssetMeta('organization', organization.id, organization.name),
+      scopeView: 'global',
       raw: organization,
     })),
     concepts: concepts.value.map((concept) => ({
@@ -298,13 +350,106 @@ export function useWriterAssetCatalog(options: {
       summary: normalizeSummary(concept.summary || concept.description),
       badge: concept.category || undefined,
       ...enrichAssetMeta('concept', concept.id, concept.name),
+      scopeView: 'global',
       raw: concept,
     })),
   }))
 
+  const globalAssetsByKey = computed(() => {
+    const map = new Map<string, WriterAssetListItem>()
+    for (const [category, assets] of Object.entries(assetCatalog.value) as Array<
+      [EncyclopediaCategory, WriterAssetListItem[]]
+    >) {
+      const assetType = toAssetType(category)
+      for (const asset of assets) {
+        map.set(createWriterAssetRefKey(assetType, asset.id, asset.name), asset)
+        map.set(createWriterAssetRefKey(assetType, undefined, asset.name), asset)
+      }
+    }
+    return map
+  })
+
+  const buildLocalProjection = (
+    ref: WriterAssetRef,
+    scopeView: Exclude<WriterAssetScopeView, 'global'>,
+  ): WriterAssetListItem => {
+    const matched =
+      globalAssetsByKey.value.get(createWriterAssetRefKey(ref.assetType, ref.assetId, ref.assetName)) ||
+      globalAssetsByKey.value.get(createWriterAssetRefKey(ref.assetType, undefined, ref.assetName))
+    const category = toCategory(ref.assetType)
+    const scopeLabel = scopeView === 'chapter' ? '本章' : '本卷'
+
+    if (matched && !ref.unresolved) {
+      return {
+        ...matched,
+        badge: ref.evidence || matched.badge || localSourceLabel(ref.source),
+        scopeView,
+        isLocalProjection: true,
+        unresolved: false,
+        referenceEvidence: ref.evidence,
+        referenceSource: localSourceLabel(ref.source),
+        referenceScopeId: ref.scopeId,
+        globalAssetId: matched.id,
+      }
+    }
+
+    return {
+      id: ref.id,
+      name: ref.assetName,
+      category,
+      typeLabel: toTypeLabel(ref.assetType),
+      summary: ref.evidence ? `检出片段：${ref.evidence}` : '',
+      badge: ref.unresolved ? '待确认' : scopeLabel,
+      latestChapterId: scopeView === 'chapter' ? ref.scopeId : undefined,
+      latestChapterTitle:
+        scopeView === 'chapter' ? chapterTitleById.value.get(ref.scopeId) || ref.scopeId : undefined,
+      linkedNodeCount: 0,
+      chapterReferenceCount: scopeView === 'chapter' ? 1 : 0,
+      volumeReferenceCount: scopeView === 'volume' ? 1 : 0,
+      totalReferenceCount: 1,
+      scopeView,
+      isLocalProjection: true,
+      unresolved: true,
+      referenceEvidence: ref.evidence,
+      referenceSource: localSourceLabel(ref.source),
+      referenceScopeId: ref.scopeId,
+      raw: ref,
+    }
+  }
+
+  const localAssetCatalog = computed<Record<EncyclopediaCategory, WriterAssetListItem[]>>(() => {
+    const refs =
+      effectiveScopeView.value === 'chapter'
+        ? assetRefState.value.chapterRefs[currentChapterId.value] || []
+        : effectiveScopeView.value === 'volume'
+          ? assetRefState.value.volumeRefs[currentVolumeId.value] || []
+          : []
+    const next: Record<EncyclopediaCategory, WriterAssetListItem[]> = {
+      characters: [],
+      locations: [],
+      items: [],
+      organizations: [],
+      concepts: [],
+    }
+
+    refs.forEach((ref) => {
+      const item = buildLocalProjection(
+        ref,
+        effectiveScopeView.value === 'volume' ? 'volume' : 'chapter',
+      )
+      next[item.category].push(item)
+    })
+
+    return next
+  })
+
+  const visibleAssetCatalog = computed(() =>
+    effectiveScopeView.value === 'global' ? assetCatalog.value : localAssetCatalog.value,
+  )
+
   const filteredAssets = computed(() => {
     const keyword = options.searchKeyword.value.toLowerCase()
-    const assets = assetCatalog.value[options.activeCategory.value] || []
+    const assets = visibleAssetCatalog.value[options.activeCategory.value] || []
     if (!keyword) return assets
 
     return assets.filter((asset) => {
@@ -327,14 +472,37 @@ export function useWriterAssetCatalog(options: {
     if (options.searchKeyword.value) {
       return `未找到与“${options.searchKeyword.value}”匹配的资产`
     }
+    if (effectiveScopeView.value === 'chapter') {
+      return '当前章节暂无自动检出的资产'
+    }
+    if (effectiveScopeView.value === 'volume') {
+      return currentVolumeId.value ? '当前卷暂无自动检出的资产' : '当前章节不在卷内'
+    }
     return `${currentCategoryMeta.value.title}暂时为空`
   })
 
   const selectedDetailFields = computed<WriterAssetDetailField[]>(() => {
     if (!selectedAsset.value) return []
+    if (selectedAsset.value.unresolved) {
+      return [
+        { label: '状态', value: '待确认引用' },
+        selectedAsset.value.referenceSource
+          ? { label: '来源', value: selectedAsset.value.referenceSource }
+          : null,
+        selectedAsset.value.referenceEvidence
+          ? { label: '证据', value: selectedAsset.value.referenceEvidence }
+          : null,
+      ].filter(Boolean) as WriterAssetDetailField[]
+    }
 
     const raw = selectedAsset.value.raw
     const sharedFields: WriterAssetDetailField[] = [
+      selectedAsset.value.isLocalProjection && selectedAsset.value.referenceSource
+        ? { label: '局部来源', value: selectedAsset.value.referenceSource }
+        : null,
+      selectedAsset.value.isLocalProjection && selectedAsset.value.referenceEvidence
+        ? { label: '检出证据', value: selectedAsset.value.referenceEvidence }
+        : null,
       selectedAsset.value.latestChapterTitle
         ? { label: '最近章节', value: selectedAsset.value.latestChapterTitle }
         : null,
@@ -402,6 +570,12 @@ export function useWriterAssetCatalog(options: {
 
   const selectedDataHint = computed(() => {
     if (!selectedAsset.value) return ''
+    if (selectedAsset.value.unresolved) {
+      return '这是系统从正文检出的未确认引用，只代表本章或本卷提及，不会自动创建全局资产。'
+    }
+    if (selectedAsset.value.isLocalProjection) {
+      return '这是系统自动检出的局部引用；编辑或删除操作作用于对应全局资产，不会创建或删除局部资产。'
+    }
     if (selectedAsset.value.latestChapterTitle) {
       return `最近章节、提及章节数、涉及卷数与关联节点数来自现有章节资产引用和大纲 documentId 绑定关系，属于当前前端聚合口径。${ASSET_SCOPE_HINT}`
     }
@@ -594,10 +768,10 @@ export function useWriterAssetCatalog(options: {
       await deleteLocalEntity(asset.id, projectId)
     }
 
-    const currentAssets = assetCatalog.value[asset.category] || []
+    const currentAssets = visibleAssetCatalog.value[asset.category] || []
     const deletedIndex = currentAssets.findIndex((item) => item.id === asset.id)
     await reloadAssetData()
-    const nextAssets = assetCatalog.value[asset.category] || []
+    const nextAssets = visibleAssetCatalog.value[asset.category] || []
     selectedAsset.value =
       nextAssets[deletedIndex] || nextAssets[Math.max(0, deletedIndex - 1)] || null
   }
@@ -611,7 +785,7 @@ export function useWriterAssetCatalog(options: {
     { immediate: true },
   )
 
-  watch([options.activeCategory, filteredAssets], ([category, assets]) => {
+  watch([options.activeCategory, filteredAssets, effectiveScopeView], ([category, assets]) => {
     if (selectedAsset.value?.category !== category) {
       selectedAsset.value = null
       return
@@ -638,6 +812,7 @@ export function useWriterAssetCatalog(options: {
     filteredAssets,
     emptyMessage,
     assetScopeHint: ASSET_SCOPE_HINT,
+    scopeView: effectiveScopeView,
     selectedAsset,
     selectedDetailFields,
     selectedStateFields,

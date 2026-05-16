@@ -3,6 +3,8 @@
     <div v-if="asset" class="asset-detail-panel__body">
       <AssetDetailHeader
         :asset="asset"
+        :can-mutate="canMutateAsset"
+        :can-open-graph="canOpenGraph"
         @edit="$emit('edit')"
         @delete="$emit('delete')"
         @open-graph="$emit('open-graph')"
@@ -29,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import AssetDetailContent from '@/modules/writer/components/workspace/tool-right/AssetDetailContent.vue'
 import AssetDetailHeader from '@/modules/writer/components/workspace/tool-right/AssetDetailHeader.vue'
 import type {
@@ -53,6 +55,8 @@ defineEmits<{
 }>()
 
 const activeTab = ref<'detail' | 'chapters'>('detail')
+const canMutateAsset = computed(() => Boolean(props.asset && !props.asset.unresolved))
+const canOpenGraph = computed(() => Boolean(props.asset && !props.asset.unresolved))
 
 watch(
   () => props.asset?.id,

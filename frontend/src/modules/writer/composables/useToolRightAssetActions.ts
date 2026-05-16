@@ -5,6 +5,7 @@ import type { EncyclopediaCategory, GraphFocusTarget } from '@/modules/writer/co
 import type {
   WriterAssetListItem,
   WriterAssetMutationInput,
+  WriterAssetScopeView,
 } from '@/modules/writer/composables/useWriterAssetCatalog'
 
 interface UseToolRightAssetActionsOptions {
@@ -16,6 +17,7 @@ interface UseToolRightAssetActionsOptions {
   updateAsset: (asset: WriterAssetListItem, payload: WriterAssetMutationInput) => Promise<unknown>
   deleteAsset: (asset: WriterAssetListItem) => Promise<void>
   buildGraphFocusTarget: (asset: WriterAssetListItem) => GraphFocusTarget
+  assetScopeView?: Ref<WriterAssetScopeView>
 }
 
 export const useToolRightAssetActions = ({
@@ -27,6 +29,7 @@ export const useToolRightAssetActions = ({
   updateAsset,
   deleteAsset,
   buildGraphFocusTarget,
+  assetScopeView,
 }: UseToolRightAssetActionsOptions) => {
   const toolOverlay = useToolOverlay()
   const assetEditorVisible = ref(false)
@@ -40,18 +43,21 @@ export const useToolRightAssetActions = ({
   }
 
   const handleCreateAsset = () => {
+    if (assetScopeView) {
+      assetScopeView.value = 'global'
+    }
     assetEditorMode.value = 'create'
     assetEditorVisible.value = true
   }
 
   const handleEditAsset = () => {
-    if (!selectedAsset.value) return
+    if (!selectedAsset.value || selectedAsset.value.unresolved) return
     assetEditorMode.value = 'edit'
     assetEditorVisible.value = true
   }
 
   const handleDeleteAsset = async () => {
-    if (!selectedAsset.value) return
+    if (!selectedAsset.value || selectedAsset.value.unresolved) return
     const chapterImpact = selectedAsset.value.chapterReferenceCount
       ? `将影响 ${selectedAsset.value.chapterReferenceCount} 个章节引用`
       : '当前没有章节引用记录'
@@ -80,6 +86,9 @@ export const useToolRightAssetActions = ({
         await updateAsset(selectedAsset.value, payload)
         message.success('资产已更新')
       } else {
+        if (assetScopeView) {
+          assetScopeView.value = 'global'
+        }
         await createAsset(payload)
         message.success('资产已创建')
       }
@@ -99,7 +108,7 @@ export const useToolRightAssetActions = ({
   }
 
   const handleOpenAssetGraph = () => {
-    if (!selectedAsset.value) return
+    if (!selectedAsset.value || selectedAsset.value.unresolved) return
     toolOverlay.openFromRightPanel('relations', {
       focusedAsset: buildGraphFocusTarget(selectedAsset.value),
     })

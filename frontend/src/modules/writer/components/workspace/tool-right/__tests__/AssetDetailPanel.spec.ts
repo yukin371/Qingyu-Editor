@@ -12,6 +12,10 @@ const baseProps = {
     latestChapterId: 'chapter-1',
     latestChapterTitle: '第一章 开端',
     linkedNodeCount: 2,
+    chapterReferenceCount: 3,
+    volumeReferenceCount: 1,
+    totalReferenceCount: 4,
+    scopeView: 'global',
     raw: {},
   },
   detailFields: [
@@ -35,7 +39,7 @@ describe('AssetDetailPanel', () => {
       },
     })
 
-    await wrapper.findAll('.asset-detail-panel__tab')[1].trigger('click')
+    await wrapper.findAll('.asset-detail-content__tab')[1].trigger('click')
 
     expect(wrapper.text()).toContain('第一章 开端')
     expect(wrapper.text()).toContain('3 章 · 1 卷')
@@ -52,11 +56,36 @@ describe('AssetDetailPanel', () => {
       },
     })
 
-    const buttons = wrapper.findAll('.asset-detail-panel__ghost')
+    const buttons = wrapper.findAll('.asset-detail-header__ghost')
     await buttons[0].trigger('click')
     await buttons[buttons.length - 1].trigger('click')
 
     expect(wrapper.emitted('edit')).toEqual([[]])
     expect(wrapper.emitted('delete')).toEqual([[]])
+  })
+
+  it('renders unresolved local references as read-only', () => {
+    const wrapper = mount(AssetDetailPanel, {
+      props: {
+        ...baseProps,
+        asset: {
+          ...baseProps.asset,
+          id: 'ref-1',
+          name: '新势力',
+          scopeView: 'chapter',
+          isLocalProjection: true,
+          unresolved: true,
+        },
+      },
+      global: {
+        stubs: {
+          QyIcon: true,
+        },
+      },
+    })
+
+    expect(wrapper.text()).toContain('新势力')
+    expect(wrapper.findAll('.asset-detail-header__ghost')).toHaveLength(2)
+    expect(wrapper.text()).toContain('聚合口径说明')
   })
 })
