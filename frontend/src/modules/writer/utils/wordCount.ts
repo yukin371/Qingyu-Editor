@@ -14,6 +14,23 @@ export interface WordCountResult {
   whitespace: number
 }
 
+const CJK_PATTERN = /\p{Script=Han}/gu
+const LATIN_WORD_PATTERN = /\p{Script=Latin}+/gu
+
+/**
+ * 小说正文统计口径：
+ * - 汉字逐字统计
+ * - 连续拉丁字母按 1 个词统计，拟声词如 hahaha 也只算 1 字
+ * - 数字、标点、空白和各类符号不进入 total
+ */
+export function calculateWritingWordCount(text: string, filterMarkdown: boolean = false): number {
+  if (!text) return 0
+  const content = filterMarkdown ? removeMarkdownSyntax(text) : text
+  const chinese = content.match(CJK_PATTERN)?.length ?? 0
+  const latinWords = content.match(LATIN_WORD_PATTERN)?.length ?? 0
+  return chinese + latinWords
+}
+
 /**
  * 详细字数统计
  * @param text 文本内容
@@ -37,11 +54,11 @@ export function detailedWordCount(text: string, filterMarkdown: boolean = false)
     content = removeMarkdownSyntax(content)
   }
 
-  // 统计各类字符
-  const chineseChars = content.match(/[\u4e00-\u9fa5]/g) || []
-  const englishWords = content.match(/[a-zA-Z]+/g) || []
+  // 统计各类字符；total 只包含正文有效字数，不包含数字、标点或空白。
+  const chineseChars = content.match(CJK_PATTERN) || []
+  const englishWords = content.match(LATIN_WORD_PATTERN) || []
   const numbers: string[] = content.match(/\d+/g) || []
-  const punctuation = content.match(/[，。！？；：""''（）、《》【】]/g) || []
+  const punctuation = content.match(/[\p{P}\p{S}]/gu) || []
   const whitespace: string[] = content.match(/\s+/g) || []
 
   const chinese = chineseChars.length
@@ -168,4 +185,3 @@ export function formatCompletionTime(minutes: number): string {
   const remainingHours = hours % 24
   return remainingHours > 0 ? `约 ${days} 天 ${remainingHours} 小时` : `约 ${days} 天`
 }
-

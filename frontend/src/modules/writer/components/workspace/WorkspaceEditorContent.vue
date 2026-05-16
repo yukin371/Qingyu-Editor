@@ -68,6 +68,7 @@ import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
 import QyGhostButton from '@/design-system/components/basic/QyGhostButton/QyGhostButton.vue'
 import { useToolOverlay, type ToolType } from '@/modules/writer/composables/useToolOverlay'
 import { useWorkspaceShortcuts } from '@/modules/writer/composables/useWorkspaceShortcuts'
+import { usePanelStore } from '@/modules/writer/stores/panelStore'
 import type {
   StoryHarnessChangeRequestDecision,
   StoryHarnessCharacterSummary,
@@ -191,11 +192,14 @@ const handleOverlayTriggerAIAction = (payload: {
 }
 
 const toolOverlay = useToolOverlay()
+const panelStore = usePanelStore()
 useWorkspaceShortcuts({
   openLatestTool: () => toolOverlay.open(),
   openTool: (tool) => toolOverlay.open(tool),
   closeOverlay: () => toolOverlay.close(),
   isOverlayVisible: () => toolOverlay.visible.value,
+  toggleLeftPanel: () => panelStore.toggleLeftCollapsed(),
+  toggleRightPanel: () => panelStore.toggleRightCollapsed(),
 })
 
 defineExpose({

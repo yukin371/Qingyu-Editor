@@ -66,6 +66,8 @@ useWorkspaceShortcuts({
   openTool: (tool) => toolOverlay.open(tool),
   closeOverlay: () => toolOverlay.close(),
   isOverlayVisible: () => toolOverlay.visible.value,
+  toggleLeftPanel: () => panelStore.toggleLeftCollapsed(),
+  toggleRightPanel: () => panelStore.toggleRightCollapsed(),
 })
 ```
 

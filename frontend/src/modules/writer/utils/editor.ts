@@ -1,3 +1,5 @@
+import { calculateWritingWordCount } from './wordCount'
+
 /**
  * 编辑器工具函数集合
  * 针对 HTMLTextAreaElement 进行优化
@@ -9,44 +11,11 @@
 
 /**
  * 计算字数（高性能版）
- * 规则：中日韩文字算1个，英文单词算1个，数字串算1个
+ * 规则：汉字算 1 个，连续拉丁字母算 1 个，数字/标点/空白不计入
  */
 export function calculateWordCount(text: string, filterMarkdown: boolean = false): number {
   if (!text) return 0
-  let content = text
-
-  if (filterMarkdown) {
-    // 移除代码块
-    content = content.replace(/```[\s\S]*?```/g, '')
-    // 移除行内代码
-    content = content.replace(/`([^`]+)`/g, '$1')
-    // 移除链接和图片 URL，只保留描述文本
-    content = content.replace(/!\[(.*?)\]\(.*?\)/g, '$1')
-    content = content.replace(/\[(.*?)\]\(.*?\)/g, '$1')
-    // 移除标题符号、列表符号、引用符号 (仅移除行首标记)
-    content = content.replace(/^(\s*[-*+>]+\s+)+/gm, '')
-    content = content.replace(/^(\s*#+\s+)/gm, '')
-    // 移除粗体斜体标记
-    content = content.replace(/[*~_]+/g, '')
-  }
-
-  // 1. 匹配 CJK (中日韩) 字符
-  // 使用 Unicode Property Escapes，比 [\u4e00-\u9fa5] 更全面
-  const cjkMatch = content.match(/\p{Script=Han}|\p{Script=Hiragana}|\p{Script=Katakana}/gu)
-  const cjkCount = cjkMatch ? cjkMatch.length : 0
-
-  // 2. 匹配非 CJK 的单词 (英文、数字、其他语言单词)
-  // 排除掉纯标点符号
-  const nonCjkContent = content.replace(
-    /\p{Script=Han}|\p{Script=Hiragana}|\p{Script=Katakana}/gu,
-    ' ',
-  )
-  const wordMatch = nonCjkContent.match(
-    /[a-zA-Z0-9\u00C0-\u00FF]+(?:['_-][a-zA-Z0-9\u00C0-\u00FF]+)*/g,
-  )
-  const wordCount = wordMatch ? wordMatch.length : 0
-
-  return cjkCount + wordCount
+  return calculateWritingWordCount(text, filterMarkdown)
 }
 
 /**

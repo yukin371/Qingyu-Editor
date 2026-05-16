@@ -4,6 +4,8 @@ import type { ToolType } from './useToolOverlay'
 import {
   WORKSPACE_CLOSE_OVERLAY_ACTION,
   WORKSPACE_OPEN_LAST_TOOL_ACTION,
+  WORKSPACE_TOGGLE_LEFT_PANEL_ACTION,
+  WORKSPACE_TOGGLE_RIGHT_PANEL_ACTION,
   WORKSPACE_TOOL_SHORTCUT_ACTIONS,
 } from './workspaceShortcutActions'
 
@@ -12,6 +14,8 @@ interface UseWorkspaceShortcutsOptions {
   openTool: (tool: ToolType) => void
   closeOverlay: () => void
   isOverlayVisible: () => boolean
+  toggleLeftPanel: () => void
+  toggleRightPanel: () => void
 }
 
 /**
@@ -39,6 +43,16 @@ export function useWorkspaceShortcuts(options: UseWorkspaceShortcutsOptions) {
   registerWorkspaceHandler(WORKSPACE_OPEN_LAST_TOOL_ACTION.id, (event: KeyboardEvent) => {
     event.preventDefault()
     options.openLatestTool()
+  })
+
+  registerWorkspaceHandler(WORKSPACE_TOGGLE_LEFT_PANEL_ACTION.id, (event: KeyboardEvent) => {
+    event.preventDefault()
+    options.toggleLeftPanel()
+  })
+
+  registerWorkspaceHandler(WORKSPACE_TOGGLE_RIGHT_PANEL_ACTION.id, (event: KeyboardEvent) => {
+    event.preventDefault()
+    options.toggleRightPanel()
   })
 
   WORKSPACE_TOOL_SHORTCUT_ACTIONS.forEach((action) => {

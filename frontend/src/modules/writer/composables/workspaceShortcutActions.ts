@@ -37,6 +37,25 @@ export const WORKSPACE_OPEN_LAST_TOOL_ACTION: WorkspaceShortcutActionDefinition 
   category: 'tool',
 }
 
+export const WORKSPACE_TOGGLE_LEFT_PANEL_ACTION: WorkspaceShortcutActionDefinition = {
+  id: 'workspace.toggleLeftPanel',
+  defaultKeys: ['Ctrl', '['],
+  description: '隐藏/显示左侧边栏',
+  category: 'navigation',
+}
+
+export const WORKSPACE_TOGGLE_RIGHT_PANEL_ACTION: WorkspaceShortcutActionDefinition = {
+  id: 'workspace.toggleRightPanel',
+  defaultKeys: ['Ctrl', ']'],
+  description: '隐藏/显示右侧边栏',
+  category: 'navigation',
+}
+
+export const WORKSPACE_PANEL_SHORTCUT_ACTIONS: WorkspaceShortcutActionDefinition[] = [
+  WORKSPACE_TOGGLE_LEFT_PANEL_ACTION,
+  WORKSPACE_TOGGLE_RIGHT_PANEL_ACTION,
+]
+
 export const WORKSPACE_TOOL_SHORTCUT_ACTIONS: WorkspaceToolShortcutDefinition[] = [
   {
     id: 'tool.switchRelations',
@@ -70,6 +89,7 @@ export const WORKSPACE_TOOL_SHORTCUT_ACTIONS: WorkspaceToolShortcutDefinition[] 
 
 export const WORKSPACE_SHORTCUT_ACTIONS: WorkspaceShortcutActionDefinition[] = [
   WORKSPACE_CLOSE_OVERLAY_ACTION,
+  ...WORKSPACE_PANEL_SHORTCUT_ACTIONS,
   WORKSPACE_OPEN_LAST_TOOL_ACTION,
   ...WORKSPACE_TOOL_SHORTCUT_ACTIONS,
 ]

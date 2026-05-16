@@ -43,6 +43,7 @@
             @delete-selected="handleDeleteOutlineNode"
             @move-up="() => handleMoveOutlineNode('up')"
             @move-down="() => handleMoveOutlineNode('down')"
+            @toggle="panelStore.toggleLeftCollapsed"
             @open-graph="handleOpenGraph"
             @open-fullscreen-tool="handleOpenFullscreenTool"
             @outline-select="handleOutlineSelect"
@@ -169,7 +170,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router'
 import { message, messageBox } from '@/design-system/services'
 import { WRITER_ROUTE_NAMES } from '@/modules/writer/routes'
@@ -318,6 +319,35 @@ const currentProjectWordCount = computed(() => {
   const project = projects.value.find((p) => p.id === currentProjectId.value)
   return project?.wordCount || 0
 })
+
+const AUTO_SAVE_DELAY_MS = 1200
+let autoSaveTimer: number | null = null
+const lastSavedContentSignature = ref('')
+
+type SaveOptions = {
+  silent?: boolean
+  refreshHarness?: boolean
+}
+
+const buildCurrentEditorContents = () => [
+  {
+    paragraphId: 'root',
+    order: 0,
+    content: tipTapContent.value || '',
+    contentType: 'tiptap_json',
+    version: Number(editorStore.currentVersion || 0),
+  },
+]
+
+const getContentSignature = (chapterId = currentChapterId.value, content = tipTapContent.value) =>
+  `${chapterId || ''}:${content || ''}`
+
+const clearAutoSaveTimer = () => {
+  if (autoSaveTimer) {
+    window.clearTimeout(autoSaveTimer)
+    autoSaveTimer = null
+  }
+}
 
 const isImmersiveMode = computed(() => resolvedActiveTool.value === 'immersive')
 
@@ -628,30 +658,63 @@ const handleOpenDirectoryOutline = async (directoryId: string) => {
   }
 }
 
-const handleTipTapSave = async (contents?: unknown[]) => {
-  if (!currentChapterId.value) {
-    message.warning('请先选择要保存的章节')
+const refreshWorkspaceStatistics = async () => {
+  if (!currentProjectId.value) {
     return
   }
-  try {
-    if (contents && Array.isArray(contents)) {
-      // 调用 editorStore.saveParagraphs 保存到后端
-      await editorStore.saveParagraphs(
-        contents as Array<{
-          paragraphId?: string
-          order: number
-          content: string
-          contentType?: string
-        }>,
-      )
+
+  await Promise.allSettled([
+    documentStore.loadTree(currentProjectId.value),
+    projectStore.loadDetail(currentProjectId.value),
+  ])
+}
+
+const handleTipTapSave = async (contents?: unknown[], options: SaveOptions = {}) => {
+  if (!currentChapterId.value) {
+    if (!options.silent) {
+      message.warning('请先选择要保存的章节')
     }
-    await persistCurrentLiveChangeRequests()
-    await refreshAfterSave()
+    return
+  }
+  clearAutoSaveTimer()
+  try {
+    const contentsToSave =
+      contents && Array.isArray(contents) && contents.length > 0
+        ? contents
+        : buildCurrentEditorContents()
+
+    await editorStore.saveParagraphs(
+      contentsToSave as Array<{
+        paragraphId?: string
+        order: number
+        content: string
+        contentType?: string
+      }>,
+    )
+    lastSavedContentSignature.value = getContentSignature()
+    await refreshWorkspaceStatistics()
+    if (options.refreshHarness !== false) {
+      await persistCurrentLiveChangeRequests()
+      await refreshAfterSave()
+    }
     // 保存成功静默处理，不显示弹窗，状态栏会显示保存状态
   } catch (error) {
     console.error('[ProjectWorkspace] 保存失败:', error)
-    message.error('保存失败，请重试')
+    if (!options.silent) {
+      message.error('保存失败，请重试')
+    }
   }
+}
+
+const scheduleAutoSave = () => {
+  if (!editorStore.autosaveEnabled || !currentChapterId.value) {
+    return
+  }
+  clearAutoSaveTimer()
+  autoSaveTimer = window.setTimeout(() => {
+    autoSaveTimer = null
+    void handleTipTapSave(undefined, { silent: true, refreshHarness: false })
+  }, AUTO_SAVE_DELAY_MS)
 }
 
 const handleStoryHarnessTriggerIndex = async () => {
@@ -1752,6 +1815,36 @@ watch(
 )
 
 watch(
+  [() => currentChapterId.value, () => tipTapContent.value],
+  ([chapterId, content], [previousChapterId]) => {
+    if (!chapterId) {
+      clearAutoSaveTimer()
+      lastSavedContentSignature.value = ''
+      return
+    }
+
+    const nextSignature = getContentSignature(chapterId, content)
+    if (chapterId !== previousChapterId) {
+      clearAutoSaveTimer()
+      lastSavedContentSignature.value = nextSignature
+      return
+    }
+
+    if (!content || nextSignature === lastSavedContentSignature.value) {
+      return
+    }
+
+    if (!editorStore.isDirty) {
+      lastSavedContentSignature.value = nextSignature
+      return
+    }
+
+    scheduleAutoSave()
+  },
+  { flush: 'post' },
+)
+
+watch(
   () => currentProjectId.value,
   (projectId) => {
     if (!projectId) {
@@ -1831,6 +1924,10 @@ watch(
   },
   { immediate: true },
 )
+
+onUnmounted(() => {
+  clearAutoSaveTimer()
+})
 </script>
 
 <style scoped lang="scss">

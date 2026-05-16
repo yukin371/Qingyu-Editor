@@ -4,6 +4,8 @@ import { mount } from '@vue/test-utils'
 import {
   WORKSPACE_CLOSE_OVERLAY_ACTION,
   WORKSPACE_OPEN_LAST_TOOL_ACTION,
+  WORKSPACE_TOGGLE_LEFT_PANEL_ACTION,
+  WORKSPACE_TOGGLE_RIGHT_PANEL_ACTION,
   WORKSPACE_TOOL_SHORTCUT_ACTIONS,
 } from '../workspaceShortcutActions'
 
@@ -31,6 +33,8 @@ describe('useWorkspaceShortcuts', () => {
     const openLatestTool = vi.fn()
     const openTool = vi.fn()
     const closeOverlay = vi.fn()
+    const toggleLeftPanel = vi.fn()
+    const toggleRightPanel = vi.fn()
 
     const Harness = defineComponent({
       setup() {
@@ -39,6 +43,8 @@ describe('useWorkspaceShortcuts', () => {
           openTool,
           closeOverlay,
           isOverlayVisible: () => visible,
+          toggleLeftPanel,
+          toggleRightPanel,
         })
         return () => null
       },
@@ -50,6 +56,8 @@ describe('useWorkspaceShortcuts', () => {
       openLatestTool,
       openTool,
       closeOverlay,
+      toggleLeftPanel,
+      toggleRightPanel,
     }
   }
 
@@ -61,6 +69,8 @@ describe('useWorkspaceShortcuts', () => {
       expect(registeredHandlers.has(action.id)).toBe(true)
     })
     expect(registeredHandlers.has(WORKSPACE_CLOSE_OVERLAY_ACTION.id)).toBe(true)
+    expect(registeredHandlers.has(WORKSPACE_TOGGLE_LEFT_PANEL_ACTION.id)).toBe(true)
+    expect(registeredHandlers.has(WORKSPACE_TOGGLE_RIGHT_PANEL_ACTION.id)).toBe(true)
   })
 
   it('tool.open 应触发打开最近一次工具', () => {
@@ -84,6 +94,26 @@ describe('useWorkspaceShortcuts', () => {
     }
 
     expect(openTool).toHaveBeenCalledWith('structure')
+  })
+
+  it('workspace.toggleLeftPanel 应触发左侧栏折叠切换', () => {
+    const { toggleLeftPanel } = mountHarness()
+
+    registeredHandlers.get(WORKSPACE_TOGGLE_LEFT_PANEL_ACTION.id)?.(
+      new KeyboardEvent('keydown', { key: '[' }),
+    )
+
+    expect(toggleLeftPanel).toHaveBeenCalledTimes(1)
+  })
+
+  it('workspace.toggleRightPanel 应触发右侧栏折叠切换', () => {
+    const { toggleRightPanel } = mountHarness()
+
+    registeredHandlers.get(WORKSPACE_TOGGLE_RIGHT_PANEL_ACTION.id)?.(
+      new KeyboardEvent('keydown', { key: ']' }),
+    )
+
+    expect(toggleRightPanel).toHaveBeenCalledTimes(1)
   })
 
   it('workspace.closeOverlay 仅在 overlay 可见时才触发关闭', () => {

@@ -58,6 +58,7 @@ import {
   UpdateVolume,
 } from '../../../../wailsjs/go/main/App'
 import { DocumentType } from '../types/document'
+import { calculateWritingWordCount } from '../utils/wordCount'
 
 type BridgeProject = {
   id: string
@@ -639,15 +640,7 @@ function extractPlainText(content: string): string {
 }
 
 function countWords(text: string): number {
-  const normalized = text.trim()
-  if (!normalized) {
-    return 0
-  }
-  const segments = normalized.split(/\s+/).filter(Boolean)
-  if (segments.length > 1) {
-    return segments.length
-  }
-  return normalized.replace(/\s+/g, '').length
+  return calculateWritingWordCount(text)
 }
 
 function toParagraphPayload(content: string, updatedAt: string, wordCount: number) {

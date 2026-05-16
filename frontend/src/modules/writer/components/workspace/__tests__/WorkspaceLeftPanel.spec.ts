@@ -33,10 +33,12 @@ vi.mock('@/modules/writer/utils/characterGraphDrafts', () => ({
 }))
 
 vi.mock('@/modules/writer/utils/writerAssetRefs', () => ({
+  WRITER_ASSET_REFS_UPDATED_EVENT: 'qingyu:writer-asset-refs-updated',
   loadWriterAssetRefState: () => ({
     chapterRefs: {},
     volumeRefs: {},
   }),
+  buildWriterAssetSummaryByChapterId: () => ({}),
   summarizeWriterAssetRefs: (refs: Array<unknown>) => ({
     total: refs.length,
   }),
@@ -89,7 +91,13 @@ describe('WorkspaceLeftPanel', () => {
     expect(wrapper.find('[title="关系图谱"]').exists()).toBe(false)
     expect(wrapper.find('[title="时间线"]').exists()).toBe(false)
     expect(wrapper.find('[title="故事分支"]').exists()).toBe(false)
-    expect(wrapper.find('[title="展开更多工具"]').exists()).toBe(true)
+    expect(wrapper.find('[title="显示左侧边栏"]').exists()).toBe(true)
+  })
+
+  it('展开态折叠按钮应明确表达隐藏左侧边栏', () => {
+    const wrapper = mountPanel(false)
+
+    expect(wrapper.find('[title="隐藏左侧边栏"]').exists()).toBe(true)
   })
 
   it('展开态通过工具菜单承接资产与专业工具入口', async () => {

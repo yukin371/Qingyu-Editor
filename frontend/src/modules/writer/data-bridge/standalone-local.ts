@@ -43,6 +43,7 @@ import type {
 } from '../api/project'
 import type { EntityGraph, EntitySummary, StateValue } from '../api/entities'
 import type { CreateOutlineRequest, OutlineTreeNode, UpdateOutlineRequest } from '../api/outline'
+import { calculateWritingWordCount } from '../utils/wordCount'
 
 type LocalProjectRecord = {
   id: string
@@ -265,18 +266,7 @@ function extractPlainText(content: string): string {
 }
 
 function countWords(content: string): number {
-  const plainText = extractPlainText(content).trim()
-  if (!plainText) {
-    return 0
-  }
-
-  const asianChars = plainText.match(/[\u4e00-\u9fff]/g)?.length ?? 0
-  const latinWords = plainText
-    .replace(/[\u4e00-\u9fff]/g, ' ')
-    .split(/\s+/)
-    .filter(Boolean).length
-
-  return asianChars + latinWords
+  return calculateWritingWordCount(extractPlainText(content))
 }
 
 function buildDefaultDocumentContent(title: string): string {

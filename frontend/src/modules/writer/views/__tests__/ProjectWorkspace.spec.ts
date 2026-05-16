@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, reactive, ref } from 'vue'
 import { createPinia } from 'pinia'
@@ -18,6 +18,7 @@ const routerReplace = vi
   })
 const setActiveTool = vi.fn()
 const setSelectedText = vi.fn()
+const toggleLeftCollapsed = vi.fn()
 const { messageSuccess, messageInfo, messageWarning, messageError, messageBoxConfirm } = vi.hoisted(
   () => ({
     messageSuccess: vi.fn(),
@@ -37,6 +38,31 @@ const { selectDocumentMock, loadDocumentMock } = vi.hoisted(() => ({
 const { loadProjectDetailMock } = vi.hoisted(() => ({
   loadProjectDetailMock: vi.fn().mockResolvedValue(undefined),
 }))
+const { loadDocumentTreeMock, saveParagraphsMock } = vi.hoisted(() => ({
+  loadDocumentTreeMock: vi.fn().mockResolvedValue(undefined),
+  saveParagraphsMock: vi.fn().mockResolvedValue(undefined),
+}))
+const editorStoreState = reactive({
+  activeTool: 'writing',
+  editorContent: '',
+  content: '',
+  tipTapEditor: null,
+  currentVersion: 0,
+  autosaveEnabled: false,
+  isDirty: false,
+  setActiveTool,
+  setCurrentChapter: vi.fn(),
+  setContent: vi.fn((value: string) => {
+    editorStoreState.content = value
+    editorStoreState.isDirty = true
+  }),
+  markSaved: vi.fn(() => {
+    editorStoreState.isDirty = false
+  }),
+  reset: vi.fn(),
+  loadDocument: loadDocumentMock,
+  saveParagraphs: saveParagraphsMock,
+})
 const baseFlatDocs = [
   {
     id: 'chapter-1',
@@ -183,7 +209,7 @@ vi.mock('@/modules/writer/stores/documentStore', () => ({
   useDocumentStore: () => ({
     currentDocMeta: null,
     flatDocs: mockFlatDocs,
-    loadTree: vi.fn().mockResolvedValue(undefined),
+    loadTree: loadDocumentTreeMock,
     selectDocument: selectDocumentMock,
     create: vi.fn().mockResolvedValue(undefined),
     remove: vi.fn().mockResolvedValue(undefined),
@@ -191,24 +217,14 @@ vi.mock('@/modules/writer/stores/documentStore', () => ({
 }))
 
 vi.mock('@/modules/writer/stores/editorStore', () => ({
-  useEditorStore: () => ({
-    activeTool: ref('writing'),
-    editorContent: '',
-    content: '',
-    tipTapEditor: null,
-    setActiveTool,
-    setCurrentChapter: vi.fn(),
-    setContent: vi.fn(),
-    markSaved: vi.fn(),
-    reset: vi.fn(),
-    loadDocument: loadDocumentMock,
-  }),
+  useEditorStore: () => editorStoreState,
 }))
 
 vi.mock('@/modules/writer/stores/panelStore', () => ({
   usePanelStore: () => ({
     leftCollapsed: false,
     rightCollapsed: false,
+    toggleLeftCollapsed,
     setLeftCollapsed: vi.fn(),
     setRightCollapsed: vi.fn(),
   }),
@@ -302,10 +318,14 @@ const EncyclopediaViewStub = { template: '<div data-testid="encyclopedia-view" /
 const AIPanelStub = { template: '<div data-testid="ai-panel" />' }
 
 const WorkspaceLeftPanelStub = defineComponent({
-  emits: ['update:chapter-id', 'open-graph', 'outline-select'],
+  emits: ['update:chapter-id', 'open-graph', 'outline-select', 'toggle'],
   setup(_, { emit }) {
     return () =>
       h('div', [
+        h('button', {
+          'data-testid': 'toggle-left-panel',
+          onClick: () => emit('toggle'),
+        }),
         h('button', {
           'data-testid': 'change-chapter',
           onClick: () => emit('update:chapter-id', 'chapter-2'),
@@ -482,6 +502,30 @@ const WorkflowRelayEditorContentStub = defineComponent({
   },
 })
 
+const AutosaveEditorContentStub = defineComponent({
+  props: {
+    content: {
+      type: String,
+      default: '',
+    },
+  },
+  emits: ['update:content'],
+  setup(_, { emit }) {
+    return () =>
+      h('button', {
+        'data-testid': 'edit-content',
+        onClick: () =>
+          emit(
+            'update:content',
+            JSON.stringify({
+              type: 'doc',
+              content: [{ type: 'paragraph', content: [{ type: 'text', text: '你好，hahaha！' }] }],
+            }),
+          ),
+      })
+  },
+})
+
 const openFullscreenToolSpy = vi.fn()
 const closeFullscreenSpy = vi.fn()
 
@@ -532,8 +576,10 @@ const baseGlobalStubs = {
   AIPanel: AIPanelStub,
 }
 
+const mountedWrappers: Array<ReturnType<typeof mount>> = []
+
 function mountProjectWorkspace(extraStubs?: Record<string, unknown>) {
-  return mount(ProjectWorkspace, {
+  const wrapper = mount(ProjectWorkspace, {
     global: {
       plugins: [createPinia()],
       stubs: {
@@ -542,6 +588,8 @@ function mountProjectWorkspace(extraStubs?: Record<string, unknown>) {
       },
     },
   })
+  mountedWrappers.push(wrapper)
+  return wrapper
 }
 
 const GlobalOverlayEditorContentStub = defineComponent({
@@ -578,11 +626,28 @@ const GlobalOverlayEditorContentStub = defineComponent({
 })
 
 describe('ProjectWorkspace Refactor', () => {
+  afterEach(() => {
+    for (const wrapper of mountedWrappers.splice(0)) {
+      wrapper.unmount()
+    }
+  })
+
   beforeEach(() => {
     routeState.query = { chapterId: 'chapter-1', tool: 'writing' }
     routerReplace.mockClear()
     setActiveTool.mockClear()
     setSelectedText.mockClear()
+    toggleLeftCollapsed.mockClear()
+    editorStoreState.activeTool = 'writing'
+    editorStoreState.editorContent = ''
+    editorStoreState.content = ''
+    editorStoreState.currentVersion = 0
+    editorStoreState.autosaveEnabled = false
+    editorStoreState.isDirty = true
+    editorStoreState.setCurrentChapter.mockClear()
+    editorStoreState.setContent.mockClear()
+    editorStoreState.markSaved.mockClear()
+    editorStoreState.reset.mockClear()
     mockFlatDocs.splice(0, mockFlatDocs.length, ...baseFlatDocs)
     createDocumentMock.mockReset()
     createDocumentMock.mockResolvedValue({ id: 'generated-doc-1' })
@@ -595,6 +660,8 @@ describe('ProjectWorkspace Refactor', () => {
     loadCharacterRelations.mockClear()
     loadProjectDetailMock.mockReset()
     loadProjectDetailMock.mockResolvedValue(undefined)
+    loadDocumentTreeMock.mockClear()
+    saveParagraphsMock.mockClear()
     writerStoreState.setCurrentOutlineNode.mockClear()
     selectDocumentMock.mockClear()
     loadDocumentMock.mockClear()
@@ -638,6 +705,38 @@ describe('ProjectWorkspace Refactor', () => {
         tool: 'writing',
       }),
     })
+  })
+
+  it('点击左侧栏折叠入口应切换左侧边栏显示状态', async () => {
+    const wrapper = mountProjectWorkspace()
+
+    await wrapper.find('[data-testid="toggle-left-panel"]').trigger('click')
+
+    expect(toggleLeftCollapsed).toHaveBeenCalledTimes(1)
+  })
+
+  it('正文变更后应防抖保存并刷新章节与项目统计', async () => {
+    const wrapper = mountProjectWorkspace({
+      WorkspaceEditorContent: AutosaveEditorContentStub,
+    })
+    await nextTick()
+    saveParagraphsMock.mockClear()
+    loadDocumentTreeMock.mockClear()
+    loadProjectDetailMock.mockClear()
+    editorStoreState.isDirty = true
+    editorStoreState.autosaveEnabled = true
+
+    await wrapper.find('[data-testid="edit-content"]').trigger('click')
+    await nextTick()
+    expect(saveParagraphsMock).not.toHaveBeenCalled()
+
+    await new Promise((resolve) => window.setTimeout(resolve, 1300))
+    await Promise.resolve()
+    await nextTick()
+
+    expect(saveParagraphsMock).toHaveBeenCalledTimes(1)
+    expect(loadDocumentTreeMock).toHaveBeenCalledWith('project-1')
+    expect(loadProjectDetailMock).toHaveBeenCalledWith('project-1')
   })
 
   it('AI 回填后应把反馈重新传给右侧工作台', async () => {

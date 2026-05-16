@@ -25,18 +25,6 @@ export const DEFAULT_SHORTCUTS: Shortcut[] = [
   { id: 'workspace.save', keys: ['Ctrl', 'S'], description: '保存文档', category: 'navigation' },
   { id: 'workspace.undo', keys: ['Ctrl', 'Z'], description: '撤销', category: 'navigation' },
   { id: 'workspace.redo', keys: ['Ctrl', 'Y'], description: '重做', category: 'navigation' },
-  {
-    id: 'workspace.toggleLeftPanel',
-    keys: ['Ctrl', '['],
-    description: '折叠/展开左侧面板',
-    category: 'navigation',
-  },
-  {
-    id: 'workspace.toggleRightPanel',
-    keys: ['Ctrl', ']'],
-    description: '折叠/展开右侧面板',
-    category: 'navigation',
-  },
   { id: 'workspace.focusMode', keys: ['F11'], description: '专注模式', category: 'navigation' },
   // Editor
   { id: 'editor.bold', keys: ['Ctrl', 'B'], description: '粗体', category: 'editor' },

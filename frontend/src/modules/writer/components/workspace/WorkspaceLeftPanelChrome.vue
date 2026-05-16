@@ -32,7 +32,7 @@
     <button type="button" class="dock-item" title="资产总览" @click="$emit('open-tool', 'assets')">
       <QyIcon name="Collection" :size="18" />
     </button>
-    <button type="button" class="dock-item" title="展开更多工具" @click="$emit('toggle')">
+    <button type="button" class="dock-item" title="显示左侧边栏" @click="$emit('toggle')">
       <QyIcon name="ArrowRight" :size="18" />
     </button>
   </aside>
@@ -101,7 +101,7 @@
       </div>
     </div>
 
-    <button type="button" class="collapse-btn" title="折叠面板" @click="$emit('toggle')">
+    <button type="button" class="collapse-btn" title="隐藏左侧边栏" @click="$emit('toggle')">
       <QyIcon name="ArrowLeft" :size="14" />
     </button>
   </header>
