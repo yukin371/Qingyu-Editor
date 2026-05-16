@@ -458,11 +458,11 @@ watch(
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: var(--editor-border, #cbd5e1);
     border-radius: 4px;
 
     &:hover {
-      background: #94a3b8;
+      background: var(--editor-text-ghost, #94a3b8);
     }
   }
 }
@@ -524,7 +524,7 @@ watch(
       width: 24px;
       height: 24px;
       border-radius: 50%;
-      background: #3b82f6;
+      background: var(--editor-accent, #3b82f6);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -571,7 +571,7 @@ watch(
   .message-content :deep(code) {
     padding: 2px 6px;
     border-radius: 6px;
-    background: rgba(15, 23, 42, 0.08);
+    background: color-mix(in srgb, var(--editor-text-primary, #0f172a) 8%, transparent);
     font-size: 13px;
   }
 
@@ -603,7 +603,11 @@ watch(
   border-radius: 12px;
   border: 1px solid var(--ai-border, #e2e8f0);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(248, 250, 252, 0.96)),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ai-bg, #ffffff) 88%, transparent),
+      color-mix(in srgb, var(--ai-bg-soft, #f8fafc) 96%, transparent)
+    ),
     var(--ai-bg-soft, #f8fafc);
   overflow: hidden;
 
@@ -626,12 +630,16 @@ watch(
   &--error {
     border-color: rgba(245, 158, 11, 0.55);
     background:
-      linear-gradient(180deg, rgba(255, 251, 235, 0.96), rgba(255, 247, 237, 0.98)),
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-warning-50, #fffbeb) 34%, var(--ai-bg, #ffffff)),
+        color-mix(in srgb, var(--color-warning-50, #fff7ed) 28%, var(--ai-bg-soft, #f8fafc))
+      ),
       var(--ai-bg-soft, #fff7ed);
 
     .message-tool-card__status {
-      background: rgba(254, 243, 199, 0.95);
-      color: #b45309;
+      background: color-mix(in srgb, var(--color-warning-100, #fef3c7) 72%, var(--ai-bg, #ffffff));
+      color: var(--color-warning-700, #b45309);
     }
   }
 }
@@ -656,8 +664,8 @@ watch(
   min-height: 24px;
   padding: 0 10px;
   border-radius: 999px;
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: var(--ai-accent-soft, #eff6ff);
+  color: var(--editor-accent, #1d4ed8);
   font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
@@ -677,7 +685,7 @@ watch(
     min-height: 24px;
     padding: 0 8px;
     border-radius: 999px;
-    background: rgba(148, 163, 184, 0.12);
+    background: color-mix(in srgb, var(--editor-border, #94a3b8) 22%, transparent);
   }
 }
 
@@ -740,7 +748,7 @@ watch(
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid rgba(191, 219, 254, 0.9);
-  background: rgba(239, 246, 255, 0.9);
+  background: color-mix(in srgb, var(--ai-accent-soft, #eff6ff) 72%, var(--ai-bg, #ffffff));
   color: var(--ai-text, #0f172a);
   text-align: left;
   cursor: pointer;
@@ -750,8 +758,8 @@ watch(
     background 0.2s ease;
 
   &:hover {
-    border-color: #60a5fa;
-    background: rgba(219, 234, 254, 0.96);
+    border-color: color-mix(in srgb, var(--editor-accent, #60a5fa) 62%, var(--ai-border, #bfdbfe));
+    background: color-mix(in srgb, var(--ai-accent-soft, #dbeafe) 86%, var(--ai-bg, #ffffff));
     transform: translateY(-1px);
   }
 }
@@ -806,8 +814,8 @@ watch(
   min-height: 20px;
   padding: 0 8px;
   border-radius: 999px;
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--ai-accent-soft, #dbeafe);
+  color: var(--editor-accent, #1d4ed8);
   font-size: 11px;
   font-weight: 600;
 }
@@ -871,12 +879,12 @@ watch(
   height: 8px;
   margin-top: 6px;
   border-radius: 50%;
-  background: #cbd5e1;
+  background: var(--editor-border, #cbd5e1);
   flex-shrink: 0;
 }
 
 .message-checkpoint-item--running .message-checkpoint-item__dot {
-  background: #2563eb;
+  background: var(--editor-accent, #2563eb);
 }
 
 .message-checkpoint-item--done .message-checkpoint-item__dot {
@@ -933,11 +941,11 @@ watch(
 }
 
 .message-tool-block__panel--before {
-  background: rgba(248, 250, 252, 0.9);
+  background: color-mix(in srgb, var(--ai-bg-soft, #f8fafc) 90%, transparent);
 }
 
 .message-tool-block__panel--after {
-  background: rgba(239, 246, 255, 0.95);
+  background: color-mix(in srgb, var(--ai-accent-soft, #eff6ff) 76%, var(--ai-bg, #ffffff));
 }
 
 .message-tool-block__label {
@@ -970,7 +978,7 @@ watch(
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #94a3b8;
+    background: var(--editor-text-ghost, #94a3b8);
     animation: typing 1.4s infinite ease-in-out both;
 
     &:nth-child(1) {

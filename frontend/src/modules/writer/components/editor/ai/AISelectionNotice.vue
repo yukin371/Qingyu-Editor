@@ -20,12 +20,12 @@ defineProps<{
 .selection-notice {
   margin: 10px 12px 0;
   border-radius: 10px;
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
+  border: 1px solid var(--ai-border-strong, var(--editor-border, #cbd5e1));
+  background: color-mix(in srgb, var(--ai-bg-soft, var(--editor-bg-surface, #f8fafc)) 94%, transparent);
   padding: 10px;
   font-size: 12px;
   line-height: 1.5;
-  color: #334155;
+  color: var(--editor-text-secondary, #334155);
 
   .selection-title {
     font-weight: 600;
@@ -33,7 +33,7 @@ defineProps<{
 
   .selection-content {
     margin-top: 4px;
-    color: #475569;
+    color: var(--editor-text-secondary, #475569);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -41,7 +41,7 @@ defineProps<{
 
   .selection-extra {
     margin-top: 4px;
-    color: #1e293b;
+    color: var(--editor-text-primary, #1e293b);
   }
 
   .selection-status {
@@ -50,18 +50,18 @@ defineProps<{
   }
 
   &.is-running {
-    border-color: #93c5fd;
-    background: #eff6ff;
+    border-color: color-mix(in srgb, var(--editor-accent, #3b82f6) 36%, var(--ai-border, #93c5fd));
+    background: color-mix(in srgb, var(--ai-accent-soft, #eff6ff) 64%, var(--ai-bg-soft, #f8fafc));
   }
 
   &.is-done {
-    border-color: #86efac;
-    background: #f0fdf4;
+    border-color: color-mix(in srgb, var(--color-success-400, #4ade80) 42%, var(--ai-border, #86efac));
+    background: color-mix(in srgb, var(--color-success-50, #f0fdf4) 28%, var(--ai-bg-soft, #f8fafc));
   }
 
   &.is-error {
-    border-color: #fca5a5;
-    background: #fef2f2;
+    border-color: color-mix(in srgb, var(--color-danger-400, #f87171) 42%, var(--ai-border, #fca5a5));
+    background: color-mix(in srgb, var(--color-danger-50, #fef2f2) 28%, var(--ai-bg-soft, #f8fafc));
   }
 }
 </style>

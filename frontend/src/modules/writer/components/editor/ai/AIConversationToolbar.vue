@@ -70,18 +70,18 @@ function handleChange(event: Event) {
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.98)) 98%, transparent),
-      color-mix(in srgb, var(--editor-layer-soft, rgba(248, 250, 252, 0.9)) 90%, transparent)
+      color-mix(in srgb, var(--ai-bg, var(--editor-layer-panel, #ffffff)) 98%, transparent),
+      color-mix(in srgb, var(--ai-bg-soft, var(--editor-layer-soft, #f8fafc)) 90%, transparent)
     );
 
   .conversation-select {
     flex: 1;
     min-width: 0;
     height: 34px;
-    border: 1px solid rgba(148, 163, 184, 0.2);
+    border: 1px solid color-mix(in srgb, var(--ai-border, #e2e8f0) 76%, transparent);
     border-radius: 10px;
     padding: 0 10px;
-    background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.96)) 96%, transparent);
+    background: color-mix(in srgb, var(--ai-bg, var(--editor-layer-panel, #ffffff)) 96%, transparent);
     color: var(--ai-text, #0f172a);
     font-size: 12px;
     box-shadow: inset 0 1px 0 color-mix(in srgb, var(--editor-bg-elevated, #fff) 68%, transparent);
@@ -91,11 +91,15 @@ function handleChange(event: Event) {
     width: 34px;
     height: 34px;
     padding: 0;
-    border: 1px solid #93c5fd;
+    border: 1px solid color-mix(in srgb, var(--editor-accent, #3b82f6) 38%, var(--ai-border, #93c5fd));
     border-radius: 10px;
     background:
-      linear-gradient(180deg, rgba(239, 246, 255, 0.98), rgba(219, 234, 254, 0.92));
-    color: #1d4ed8;
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--ai-accent-soft, #eff6ff) 88%, var(--ai-bg, #ffffff)),
+        color-mix(in srgb, var(--ai-accent-soft, #dbeafe) 72%, var(--ai-bg-soft, #f8fafc))
+      );
+    color: var(--editor-accent, #1d4ed8);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -107,10 +111,10 @@ function handleChange(event: Event) {
   .conversation-action-btn {
     width: 34px;
     height: 34px;
-    border: 1px solid rgba(148, 163, 184, 0.2);
+    border: 1px solid color-mix(in srgb, var(--ai-border, #e2e8f0) 76%, transparent);
     border-radius: 10px;
-    background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.96)) 96%, transparent);
-    color: #475569;
+    background: color-mix(in srgb, var(--ai-bg, var(--editor-layer-panel, #ffffff)) 96%, transparent);
+    color: var(--editor-text-secondary, #475569);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -119,12 +123,12 @@ function handleChange(event: Event) {
   }
 
   .conversation-action-btn--ghost {
-    color: #64748b;
+    color: var(--ai-text-muted, #64748b);
     background:
       linear-gradient(
         180deg,
-        color-mix(in srgb, var(--editor-layer-soft, rgba(248, 250, 252, 0.96)) 96%, transparent),
-        color-mix(in srgb, var(--editor-layer-glass, rgba(241, 245, 249, 0.92)) 92%, transparent)
+        color-mix(in srgb, var(--ai-bg-soft, var(--editor-layer-soft, #f8fafc)) 96%, transparent),
+        color-mix(in srgb, var(--editor-layer-glass, var(--editor-bg-elevated, #f1f5f9)) 92%, transparent)
       );
   }
 

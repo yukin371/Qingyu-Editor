@@ -168,7 +168,7 @@ defineExpose({
   .interaction-mode__option {
     border: none;
     background: transparent;
-    color: #475569;
+    color: var(--editor-text-secondary, #475569);
     border-radius: 999px;
     padding: 6px 10px;
     font-size: 12px;
@@ -326,7 +326,7 @@ defineExpose({
       outline: none;
 
       &::placeholder {
-        color: #94a3b8;
+        color: var(--editor-text-ghost, #94a3b8);
       }
 
       &:disabled {
@@ -355,12 +355,12 @@ defineExpose({
       }
 
       &:active:not(:disabled) {
-        background: #1e40af;
+        background: color-mix(in srgb, var(--ai-user-bg, #2563eb) 72%, var(--editor-text-primary, #0f172a));
       }
 
       &:disabled {
-        background: #cbd5e1;
-        color: #94a3b8;
+        background: var(--editor-bg-elevated, #cbd5e1);
+        color: var(--editor-text-ghost, #94a3b8);
         cursor: not-allowed;
       }
     }
@@ -372,7 +372,7 @@ defineExpose({
 
     span {
       font-size: 11px;
-      color: #94a3b8;
+      color: var(--editor-text-ghost, #94a3b8);
     }
   }
 }

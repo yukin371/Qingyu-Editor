@@ -1224,16 +1224,16 @@ watch(
 <style scoped lang="scss">
 .ai-panel {
   --ai-panel-width: 320px;
-  --ai-bg: #ffffff;
-  --ai-bg-soft: #f8fafc;
-  --ai-border: #e2e8f0;
-  --ai-border-strong: #cbd5e1;
-  --ai-text: #0f172a;
-  --ai-text-muted: #64748b;
-  --ai-user-bg: #2563eb;
-  --ai-user-bg-hover: #1d4ed8;
-  --ai-assistant-bg: #f1f5f9;
-  --ai-accent-soft: #dbeafe;
+  --ai-bg: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
+  --ai-bg-soft: var(--editor-layer-soft, var(--editor-bg-surface, #f8fafc));
+  --ai-border: var(--editor-border, #e2e8f0);
+  --ai-border-strong: var(--editor-border-strong, var(--editor-border, #cbd5e1));
+  --ai-text: var(--editor-text-primary, #0f172a);
+  --ai-text-muted: var(--editor-text-muted, #64748b);
+  --ai-user-bg: var(--editor-accent, #2563eb);
+  --ai-user-bg-hover: color-mix(in srgb, var(--editor-accent, #2563eb) 86%, var(--editor-text-primary, #0f172a));
+  --ai-assistant-bg: color-mix(in srgb, var(--editor-layer-soft, var(--editor-bg-surface, #f8fafc)) 92%, transparent);
+  --ai-accent-soft: var(--editor-accent-soft, var(--editor-layer-accent, #dbeafe));
 
   width: 100%;
   min-width: 0;
@@ -1265,7 +1265,13 @@ watch(
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(252, 253, 255, 0.72));
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--editor-accent, #2563eb) 8%, transparent), transparent 34%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ai-bg, var(--editor-layer-panel, #ffffff)) 94%, transparent),
+      color-mix(in srgb, var(--ai-bg-soft, var(--editor-bg-surface, #f8fafc)) 88%, transparent)
+    );
 }
 
 @media (prefers-reduced-motion: reduce) {

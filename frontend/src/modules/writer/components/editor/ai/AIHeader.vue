@@ -73,11 +73,11 @@ const clearLabel = t('ai.clear', '清空对话')
 
       &:hover {
         background: var(--ai-accent-soft, #dbeafe);
-        color: #1d4ed8;
+        color: var(--editor-accent, #1d4ed8);
       }
 
       &:active {
-        background: #bfdbfe;
+        background: color-mix(in srgb, var(--ai-accent-soft, #bfdbfe) 82%, var(--editor-accent, #1d4ed8) 18%);
       }
     }
   }
