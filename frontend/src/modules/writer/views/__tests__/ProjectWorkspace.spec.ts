@@ -42,6 +42,9 @@ const { loadDocumentTreeMock, saveParagraphsMock } = vi.hoisted(() => ({
   loadDocumentTreeMock: vi.fn().mockResolvedValue(undefined),
   saveParagraphsMock: vi.fn().mockResolvedValue(undefined),
 }))
+const { documentStoreCreateMock } = vi.hoisted(() => ({
+  documentStoreCreateMock: vi.fn().mockResolvedValue({ id: 'generated-doc-1' }),
+}))
 const editorStoreState = reactive({
   activeTool: 'writing',
   editorContent: '',
@@ -211,7 +214,7 @@ vi.mock('@/modules/writer/stores/documentStore', () => ({
     flatDocs: mockFlatDocs,
     loadTree: loadDocumentTreeMock,
     selectDocument: selectDocumentMock,
-    create: vi.fn().mockResolvedValue(undefined),
+    create: documentStoreCreateMock,
     remove: vi.fn().mockResolvedValue(undefined),
   }),
 }))
@@ -318,10 +321,14 @@ const EncyclopediaViewStub = { template: '<div data-testid="encyclopedia-view" /
 const AIPanelStub = { template: '<div data-testid="ai-panel" />' }
 
 const WorkspaceLeftPanelStub = defineComponent({
-  emits: ['update:chapter-id', 'open-graph', 'outline-select', 'toggle'],
+  emits: ['update:chapter-id', 'open-graph', 'outline-select', 'toggle', 'add-doc'],
   setup(_, { emit }) {
     return () =>
       h('div', [
+        h('button', {
+          'data-testid': 'add-doc',
+          onClick: () => emit('add-doc'),
+        }),
         h('button', {
           'data-testid': 'toggle-left-panel',
           onClick: () => emit('toggle'),
@@ -651,6 +658,8 @@ describe('ProjectWorkspace Refactor', () => {
     mockFlatDocs.splice(0, mockFlatDocs.length, ...baseFlatDocs)
     createDocumentMock.mockReset()
     createDocumentMock.mockResolvedValue({ id: 'generated-doc-1' })
+    documentStoreCreateMock.mockReset()
+    documentStoreCreateMock.mockResolvedValue({ id: 'generated-doc-1' })
     messageSuccess.mockClear()
     messageInfo.mockClear()
     messageWarning.mockClear()
@@ -737,6 +746,67 @@ describe('ProjectWorkspace Refactor', () => {
     expect(saveParagraphsMock).toHaveBeenCalledTimes(1)
     expect(loadDocumentTreeMock).toHaveBeenCalledWith('project-1')
     expect(loadProjectDetailMock).toHaveBeenCalledWith('project-1')
+  })
+
+  it('在第二卷新增章节时应压栈追加到该卷末尾', async () => {
+    mockFlatDocs.splice(
+      0,
+      mockFlatDocs.length,
+      {
+        id: 'volume-1',
+        title: '第一卷',
+        type: 'volume',
+        projectId: 'project-1',
+        order: 0,
+      },
+      {
+        id: 'chapter-1',
+        title: '第一章',
+        type: 'chapter',
+        projectId: 'project-1',
+        parentId: 'volume-1',
+        order: 0,
+      },
+      {
+        id: 'volume-2',
+        title: '第二卷',
+        type: 'volume',
+        projectId: 'project-1',
+        order: 1,
+      },
+      {
+        id: 'chapter-2',
+        title: '第二卷第一章',
+        type: 'chapter',
+        projectId: 'project-1',
+        parentId: 'volume-2',
+        order: 4,
+      },
+      {
+        id: 'chapter-3',
+        title: '第二卷第二章',
+        type: 'chapter',
+        projectId: 'project-1',
+        parentId: 'volume-2',
+        order: 8,
+      },
+    )
+    routeState.query = { chapterId: 'volume-2', tool: 'writing' }
+    const wrapper = mountProjectWorkspace()
+
+    await wrapper.find('[data-testid="add-doc"]').trigger('click')
+    await Promise.resolve()
+    await nextTick()
+
+    expect(documentStoreCreateMock).toHaveBeenCalledWith(
+      'project-1',
+      expect.objectContaining({
+        title: '第3章',
+        type: 'chapter',
+        parentId: 'volume-2',
+        order: 9,
+      }),
+    )
   })
 
   it('AI 回填后应把反馈重新传给右侧工作台', async () => {

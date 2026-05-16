@@ -184,6 +184,7 @@ import { useProjectStore } from '@/modules/writer/stores/projectStore'
 import { WRITER_ROUTE_NAMES } from '@/modules/writer/routes'
 import {
   buildWorkbenchRecentProjectCards,
+  ensureProjectBaseSkeleton,
   sortProjectsByRecent,
 } from '@/modules/writer/services/workbenchProject.service'
 import type { WorkbenchRecentProjectCard } from '@/modules/writer/types/workbench'
@@ -263,7 +264,9 @@ async function handleCreateProject(payload: { title: string; summary: string }) 
     const createdProject = created as { id?: string; projectId?: string } | undefined
     createDialogVisible.value = false
     await refreshWorkbench()
-    await openCreatedProject(createdProject)
+    const projectId = createdProject?.id || createdProject?.projectId || ''
+    const { chapterId } = await ensureProjectBaseSkeleton(projectId)
+    await openCreatedProject(createdProject, chapterId ? { chapterId } : undefined)
   } catch (error) {
     console.error('[WriterWorkbench] 创建项目失败:', error)
     message.error('创建项目失败，请稍后重试')

@@ -208,6 +208,7 @@ import {
   isStandaloneWriterRuntime,
   isWailsWriterAvailable,
 } from '@/modules/writer/data-bridge/wails'
+import { ensureProjectBaseSkeleton } from '@/modules/writer/services/workbenchProject.service'
 
 // 引入子组件
 import WorkspaceTopbar from '@/modules/writer/components/workspace/WorkspaceTopbar.vue'
@@ -588,16 +589,31 @@ const resolveCurrentDocumentParentId = () => {
   return parentDoc?.type === DocumentType.VOLUME ? parentId : undefined
 }
 
-const buildDefaultChapterTitle = (parentId?: string) => {
-  const siblingCount = flatChapters.value.filter(
+const getChapterSiblingsByParent = (parentId?: string) =>
+  flatChapters.value.filter(
     (chapter) =>
       chapter.nodeType !== 'directory' &&
       (chapter.parentId || undefined) === (parentId || undefined),
-  ).length
+  )
+
+const resolveNextChapterOrder = (parentId?: string) => {
+  const siblingOrders = getChapterSiblingsByParent(parentId)
+    .map((chapter) => Number(availableDocMap.value.get(chapter.id)?.order ?? chapter.sortOrder ?? 0))
+    .filter((order) => Number.isFinite(order))
+
+  if (siblingOrders.length === 0) {
+    return 0
+  }
+
+  return Math.max(...siblingOrders) + 1
+}
+
+const buildDefaultChapterDraft = (parentId?: string) => {
+  const siblingCount = getChapterSiblingsByParent(parentId).length
 
   return {
     title: `第${siblingCount + 1}章`,
-    order: siblingCount,
+    order: resolveNextChapterOrder(parentId),
   }
 }
 
@@ -614,7 +630,7 @@ const handleAddDoc = async () => {
 
   try {
     const parentId = resolveCurrentDocumentParentId()
-    const { title, order } = buildDefaultChapterTitle(parentId)
+    const { title, order } = buildDefaultChapterDraft(parentId)
     const newDoc = await documentStore.create(currentProjectId.value, {
       title,
       type: DocumentType.CHAPTER,
@@ -1733,6 +1749,7 @@ onMounted(async () => {
   editorAppearanceStore.initAppearance()
   const isStandaloneHost = isStandaloneWriterRuntime()
   let pId = currentProjectId.value
+  let bootstrapChapterId = ''
 
   if (!pId && isStandaloneHost) {
     await projectStore.loadList()
@@ -1750,13 +1767,19 @@ onMounted(async () => {
         summary: '',
       })) as { id?: string; projectId?: string } | undefined
       pId = createdProject?.id || createdProject?.projectId || ''
+      const { chapterId } = await ensureProjectBaseSkeleton(pId)
+      bootstrapChapterId = chapterId || ''
     }
 
     if (pId) {
+      const nextQuery = { ...route.query } as LocationQueryRaw
+      if (bootstrapChapterId) {
+        nextQuery.chapterId = bootstrapChapterId
+      }
       await router.replace({
         name: 'writer-project',
         params: { projectId: pId },
-        query: { ...route.query },
+        query: nextQuery,
       })
     }
   }

@@ -134,6 +134,7 @@ import ProjectCreateDialog from '@/modules/writer/components/workbench/ProjectCr
 import { useWriterProjectEntryActions } from '@/modules/writer/composables/useWriterProjectEntryActions'
 import {
   buildWorkbenchRecentProjectCards,
+  ensureProjectBaseSkeleton,
   getProjectStatusLabel,
   sortProjectsByRecent,
 } from '@/modules/writer/services/workbenchProject.service'
@@ -269,7 +270,9 @@ async function handleCreateProject(payload: { title: string; summary: string }) 
     await refreshProjects()
 
     const createdProject = created as { id?: string; projectId?: string } | undefined
-    await openCreatedProject(createdProject)
+    const projectId = createdProject?.id || createdProject?.projectId || ''
+    const { chapterId } = await ensureProjectBaseSkeleton(projectId)
+    await openCreatedProject(createdProject, chapterId ? { chapterId } : undefined)
   } catch (error) {
     console.error('[WriterProjects] 创建项目失败:', error)
     message.error('创建项目失败，请稍后重试')

@@ -33,6 +33,7 @@
 - **工作台壳桌面端必须分离滚动**：`WorkbenchShell` 在 `lg` 及以上视口下应保持“左侧导航整列固定高度 + 右侧主内容独立滚动”；不要再让 `/writer`、`/writer/projects`、`/writer/templates` 通过整页文档滚动把左侧导航一起带走。
 - **双壳模型要显式，不要伪装成同一页抖动**：顶层页壳只服务 `/writer`、`/writer/projects`、`/writer/templates`，并由页面显式传入 `activeNavId`；`/writer/project/:projectId` 只走 `WorkspaceShell` 编辑器壳。不要再让壳层通过路由猜测去兼容另一条主链。
 - **新建章节走“先创建再命名”**：`新建章节` 不再弹标题弹窗，而是按当前上下文直接创建默认 `第N章`；章节标题的细化命名应在主编辑区页内标题行完成，避免创建前表单打断写作流。
+- **新建章节按同父级压栈追加**：当前选中卷或卷内章节时，新章节必须落在该卷末尾，排序使用同父级章节 `max(order)+1`；不要用全书位置或简单兄弟数量推断插入点，避免第二卷、多卷和删除后空洞场景出现顺序混乱。
 - **历史入口直接收敛到路由兼容层**：旧 `dashboard / editor / publish` 页面不再保留独立运行时壳；兼容只允许留在 `routes.ts` 的重定向层，不再保留会继续腐化的空页面文件。
 - **桌面启动链保持最小化**：`frontend/src/main.ts` 与 `router/*` 不应再强制注入 auth session、websocket 或全局 mock 状态；mock/test-mode 只允许通过显式 `?test=true` 进入，避免桌面宿主继续背在线平台启动逻辑。
 - **独立编辑器宿主默认不探测原后端**：`main.ts`、`utils/api-health.ts`、`utils/syncService.ts` 在独立编辑器运行态下不得默认请求原 `/api/v1/system/health` 或 `/health`；宿主应直接把本地桥接或本地宿主视为在线，只有显式 `?remote=true` 联调模式才允许恢复远端健康探测。

@@ -46,9 +46,9 @@ export function useWriterProjectEntryActions(routerOverride?: Router) {
     await router.push(project.continueTarget)
   }
 
-  async function openCreatedProject(created: CreatedProjectLike) {
+  async function openCreatedProject(created: CreatedProjectLike, query?: LocationQueryRaw) {
     const projectId = resolveProjectId(created)
-    return openProject(projectId)
+    return openProject(projectId, query)
   }
 
   async function importProjectAndEnter(file: File, options: ImportProjectAndEnterOptions = {}) {

@@ -736,6 +736,27 @@ function updateSiblingOrder(
   })
 }
 
+function resolveNextDocumentOrder(
+  state: LocalWriterState,
+  projectId: string,
+  parentId: string | undefined,
+): number {
+  const siblingOrders = state.documents
+    .filter(
+      (document) =>
+        document.projectId === projectId &&
+        (document.parentId || undefined) === (parentId || undefined),
+    )
+    .map((document) => Number(document.order || 0))
+    .filter((order) => Number.isFinite(order))
+
+  if (siblingOrders.length === 0) {
+    return 0
+  }
+
+  return Math.max(...siblingOrders) + 1
+}
+
 async function listProjects(): Promise<ProjectListResponse> {
   const state = readState()
   const projects = state.projects.map((project) =>
@@ -834,15 +855,20 @@ async function getDocument(documentId: string): Promise<Document> {
 async function createDocument(projectId: string, data: CreateDocumentRequest): Promise<Document> {
   const state = readState()
   const createdAt = nowIso()
+  const parentId = isRootParent(data.parentId) ? undefined : data.parentId
+  const order =
+    typeof data.order === 'number' && Number.isFinite(data.order)
+      ? data.order
+      : resolveNextDocumentOrder(state, projectId, parentId)
   const document: LocalDocumentRecord = {
     id: createId('local-doc'),
     documentId: undefined,
     projectId,
-    parentId: isRootParent(data.parentId) ? undefined : data.parentId,
+    parentId,
     title: data.title?.trim() || '未命名文档',
     type: data.type,
-    level: data.parentId ? 1 : 0,
-    order: Number(data.order ?? 0),
+    level: parentId ? 1 : 0,
+    order,
     status: DocumentStatus.WRITING,
     wordCount: 0,
     createdAt,

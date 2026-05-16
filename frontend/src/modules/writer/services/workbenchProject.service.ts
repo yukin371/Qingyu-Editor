@@ -1,7 +1,9 @@
 import type { RouteLocationRaw } from 'vue-router'
 import { importProjectFromZip, type ImportResult } from '@/utils/exportImport'
+import { createDocument, getDocumentTree } from '../api/document'
 import { projectApi, type ProjectDetailResponse, type ProjectSummary } from '../api/project'
 import { WRITER_ROUTE_NAMES } from '../routes'
+import { DocumentType, type Document } from '../types/document'
 import type { WorkbenchRecentProjectCard } from '../types/workbench'
 
 type ProjectDocumentSummary = ProjectDetailResponse['documents'][number]
@@ -49,6 +51,42 @@ function findLatestChapter(detail: ProjectDetailResponse | null): ProjectDocumen
   )[0]
 }
 
+function flattenDocuments(documents: Document[]): Document[] {
+  const result: Document[] = []
+  const visit = (nodes: Document[]) => {
+    for (const node of nodes) {
+      result.push(node)
+      if (node.children?.length) {
+        visit(node.children)
+      }
+    }
+  }
+
+  visit(documents)
+  return result
+}
+
+function normalizeDocumentTree(payload: unknown): Document[] {
+  if (Array.isArray(payload)) {
+    return payload as Document[]
+  }
+  if (payload && typeof payload === 'object') {
+    const record = payload as { documents?: Document[]; tree?: Document[] }
+    if (Array.isArray(record.documents)) return record.documents
+    if (Array.isArray(record.tree)) return record.tree
+  }
+  return []
+}
+
+function sortDocumentsByOrder(documents: Document[]): Document[] {
+  return [...documents].sort(
+    (left, right) =>
+      String(left.orderKey || '').localeCompare(String(right.orderKey || '')) ||
+      Number(left.order ?? 0) - Number(right.order ?? 0) ||
+      String(left.createdAt || '').localeCompare(String(right.createdAt || '')),
+  )
+}
+
 export function sortProjectsByRecent(projects: ProjectSummary[]): ProjectSummary[] {
   return [...projects].sort(
     (left, right) =>
@@ -72,6 +110,45 @@ export async function resolveProjectContinueTarget(projectId: string): Promise<R
       params: { projectId },
     }
   }
+}
+
+export async function ensureProjectBaseSkeleton(projectId: string): Promise<{ chapterId?: string }> {
+  if (!projectId) {
+    return {}
+  }
+
+  const tree = normalizeDocumentTree(await getDocumentTree(projectId))
+  const flatDocs = flattenDocuments(tree)
+  const existingChapter = sortDocumentsByOrder(
+    flatDocs.filter((document) => document.type === DocumentType.CHAPTER),
+  )[0]
+
+  if (existingChapter?.id) {
+    return { chapterId: existingChapter.id }
+  }
+
+  const existingVolume = sortDocumentsByOrder(
+    flatDocs.filter((document) => document.type === DocumentType.VOLUME),
+  )[0]
+
+  const volume =
+    existingVolume ||
+    (await createDocument(projectId, {
+      projectId,
+      title: '第一卷',
+      type: DocumentType.VOLUME,
+      order: 0,
+    }))
+
+  const chapter = await createDocument(projectId, {
+    projectId,
+    parentId: volume.id,
+    title: '第一章',
+    type: DocumentType.CHAPTER,
+    order: 0,
+  })
+
+  return { chapterId: chapter.id }
 }
 
 export async function buildWorkbenchRecentProjectCards(

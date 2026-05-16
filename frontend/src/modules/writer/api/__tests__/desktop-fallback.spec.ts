@@ -397,6 +397,17 @@ describe('writer desktop api fallback', () => {
       chapterA.id,
     ])
 
+    const appendedChapter = await documentApi.create(projectId, {
+      projectId,
+      parentId: volume.id,
+      title: '压栈追加章节',
+      type: 'chapter',
+    } as any)
+
+    const treeAfterAppend = await documentApi.getTree(projectId)
+    const appendedSiblings = treeAfterAppend[0]?.children || []
+    expect(appendedSiblings[appendedSiblings.length - 1]?.id).toBe(appendedChapter.id)
+
     expect(httpGetMock).not.toHaveBeenCalled()
     expect(httpPostMock).not.toHaveBeenCalled()
     expect(httpPutMock).not.toHaveBeenCalled()
