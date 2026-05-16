@@ -8,26 +8,14 @@ import {
   resolveWriterActionLabel,
 } from '../writerAIGeneration'
 
-const continueWriting = vi.fn()
-const polishText = vi.fn()
-const expandText = vi.fn()
-const rewriteText = vi.fn()
 const requestWriterAI = vi.fn()
 
 vi.mock('@/modules/ai/api', () => ({
-  continueWriting: (...args: unknown[]) => continueWriting(...args),
-  polishText: (...args: unknown[]) => polishText(...args),
-  expandText: (...args: unknown[]) => expandText(...args),
   requestWriterAI: (...args: unknown[]) => requestWriterAI(...args),
-  rewriteText: (...args: unknown[]) => rewriteText(...args),
 }))
 
 describe('writerAIGeneration', () => {
   beforeEach(() => {
-    continueWriting.mockReset()
-    polishText.mockReset()
-    expandText.mockReset()
-    rewriteText.mockReset()
     requestWriterAI.mockReset()
   })
 
@@ -37,7 +25,7 @@ describe('writerAIGeneration', () => {
   })
 
   it('dispatches text action to the matching ai api', async () => {
-    expandText.mockResolvedValue({ expanded_text: '扩写结果' })
+    requestWriterAI.mockResolvedValue({ generatedText: '扩写结果' })
 
     const result = await executeWriterTextAction({
       projectId: 'project-1',
@@ -47,12 +35,19 @@ describe('writerAIGeneration', () => {
       targetLength: 400,
     })
 
-    expect(expandText).toHaveBeenCalledWith('project-1', '原文', '继续扩写', 400)
-    expect(result).toEqual({ expanded_text: '扩写结果' })
+    expect(requestWriterAI).toHaveBeenCalledWith(
+      expect.objectContaining({
+        route: 'single_document_edit',
+        mutationMode: 'single_document_diff',
+        intent: { action: 'expand', targetLength: 400 },
+        userVisibleSummary: '继续扩写',
+      }),
+    )
+    expect(result).toEqual({ expanded_text: '扩写结果', rewritten_text: '扩写结果', usage: undefined })
   })
 
   it('builds direct edit execution result from intent', async () => {
-    continueWriting.mockResolvedValue({ generated_text: '续写结果' })
+    requestWriterAI.mockResolvedValue({ generatedText: '续写结果' })
 
     const result = await requestWriterEditIntent({
       projectId: 'project-1',
@@ -111,7 +106,7 @@ describe('writerAIGeneration', () => {
   })
 
   it('builds contextual selection action request', async () => {
-    expandText.mockResolvedValue({ expanded_text: '扩写结果' })
+    requestWriterAI.mockResolvedValue({ generatedText: '扩写结果' })
 
     const result = await requestWriterContextualSelectionAction({
       projectId: 'project-1',
@@ -133,12 +128,12 @@ describe('writerAIGeneration', () => {
       },
     })
 
-    expect(expandText).toHaveBeenCalledWith(
-      'project-1',
-      '原文片段',
-      expect.stringContaining('增加环境压迫感'),
-      undefined,
+    expect(requestWriterAI).toHaveBeenCalledWith(
+      expect.objectContaining({
+        intent: { action: 'expand', targetLength: undefined },
+        userVisibleSummary: expect.stringContaining('增加环境压迫感'),
+      }),
     )
-    expect(result).toEqual({ expanded_text: '扩写结果' })
+    expect(result).toEqual({ expanded_text: '扩写结果', rewritten_text: '扩写结果', usage: undefined })
   })
 })

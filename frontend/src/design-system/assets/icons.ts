@@ -25,6 +25,8 @@ export const icons: Record<string, string> = {
   
   Back: '<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>',
 
+  Connection: '<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 7.5a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zM7.5 16.5a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zM7.5 7.5h9m-9 9h9m-9-9v9m9-9v9" /></svg>',
+
   // === Action Icons ===
   Plus: '<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>',
   

@@ -1,23 +1,5 @@
 <template>
   <div class="shortcut-settings" data-testid="shortcut-settings-panel">
-    <!-- 头部 -->
-    <div class="shortcut-settings__header">
-      <div class="shortcut-settings__title">
-        <span class="shortcut-settings__title-icon">&#9000;</span>
-        <h2>快捷键设置</h2>
-      </div>
-      <QyButton
-        variant="text"
-        size="sm"
-        class="shortcut-settings__reset-btn"
-        @click="handleResetDefaults"
-      >
-        恢复默认
-      </QyButton>
-    </div>
-
-    <div class="shortcut-settings__divider" />
-
     <!-- 搜索栏 -->
     <div class="shortcut-settings__search">
       <QyInput
@@ -29,6 +11,14 @@
         size="sm"
         class="shortcut-settings__search-input"
       />
+      <QyButton
+        variant="text"
+        size="sm"
+        class="shortcut-settings__reset-btn"
+        @click="handleResetDefaults"
+      >
+        恢复默认
+      </QyButton>
     </div>
 
     <!-- 加载状态 -->
@@ -412,64 +402,35 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: var(--color-bg-primary, #1e1e1e);
-  color: var(--color-text-primary, #cccccc);
+  background: var(--editor-bg-surface, #f8fafc);
+  color: var(--editor-text-primary, #0f172a);
   font-size: 13px;
   line-height: 1.5;
 }
 
-/* 头部 */
-.shortcut-settings__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px 12px;
-  flex-shrink: 0;
-}
-
-.shortcut-settings__title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.shortcut-settings__title-icon {
-  font-size: 18px;
-  color: var(--color-text-secondary, #858585);
-}
-
-.shortcut-settings__title h2 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-text-primary, #cccccc);
-}
-
 .shortcut-settings__reset-btn {
-  color: var(--color-text-secondary, #858585);
+  color: var(--editor-accent, #2563eb);
   font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
 .shortcut-settings__reset-btn:hover {
-  color: var(--color-text-primary, #cccccc);
-}
-
-/* 分割线 */
-.shortcut-settings__divider {
-  height: 1px;
-  background-color: var(--color-border, #3c3c3c);
-  margin: 0 20px;
-  flex-shrink: 0;
+  color: var(--editor-accent-strong, #1d4ed8);
 }
 
 /* 搜索栏 */
 .shortcut-settings__search {
-  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 18px 12px;
   flex-shrink: 0;
 }
 
 .shortcut-settings__search-input {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
 }
 
 /* 加载状态 */
@@ -478,14 +439,14 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   padding: 40px 20px;
-  color: var(--color-text-secondary, #858585);
+  color: var(--editor-text-muted, #64748b);
 }
 
 /* 快捷键列表 */
 .shortcut-settings__list {
   flex: 1;
   overflow-y: auto;
-  padding: 0 20px;
+  padding: 0 18px 18px;
 }
 
 .shortcut-settings__list::-webkit-scrollbar {
@@ -497,12 +458,12 @@ onUnmounted(() => {
 }
 
 .shortcut-settings__list::-webkit-scrollbar-thumb {
-  background: var(--color-scrollbar-thumb, #424242);
+  background: color-mix(in srgb, var(--editor-border, #94a3b8) 82%, transparent);
   border-radius: 3px;
 }
 
 .shortcut-settings__list::-webkit-scrollbar-thumb:hover {
-  background: var(--color-scrollbar-thumb-hover, #4f4f4f);
+  background: var(--editor-text-ghost, #94a3b8);
 }
 
 /* 分类头部 */
@@ -510,18 +471,19 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 0;
+  margin-top: 10px;
+  padding: 10px 2px 8px;
   cursor: pointer;
   user-select: none;
-  font-weight: 600;
+  font-weight: 800;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: var(--color-text-secondary, #858585);
+  color: var(--editor-text-muted, #64748b);
 }
 
 .shortcut-settings__category-header:hover {
-  color: var(--color-text-primary, #cccccc);
+  color: var(--editor-text-primary, #0f172a);
 }
 
 .shortcut-settings__category-arrow {
@@ -542,12 +504,16 @@ onUnmounted(() => {
 }
 
 .shortcut-settings__category-count {
-  color: var(--color-text-tertiary, #5a5a5a);
+  color: var(--editor-text-ghost, #94a3b8);
   font-weight: 400;
 }
 
 /* 分类内容 */
 .shortcut-settings__category-body {
+  border: 1px solid var(--editor-border, #e2e8f0);
+  border-radius: 14px;
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
+  overflow: hidden;
   padding-bottom: 4px;
 }
 
@@ -556,22 +522,26 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 6px 8px;
-  border-radius: 4px;
+  padding: 9px 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 68%, transparent);
   transition: background-color 0.1s ease;
 }
 
+.shortcut-settings__row:last-child {
+  border-bottom: none;
+}
+
 .shortcut-settings__row:hover {
-  background-color: var(--color-bg-hover, #2a2d2e);
+  background: var(--editor-layer-soft, var(--editor-bg-surface, #f8fafc));
 }
 
 .shortcut-settings__row.is-editing {
-  background-color: var(--color-bg-active, #37373d);
-  outline: 1px solid var(--color-border-focus, #007fd4);
+  background: color-mix(in srgb, var(--editor-accent-soft, #dbeafe) 42%, var(--editor-layer-panel, #ffffff));
+  outline: 1px solid var(--editor-accent, #2563eb);
 }
 
 .shortcut-settings__row.has-conflict:not(.is-editing) {
-  background-color: rgba(255, 165, 0, 0.06);
+  background: color-mix(in srgb, #f59e0b 10%, var(--editor-layer-panel, #ffffff));
 }
 
 .shortcut-settings__row.is-system {
@@ -585,7 +555,7 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--color-text-primary, #cccccc);
+  color: var(--editor-text-primary, #0f172a);
 }
 
 /* 按键标签区域 */
@@ -599,23 +569,23 @@ onUnmounted(() => {
 .shortcut-settings__key-tag {
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 11px;
-  background-color: var(--color-bg-tertiary, #2d2d2d);
-  border: 1px solid var(--color-border, #3c3c3c);
-  color: var(--color-text-primary, #cccccc);
-  border-radius: 3px;
+  background: var(--editor-bg-elevated, #eef2f7);
+  border: 1px solid var(--editor-border, #dbe3ee);
+  color: var(--editor-text-primary, #0f172a);
+  border-radius: 6px;
   padding: 1px 6px;
   line-height: 1.4;
 }
 
 .shortcut-settings__key-tag.is-system {
-  color: var(--color-text-tertiary, #5a5a5a);
-  border-color: var(--color-border, #3c3c3c);
+  color: var(--editor-text-ghost, #94a3b8);
+  border-color: var(--editor-border, #dbe3ee);
 }
 
 /* 编辑模式占位文字 */
 .shortcut-settings__keys-placeholder {
   font-size: 12px;
-  color: var(--color-text-secondary, #858585);
+  color: var(--editor-text-muted, #64748b);
   font-style: italic;
   animation: shortcut-pulse 1.2s ease-in-out infinite;
 }
@@ -633,7 +603,7 @@ onUnmounted(() => {
 /* 冲突警告图标 */
 .shortcut-settings__conflict-icon {
   flex-shrink: 0;
-  color: #e6a23c;
+  color: var(--color-warning-600, #d97706);
   font-size: 14px;
   cursor: help;
 }
@@ -641,7 +611,7 @@ onUnmounted(() => {
 /* 系统锁定图标 */
 .shortcut-settings__lock-icon {
   flex-shrink: 0;
-  color: var(--color-text-tertiary, #5a5a5a);
+  color: var(--editor-text-ghost, #94a3b8);
   font-size: 12px;
   cursor: help;
 }
@@ -650,19 +620,19 @@ onUnmounted(() => {
 .shortcut-settings__edit-btn {
   flex-shrink: 0;
   font-size: 12px;
-  color: var(--color-text-secondary, #858585);
+  color: var(--editor-accent, #2563eb);
   padding: 2px 6px;
 }
 
 .shortcut-settings__edit-btn:hover {
-  color: var(--color-text-primary, #cccccc);
+  color: var(--editor-accent-strong, #1d4ed8);
 }
 
 /* 空状态 */
 .shortcut-settings__empty {
   padding: 32px 20px;
   text-align: center;
-  color: var(--color-text-tertiary, #5a5a5a);
+  color: var(--editor-text-ghost, #94a3b8);
   font-size: 13px;
 }
 
@@ -672,20 +642,20 @@ onUnmounted(() => {
   align-items: flex-start;
   gap: 8px;
   padding: 10px 20px;
-  border-top: 1px solid var(--color-border, #3c3c3c);
-  background-color: rgba(255, 165, 0, 0.08);
+  border-top: 1px solid var(--editor-border, #e2e8f0);
+  background: color-mix(in srgb, #f59e0b 10%, var(--editor-layer-panel, #ffffff));
   flex-shrink: 0;
   font-size: 12px;
   line-height: 1.6;
 }
 
 .shortcut-settings__conflict-summary-icon {
-  color: #e6a23c;
+  color: var(--color-warning-600, #d97706);
   flex-shrink: 0;
   margin-top: 1px;
 }
 
 .shortcut-settings__conflict-summary-text {
-  color: var(--color-text-secondary, #858585);
+  color: var(--editor-text-secondary, #334155);
 }
 </style>

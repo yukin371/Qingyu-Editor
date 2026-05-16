@@ -48,15 +48,9 @@ import type {
   OutlineNode,
 } from '@/types/writer'
 import type { ChatMessage, AIToolType, AIConfig, AIHistory } from '@/types/ai'
-import {
-  chatWithAI,
-  continueWriting,
-  polishText,
-  expandText,
-  rewriteText,
-  storyGenerate,
-} from '@/modules/ai/api'
+import { requestWriterAI, storyGenerate } from '@/modules/ai/api'
 import { useAIContext } from '../composables/useAIContext'
+import { executeWriterTextAction } from '../utils/writerAIGeneration'
 import { syncService, type SyncStatus } from '@/utils/syncService'
 import { outlineApi } from '../api/outline'
 import {
@@ -974,27 +968,62 @@ export const useWriterStore = defineStore('writer', {
       this.ai.chatHistory.push(userMessage)
 
       try {
-        const response = await chatWithAI(message, this.ai.chatHistory.slice(0, -1))
+        const currentDocumentText = this.editorContent || ''
+        const response = await requestWriterAI({
+          route: 'chat',
+          mutationMode: 'none',
+          target: {
+            kind: 'current_document',
+            documentId: this.currentDocumentId || undefined,
+            documentTitle: this.currentDocument?.title || undefined,
+          },
+          context: {
+            projectId: this.currentProjectId || 'local-writer-project',
+            currentDocument: this.currentDocument
+              ? {
+                  documentId: this.currentDocument.id,
+                  documentTitle: this.currentDocument.title,
+                  sourceText: currentDocumentText,
+                }
+              : undefined,
+            assets: [],
+            workflowSummary: [],
+            evidence: [],
+            budget: {
+              maxChars: currentDocumentText.length,
+              truncated: false,
+            },
+          },
+          history: this.ai.chatHistory
+            .slice(0, -1)
+            .filter((item) => item.role === 'user' || item.role === 'assistant')
+            .map((item) => ({
+              role: item.role as 'user' | 'assistant',
+              content: item.content,
+            })),
+          requiresConfirmation: false,
+          userVisibleSummary: message,
+        })
 
         // 添加AI回复到历史
         const aiMessage: ChatMessage = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: response.reply,
+          content: response.message,
           timestamp: Date.now(),
         }
         this.ai.chatHistory.push(aiMessage)
-        this.ai.lastResult = response.reply
+        this.ai.lastResult = response.message
 
         // 保存到历史记录
         this.ai.history.push({
           id: Date.now().toString(),
           tool: 'chat',
           input: message,
-          output: response.reply,
+          output: response.message,
           timestamp: Date.now(),
           projectId: this.currentProjectId || undefined,
-          usage: response.usage,
+          usage: response.usage as AIHistory['usage'],
         })
       } catch (error: any) {
         console.error('AI对话失败:', error)
@@ -1030,12 +1059,15 @@ export const useWriterStore = defineStore('writer', {
         const contextInstructions = contextStr
           ? `请根据以下作品设定续写：\n${contextStr}`
           : undefined
-        const response = await continueWriting(
-          this.currentProjectId,
-          text,
-          length,
-          contextInstructions,
-        )
+        const response = await executeWriterTextAction({
+          projectId: this.currentProjectId,
+          action: 'continue',
+          sourceText: text,
+          instructions: contextInstructions,
+          targetLength: length,
+          documentId: this.currentDocumentId || undefined,
+          documentTitle: this.currentDocument?.title || undefined,
+        })
         const result = response.generated_text || ''
         this.ai.lastResult = result
 
@@ -1078,7 +1110,14 @@ export const useWriterStore = defineStore('writer', {
         const mergedInstructions = contextStr
           ? `${instructions || ''}\n\n请参考以下作品设定进行润色，保持角色性格和世界观的统一：\n${contextStr}`
           : instructions
-        const response = await polishText(this.currentProjectId, text, mergedInstructions)
+        const response = await executeWriterTextAction({
+          projectId: this.currentProjectId,
+          action: 'polish',
+          sourceText: text,
+          instructions: mergedInstructions,
+          documentId: this.currentDocumentId || undefined,
+          documentTitle: this.currentDocument?.title || undefined,
+        })
         const result = response.polished_text || response.rewritten_text || ''
         this.ai.lastResult = result
 
@@ -1125,12 +1164,15 @@ export const useWriterStore = defineStore('writer', {
         const mergedInstructions = contextStr
           ? `${instructions || ''}\n\n请参考以下作品设定进行扩写，保持与故事世界的一致性：\n${contextStr}`
           : instructions
-        const response = await expandText(
-          this.currentProjectId,
-          text,
-          mergedInstructions,
+        const response = await executeWriterTextAction({
+          projectId: this.currentProjectId,
+          action: 'expand',
+          sourceText: text,
+          instructions: mergedInstructions,
           targetLength,
-        )
+          documentId: this.currentDocumentId || undefined,
+          documentTitle: this.currentDocument?.title || undefined,
+        })
         const result = response.expanded_text || response.rewritten_text || ''
         this.ai.lastResult = result
 
@@ -1177,7 +1219,14 @@ export const useWriterStore = defineStore('writer', {
         const mergedInstructions = contextStr
           ? `${instructions || ''}\n\n请参考以下作品设定进行改写，保持角色性格一致性：\n${contextStr}`
           : instructions
-        const response = await rewriteText(this.currentProjectId, text, mode, mergedInstructions)
+        const response = await executeWriterTextAction({
+          projectId: this.currentProjectId,
+          action: 'rewrite',
+          sourceText: text,
+          instructions: mergedInstructions || `按 ${mode} 模式改写当前文本。`,
+          documentId: this.currentDocumentId || undefined,
+          documentTitle: this.currentDocument?.title || undefined,
+        })
         const result = response.rewritten_text || response.polished_text || ''
         this.ai.lastResult = result
 

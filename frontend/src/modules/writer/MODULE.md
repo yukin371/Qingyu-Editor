@@ -114,6 +114,7 @@
 - **最近章节/节点数属于前端聚合口径**：资产总览里的“最近出现章节 / 关联结构节点数”目前由 `writerAssetRefs` 与 `OutlineNode.documentId` 绑定推导，只代表当前前端已知引用，不等同于后端统一事实。若未来后端补正式字段，必须先明确新 owner，再替换这层前端聚合逻辑。
 - **资产深链当前默认落全局图谱**：从资产总览点进“关系图谱”时，`CharacterGraphView` 当前会切到全局图谱并高亮目标节点，以保证角色/地点/物件最小可达；组织/概念若尚无图谱节点，只允许提示“未接入”，不要伪造成已接线成功。
 - **概念优先复用 smart keyword 类型，不走纯文本猜测**：`writerAssetRefs` 当前已支持 `organization/concept`，但章节候选里这两类只应优先来自 TipTap smart keyword 的已解析类型或已确认绑定，避免把普通 `@文本` 误判成概念/组织。纯文本模糊提取当前仍只覆盖角色/地点/物件。
+- **未建档 `@名称` 不默认推断为角色**：纯文本 `@名称` 未命中任何已建档资产时，只能进入 `unresolved + requiresTypeSelection` 候选；建档绑定前必须由补全推断或作者最小选择 `角色 / 地点 / 物品 / 组织 / 概念`，避免资产闭环从第一步就分类错误。
 - **组织当前只进引用链路，不补创建器**：`CharacterGraphView` 已能展示并绑定已建档组织节点，但“组织建档”不在当前 writer 图谱面板 owner 范围内；不要在这里临时发散出第二套组织创建流程。
 - **伏笔与未确认候选不进资产总览**：资产总览当前只展示已建档的 `角色 / 地点 / 物件 / 组织 / 概念` 五类资产。`foreshadowing` 虽已出现在实体类型枚举与 Story Harness 内部映射里，但当前没有稳定的统一实体列表 owner；未确认候选继续留在 `CharacterGraphView` 的候选绑定面板，不要在资产总览里临时扩出第六类或 pending 列表。
 - **对话上下文提示只保留一处**：`add_to_chat` 注入的片段上下文只允许在 `AIInputArea` 的 prompt 提示条展示；`AISelectionNotice` 只用于 `continue/polish/expand/rewrite` 这类执行态，避免同一条 handoff 在右栏重复提示两次。

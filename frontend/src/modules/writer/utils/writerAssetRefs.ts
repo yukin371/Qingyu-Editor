@@ -27,6 +27,7 @@ export interface WriterAssetCandidate {
   source: WriterAssetSource
   evidence?: string
   unresolved?: boolean
+  requiresTypeSelection?: boolean
 }
 
 export interface WriterAssetRefState {
@@ -752,6 +753,7 @@ export function extractWriterAssetCandidates(params: ExtractionParams): WriterAs
         source: 'mention',
         evidence: rawName,
         unresolved: true,
+        requiresTypeSelection: true,
       })
     }
 

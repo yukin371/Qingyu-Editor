@@ -1,7 +1,8 @@
-import { chatWithAI, requestWriterAI } from './ai'
+import { requestWriterAI } from './ai'
 import { isUserProviderModeEnabled } from '../config/provider'
 import { postAIRequest } from './request'
 import { userAIProviderApi } from './ai-user-provider'
+import type { WriterAIContextEvidence } from '@/modules/writer/utils/writerAIContext'
 
 export interface RewriteToolRequest {
   projectId: string
@@ -299,8 +300,42 @@ export async function generateStructurePlan(
     .filter(Boolean)
     .join('\n\n')
 
-  const response = await chatWithAI(prompt)
-  const rawReply = String(response.reply || '').trim()
+  const response = await requestWriterAI({
+    route: 'plan_only',
+    mutationMode: 'none',
+    target: {
+      kind: 'current_document',
+      documentId: payload.chapterId,
+      documentTitle: payload.chapterTitle,
+      label: `结构规划：${modeLabel}草案`,
+    },
+    context: {
+      projectId: payload.projectId,
+      currentDocument: {
+        documentId: payload.chapterId,
+        documentTitle: payload.chapterTitle,
+        sourceText: payload.seedText || payload.workflowContextPrompt || payload.prompt,
+      },
+      workflowSummary: [workflowContext, seedText].filter(Boolean),
+      assets: [],
+      evidence: [
+        chapterContext
+          ? {
+              id: `structure-plan:${payload.chapterId || payload.chapterTitle || 'current'}`,
+              label: chapterContext,
+              source: 'workflow',
+            }
+          : undefined,
+      ].filter(Boolean) as WriterAIContextEvidence[],
+      budget: {
+        maxChars: Math.min(prompt.length, 4000),
+        truncated: prompt.length > 4000,
+      },
+    },
+    requiresConfirmation: true,
+    userVisibleSummary: prompt,
+  })
+  const rawReply = String(response.message || '').trim()
   const parsed = extractJsonObject(rawReply)
   const parsedItems = normalizeStructurePlanItems(parsed?.items)
   const items = (

@@ -119,7 +119,7 @@ describe('writerAssetRefs', () => {
     )
   })
 
-  it('应在纯文本 @ 引用下识别组织与概念，不依赖 smart keyword mark', () => {
+  it('应在纯文本 @ 引用下识别已建档组织与概念，不依赖 smart keyword mark', () => {
     const candidates = extractWriterAssetCandidates({
       text: '@巡夜司 封锁城门，@禁术回响 也再次出现。',
       characters: [],
@@ -157,6 +157,25 @@ describe('writerAssetRefs', () => {
         }),
       ]),
     )
+  })
+
+  it('未建档 @ 引用只进入待确认候选，不直接当作已推断角色', () => {
+    const candidates = extractWriterAssetCandidates({
+      text: '@新势力 需要后续整理。',
+      characters: [],
+      locations: [],
+      items: [],
+      organizations: [],
+      concepts: [],
+    })
+
+    expect(candidates).toEqual([
+      expect.objectContaining({
+        assetName: '新势力',
+        unresolved: true,
+        requiresTypeSelection: true,
+      }),
+    ])
   })
 
   it('应持久化并移除章节绑定资产', () => {

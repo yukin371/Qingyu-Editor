@@ -1,16 +1,5 @@
 <template>
   <div class="workspace-settings-panel">
-    <header class="workspace-settings-panel__header">
-      <h2>外观与写作偏好</h2>
-      <button
-        type="button"
-        class="workspace-settings-panel__reset"
-        @click="appearanceStore.resetAppearance()"
-      >
-        恢复默认
-      </button>
-    </header>
-
     <div class="workspace-settings-panel__tabs">
       <button
         type="button"
@@ -34,7 +23,15 @@
         :class="{ 'is-active': activeTab === 'ai' }"
         @click="activeTab = 'ai'"
       >
-        AI
+        AI Provider
+      </button>
+      <button
+        v-if="activeTab === 'appearance'"
+        type="button"
+        class="workspace-settings-panel__reset"
+        @click="appearanceStore.resetAppearance()"
+      >
+        恢复默认
       </button>
     </div>
 
@@ -122,161 +119,157 @@
       <ShortcutSettingsPanel />
     </section>
 
-    <section v-else class="workspace-settings-panel__body">
-      <div class="workspace-settings-panel__section">
+    <section v-else class="workspace-settings-panel__body workspace-settings-panel__body--ai">
+      <aside class="workspace-settings-panel__provider-rail">
         <div class="workspace-settings-panel__section-title">接入模式</div>
-        <div class="workspace-settings-panel__mode-grid">
-          <button
-            type="button"
-            class="workspace-settings-panel__mode-card"
-            :class="{ 'is-active': aiProviderStore.mode === 'system_remote' }"
-            @click="aiProviderStore.mode = 'system_remote'"
-          >
-            <strong>系统服务</strong>
-            <span>使用系统配置的远程 AI 服务</span>
-          </button>
-          <button
-            type="button"
-            class="workspace-settings-panel__mode-card"
-            :class="{ 'is-active': aiProviderStore.mode === 'user_api' }"
-            @click="aiProviderStore.mode = 'user_api'"
-          >
-            <strong>用户 API</strong>
-            <span>接入本地或自有 OpenAI 兼容 provider</span>
-          </button>
-        </div>
-      </div>
-
-      <div v-if="aiProviderStore.mode === 'user_api'" class="workspace-settings-panel__section">
-        <div
-          class="workspace-settings-panel__section-title workspace-settings-panel__section-title--split"
+        <button
+          type="button"
+          class="workspace-settings-panel__mode-card"
+          :class="{ 'is-active': aiProviderStore.mode === 'system_remote' }"
+          @click="aiProviderStore.mode = 'system_remote'"
         >
-          <span>Provider 配置</span>
-          <button
-            type="button"
-            class="workspace-settings-panel__link"
-            @click="aiProviderStore.resetUserProvider()"
-          >
-            清空
-          </button>
-        </div>
-
-        <label class="workspace-settings-panel__field">
-          <span>服务地址</span>
-          <input
-            v-model="aiProviderStore.baseURL"
-            type="text"
-            placeholder="http://127.0.0.1:11434"
-          />
-        </label>
-
-        <label class="workspace-settings-panel__field">
-          <span>接口路径</span>
-          <input
-            v-model="aiProviderStore.endpointPath"
-            type="text"
-            placeholder="/v1/chat/completions"
-          />
-        </label>
-
-        <label class="workspace-settings-panel__field">
-          <span>模型</span>
-          <input
-            v-model="aiProviderStore.model"
-            type="text"
-            placeholder="gpt-4o-mini / qwen3 / llama3"
-          />
-        </label>
-
-        <label class="workspace-settings-panel__field">
-          <span>API Key（可空）</span>
-          <input
-            v-model="apiKeyDraft"
-            type="password"
-            placeholder="sk-..."
-            @blur="commitApiKeyDraft"
-            @change="commitApiKeyDraft"
-          />
-        </label>
-
-        <label class="workspace-settings-panel__field">
-          <span>温度 {{ aiProviderStore.temperature.toFixed(2) }}</span>
-          <input
-            v-model.number="aiProviderStore.temperature"
-            type="range"
-            min="0"
-            max="2"
-            step="0.05"
-          />
-        </label>
-
-        <div class="workspace-settings-panel__status-row">
-          <span
-            class="workspace-settings-panel__status-pill"
-            :class="{ 'is-ready': aiProviderStore.providerReady }"
-          >
-            {{ aiProviderStore.providerReady ? '配置就绪' : '待补全' }}
-          </span>
-          <span class="workspace-settings-panel__status-meta">
-            {{
-              aiProviderStore.hasRuntimeApiKey
-                ? 'API Key 已载入本次会话'
-                : aiProviderStore.apiKeyNeedsRefresh
-                  ? '仅保留掩码，若需鉴权请重新输入'
-                  : aiProviderStore.hasApiKey
-                    ? '已记录 API Key 标记'
-                    : '未填写 API Key'
-            }}
-          </span>
-        </div>
-        <div class="workspace-settings-panel__health-row">
-          <button
-            type="button"
-            class="workspace-settings-panel__health-button"
-            :disabled="aiProviderStore.healthChecking"
-            @click="aiProviderStore.checkHealth()"
-          >
-            {{ aiProviderStore.healthChecking ? '检测中…' : '检测连接' }}
-          </button>
-          <span
-            v-if="aiProviderStore.health"
-            class="workspace-settings-panel__health-text"
-            :class="{ 'is-ok': aiProviderStore.health.ok }"
-          >
-            {{ aiProviderStore.health.message }}
-          </span>
-        </div>
-      </div>
-
-      <div v-else class="workspace-settings-panel__section">
-        <div class="workspace-settings-panel__section-title workspace-settings-panel__section-title--split">
-          <span>系统远程服务</span>
-          <button
-            type="button"
-            class="workspace-settings-panel__link"
-            :disabled="aiProviderStore.healthChecking"
-            @click="aiProviderStore.checkHealth()"
-          >
-            {{ aiProviderStore.healthChecking ? '检测中…' : '检测连接' }}
-          </button>
-        </div>
-        <p class="workspace-settings-panel__helper">
-          使用系统配置的远程 AI 服务，不需要在本机保存用户 API Key。
-        </p>
-        <p
-          v-if="aiProviderStore.health"
-          class="workspace-settings-panel__health-text"
-          :class="{ 'is-ok': aiProviderStore.health.ok }"
+          <strong>系统服务</strong>
+          <span>使用系统配置的远程 AI 服务</span>
+        </button>
+        <button
+          type="button"
+          class="workspace-settings-panel__mode-card"
+          :class="{ 'is-active': aiProviderStore.mode === 'user_api' }"
+          @click="aiProviderStore.mode = 'user_api'"
         >
-          {{ aiProviderStore.health.message }}
-        </p>
+          <strong>用户 API</strong>
+          <span>接入本地或自有 OpenAI 兼容 provider</span>
+        </button>
+
+        <div class="workspace-settings-panel__provider-summary">
+          <span>当前模式</span>
+          <strong>{{ providerModeLabel }}</strong>
+        </div>
+        <div class="workspace-settings-panel__provider-summary">
+          <span>配置状态</span>
+          <strong>{{ providerConfiguredLabel }}</strong>
+        </div>
+        <div class="workspace-settings-panel__provider-summary">
+          <span>密钥状态</span>
+          <strong>{{ providerSecretLabel }}</strong>
+        </div>
+      </aside>
+
+      <div class="workspace-settings-panel__provider-main">
+        <div class="workspace-settings-panel__section workspace-settings-panel__provider-card">
+          <div
+            class="workspace-settings-panel__section-title workspace-settings-panel__section-title--split"
+          >
+            <span>{{ aiProviderStore.mode === 'user_api' ? '用户 API Provider' : '系统远程服务' }}</span>
+            <button
+              type="button"
+              class="workspace-settings-panel__health-button"
+              :disabled="aiProviderStore.healthChecking"
+              @click="aiProviderStore.checkHealth()"
+            >
+              {{ aiProviderStore.healthChecking ? '检测中…' : '检测连接' }}
+            </button>
+          </div>
+
+          <div class="workspace-settings-panel__health-card" :class="healthCardClass">
+            <span>{{ aiProviderStore.health ? '最近检测' : '连接状态' }}</span>
+            <strong>{{ aiProviderStore.health?.message || '尚未检测' }}</strong>
+          </div>
+
+          <template v-if="aiProviderStore.mode === 'user_api'">
+            <div class="workspace-settings-panel__provider-form-grid">
+              <label class="workspace-settings-panel__field">
+                <span>服务地址</span>
+                <input
+                  v-model="aiProviderStore.baseURL"
+                  type="text"
+                  placeholder="http://127.0.0.1:11434"
+                />
+              </label>
+
+              <label class="workspace-settings-panel__field">
+                <span>接口路径</span>
+                <input
+                  v-model="aiProviderStore.endpointPath"
+                  type="text"
+                  placeholder="/v1/chat/completions"
+                />
+              </label>
+
+              <label class="workspace-settings-panel__field">
+                <span>模型</span>
+                <input
+                  v-model="aiProviderStore.model"
+                  type="text"
+                  placeholder="gpt-4o-mini / qwen3 / llama3"
+                />
+              </label>
+
+              <label class="workspace-settings-panel__field">
+                <span>API Key（可空）</span>
+                <input
+                  v-model="apiKeyDraft"
+                  type="password"
+                  placeholder="sk-..."
+                  @blur="commitApiKeyDraft"
+                  @change="commitApiKeyDraft"
+                />
+              </label>
+            </div>
+
+            <label class="workspace-settings-panel__field workspace-settings-panel__field--range">
+              <span>温度 {{ aiProviderStore.temperature.toFixed(2) }}</span>
+              <input
+                v-model.number="aiProviderStore.temperature"
+                type="range"
+                min="0"
+                max="2"
+                step="0.05"
+              />
+            </label>
+
+            <div class="workspace-settings-panel__status-row">
+              <span
+                class="workspace-settings-panel__status-pill"
+                :class="{ 'is-ready': aiProviderStore.providerReady }"
+              >
+                {{ aiProviderStore.providerReady ? '配置就绪' : '待补全' }}
+              </span>
+              <span class="workspace-settings-panel__status-meta">{{ apiKeyStatusLabel }}</span>
+              <button
+                type="button"
+                class="workspace-settings-panel__link"
+                @click="aiProviderStore.resetUserProvider()"
+              >
+                清空配置
+              </button>
+            </div>
+          </template>
+
+          <template v-else>
+            <div class="workspace-settings-panel__system-grid">
+              <div>
+                <span>远程服务</span>
+                <strong>系统配置</strong>
+              </div>
+              <div>
+                <span>用户密钥</span>
+                <strong>不需要</strong>
+              </div>
+              <div>
+                <span>可用性</span>
+                <strong>{{ aiProviderStore.health?.ok ? '可用' : '等待检测' }}</strong>
+              </div>
+            </div>
+          </template>
+        </div>
       </div>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import ShortcutSettingsPanel from './ShortcutSettingsPanel.vue'
 import { useEditorThemeStore, type EditorThemeName } from '@/modules/writer/stores/editorThemeStore'
 import { useEditorAppearanceStore } from '@/modules/writer/stores/editorAppearanceStore'
@@ -287,6 +280,36 @@ const editorThemeStore = useEditorThemeStore()
 const appearanceStore = useEditorAppearanceStore()
 const aiProviderStore = useAIProviderStore()
 const apiKeyDraft = ref(aiProviderStore.apiKey)
+
+const providerModeLabel = computed(() =>
+  aiProviderStore.mode === 'user_api' ? '用户 API' : '系统服务',
+)
+const providerConfiguredLabel = computed(() =>
+  aiProviderStore.mode === 'system_remote'
+    ? '系统托管'
+    : aiProviderStore.providerReady
+      ? '已补全'
+      : '待补全',
+)
+const apiKeyStatusLabel = computed(() => {
+  if (aiProviderStore.hasRuntimeApiKey) {
+    return 'API Key 已载入本次会话'
+  }
+  if (aiProviderStore.apiKeyNeedsRefresh) {
+    return '仅保留掩码，若需鉴权请重新输入'
+  }
+  if (aiProviderStore.hasApiKey) {
+    return '已记录 API Key 标记'
+  }
+  return '未填写 API Key'
+})
+const providerSecretLabel = computed(() =>
+  aiProviderStore.mode === 'system_remote' ? '无需用户密钥' : apiKeyStatusLabel.value,
+)
+const healthCardClass = computed(() => ({
+  'is-ok': aiProviderStore.health?.ok,
+  'is-error': aiProviderStore.health && !aiProviderStore.health.ok,
+}))
 
 onMounted(() => {
   void aiProviderStore.hydrate()
@@ -310,41 +333,25 @@ function commitApiKeyDraft() {
 .workspace-settings-panel {
   display: flex;
   flex-direction: column;
-  min-height: 520px;
+  height: 100%;
+  min-height: 100%;
   background: var(--editor-bg-surface, #f8fafc);
   color: var(--editor-text-primary, #0f172a);
 }
 
-.workspace-settings-panel__header {
+.workspace-settings-panel__tabs {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 18px 20px 14px;
+  gap: 6px;
+  padding: 14px 18px;
   border-bottom: 1px solid var(--editor-border, #e2e8f0);
-}
-
-.workspace-settings-panel__header h2 {
-  margin: 0;
-  font-size: 18px;
-}
-
-.workspace-settings-panel__reset {
-  height: 32px;
-  padding: 0 12px;
-  border: 1px solid var(--editor-border, #dbe3ee);
-  border-radius: 8px;
-  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
-  color: var(--editor-text-secondary, #334155);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.workspace-settings-panel__tabs {
-  display: inline-flex;
-  gap: 4px;
-  padding: 12px 20px 0;
+  background:
+    radial-gradient(
+      circle at 12% 0%,
+      color-mix(in srgb, var(--editor-accent-soft, #dbeafe) 48%, transparent),
+      transparent 34%
+    ),
+    var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
 }
 
 .workspace-settings-panel__tab {
@@ -355,7 +362,7 @@ function commitApiKeyDraft() {
   background: var(--editor-bg-elevated, #eef2f7);
   color: var(--editor-text-muted, #64748b);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
 
   &.is-active {
@@ -364,10 +371,23 @@ function commitApiKeyDraft() {
   }
 }
 
+.workspace-settings-panel__reset {
+  margin-left: auto;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--editor-border, #dbe3ee);
+  border-radius: 999px;
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
+  color: var(--editor-text-secondary, #334155);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .workspace-settings-panel__body {
   flex: 1;
   overflow: auto;
-  padding: 16px 20px 20px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -377,17 +397,24 @@ function commitApiKeyDraft() {
   padding: 12px 0 0;
 }
 
+.workspace-settings-panel__body--ai {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.72fr) minmax(0, 1.55fr);
+  gap: 18px;
+  overflow: hidden;
+}
+
 .workspace-settings-panel__section {
   padding: 16px;
   border: 1px solid var(--editor-border, #e2e8f0);
-  border-radius: 14px;
+  border-radius: 16px;
   background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
 }
 
 .workspace-settings-panel__section-title {
   margin-bottom: 14px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--editor-text-secondary, #334155);
 }
 
@@ -395,6 +422,7 @@ function commitApiKeyDraft() {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
 }
 
 .workspace-settings-panel__theme-grid {
@@ -403,24 +431,65 @@ function commitApiKeyDraft() {
   gap: 10px;
 }
 
-.workspace-settings-panel__mode-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+.workspace-settings-panel__provider-rail {
+  min-width: 0;
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid var(--editor-border, #e2e8f0);
+  border-radius: 18px;
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #ffffff)) 92%, transparent),
+      color-mix(in srgb, var(--editor-layer-soft, var(--editor-bg-surface, #f8fafc)) 86%, transparent)
+    );
+}
+
+.workspace-settings-panel__provider-main {
+  min-width: 0;
+  overflow: auto;
+}
+
+.workspace-settings-panel__provider-card {
+  min-height: 100%;
+}
+
+.workspace-settings-panel__provider-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 10px 0;
+  border-top: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 72%, transparent);
+
+  span {
+    color: var(--editor-text-muted, #64748b);
+    font-size: 12px;
+  }
+
+  strong {
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 12px;
+    text-align: right;
+  }
 }
 
 .workspace-settings-panel__mode-card {
   display: grid;
   gap: 6px;
+  width: 100%;
+  margin-top: 10px;
   padding: 12px;
   border: 1px solid var(--editor-border, #e2e8f0);
-  border-radius: 12px;
+  border-radius: 13px;
   background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
   text-align: left;
   cursor: pointer;
   transition:
     border-color var(--editor-transition-fast, 120ms ease-out),
-    background var(--editor-transition-fast, 120ms ease-out);
+    background var(--editor-transition-fast, 120ms ease-out),
+    box-shadow var(--editor-transition-fast, 120ms ease-out);
 
   strong {
     font-size: 13px;
@@ -439,6 +508,7 @@ function commitApiKeyDraft() {
       var(--editor-layer-panel, var(--editor-bg-base, #ffffff)) 86%,
       var(--editor-accent-soft, #eff6ff) 14%
     );
+    box-shadow: 0 12px 30px -24px color-mix(in srgb, var(--editor-accent, #2563eb) 58%, transparent);
   }
 }
 
@@ -510,7 +580,7 @@ function commitApiKeyDraft() {
 
   span {
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--editor-text-secondary, #334155);
   }
 
@@ -521,24 +591,27 @@ function commitApiKeyDraft() {
     width: 100%;
   }
 
-  select {
-    height: 36px;
-    padding: 0 10px;
-    border: 1px solid var(--editor-border, #dbe3ee);
-    border-radius: 10px;
-    background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
-    color: var(--editor-text-primary, #0f172a);
-  }
-
+  select,
   input[type='text'],
   input[type='password'] {
     height: 38px;
     padding: 0 12px;
     border: 1px solid var(--editor-border, #dbe3ee);
-    border-radius: 10px;
+    border-radius: 11px;
     background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
     color: var(--editor-text-primary, #0f172a);
   }
+}
+
+.workspace-settings-panel__provider-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 14px;
+  margin-top: 16px;
+}
+
+.workspace-settings-panel__field--range {
+  margin-top: 16px;
 }
 
 .workspace-settings-panel__switch {
@@ -546,16 +619,19 @@ function commitApiKeyDraft() {
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--editor-text-secondary, #334155);
 }
 
 .workspace-settings-panel__status-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 72%, transparent);
 }
 
 .workspace-settings-panel__status-pill {
@@ -567,7 +643,7 @@ function commitApiKeyDraft() {
   background: var(--editor-bg-elevated, #eef2f7);
   color: var(--editor-text-muted, #64748b);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
 
   &.is-ready {
     background: color-mix(in srgb, var(--editor-accent-soft, #dcfce7) 68%, transparent);
@@ -576,15 +652,10 @@ function commitApiKeyDraft() {
 }
 
 .workspace-settings-panel__status-meta {
+  flex: 1;
+  min-width: 180px;
   font-size: 12px;
   color: var(--editor-text-muted, #64748b);
-}
-
-.workspace-settings-panel__health-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 12px;
 }
 
 .workspace-settings-panel__health-button {
@@ -595,7 +666,7 @@ function commitApiKeyDraft() {
   background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
   color: var(--editor-text-secondary, #334155);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
 
   &:disabled {
@@ -604,16 +675,74 @@ function commitApiKeyDraft() {
   }
 }
 
-.workspace-settings-panel__helper,
-.workspace-settings-panel__health-text {
-  margin: 0;
-  color: var(--editor-text-muted, #64748b);
-  font-size: 12px;
-  line-height: 1.5;
+.workspace-settings-panel__health-card {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 14px;
+  border: 1px solid var(--editor-border, #e2e8f0);
+  border-radius: 14px;
+  background: color-mix(
+    in srgb,
+    var(--editor-layer-soft, var(--editor-bg-surface, #f8fafc)) 82%,
+    var(--editor-layer-panel, var(--editor-bg-base, #ffffff)) 18%
+  );
+
+  span {
+    color: var(--editor-text-muted, #64748b);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  strong {
+    color: var(--editor-text-secondary, #334155);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  &.is-ok {
+    border-color: color-mix(in srgb, var(--editor-accent, #2563eb) 42%, var(--editor-border, #e2e8f0));
+    background: color-mix(in srgb, var(--editor-accent-soft, #dbeafe) 24%, var(--editor-layer-panel, #ffffff));
+
+    strong {
+      color: var(--editor-accent-strong, #1d4ed8);
+    }
+  }
+
+  &.is-error {
+    border-color: color-mix(in srgb, #ef4444 44%, var(--editor-border, #e2e8f0));
+    background: color-mix(in srgb, #ef4444 9%, var(--editor-layer-panel, #ffffff));
+
+    strong {
+      color: color-mix(in srgb, #ef4444 78%, var(--editor-text-primary, #0f172a));
+    }
+  }
 }
 
-.workspace-settings-panel__health-text.is-ok {
-  color: var(--editor-accent-strong, #166534);
+.workspace-settings-panel__system-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+
+  div {
+    display: grid;
+    gap: 6px;
+    padding: 14px;
+    border: 1px solid var(--editor-border, #e2e8f0);
+    border-radius: 14px;
+    background: var(--editor-layer-soft, var(--editor-bg-surface, #f8fafc));
+  }
+
+  span {
+    color: var(--editor-text-muted, #64748b);
+    font-size: 12px;
+  }
+
+  strong {
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 13px;
+  }
 }
 
 .workspace-settings-panel__link {
@@ -621,7 +750,19 @@ function commitApiKeyDraft() {
   background: transparent;
   color: var(--editor-accent, #2563eb);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .workspace-settings-panel__body--ai,
+  .workspace-settings-panel__provider-form-grid,
+  .workspace-settings-panel__system-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-settings-panel__body--ai {
+    overflow: auto;
+  }
 }
 </style>

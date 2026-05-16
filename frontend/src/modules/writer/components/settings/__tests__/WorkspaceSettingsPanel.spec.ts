@@ -68,7 +68,7 @@ describe('WorkspaceSettingsPanel', () => {
     await wrapper.find('input[type="password"]').setValue('sk-1234567890abcdefghijkl')
     await wrapper.find('input[type="password"]').trigger('blur')
 
-    expect(wrapper.text()).toContain('Provider 配置')
+    expect(wrapper.text()).toContain('用户 API Provider')
     expect(wrapper.text()).toContain('配置就绪')
     expect(wrapper.text()).toContain('API Key 已载入本次会话')
   })
@@ -124,7 +124,7 @@ describe('WorkspaceSettingsPanel', () => {
     })
 
     await wrapper.findAll('.workspace-settings-panel__tab')[2]!.trigger('click')
-    await wrapper.get('.workspace-settings-panel__link').trigger('click')
+    await wrapper.get('.workspace-settings-panel__health-button').trigger('click')
 
     expect(checkAIProviderHealth).toHaveBeenCalled()
     expect(wrapper.text()).toContain('系统远程 AI 服务可用。')

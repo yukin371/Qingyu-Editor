@@ -186,9 +186,9 @@ describe('ai workbench api', () => {
     expect(review.score).toBe(9)
   })
 
-  it('generates structure plans through chat facade and parses json reply', async () => {
-    chatWithAI.mockResolvedValue({
-      reply: JSON.stringify({
+  it('generates structure plans through the shared writer ai facade and parses json reply', async () => {
+    requestWriterAI.mockResolvedValue({
+      message: JSON.stringify({
         summary: '围绕当前冲突新增两章推进。',
         items: [
           {
@@ -216,9 +216,15 @@ describe('ai workbench api', () => {
       workflowContextPrompt: '当前工作流上下文：章节：第一章',
     })
 
-    expect(chatWithAI).toHaveBeenCalledTimes(1)
-    expect(chatWithAI.mock.calls[0]?.[0]).toContain('补两个后续章节')
-    expect(chatWithAI.mock.calls[0]?.[0]).toContain('当前工作流上下文')
+    expect(requestWriterAI).toHaveBeenCalledTimes(1)
+    expect(requestWriterAI).toHaveBeenCalledWith(
+      expect.objectContaining({
+        route: 'plan_only',
+        mutationMode: 'none',
+        userVisibleSummary: expect.stringContaining('补两个后续章节'),
+      }),
+    )
+    expect(requestWriterAI.mock.calls[0]?.[0]?.userVisibleSummary).toContain('当前工作流上下文')
     expect(result.summary).toBe('围绕当前冲突新增两章推进。')
     expect(result.items).toEqual([
       {

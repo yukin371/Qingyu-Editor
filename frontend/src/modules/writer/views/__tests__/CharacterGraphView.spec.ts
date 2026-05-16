@@ -9,12 +9,18 @@ const toastMocks = vi.hoisted(() => ({
   error: vi.fn(),
 }))
 
+const messageBoxMocks = vi.hoisted(() => ({
+  prompt: vi.fn(),
+  confirm: vi.fn(),
+}))
+
 const loadCharacters = vi.fn().mockResolvedValue(undefined)
 const loadCharacterRelations = vi.fn().mockResolvedValue(undefined)
 const loadLocations = vi.fn().mockResolvedValue(undefined)
 const loadOutlineTree = vi.fn().mockResolvedValue(undefined)
 const listConcepts = vi.fn().mockResolvedValue({ data: [] })
 const listEntities = vi.fn().mockResolvedValue([])
+const createLocalEntity = vi.fn()
 
 const writerStoreState = {
   characters: {
@@ -112,10 +118,12 @@ vi.mock('@/modules/writer/api/concept', () => ({
 
 vi.mock('../api/entities', () => ({
   listEntities: (...args: unknown[]) => listEntities(...args),
+  createLocalEntity: (...args: unknown[]) => createLocalEntity(...args),
 }))
 
 vi.mock('@/modules/writer/api/entities', () => ({
   listEntities: (...args: unknown[]) => listEntities(...args),
+  createLocalEntity: (...args: unknown[]) => createLocalEntity(...args),
 }))
 
 vi.mock('@/design-system/services', () => ({
@@ -126,8 +134,8 @@ vi.mock('@/design-system/services', () => ({
     error: toastMocks.error,
   },
   messageBox: {
-    prompt: vi.fn(),
-    confirm: vi.fn(),
+    prompt: messageBoxMocks.prompt,
+    confirm: messageBoxMocks.confirm,
   },
 }))
 
@@ -220,18 +228,31 @@ const RelationshipGraphStub = defineComponent({
 describe('CharacterGraphView asset candidates', () => {
   beforeEach(() => {
     localStorage.clear()
+    editorStoreState.editorContent = JSON.stringify({
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [{ type: 'text', text: '@林舟 来到 #云港，发现 %青铜钥匙。' }],
+        },
+      ],
+    })
     loadCharacters.mockClear()
     loadCharacterRelations.mockClear()
     loadLocations.mockClear()
     loadOutlineTree.mockClear()
     listConcepts.mockClear()
     listEntities.mockClear()
+    createLocalEntity.mockClear()
     listConcepts.mockResolvedValue({ data: [] })
     listEntities.mockResolvedValue([])
+    createLocalEntity.mockResolvedValue({ id: 'org-new', name: '新势力' })
     toastMocks.success.mockClear()
     toastMocks.info.mockClear()
     toastMocks.warning.mockClear()
     toastMocks.error.mockClear()
+    messageBoxMocks.prompt.mockReset()
+    messageBoxMocks.confirm.mockReset()
   })
 
   function mountView() {
@@ -355,6 +376,52 @@ describe('CharacterGraphView asset candidates', () => {
     await nextTick()
 
     expect(toastMocks.success).toHaveBeenCalledWith('已绑定 1 个角色到当前图谱')
+  })
+
+  it('requires a type choice before creating and binding unresolved @ mentions', async () => {
+    editorStoreState.editorContent = JSON.stringify({
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [{ type: 'text', text: '@新势力 正在集结。' }],
+        },
+      ],
+    })
+    messageBoxMocks.prompt
+      .mockResolvedValueOnce({ action: 'confirm', value: '组织' })
+      .mockResolvedValueOnce({ action: 'confirm', value: '地下同盟' })
+
+    const wrapper = mountView()
+    await nextTick()
+
+    const expandButtons = wrapper
+      .findAll('button')
+      .filter((button) => button.text().includes('展开'))
+    await expandButtons[1].trigger('click')
+    await nextTick()
+
+    const createButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('建档并绑定'))
+
+    expect(createButton).toBeTruthy()
+    await createButton!.trigger('click')
+    await nextTick()
+    await nextTick()
+
+    expect(messageBoxMocks.prompt).toHaveBeenNthCalledWith(
+      1,
+      '请输入资产类型：角色 / 地点 / 物品 / 组织 / 概念',
+      '确认「新势力」的类型',
+    )
+    expect(createLocalEntity).toHaveBeenCalledWith({
+      projectId: 'project-1',
+      type: 'organization',
+      name: '新势力',
+      summary: '地下同盟',
+    })
+    expect(toastMocks.success).toHaveBeenCalledWith('已建档并绑定组织：新势力')
   })
 
   it('emits a standard workflow action when sending the selected character to AI', async () => {

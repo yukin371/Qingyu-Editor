@@ -133,7 +133,7 @@
     <QyDialog
       v-model:visible="showWorkspaceSettings"
       title="工作区设置"
-      size="xl"
+      size="full"
       :close-on-click-modal="true"
       class="workspace-settings-dialog"
     >
@@ -443,4 +443,19 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   letter-spacing: 0.05em;
 }
 
+</style>
+
+<style lang="scss">
+.workspace-settings-dialog {
+  width: min(920px, calc(100vw - 48px));
+  height: min(760px, calc(100vh - 72px));
+  max-width: min(920px, calc(100vw - 48px)) !important;
+  max-height: min(760px, calc(100vh - 72px));
+  margin: 0;
+  border-radius: 28px;
+}
+
+.workspace-settings-dialog > .flex-1 {
+  padding: 0;
+}
 </style>

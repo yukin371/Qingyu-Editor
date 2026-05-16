@@ -1,10 +1,4 @@
-import {
-  continueWriting,
-  expandText,
-  polishText,
-  requestWriterAI,
-  rewriteText,
-} from '@/modules/ai/api'
+import { requestWriterAI } from '@/modules/ai/api'
 import type { AIApplyMode, WriterPromptIntent } from '@/modules/writer/types/workflow'
 import { buildWriterAIContextPacket, type WriterAIContextOptions } from './writerAIContext'
 import {
@@ -21,6 +15,8 @@ export interface WriterActionExecutionParams {
   sourceText: string
   instructions?: string
   targetLength?: number
+  documentId?: string
+  documentTitle?: string
 }
 
 export interface WriterEditExecutionResult {
@@ -54,17 +50,51 @@ export async function executeWriterTextAction({
   sourceText,
   instructions,
   targetLength,
+  documentId,
+  documentTitle,
 }: WriterActionExecutionParams): Promise<Record<string, any>> {
+  const result = await requestWriterAI({
+    route: 'single_document_edit',
+    mutationMode: 'single_document_diff',
+    target: {
+      kind: 'current_document',
+      documentId,
+      documentTitle,
+      label: resolveWriterActionLabel(action),
+    },
+    context: {
+      projectId,
+      currentDocument: {
+        documentId,
+        documentTitle,
+        sourceText,
+      },
+      assets: [],
+      workflowSummary: [],
+      evidence: [],
+      budget: {
+        maxChars: sourceText.length,
+        truncated: false,
+      },
+    },
+    intent: {
+      action: action === 'continue' || action === 'expand' ? action : 'rewrite',
+      targetLength,
+    },
+    requiresConfirmation: true,
+    userVisibleSummary: instructions || `${resolveWriterActionLabel(action)}当前文本。`,
+  })
+  const generatedText = result.generatedText || ''
   if (action === 'continue') {
-    return continueWriting(projectId, sourceText, targetLength ?? 200, instructions)
+    return { generated_text: generatedText, usage: result.usage }
   }
   if (action === 'polish') {
-    return polishText(projectId, sourceText, instructions)
+    return { polished_text: generatedText, rewritten_text: generatedText, usage: result.usage }
   }
   if (action === 'expand') {
-    return expandText(projectId, sourceText, instructions, targetLength)
+    return { expanded_text: generatedText, rewritten_text: generatedText, usage: result.usage }
   }
-  return rewriteText(projectId, sourceText, 'polish', instructions)
+  return { rewritten_text: generatedText, polished_text: generatedText, usage: result.usage }
 }
 
 export async function requestWriterEditIntent(params: {

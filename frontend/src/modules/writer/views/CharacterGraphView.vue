@@ -1526,14 +1526,42 @@ const handleCreateAndBindCandidate = async (candidate: WriterAssetCandidate) => 
   if (!projectId || !scopeId) return
 
   try {
+    let assetType = candidate.assetType
+    if (candidate.requiresTypeSelection) {
+      const typeResult = await messageBox.prompt(
+        '请输入资产类型：角色 / 地点 / 物品 / 组织 / 概念',
+        `确认「${candidate.assetName}」的类型`,
+      )
+      const typeInput = String(typeResult.value || '').trim()
+      const typeMap: Record<string, WriterAssetCandidate['assetType']> = {
+        角色: 'character',
+        character: 'character',
+        地点: 'location',
+        location: 'location',
+        物品: 'item',
+        物件: 'item',
+        item: 'item',
+        组织: 'organization',
+        organization: 'organization',
+        概念: 'concept',
+        concept: 'concept',
+      }
+      const resolvedType = typeMap[typeInput]
+      if (!resolvedType) {
+        message.warning('请先选择有效资产类型')
+        return
+      }
+      assetType = resolvedType
+    }
+
     const copyLabel =
-      candidate.assetType === 'character'
+      assetType === 'character'
         ? '角色'
-        : candidate.assetType === 'location'
+        : assetType === 'location'
           ? '地点'
-          : candidate.assetType === 'concept'
+          : assetType === 'concept'
             ? '概念'
-            : candidate.assetType === 'organization'
+            : assetType === 'organization'
               ? '组织'
               : '物品'
     const summaryResult = await messageBox.prompt(
@@ -1545,7 +1573,7 @@ const handleCreateAndBindCandidate = async (candidate: WriterAssetCandidate) => 
     let createdAssetId = ''
     let createdAssetName = candidate.assetName
 
-    if (candidate.assetType === 'character') {
+    if (assetType === 'character') {
       const createdCharacter = (await createCharacter(projectId, {
         projectId,
         name: candidate.assetName,
@@ -1555,7 +1583,7 @@ const handleCreateAndBindCandidate = async (candidate: WriterAssetCandidate) => 
       createdAssetId = characterPayload?.id || ''
       createdAssetName = characterPayload?.name || candidate.assetName
       await writerStore.loadCharacters(projectId)
-    } else if (candidate.assetType === 'location') {
+    } else if (assetType === 'location') {
       const createdLocation = (await locationApi.create(projectId, {
         projectId,
         name: candidate.assetName,
@@ -1565,7 +1593,7 @@ const handleCreateAndBindCandidate = async (candidate: WriterAssetCandidate) => 
       createdAssetId = locationPayload?.id || ''
       createdAssetName = locationPayload?.name || candidate.assetName
       await writerStore.loadLocations(projectId)
-    } else if (candidate.assetType === 'concept') {
+    } else if (assetType === 'concept') {
       const createdConcept = (await conceptApi.create(projectId, {
         projectId,
         name: candidate.assetName,
@@ -1575,7 +1603,7 @@ const handleCreateAndBindCandidate = async (candidate: WriterAssetCandidate) => 
       createdAssetId = conceptPayload?.id || ''
       createdAssetName = conceptPayload?.name || candidate.assetName
       concepts.value = unwrapApiData<Concept[]>(await conceptApi.list(projectId))
-    } else if (candidate.assetType === 'organization') {
+    } else if (assetType === 'organization') {
       const createdOrganization = await createLocalEntity({
         projectId,
         type: 'organization',
@@ -1608,7 +1636,7 @@ const handleCreateAndBindCandidate = async (candidate: WriterAssetCandidate) => 
       projectId,
       scopeType: currentScopeType.value === 'volume' ? 'volume' : 'chapter',
       scopeId,
-      assetType: candidate.assetType,
+      assetType,
       assetId: createdAssetId || undefined,
       assetName: createdAssetName,
       source: 'manual',

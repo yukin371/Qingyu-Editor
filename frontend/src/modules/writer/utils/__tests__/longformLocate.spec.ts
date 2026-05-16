@@ -81,4 +81,34 @@ describe('longformLocate', () => {
       endOrder: 49,
     })
   })
+
+  it('locates by asset mention without reordering longform rows', () => {
+    const rows = Array.from({ length: 1000 }, (_, index) => ({
+      id: `chapter-${index + 1}`,
+      order: index,
+      segmentId: `volume:${Math.floor(index / 100) + 1}`,
+      title: `第${index + 1}章`,
+      chapterNumber: index + 1,
+      assetNames: index === 734 ? ['巡夜司'] : [],
+    }))
+    const beforeOrder = rows.map((row) => row.id)
+
+    const located = locateWriterCandidate(
+      rows,
+      '@巡夜司',
+      (segmentId) => rows.filter((row) => row.segmentId === segmentId),
+      {
+        beforeCount: 20,
+        afterCount: 20,
+        initialCount: 40,
+      },
+    )
+
+    expect(located?.candidate.id).toBe('chapter-735')
+    expect(located?.windowRange).toEqual({
+      startOrder: 714,
+      endOrder: 754,
+    })
+    expect(rows.map((row) => row.id)).toEqual(beforeOrder)
+  })
 })
