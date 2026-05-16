@@ -1,4 +1,4 @@
-import { chatWithAI, summarizeText, proofreadText } from './ai'
+import { chatWithAI, requestWriterAI } from './ai'
 import { isUserProviderModeEnabled } from '../config/provider'
 import { postAIRequest } from './request'
 import { userAIProviderApi } from './ai-user-provider'
@@ -92,48 +92,95 @@ export interface SensitiveAuditResult {
 export async function rewriteWithWorkbench(
   payload: RewriteToolRequest,
 ): Promise<RewriteToolResult> {
-  if (isUserProviderModeEnabled()) {
-    const response = await userAIProviderApi.workbench.rewrite(payload)
-    return {
-      rewrittenText: String(response.rewritten_text || '').trim(),
-      raw: response as unknown as Record<string, unknown>,
-    }
-  }
-
-  const response = await postAIRequest<Record<string, unknown>>('/api/v1/ai/writing/rewrite', {
-    projectId: payload.projectId,
-    chapterId: payload.chapterId,
-    originalText: payload.originalText,
-    rewriteMode: payload.mode,
-    instructions: payload.instructions,
+  const result = await requestWriterAI({
+    route: 'single_document_edit',
+    mutationMode: 'single_document_diff',
+    target: {
+      kind: 'current_document',
+      documentId: payload.chapterId,
+      label: '工作台改写',
+    },
+    context: {
+      projectId: payload.projectId,
+      currentDocument: {
+        documentId: payload.chapterId,
+        sourceText: payload.originalText,
+      },
+      assets: [],
+      workflowSummary: [],
+      evidence: [],
+      budget: {
+        maxChars: payload.originalText.length,
+        truncated: false,
+      },
+    },
+    intent: {
+      action: payload.mode === 'expand' ? 'expand' : 'rewrite',
+    },
+    requiresConfirmation: true,
+    userVisibleSummary:
+      payload.instructions ||
+      (payload.mode === 'expand'
+        ? '扩写当前文本。'
+        : payload.mode === 'shorten'
+          ? '压缩精简当前文本。'
+          : '润色改写当前文本。'),
   })
 
   return {
-    rewrittenText:
-      String(
-        response.rewritten_text ||
-          response.polished_text ||
-          response.expanded_text ||
-          response.generated_text ||
-          '',
-      ) || '',
-    raw: response,
+    rewrittenText: String(result.generatedText || '').trim(),
+    raw: result as unknown as Record<string, unknown>,
   }
 }
 
 export async function summarizeSelection(payload: SummaryToolRequest): Promise<SummaryToolResult> {
-  const response = await summarizeText(payload.content, {
-    projectId: payload.projectId,
-    chapterId: payload.chapterId,
-    maxLength: payload.maxLength,
-    summaryType: payload.summaryType || 'detailed',
-    includeQuotes: payload.includeQuotes ?? false,
+  const result = await requestWriterAI({
+    route: 'analysis',
+    mutationMode: 'none',
+    target: {
+      kind: 'selection',
+      documentId: payload.chapterId,
+      label: '工作台片段摘要',
+    },
+    context: {
+      projectId: payload.projectId || 'local-writer-project',
+      currentDocument: {
+        documentId: payload.chapterId,
+        sourceText: payload.content,
+      },
+      selection: {
+        kind: 'selection',
+        text: payload.content,
+      },
+      assets: [],
+      workflowSummary: [],
+      evidence: [],
+      budget: {
+        maxChars: payload.content.length,
+        truncated: false,
+      },
+    },
+    intent: {
+      action: 'summarize',
+    },
+    requiresConfirmation: false,
+    userVisibleSummary: [
+      payload.summaryType === 'brief'
+        ? '请生成简短摘要。'
+        : payload.summaryType === 'keypoints'
+          ? '请提炼关键要点。'
+          : '请生成详细摘要。',
+      typeof payload.maxLength === 'number' ? `摘要控制在 ${payload.maxLength} 字以内。` : '',
+      payload.includeQuotes ? '允许极短引用原文。' : '不要直接引用原文句子。',
+    ]
+      .filter(Boolean)
+      .join('\n'),
   })
 
   return {
-    summary: response.summary,
-    keyPoints: response.keyPoints,
-    raw: response as unknown as Record<string, unknown>,
+    summary: result.analysis?.summary || result.message,
+    keyPoints: result.analysis?.keyPoints || [],
+    raw: result as unknown as Record<string, unknown>,
   }
 }
 
@@ -272,15 +319,43 @@ export async function generateStructurePlan(
 }
 
 export async function proofreadContent(payload: ReviewToolRequest): Promise<ReviewToolResult> {
-  const response = await proofreadText(payload.content, {
-    projectId: payload.projectId,
-    chapterId: payload.chapterId,
+  const result = await requestWriterAI({
+    route: 'analysis',
+    mutationMode: 'none',
+    target: {
+      kind: 'selection',
+      documentId: payload.chapterId,
+      label: '工作台审校',
+    },
+    context: {
+      projectId: payload.projectId || 'local-writer-project',
+      currentDocument: {
+        documentId: payload.chapterId,
+        sourceText: payload.content,
+      },
+      selection: {
+        kind: 'selection',
+        text: payload.content,
+      },
+      assets: [],
+      workflowSummary: [],
+      evidence: [],
+      budget: {
+        maxChars: payload.content.length,
+        truncated: false,
+      },
+    },
+    intent: {
+      action: 'proofread',
+    },
+    requiresConfirmation: false,
+    userVisibleSummary: '检查错别字、语病、标点和表达问题。',
   })
 
   return {
-    score: response.score,
-    issues: response.issues as ReviewIssue[],
-    raw: response as unknown as Record<string, unknown>,
+    score: result.analysis?.score,
+    issues: (result.analysis?.issues || []) as ReviewIssue[],
+    raw: result as unknown as Record<string, unknown>,
   }
 }
 

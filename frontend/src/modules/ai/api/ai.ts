@@ -103,6 +103,12 @@ export interface WriterAIResult {
   mutationMode: WriterAIPlan['mutationMode']
   message: string
   generatedText?: string
+  analysis?: {
+    summary?: string
+    keyPoints?: string[]
+    issues?: AIProofreadIssue[]
+    score?: number
+  }
   usage?: unknown
   requiresConfirmation: boolean
   evidence: WriterAIPlan['context']['evidence']
@@ -618,6 +624,10 @@ export async function requestWriterAI(plan: WriterAIPlan): Promise<WriterAIResul
         route: plan.route,
         mutationMode: plan.mutationMode,
         message: formatProofreadIssues(response.issues || []),
+        analysis: {
+          issues: response.issues || [],
+          score: response.score,
+        },
         usage: response.usage,
         requiresConfirmation: plan.requiresConfirmation,
         evidence: plan.context.evidence,
@@ -633,6 +643,10 @@ export async function requestWriterAI(plan: WriterAIPlan): Promise<WriterAIResul
       route: plan.route,
       mutationMode: plan.mutationMode,
       message: formatSummaryResponse(response),
+      analysis: {
+        summary: response.summary,
+        keyPoints: response.keyPoints,
+      },
       usage: response.usage,
       requiresConfirmation: plan.requiresConfirmation,
       evidence: plan.context.evidence,

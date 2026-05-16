@@ -62,7 +62,7 @@ describe('RewriteWorkbenchTool', () => {
     expect(payload.instructions).toContain('当前章节资产：角色 2；地点 1')
   })
 
-  it('keeps instructions undefined when both manual and workflow context are empty', async () => {
+  it('keeps chapter id empty while passing compact context evidence', async () => {
     const wrapper = mount(RewriteWorkbenchTool, {
       props: {
         projectId: 'project-1',
@@ -81,7 +81,8 @@ describe('RewriteWorkbenchTool', () => {
       instructions?: string
       chapterId?: string
     }
-    expect(payload.instructions).toBeUndefined()
+    expect(payload.instructions).toContain('当前章节正文：')
+    expect(payload.instructions).toContain('本次 AI 可见上下文证据：')
     expect(payload.chapterId).toBeUndefined()
   })
 
@@ -193,6 +194,8 @@ describe('RewriteWorkbenchTool', () => {
     await wrapper.get('.tool-panel__primary').trigger('click')
     await flushPromises()
 
-    expect(wrapper.get('.tool-state-card--error').text()).toContain('AI 服务连接失败，请确认本地 AI 服务已启动。')
+    expect(wrapper.get('.tool-state-card--error').text()).toContain(
+      'AI 服务连接失败，请确认本地 AI 服务已启动。',
+    )
   })
 })

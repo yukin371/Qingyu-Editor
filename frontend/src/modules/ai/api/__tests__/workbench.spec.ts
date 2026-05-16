@@ -1,25 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const {
-  summarizeText,
-  proofreadText,
-  chatWithAI,
-  postAIRequest,
-  isUserProviderModeEnabled,
-  userAIProviderApi,
-} = vi.hoisted(() => ({
-  summarizeText: vi.fn(),
-  proofreadText: vi.fn(),
-  chatWithAI: vi.fn(),
-  postAIRequest: vi.fn(),
-  isUserProviderModeEnabled: vi.fn(() => false),
-  userAIProviderApi: {
-    workbench: {
-      rewrite: vi.fn(),
-      auditSensitiveWords: vi.fn(),
+const { requestWriterAI, chatWithAI, postAIRequest, isUserProviderModeEnabled, userAIProviderApi } =
+  vi.hoisted(() => ({
+    requestWriterAI: vi.fn(),
+    chatWithAI: vi.fn(),
+    postAIRequest: vi.fn(),
+    isUserProviderModeEnabled: vi.fn(() => false),
+    userAIProviderApi: {
+      workbench: {
+        rewrite: vi.fn(),
+        auditSensitiveWords: vi.fn(),
+      },
     },
-  },
-}))
+  }))
 
 vi.mock('../../config/provider', () => ({
   isUserProviderModeEnabled,
@@ -27,8 +20,7 @@ vi.mock('../../config/provider', () => ({
 
 vi.mock('../ai', () => ({
   chatWithAI: (...args: unknown[]) => chatWithAI(...args),
-  summarizeText: (...args: unknown[]) => summarizeText(...args),
-  proofreadText: (...args: unknown[]) => proofreadText(...args),
+  requestWriterAI: (...args: unknown[]) => requestWriterAI(...args),
 }))
 
 vi.mock('../ai-user-provider', () => ({
@@ -53,8 +45,7 @@ describe('ai workbench api', () => {
   beforeEach(() => {
     isUserProviderModeEnabled.mockReset()
     isUserProviderModeEnabled.mockReturnValue(false)
-    summarizeText.mockReset()
-    proofreadText.mockReset()
+    requestWriterAI.mockReset()
     chatWithAI.mockReset()
     postAIRequest.mockReset()
     userAIProviderApi.workbench.rewrite.mockReset()
@@ -62,8 +53,8 @@ describe('ai workbench api', () => {
   })
 
   it('routes rewrite workbench requests through the shared ai request helper', async () => {
-    postAIRequest.mockResolvedValue({
-      rewritten_text: '改写后的文本',
+    requestWriterAI.mockResolvedValue({
+      generatedText: '改写后的文本',
     })
 
     const result = await rewriteWithWorkbench({
@@ -74,13 +65,14 @@ describe('ai workbench api', () => {
       instructions: '增加细节',
     })
 
-    expect(postAIRequest).toHaveBeenCalledWith('/api/v1/ai/writing/rewrite', {
-      projectId: 'project-1',
-      chapterId: 'chapter-1',
-      originalText: '原文',
-      rewriteMode: 'expand',
-      instructions: '增加细节',
-    })
+    expect(requestWriterAI).toHaveBeenCalledWith(
+      expect.objectContaining({
+        route: 'single_document_edit',
+        mutationMode: 'single_document_diff',
+        intent: { action: 'expand' },
+        userVisibleSummary: '增加细节',
+      }),
+    )
     expect(result.rewrittenText).toBe('改写后的文本')
   })
 
@@ -127,48 +119,41 @@ describe('ai workbench api', () => {
     expect(result.sensitiveWords).toEqual([{ word: '禁词' }])
   })
 
-  it('routes workbench rewrite and sensitive audit through user provider when user api mode is enabled', async () => {
+  it('keeps sensitive audit on user provider when user api mode is enabled', async () => {
     isUserProviderModeEnabled.mockReturnValue(true)
-    userAIProviderApi.workbench.rewrite.mockResolvedValue({
-      rewritten_text: '精简后的文本',
-    })
     userAIProviderApi.workbench.auditSensitiveWords.mockResolvedValue({
       totalMatches: 0,
       isSafe: true,
       sensitiveWords: [],
     })
 
-    const rewriteResult = await rewriteWithWorkbench({
-      projectId: 'project-1',
-      originalText: '原文',
-      mode: 'shorten',
-    })
     const auditResult = await auditSensitiveWords({
       content: '正常内容',
     })
 
-    expect(userAIProviderApi.workbench.rewrite).toHaveBeenCalledWith({
-      projectId: 'project-1',
-      originalText: '原文',
-      mode: 'shorten',
-    })
     expect(userAIProviderApi.workbench.auditSensitiveWords).toHaveBeenCalledWith({
       content: '正常内容',
     })
     expect(postAIRequest).not.toHaveBeenCalled()
-    expect(rewriteResult.rewrittenText).toBe('精简后的文本')
     expect(auditResult.isSafe).toBe(true)
   })
 
   it('keeps selection summary and proofread on the shared ai api facade', async () => {
-    summarizeText.mockResolvedValue({
-      summary: '摘要结果',
-      keyPoints: ['要点'],
-    })
-    proofreadText.mockResolvedValue({
-      score: 9,
-      issues: [{ message: '建议调整节奏' }],
-    })
+    requestWriterAI
+      .mockResolvedValueOnce({
+        message: '摘要结果',
+        analysis: {
+          summary: '摘要结果',
+          keyPoints: ['要点'],
+        },
+      })
+      .mockResolvedValueOnce({
+        message: '1. 建议调整节奏',
+        analysis: {
+          score: 9,
+          issues: [{ message: '建议调整节奏' }],
+        },
+      })
 
     const summary = await summarizeSelection({
       content: '正文内容',
@@ -181,17 +166,22 @@ describe('ai workbench api', () => {
       chapterId: 'chapter-1',
     })
 
-    expect(summarizeText).toHaveBeenCalledWith('正文内容', {
-      projectId: 'project-1',
-      chapterId: 'chapter-1',
-      maxLength: undefined,
-      summaryType: 'detailed',
-      includeQuotes: false,
-    })
-    expect(proofreadText).toHaveBeenCalledWith('正文内容', {
-      projectId: 'project-1',
-      chapterId: 'chapter-1',
-    })
+    expect(requestWriterAI).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        route: 'analysis',
+        mutationMode: 'none',
+        intent: { action: 'summarize' },
+      }),
+    )
+    expect(requestWriterAI).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        route: 'analysis',
+        mutationMode: 'none',
+        intent: { action: 'proofread' },
+      }),
+    )
     expect(summary.summary).toBe('摘要结果')
     expect(review.score).toBe(9)
   })
