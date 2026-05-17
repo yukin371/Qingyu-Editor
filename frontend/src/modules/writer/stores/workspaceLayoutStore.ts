@@ -5,6 +5,7 @@ import {
   isWorkspacePanelAllowedInArea,
 } from '@/modules/writer/config/workspacePanels'
 import type {
+  BottomPanelLayoutState,
   RightToolAreaState,
   RightToolPanelWidths,
   RightToolType,
@@ -17,6 +18,13 @@ import type {
 } from '@/modules/writer/types/workspaceLayout'
 
 const STORAGE_KEY = 'qingyu_editor_workspace_layout_v2'
+const BOTTOM_PANEL_MIN_HEIGHT = 140
+const BOTTOM_PANEL_MAX_HEIGHT = 360
+const BOTTOM_PANEL_DEFAULT_HEIGHT = 220
+
+function getWorkspaceLayoutStorage(): Storage | null {
+  return typeof globalThis.localStorage === 'undefined' ? null : globalThis.localStorage
+}
 
 function createDefaultSnapshot(): WorkspaceLayoutSnapshot {
   return {
@@ -29,6 +37,9 @@ function createDefaultSnapshot(): WorkspaceLayoutSnapshot {
         list: 200,
         detail: 320,
       },
+    },
+    bottomPanel: {
+      height: BOTTOM_PANEL_DEFAULT_HEIGHT,
     },
     areas: {
       left: {
@@ -47,6 +58,23 @@ function createDefaultSnapshot(): WorkspaceLayoutSnapshot {
         panelIds: getWorkspaceAreaDefaultPanelIds('overlay'),
       },
     },
+  }
+}
+
+function sanitizeBottomPanelLayout(
+  value: Partial<BottomPanelLayoutState> | undefined,
+  fallback: BottomPanelLayoutState,
+): BottomPanelLayoutState {
+  const height =
+    typeof value?.height === 'number' && !Number.isNaN(value.height)
+      ? value.height
+      : fallback.height
+
+  return {
+    height: Math.max(
+      BOTTOM_PANEL_MIN_HEIGHT,
+      Math.min(BOTTOM_PANEL_MAX_HEIGHT, Math.round(height)),
+    ),
   }
 }
 
@@ -128,7 +156,9 @@ function sanitizeAreaState(
 function loadSnapshot(): WorkspaceLayoutSnapshot {
   const fallback = createDefaultSnapshot()
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const storage = getWorkspaceLayoutStorage()
+    if (!storage) return fallback
+    const raw = storage.getItem(STORAGE_KEY)
     if (!raw) return fallback
     const parsed = JSON.parse(raw) as Partial<WorkspaceLayoutSnapshot>
 
@@ -137,6 +167,7 @@ function loadSnapshot(): WorkspaceLayoutSnapshot {
       leftSidebarTab:
         parsed.leftSidebarTab === 'outline' ? parsed.leftSidebarTab : fallback.leftSidebarTab,
       rightToolArea: sanitizeRightToolArea(parsed.rightToolArea, fallback.rightToolArea),
+      bottomPanel: sanitizeBottomPanelLayout(parsed.bottomPanel, fallback.bottomPanel),
       areas: {
         left: sanitizeAreaState('left', parsed.areas?.left, fallback.areas.left),
         bottom: sanitizeAreaState('bottom', parsed.areas?.bottom, fallback.areas.bottom),
@@ -154,7 +185,9 @@ export const useWorkspaceLayoutStore = defineStore('writer-workspace-layout', ()
 
   const saveSnapshot = () => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot.value))
+      const storage = getWorkspaceLayoutStorage()
+      if (!storage) return
+      storage.setItem(STORAGE_KEY, JSON.stringify(snapshot.value))
     } catch (error) {
       console.warn('Failed to save workspace layout state:', error)
     }
@@ -172,6 +205,7 @@ export const useWorkspaceLayoutStore = defineStore('writer-workspace-layout', ()
 
   const areas = computed(() => snapshot.value.areas)
   const rightToolArea = computed(() => snapshot.value.rightToolArea)
+  const bottomPanel = computed(() => snapshot.value.bottomPanel)
 
   const setAreaVisibility = (areaId: WorkspaceAreaId, visible: boolean) => {
     snapshot.value.areas[areaId].visible = visible
@@ -217,6 +251,14 @@ export const useWorkspaceLayoutStore = defineStore('writer-workspace-layout', ()
         ...widths,
       },
       snapshot.value.rightToolArea.widths,
+    )
+    saveSnapshot()
+  }
+
+  const updateBottomPanelHeight = (height: number) => {
+    snapshot.value.bottomPanel = sanitizeBottomPanelLayout(
+      { height },
+      snapshot.value.bottomPanel,
     )
     saveSnapshot()
   }
@@ -276,12 +318,14 @@ export const useWorkspaceLayoutStore = defineStore('writer-workspace-layout', ()
     areas,
     leftSidebarTab,
     rightToolArea,
+    bottomPanel,
     setAreaVisibility,
     setAreaActivePanel,
     setRightToolVisible,
     setRightToolActive,
     toggleRightTool,
     updateRightToolPanelWidths,
+    updateBottomPanelHeight,
     movePanelToArea,
     applyPreset,
     resetLayout,

@@ -128,9 +128,13 @@
         <WorkspaceBottomPanel
           :visible="workspaceLayoutStore.areas.bottom.visible"
           :is-immersive-mode="isImmersiveMode"
+          :height="workspaceLayoutStore.bottomPanel.height"
           :scene-stage="sceneStage"
           @open-assets="handleOpenRightToolExclusive('assets')"
           @send-to-ai="handleSceneStageSendToAI"
+          @resize="workspaceLayoutStore.updateBottomPanelHeight"
+          @update-draft="updateSceneStageDraft"
+          @advance-beat="advanceSceneStageBeat"
           @close="toggleBottomPanel"
         />
         <WorkspaceStatusbar
@@ -514,7 +518,7 @@ const { workflowContext, activeEntities } = useWorkflowContext({
 
 const safeCurrentProjectId = computed(() => currentProjectId.value || '')
 
-const { sceneStage } = useWriterSceneStage({
+const { sceneStage, updateSceneStageDraft, advanceSceneStageBeat } = useWriterSceneStage({
   projectId: safeCurrentProjectId,
   chapterId: displayChapterId,
   chapterTitle: displayChapterTitle,

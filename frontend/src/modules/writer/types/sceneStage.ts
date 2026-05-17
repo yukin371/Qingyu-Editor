@@ -24,20 +24,37 @@ export interface WriterSceneStageEvidence {
   label: string
 }
 
+export interface WriterSceneStageDraft {
+  sceneTitle?: string
+  beatTitle?: string
+  goal?: string
+  conflict?: string
+  rangeLabel?: string
+  beatStatus?: 'planned' | 'active' | 'done'
+  doneCondition?: string
+  nextBeatTitle?: string
+  nextBeat?: string
+}
+
 export interface WriterSceneStageState {
   projectId: string
   chapterId: string
   chapterTitle: string
   sceneTitle: string
+  beatTitle?: string
   locationName?: string
   povCharacterName?: string
   goal?: string
   conflict?: string
-  nextBeat?: string
+  rangeLabel?: string
+  beatStatus: 'planned' | 'active' | 'done'
+  doneCondition?: string
+  nextBeatTitle?: string
   assets: WriterSceneStageAsset[]
   evidence: WriterSceneStageEvidence[]
   summaryLine: string
   isEmpty: boolean
+  draft: WriterSceneStageDraft
 }
 
 export function buildWriterSceneStagePrompt(sceneStage: WriterSceneStageState): string {
@@ -48,7 +65,9 @@ export function buildWriterSceneStagePrompt(sceneStage: WriterSceneStageState): 
     sceneStage.povCharacterName ? `视角：${sceneStage.povCharacterName}` : '',
     sceneStage.goal ? `目标：${sceneStage.goal}` : '',
     sceneStage.conflict ? `冲突：${sceneStage.conflict}` : '',
-    sceneStage.nextBeat ? `下一拍：${sceneStage.nextBeat}` : '',
+    sceneStage.rangeLabel ? `范围：${sceneStage.rangeLabel}` : '',
+    sceneStage.doneCondition ? `完成条件：${sceneStage.doneCondition}` : '',
+    sceneStage.nextBeatTitle ? `下一拍预告：${sceneStage.nextBeatTitle}` : '',
     sceneStage.assets.length > 0
       ? `在场资产：${sceneStage.assets
           .slice(0, 6)

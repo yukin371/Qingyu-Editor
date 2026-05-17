@@ -26,6 +26,10 @@ export interface RightToolPanelWidths {
   detail: number
 }
 
+export interface BottomPanelLayoutState {
+  height: number
+}
+
 export interface RightToolAreaState {
   visible: boolean
   activeTool: RightToolType
@@ -54,5 +58,6 @@ export interface WorkspaceLayoutSnapshot {
   preset: WorkspaceLayoutPreset
   leftSidebarTab: WorkspaceSidebarTab
   rightToolArea: RightToolAreaState
+  bottomPanel: BottomPanelLayoutState
   areas: Record<WorkspaceAreaId, WorkspaceAreaState>
 }

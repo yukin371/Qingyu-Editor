@@ -106,7 +106,7 @@
 - **右栏不再伪装成通用 layout area**：布局 store 里的通用区域只剩 `left / bottom / overlay`，右侧常驻工具单独归 `rightToolArea` owner。不要再往 `workspaceLayoutStore.areas` 恢复历史 `right` 区域状态。
 - **Overlay 继续承接深度工具，不回流常驻右栏**：`structure / assets-fullscreen / relations / timeline / branches` 仍由 `WorkspaceToolOverlay` owner 管理；右栏只负责快速查阅和“展开全屏 →” handoff，不要复制第二套全屏宿主状态。
 - **Story Harness 已切到右侧常驻工具**：右侧 activity bar 现在提供 `审查` 入口，`StoryHarnessPanel` 直接作为右侧工具展开；若未来要再回到其他宿主，必须先补对应 plan 和交互边界。
-- **底栏只做场景舞台**：底部区域现在只承接当前场景、在场资产和下一拍；状态栏保留显性的“场景舞台”入口，状态 / 上下文 / 审查等旧底栏内容不得再作为默认面板扩张，深度审查和资产整理继续放在右侧工具或 overlay。
+- **底栏只做可编辑场景舞台**：底部区域现在只承接当前场景、在场资产和当前拍管理；状态栏保留显性的“场景舞台”入口，状态 / 上下文 / 审查等旧底栏内容不得再作为默认面板扩张，深度审查和资产整理继续放在右侧工具或 overlay。底栏高度由 `workspaceLayoutStore.bottomPanel.height` 持久化，拖拽把手只调整场景舞台高度，不引入新的底栏工具宿主。场景舞台必须被限制在底栏自身高度内，内容过长时只允许面板内部滚动，不得覆盖或挤占正文区域。当前拍可跨越多个章节，字段包括当前拍、范围、状态、目标、冲突、完成条件和下一拍预告；只有用户点击“进入下一拍”才推进，不按章节自动切换。节拍草稿由 `useWriterSceneStage` 按项目/章节保存为本地 sidecar，不写正文、不接管结构舞台。
 - **Review Packet 预览只做前端只读聚合**：`StoryHarnessReviewPacketDrawer` 当前只聚合章节正文、Context Lens、活跃实体/关系、Change Request 和轻量 gate 摘要，服务人类审查，不写后端、不导入外部 Story Canvas 文件，也不替代后续后端正式 review packet owner。
 - **Workflow Gate Panel 只做可见审查门槛**：`StoryHarnessWorkflowGatePanel` 复用 `storyHarnessWorkflowGates.ts` 的章节级判断，展示写前目标、写后正文、修后建议、卷级审查状态；它只负责打开审查包、建议队列或触发已有索引入口，不持久化 gate decision，不引入自动 runner，也不阻塞作者继续写作。
 - **全屏工具 handoff 要复用共享实体上下文**：`CharacterGraphView / TimelineOutlineView / StoryBranchView / StructureStageView` 发给 AI 的 `add_to_chat` 文本不能只带局部节点名；应优先复用 `useWorkflowContext` 产出的 `activeEntities` / `workflowContext`，把当前章节的活跃角色、物品、地点等上下文一起带过去，避免工具页再次回到各自拼接一套孤立上下文。
