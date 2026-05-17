@@ -1,6 +1,6 @@
 <template>
   <section class="inspiration-golden-chapter-editor">
-    <div class="inspiration-golden-chapter-editor__head">
+    <div v-if="showHeader" class="inspiration-golden-chapter-editor__head">
       <h4>黄金三章</h4>
       <span class="inspiration-golden-chapter-editor__meta">
         {{ templateName || '未选模板' }}
@@ -62,12 +62,15 @@
 <script setup lang="ts">
 import type { GoldenChapterPlan } from '@/modules/writer/services/creativeWorkflow.service'
 
-defineProps<{
+withDefaults(defineProps<{
   chapters: GoldenChapterPlan[]
   activeChapterNumber: GoldenChapterPlan['chapterNumber']
   activeChapter: GoldenChapterPlan | null | undefined
   templateName?: string | null
-}>()
+  showHeader?: boolean
+}>(), {
+  showHeader: true,
+})
 
 const emit = defineEmits<{
   (e: 'update:active-chapter-number', value: GoldenChapterPlan['chapterNumber']): void
@@ -125,24 +128,23 @@ const emitUpdate = (
 }
 
 .inspiration-golden-chapter-editor__switcher {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  display: flex;
+  gap: 6px;
 }
 
 .inspiration-golden-chapter-editor__tab {
   display: grid;
-  gap: 4px;
+  gap: 2px;
   text-align: left;
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.18)) 72%, transparent);
-  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 90%, transparent);
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--editor-border, #d9dee6);
+  background: transparent;
   color: var(--editor-text-secondary, #475569);
   cursor: pointer;
 
   span {
-    color: var(--color-warning-700, #b45309);
+    color: var(--editor-text-muted, #64748b);
     font-size: 11px;
     font-weight: 700;
   }
@@ -153,35 +155,25 @@ const emitUpdate = (
   }
 
   &.is-active {
-    border-color: color-mix(in srgb, var(--color-warning-500, #f59e0b) 38%, transparent);
-    background: color-mix(in srgb, var(--color-warning-50, #fffbeb) 92%, transparent);
-    box-shadow: var(--editor-shadow-md, 0 8px 22px rgba(245, 158, 11, 0.1));
+    border-color: var(--editor-accent, #1d4ed8);
+    background: var(--editor-accent-soft, #eff6ff);
   }
 }
 
 .inspiration-golden-chapter-editor__card {
   display: grid;
   gap: 10px;
-  padding: 14px;
-  border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.16)) 72%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--editor-layer-panel, #ffffff) 98%, transparent),
-      color-mix(in srgb, var(--editor-layer-strong, #f8fafc) 86%, transparent)
-    ),
-    color-mix(in srgb, var(--editor-layer-panel, #ffffff) 86%, transparent);
+  padding-top: 2px;
 
   input,
   textarea {
     width: 100%;
-    border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.22)) 72%, transparent);
-    border-radius: 12px;
+    border: 1px solid var(--editor-border, #d9dee6);
+    border-radius: 8px;
     padding: 10px 12px;
     outline: none;
     resize: vertical;
-    background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
+    background: var(--editor-bg-surface, #f8fafc);
     color: var(--editor-text-primary, #0f172a);
     font: inherit;
   }
@@ -196,7 +188,7 @@ const emitUpdate = (
   }
 
   span {
-    color: var(--color-warning-700, #b45309);
+    color: var(--editor-text-muted, #64748b);
     font-size: 12px;
     font-weight: 700;
   }
@@ -204,7 +196,7 @@ const emitUpdate = (
 
 @media (max-width: 1200px) {
   .inspiration-golden-chapter-editor__switcher {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
 }
 </style>

@@ -24,11 +24,11 @@
     </form>
 
     <div v-if="notes.length === 0" class="inspiration-notes-panel__empty">
-      <span>先记下第一个想法。</span>
+      <span>暂无灵感便签</span>
     </div>
 
     <div v-else class="inspiration-notes-panel__list">
-      <article v-for="note in notes" :key="note.id" class="inspiration-notes-panel__card">
+      <article v-for="note in notes" :key="note.id" class="inspiration-notes-panel__item">
         <div class="inspiration-notes-panel__card-head">
           <div>
             <strong>{{ note.title }}</strong>
@@ -114,21 +114,21 @@ defineEmits<{
 .inspiration-notes-panel__composer input,
 .inspiration-notes-panel__composer textarea {
   width: 100%;
-  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.22)) 72%, transparent);
-  border-radius: 12px;
+  border: 1px solid var(--editor-border, #d9dee6);
+  border-radius: 8px;
   padding: 10px 12px;
   outline: none;
   resize: vertical;
-  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
+  background: var(--editor-bg-surface, #f8fafc);
   color: var(--editor-text-primary, #0f172a);
   font: inherit;
 }
 
 .inspiration-notes-panel__composer button,
 .inspiration-notes-panel__card-head button {
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.22)) 72%, transparent);
-  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
+  border-radius: 8px;
+  border: 1px solid var(--editor-border, #d9dee6);
+  background: transparent;
   color: var(--editor-text-secondary, #475569);
   font-size: 12px;
   font-weight: 600;
@@ -138,8 +138,7 @@ defineEmits<{
 .inspiration-notes-panel__composer button {
   height: 34px;
   padding: 0 12px;
-  border-color: rgba(251, 191, 36, 0.28);
-  color: var(--color-warning-700, #b45309);
+  color: var(--editor-text-secondary, #475569);
 }
 
 .inspiration-notes-panel__empty {
@@ -148,9 +147,7 @@ defineEmits<{
   justify-content: center;
   gap: 10px;
   min-height: 72px;
-  border-radius: 14px;
-  border: 1px dashed color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.4)) 76%, transparent);
-  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 66%, transparent);
+  border-top: 1px solid var(--editor-border, #e2e8f0);
   color: var(--editor-text-secondary, #475569);
   font-size: 12px;
 }
@@ -161,14 +158,12 @@ defineEmits<{
   gap: 12px;
 }
 
-.inspiration-notes-panel__card {
+.inspiration-notes-panel__item {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px;
-  border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.18)) 72%, transparent);
-  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 86%, transparent);
+  gap: 8px;
+  padding: 10px 0;
+  border-top: 1px solid var(--editor-border, #e2e8f0);
 }
 
 .inspiration-notes-panel__card-head {

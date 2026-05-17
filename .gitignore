@@ -23,3 +23,4 @@ Thumbs.db
 frontend/.cleanup-backups/
 frontend-dev.log
 frontend-dev.err.log
+storage/logs/

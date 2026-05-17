@@ -1,19 +1,19 @@
 <template>
   <div class="workspace-panel-body">
-    <div class="workspace-panel-grid">
-      <div class="workspace-panel-card">
+    <div class="workspace-panel-list">
+      <div class="workspace-panel-row">
         <span class="workspace-panel-card__label">章节</span>
         <strong>{{ chapterCount }}</strong>
       </div>
-      <div class="workspace-panel-card">
+      <div class="workspace-panel-row">
         <span class="workspace-panel-card__label">目录</span>
         <strong>{{ directoryCount }}</strong>
       </div>
-      <div class="workspace-panel-card">
+      <div class="workspace-panel-row">
         <span class="workspace-panel-card__label">当前模式</span>
         <strong>{{ activeToolLabel || '写作' }}</strong>
       </div>
-      <div class="workspace-panel-card">
+      <div class="workspace-panel-row">
         <span class="workspace-panel-card__label">保存状态</span>
         <strong>{{ saveStatusLabel || '等待同步' }}</strong>
       </div>
@@ -48,20 +48,21 @@ withDefaults(
   min-height: 0;
 }
 
-.workspace-panel-grid {
+.workspace-panel-list {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 0;
+  border-top: 1px solid var(--editor-border, #e2e8f0);
+  border-left: 1px solid var(--editor-border, #e2e8f0);
 }
 
-.workspace-panel-card {
+.workspace-panel-row {
   min-width: 0;
   display: grid;
   gap: 4px;
-  padding: 10px 12px;
-  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.14)) 42%, transparent);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.9)) 92%, transparent);
+  padding: 9px 12px;
+  border-right: 1px solid var(--editor-border, #e2e8f0);
+  border-bottom: 1px solid var(--editor-border, #e2e8f0);
 }
 
 .workspace-panel-card__label {
@@ -93,7 +94,7 @@ withDefaults(
 }
 
 @media (max-width: 1024px) {
-  .workspace-panel-grid {
+  .workspace-panel-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

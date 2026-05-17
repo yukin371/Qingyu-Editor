@@ -37,22 +37,26 @@
       />
     </section>
 
-    <section class="inspiration-panel__section">
+    <section class="inspiration-panel__section inspiration-panel__section--golden">
+      <div class="inspiration-panel__fold-head">
+        <div>
+          <h4>开篇三章</h4>
+          <span>{{ goldenChapterFoldHint }}</span>
+        </div>
+        <button type="button" @click="goldenChaptersExpanded = !goldenChaptersExpanded">
+          {{ goldenChaptersExpanded ? '收起' : '编辑' }}
+        </button>
+      </div>
       <InspirationGoldenChapterEditor
+        v-if="goldenChaptersExpanded"
         :chapters="workflow.goldenChapters"
         :active-chapter-number="activeGoldenChapterNumber"
         :active-chapter="activeGoldenChapter"
         :template-name="selectedTemplate?.name ?? null"
+        :show-header="false"
         @update:active-chapter-number="activeGoldenChapterNumber = $event"
         @update-chapter="updateGoldenChapter($event.chapterNumber, $event.field, $event.value)"
       />
-    </section>
-
-    <section v-if="selectedTemplate" class="inspiration-panel__section inspiration-panel__section--hint">
-      <div class="inspiration-panel__section-head"><h4>蓝图接力</h4></div>
-      <ul class="inspiration-panel__hint-list">
-        <li v-for="hint in selectedTemplate.blueprintHints" :key="hint">{{ hint }}</li>
-      </ul>
     </section>
 
     <section class="inspiration-panel__section">
@@ -95,6 +99,51 @@ import {
 
 type InspirationNote = InspirationNoteRecord
 
+const CHINESE_DIGIT_MAP: Record<string, number> = {
+  零: 0,
+  一: 1,
+  二: 2,
+  两: 2,
+  三: 3,
+  四: 4,
+  五: 5,
+  六: 6,
+  七: 7,
+  八: 8,
+  九: 9,
+}
+
+const parseChineseChapterNumber = (value: string): number => {
+  if (!value) return 0
+  if (value === '十') return 10
+
+  const tenIndex = value.indexOf('十')
+  if (tenIndex >= 0) {
+    const left = value.slice(0, tenIndex)
+    const right = value.slice(tenIndex + 1)
+    const tens = left ? CHINESE_DIGIT_MAP[left] || 0 : 1
+    const ones = right ? CHINESE_DIGIT_MAP[right] || 0 : 0
+    return tens * 10 + ones
+  }
+
+  return CHINESE_DIGIT_MAP[value] || 0
+}
+
+const extractChapterNumber = (title: string): number => {
+  const normalized = title.trim()
+  const arabicMatch = normalized.match(/第\s*(\d+)\s*章/)
+  if (arabicMatch?.[1]) {
+    return Number(arabicMatch[1]) || 0
+  }
+
+  const chineseMatch = normalized.match(/第\s*([零一二两三四五六七八九十]+)\s*章/)
+  if (chineseMatch?.[1]) {
+    return parseChineseChapterNumber(chineseMatch[1])
+  }
+
+  return 0
+}
+
 const props = defineProps<{
   projectId: string
   chapterId: string
@@ -112,6 +161,7 @@ const notes = ref<InspirationNote[]>([])
 const audienceDraft = ref('')
 const promiseDraft = ref('')
 const activeGoldenChapterNumber = ref<GoldenChapterPlan['chapterNumber']>(1)
+const goldenChaptersExpanded = ref(true)
 const workflow = ref<CreativeWorkflowRecord>({
   version: 1,
   projectId: props.projectId,
@@ -139,6 +189,15 @@ const isHydratingWorkflow = ref(false)
 
 const canSubmit = computed(() => draftTitle.value.length > 0 && draftContent.value.length > 0)
 const selectedTemplate = computed(() => getCreativeWorkflowTemplate(workflow.value.templateId))
+const currentChapterNumber = computed(() => extractChapterNumber(props.chapterTitle))
+const shouldCollapseGoldenChapters = computed(
+  () => Boolean(currentChapterNumber.value && currentChapterNumber.value > 3),
+)
+const goldenChapterFoldHint = computed(() =>
+  shouldCollapseGoldenChapters.value
+    ? '已进入正文后段，开篇规划默认收起'
+    : '用于确定前 3 章钩子与兑现',
+)
 const gateItems = computed(() => [
   { label: '题材模板', done: workflow.value.gate.completedFields.hasPrimaryGenre },
   { label: '目标读者', done: workflow.value.gate.completedFields.hasTargetAudience },
@@ -255,6 +314,14 @@ watch(
   },
   { immediate: true },
 )
+
+watch(
+  [() => props.projectId, currentChapterNumber],
+  () => {
+    goldenChaptersExpanded.value = !shouldCollapseGoldenChapters.value
+  },
+  { immediate: true },
+)
 watch(
   [() => workflow.value.pitchLine, () => workflow.value.paceContract],
   () => {
@@ -286,15 +353,9 @@ watch(
   overflow: auto;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 18px;
-  background:
-    radial-gradient(circle at top right, color-mix(in srgb, var(--color-warning-400, #fbbf24) 18%, transparent), transparent 28%),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--editor-layer-panel, #fffef6) 96%, transparent),
-      color-mix(in srgb, var(--editor-bg-surface, #f5f7fb) 92%, transparent) 100%
-    );
+  gap: 0;
+  padding: 14px;
+  background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
 }
 
 .inspiration-panel__header,
@@ -307,6 +368,7 @@ watch(
 
 .inspiration-panel__header {
   align-items: center;
+  padding-bottom: 12px;
 
   h3,
   h4,
@@ -317,8 +379,8 @@ watch(
 }
 
 .inspiration-panel__header h3 {
-  font-size: 18px;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 700;
   color: var(--editor-text-primary, #0f172a);
 }
 
@@ -359,11 +421,8 @@ watch(
 .inspiration-panel__section {
   display: grid;
   gap: 12px;
-  padding: 14px;
-  border-radius: 18px;
-  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.14)) 70%, transparent);
-  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 82%, transparent);
-  box-shadow: var(--editor-shadow-md, 0 8px 30px rgba(15, 23, 42, 0.04));
+  padding: 14px 0;
+  border-top: 1px solid var(--editor-border, #e2e8f0);
 }
 
 .inspiration-panel__section h4,
@@ -372,27 +431,40 @@ watch(
   margin: 0;
 }
 
-.inspiration-panel__section--gate {
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--color-warning-500, #f59e0b) 14%, transparent),
-      color-mix(in srgb, var(--editor-layer-panel, #ffffff) 92%, transparent)
-    ),
-    color-mix(in srgb, var(--editor-layer-panel, #ffffff) 82%, transparent);
-}
+.inspiration-panel__fold-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 
-.inspiration-panel__hint-list {
-  margin: 0;
-  padding-left: 18px;
-  color: var(--editor-text-secondary, #475569);
-  line-height: 1.6;
-}
+  div {
+    display: grid;
+    gap: 3px;
+  }
 
-.inspiration-panel__section--hint {
-  background:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--color-warning-600, #f97316) 10%, transparent), transparent 28%),
-    color-mix(in srgb, var(--editor-layer-panel, #ffffff) 84%, transparent);
+  h4 {
+    margin: 0;
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  span {
+    color: var(--editor-text-muted, #64748b);
+    font-size: 12px;
+  }
+
+  button {
+    height: 28px;
+    padding: 0 10px;
+    border: 1px solid var(--editor-border, #d9dee6);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--editor-text-secondary, #475569);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+  }
 }
 
 </style>

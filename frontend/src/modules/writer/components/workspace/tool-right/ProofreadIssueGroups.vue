@@ -55,7 +55,7 @@ defineEmits<{
 .proofread-issue-groups__group {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 
 .proofread-issue-groups__group-head {
@@ -83,10 +83,8 @@ defineEmits<{
   align-items: start;
   justify-content: space-between;
   gap: 14px;
-  padding: 14px;
-  border-radius: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.82)) 88%, transparent);
+  padding: 10px 0;
+  border-top: 1px solid var(--editor-border, #e2e8f0);
 }
 
 .proofread-issue-groups__issue-copy {
@@ -114,9 +112,9 @@ defineEmits<{
   button {
     height: 32px;
     padding: 0 12px;
-    border-radius: 10px;
-    border: 1px solid rgba(148, 163, 184, 0.22);
-    background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.92)) 94%, transparent);
+    border-radius: 8px;
+    border: 1px solid var(--editor-border, #d9dee6);
+    background: transparent;
     color: var(--editor-text-secondary, #475569);
     font-size: 12px;
     font-weight: 600;
@@ -124,8 +122,8 @@ defineEmits<{
   }
 
   .is-primary {
-    border-color: rgba(234, 179, 8, 0.22);
-    color: #a16207;
+    border-color: var(--editor-accent, #1d4ed8);
+    color: var(--editor-accent, #1d4ed8);
   }
 }
 </style>

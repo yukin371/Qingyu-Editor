@@ -18,11 +18,13 @@
         :ai-apply-feedback="aiApplyFeedback"
         :workflow-context="workflowContext"
         :draft-proposals="draftProposals"
+        :harness-data="harnessData"
         @ai-apply="(payload: WriterAIApplyPayload) => $emit('ai-apply', payload)"
         @proposal-draft="(payload) => $emit('proposal-draft', payload)"
         @proposal-status-change="(payload) => $emit('proposal-status-change', payload)"
         @create-structure-plan="(payload) => $emit('create-structure-plan', payload)"
         @jump-to-chapter="(chapterId) => $emit('jump-to-chapter', chapterId)"
+        @trigger-ai-action="(payload) => $emit('trigger-ai-action', payload)"
         @close="handleCloseRightTool"
       />
     </div>
@@ -47,7 +49,14 @@ import type {
   WriterDraftProposalStatus,
   WriterResultCandidate,
   WriterStructurePlanPayload,
+  WriterWorkflowActionRequest,
 } from '@/modules/writer/types/workflow'
+import type {
+  StoryHarnessChangeRequestDecision,
+  StoryHarnessCharacterSummary,
+  StoryHarnessChangeRequestPreview,
+  StoryHarnessRelationSummary,
+} from '@/modules/writer/stores/v3/storyHarnessStore'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 import type { RightToolType } from '@/modules/writer/types/workspaceLayout'
 
@@ -66,6 +75,29 @@ defineProps<{
   aiApplyFeedback: import('@/modules/writer/types/workflow').WriterAIApplyFeedback | null
   workflowContext: import('@/modules/writer/types/workflow').WriterWorkflowContext
   draftProposals: WriterDraftProposal[]
+  harnessData?: {
+    projectId: string
+    chapterId: string
+    chapterTitle: string
+    content: string
+    chapterCount: number
+    scopeLabel?: string
+    entityStats?: {
+      characters: number
+      locations: number
+      items: number
+      concepts: number
+    }
+    activeCharacters?: StoryHarnessCharacterSummary[]
+    activeRelations?: StoryHarnessRelationSummary[]
+    changeRequests?: StoryHarnessChangeRequestPreview[]
+    handleChangeRequestDecision?: (
+      requestId: string,
+      decision: StoryHarnessChangeRequestDecision,
+    ) => Promise<boolean>
+    handleTriggerIndex?: () => Promise<void>
+    isTriggeringIndex?: boolean
+  }
 }>()
 
 defineEmits<{
@@ -77,6 +109,7 @@ defineEmits<{
   ): void
   (e: 'create-structure-plan', payload: WriterStructurePlanPayload): void
   (e: 'jump-to-chapter', chapterId: string): void
+  (e: 'trigger-ai-action', payload: WriterWorkflowActionRequest): void
 }>()
 
 const panelStore = usePanelStore()

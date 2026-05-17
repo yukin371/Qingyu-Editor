@@ -104,7 +104,7 @@ const getValue = (event: Event) =>
 <style scoped lang="scss">
 .inspiration-anchors-editor {
   display: grid;
-  gap: 16px;
+  gap: 14px;
 }
 
 .inspiration-anchors-editor__compact,
@@ -147,7 +147,7 @@ const getValue = (event: Event) =>
 .inspiration-anchors-editor__token-entry {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 
   input {
     flex: 1;
@@ -156,10 +156,10 @@ const getValue = (event: Event) =>
   button {
     height: 34px;
     padding: 0 12px;
-    border-radius: 12px;
-    border: 1px solid color-mix(in srgb, var(--color-warning-400, #fbbf24) 34%, transparent);
-    background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
-    color: var(--color-warning-700, #b45309);
+    border-radius: 8px;
+    border: 1px solid var(--editor-border, #d9dee6);
+    background: transparent;
+    color: var(--editor-text-secondary, #475569);
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
@@ -171,12 +171,12 @@ const getValue = (event: Event) =>
 .inspiration-anchors-editor__block textarea,
 .inspiration-anchors-editor__token-entry input {
   width: 100%;
-  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.22)) 72%, transparent);
-  border-radius: 12px;
+  border: 1px solid var(--editor-border, #d9dee6);
+  border-radius: 8px;
   padding: 10px 12px;
   outline: none;
   resize: vertical;
-  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
+  background: var(--editor-bg-surface, #f8fafc);
   color: var(--editor-text-primary, #0f172a);
   font: inherit;
 }
@@ -184,17 +184,17 @@ const getValue = (event: Event) =>
 .inspiration-anchors-editor__token-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .inspiration-anchors-editor__token {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px;
+  padding: 5px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--color-warning-50, #fff7ed) 94%, transparent);
-  color: var(--color-warning-800, #9a3412);
+  background: var(--editor-bg-surface, #f8fafc);
+  color: var(--editor-text-secondary, #475569);
   font-size: 12px;
   font-weight: 600;
 
@@ -208,8 +208,8 @@ const getValue = (event: Event) =>
 }
 
 .inspiration-anchors-editor__token--promise {
-  background: color-mix(in srgb, var(--color-danger-50, #fef2f2) 94%, transparent);
-  color: var(--color-danger-700, #b91c1c);
+  background: var(--editor-bg-surface, #f8fafc);
+  color: var(--editor-text-secondary, #475569);
 }
 
 @media (max-width: 1200px) {

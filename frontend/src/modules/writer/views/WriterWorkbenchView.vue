@@ -52,6 +52,15 @@
             <QyIcon name="ArrowRight" :size="16" class="writer-workbench-ghost shrink-0" />
           </div>
           <p class="writer-workbench-muted mt-3 text-sm leading-6">{{ stage.subtitle }}</p>
+          <div class="writer-stage-card__tasks mt-3">
+            <span
+              v-for="task in stage.tasks.slice(0, 3)"
+              :key="task"
+              class="writer-stage-card__task"
+            >
+              {{ task }}
+            </span>
+          </div>
         </button>
       </div>
     </section>
@@ -276,13 +285,18 @@ async function handleCreateProject(payload: { title: string; summary: string }) 
 }
 
 async function openStage(stageId: string) {
-  if (stageId === 'inspiration') {
-    await router.push({ name: WRITER_ROUTE_NAMES.templates })
+  if (!lastProjectId.value) {
+    createDialogVisible.value = true
     return
   }
 
-  if (!lastProjectId.value) {
-    createDialogVisible.value = true
+  if (stageId === 'inspiration') {
+    await openProject(lastProjectId.value, { stage: stageId, rightTool: 'inspiration' })
+    return
+  }
+
+  if (stageId === 'review') {
+    await openProject(lastProjectId.value, { stage: stageId, rightTool: 'harness' })
     return
   }
 
@@ -314,6 +328,22 @@ onMounted(refreshWorkbench)
 .writer-stage-card:hover {
   border-color: var(--editor-border-light, #cbd5e1);
   box-shadow: var(--editor-shadow-md, 0 4px 12px rgba(15, 23, 42, 0.08));
+}
+
+.writer-stage-card__tasks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.writer-stage-card__task {
+  border-radius: 999px;
+  background: var(--editor-layer-strong, #f1f5f9);
+  color: var(--editor-text-secondary, #334155);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 6px 8px;
 }
 
 .writer-workbench-icon {

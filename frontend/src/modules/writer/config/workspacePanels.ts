@@ -8,6 +8,15 @@ import type {
 
 export const workspacePanelRegistry: WorkspacePanelDefinition[] = [
   {
+    id: 'scene',
+    title: '场景舞台',
+    defaultArea: 'bottom',
+    allowedAreas: ['bottom'],
+    detachable: true,
+    tabGroup: 'bottom',
+    icon: 'Monitor',
+  },
+  {
     id: 'structure',
     title: '结构舞台',
     defaultArea: 'overlay',
@@ -51,7 +60,8 @@ export const workspacePanelRegistry: WorkspacePanelDefinition[] = [
     allowedAreas: ['bottom'],
     detachable: true,
     tabGroup: 'bottom',
-    icon: 'Tickets',
+    icon: 'Monitor',
+    defaultVisible: false,
   },
   {
     id: 'context',
@@ -61,15 +71,16 @@ export const workspacePanelRegistry: WorkspacePanelDefinition[] = [
     detachable: true,
     tabGroup: 'bottom',
     icon: 'Connection',
+    defaultVisible: false,
   },
   {
     id: 'harness',
-    title: 'Story Harness',
-    defaultArea: 'bottom',
-    allowedAreas: ['bottom'],
+    title: '审查',
+    defaultArea: 'right-tool',
+    allowedAreas: ['right-tool'],
     detachable: true,
-    tabGroup: 'bottom',
-    icon: 'MagicStick',
+    tabGroup: 'right-tool',
+    icon: 'DocumentChecked',
   },
   {
     id: 'assets',
@@ -119,7 +130,7 @@ export const workspacePanelRegistryById = Object.fromEntries(
 
 export function getWorkspaceAreaDefaultPanelIds(areaId: WorkspaceAreaId): WorkspacePanelId[] {
   return workspacePanelRegistry
-    .filter((panel) => panel.defaultArea === areaId)
+    .filter((panel) => panel.defaultArea === areaId && panel.defaultVisible !== false)
     .map((panel) => panel.id)
 }
 
@@ -189,6 +200,12 @@ export const RIGHT_TOOL_CONFIG: Record<
     hasListPanel: true,
     label: '设定',
     icon: 'Collection',
+  },
+  harness: {
+    mode: 'single',
+    hasListPanel: false,
+    label: '审查',
+    icon: 'DocumentChecked',
   },
   proofread: {
     mode: 'single',

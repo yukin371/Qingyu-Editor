@@ -11,8 +11,8 @@ describe('workspaceLayoutStore', () => {
   it('uses unified registry defaults for bottom and overlay areas', () => {
     const store = useWorkspaceLayoutStore()
 
-    expect(store.areas.bottom.panelIds).toEqual(['status', 'context', 'harness'])
-    expect(store.areas.bottom.activePanelId).toBe('status')
+    expect(store.areas.bottom.panelIds).toEqual(['scene'])
+    expect(store.areas.bottom.activePanelId).toBe('scene')
     expect(store.areas.overlay.panelIds).toEqual([
       'structure',
       'assets',
@@ -27,10 +27,10 @@ describe('workspaceLayoutStore', () => {
     const store = useWorkspaceLayoutStore()
 
     store.setAreaActivePanel('bottom', 'relations')
-    expect(store.areas.bottom.activePanelId).toBe('status')
+    expect(store.areas.bottom.activePanelId).toBe('scene')
 
     store.movePanelToArea('relations', 'bottom')
-    expect(store.areas.bottom.panelIds).toEqual(['status', 'context', 'harness'])
+    expect(store.areas.bottom.panelIds).toEqual(['scene'])
 
     store.movePanelToArea('ai', 'bottom')
     expect(store.areas.bottom.panelIds).toContain('ai')

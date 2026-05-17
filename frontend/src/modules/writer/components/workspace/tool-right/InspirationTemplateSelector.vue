@@ -21,20 +21,10 @@
 
     <div v-if="selectedTemplate" class="inspiration-template-selector__brief">
       <div>
-        <p class="inspiration-template-selector__label">模板摘要</p>
         <strong>{{ selectedTemplate.tagline }}</strong>
       </div>
       <div>
-        <p class="inspiration-template-selector__label">适用题材</p>
         <strong>{{ selectedTemplate.applicableTo.join(' / ') }}</strong>
-      </div>
-      <div>
-        <p class="inspiration-template-selector__label">情绪曲线</p>
-        <strong>{{ selectedTemplate.emotionCurve }}</strong>
-      </div>
-      <div>
-        <p class="inspiration-template-selector__label">爽点重点</p>
-        <strong>{{ selectedTemplate.payoffFocus.join(' / ') }}</strong>
       </div>
     </div>
   </section>
@@ -66,7 +56,7 @@ defineEmits<{
 <style scoped lang="scss">
 .inspiration-template-selector {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .inspiration-template-selector__head {
@@ -89,14 +79,14 @@ defineEmits<{
 }
 
 .inspiration-template-selector__meta {
-  color: var(--editor-text-ghost, #94a3b8);
+  color: var(--editor-text-muted, #64748b);
   font-size: 12px;
 }
 
 .inspiration-template-selector__buttons {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .inspiration-template-selector__button {
@@ -104,58 +94,38 @@ defineEmits<{
   align-items: center;
   justify-content: center;
   text-align: left;
-  min-height: 42px;
-  padding: 0 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #fff)) 94%, transparent);
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--editor-border, #d9dee6);
+  background: transparent;
   cursor: pointer;
-  transition:
-    border-color 0.18s ease,
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
 
   strong {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--editor-text-secondary, #475569);
   }
 
   &.is-active {
-    border-color: var(--editor-accent-soft-border, rgba(245, 158, 11, 0.42));
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--editor-layer-accent, var(--editor-accent-soft, #fff)) 82%, transparent),
-      color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #fff)) 96%, transparent)
-    );
-    box-shadow: var(--editor-shadow-md, 0 10px 28px rgba(245, 158, 11, 0.12));
-    transform: translateY(-1px);
+    border-color: var(--editor-accent, #1d4ed8);
+    background: var(--editor-accent-soft, #eff6ff);
 
     strong {
-      color: var(--editor-accent, #92400e);
+      color: var(--editor-accent, #1d4ed8);
     }
   }
 }
 
 .inspiration-template-selector__brief {
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: rgba(248, 250, 252, 0.82);
+  padding-left: 10px;
+  border-left: 2px solid var(--editor-border, #d9dee6);
   color: var(--editor-text-secondary, #475569);
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 12px;
-}
-
-.inspiration-template-selector__label {
-  margin: 0 0 4px;
-  color: #b45309;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  gap: 4px;
+  font-size: 12px;
 }
 
 @media (max-width: 1200px) {
-  .inspiration-template-selector__buttons,
   .inspiration-template-selector__brief {
     grid-template-columns: 1fr;
   }

@@ -17,6 +17,18 @@
       </span>
       <span v-if="isImmersiveMode" class="status-chip status-chip--warm">沉浸 {{ immersiveTimerText }}</span>
     </div>
+    <nav class="workspace-statusbar__stage-dock" aria-label="场景舞台">
+      <button
+        type="button"
+        class="workspace-statusbar__stage-btn"
+        :class="{ 'is-active': bottomPanelVisible && activeBottomPanelId === 'scene' }"
+        :title="sceneStageSummary || sceneStageTitle || '打开场景舞台'"
+        @click="handleStageClick"
+      >
+        <span class="workspace-statusbar__stage-label">场景舞台</span>
+        <span class="workspace-statusbar__stage-title">{{ sceneStageTitle || '未命名场景' }}</span>
+      </button>
+    </nav>
     <div class="workspace-statusbar__state" :class="saveStatusClass">
       <span class="workspace-statusbar__dot" />
       <span>{{ isImmersiveMode ? '沉浸写作进行中' : (saveStatusLabel || '等待同步') }}</span>
@@ -28,6 +40,7 @@
 import { computed, onMounted } from 'vue'
 import WritingStatsChip from '@/modules/writer/components/WritingStatsChip.vue'
 import { useWritingStats, getGlobalTodayWords } from '@/modules/writer/composables/useWritingStats'
+import type { WorkspacePanelId } from '@/modules/writer/types/workspaceLayout'
 
 export interface Props {
   chapterCount: number
@@ -39,6 +52,10 @@ export interface Props {
   immersiveTimerText: string
   /** 项目总字数（可选） */
   projectWordCount?: number
+  bottomPanelVisible?: boolean
+  activeBottomPanelId?: WorkspacePanelId | null
+  sceneStageTitle?: string
+  sceneStageSummary?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -46,7 +63,28 @@ const props = withDefaults(defineProps<Props>(), {
   isImmersiveMode: false,
   immersiveTimerText: '',
   projectWordCount: 0,
+  bottomPanelVisible: false,
+  activeBottomPanelId: 'scene',
+  sceneStageTitle: '',
+  sceneStageSummary: '',
 })
+
+const emit = defineEmits<{
+  (e: 'toggle-bottom-panel'): void
+  (e: 'select-bottom-panel', panelId: WorkspacePanelId): void
+}>()
+
+const handleStageClick = () => {
+  if (props.bottomPanelVisible && props.activeBottomPanelId === 'scene') {
+    emit('toggle-bottom-panel')
+    return
+  }
+
+  emit('select-bottom-panel', 'scene')
+  if (!props.bottomPanelVisible) {
+    emit('toggle-bottom-panel')
+  }
+}
 
 // 写作统计 Composable
 const { todayStats, initTodayStats } = useWritingStats()
@@ -111,6 +149,49 @@ onMounted(() => {
   &::-webkit-scrollbar {
     display: none;
   }
+}
+
+.workspace-statusbar__stage-dock {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.workspace-statusbar__stage-btn {
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--editor-border, #e2e8f0);
+  border-radius: 999px;
+  background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
+  color: var(--editor-text-muted, #64748b);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+
+  &:hover {
+    color: var(--editor-text-primary, #0f172a);
+    background: var(--editor-bg-elevated, #f1f5f9);
+  }
+
+  &.is-active {
+    color: var(--editor-accent, #2563eb);
+    background: var(--editor-accent-soft, #eff6ff);
+  }
+}
+
+.workspace-statusbar__stage-label {
+  color: inherit;
+}
+
+.workspace-statusbar__stage-title {
+  max-width: 18vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .status-chip {

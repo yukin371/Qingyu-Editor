@@ -86,6 +86,6 @@ describe('AssetDetailPanel', () => {
 
     expect(wrapper.text()).toContain('新势力')
     expect(wrapper.findAll('.asset-detail-header__ghost')).toHaveLength(2)
-    expect(wrapper.text()).toContain('聚合口径说明')
+    expect(wrapper.text()).not.toContain('聚合口径说明')
   })
 })

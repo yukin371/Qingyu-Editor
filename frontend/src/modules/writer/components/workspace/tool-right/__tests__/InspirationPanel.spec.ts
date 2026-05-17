@@ -52,6 +52,16 @@ describe('InspirationPanel', () => {
       },
     })
 
+  const mountPanelWithProps = (props: typeof baseProps) =>
+    mount(InspirationPanel, {
+      props,
+      global: {
+        stubs: {
+          QyIcon: true,
+        },
+      },
+    })
+
   it('hydrates template defaults and promotes the gate after selecting a template', async () => {
     const wrapper = mountPanel()
     await nextTick()
@@ -60,7 +70,7 @@ describe('InspirationPanel', () => {
     await nextTick()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('可推进到阶段 2')
+    expect(wrapper.text()).toContain('阶段 1 已就绪')
     expect(wrapper.text()).toContain('踏入异常')
     expect(wrapper.text()).toContain('求知解谜')
   })
@@ -119,5 +129,22 @@ describe('InspirationPanel', () => {
     expect(
       (secondWrapper.get('[data-testid="golden-chapter-title"]').element as HTMLInputElement).value,
     ).toBe('第二章·错误献祭')
+  })
+
+  it('collapses opening chapter planning after the first three chapters', async () => {
+    const wrapper = mountPanelWithProps({
+      ...baseProps,
+      chapterTitle: '第四章',
+    })
+    await nextTick()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('已进入正文后段，开篇规划默认收起')
+    expect(wrapper.find('[data-testid="golden-chapter-title"]').exists()).toBe(false)
+
+    await wrapper.find('.inspiration-panel__fold-head button').trigger('click')
+    await nextTick()
+
+    expect(wrapper.find('[data-testid="golden-chapter-title"]').exists()).toBe(true)
   })
 })

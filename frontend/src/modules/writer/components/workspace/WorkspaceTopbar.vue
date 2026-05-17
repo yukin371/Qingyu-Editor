@@ -43,9 +43,6 @@
         <button class="topbar-icon-btn" :title="'AI 助手'" @click="$emit('open-right-tool', 'ai')">
           <QyIcon name="ChatDotRound" :size="14" />
         </button>
-        <button class="topbar-icon-btn" :title="'历史/底栏'" @click="$emit('toggle-bottom-panel')">
-          <QyIcon name="RefreshLeft" :size="14" />
-        </button>
       </div>
 
       <button class="topbar-btn topbar-btn--compact" :title="'保存'" @click="$emit('save')">
@@ -76,8 +73,8 @@
             class="topbar-overflow__item"
             @click="$emit('toggle-bottom-panel'); overflowOpen = false"
           >
-            <QyIcon name="Tickets" :size="14" />
-            <span>切换底栏</span>
+            <QyIcon name="Memo" :size="14" />
+            <span>场景舞台</span>
           </button>
           <button
             class="topbar-overflow__item"

@@ -1,10 +1,10 @@
 <template>
   <aside
-    class="story-harness-panel flex min-h-0 min-w-[280px] max-w-[320px] flex-col gap-4 p-4 max-[1200px]:max-w-none"
+    class="story-harness-panel flex h-full min-h-0 w-full flex-col gap-3 overflow-auto p-4"
     data-testid="story-harness-panel"
   >
     <header class="flex items-center justify-between gap-3">
-      <h3 class="story-harness-panel__heading text-sm font-semibold">Story Harness</h3>
+      <h3 class="story-harness-panel__heading text-sm font-semibold">审查</h3>
       <Tag size="sm" variant="primary" effect="light">{{ harnessStore.writingStateLabel }}</Tag>
     </header>
 
@@ -16,10 +16,10 @@
         class="story-harness-panel__card space-y-3 rounded-3xl"
       >
         <div class="space-y-1">
-          <p class="story-harness-panel__title text-sm font-medium">
-            {{ scopeLabel || chapterTitle || '未声明场景作用域' }}
-          </p>
-          <p class="story-harness-panel__muted text-xs leading-5">
+        <p class="story-harness-panel__title text-sm font-medium">
+          {{ scopeLabel || chapterTitle || '未声明场景作用域' }}
+        </p>
+        <p class="story-harness-panel__muted text-xs leading-5">
             {{ harnessStore.chapterProgressLabel }} · {{ harnessStore.draftLength }} 字符
           </p>
         </div>
@@ -62,7 +62,7 @@
 
     <section class="flex flex-col gap-3">
       <div class="flex items-center justify-between gap-3">
-        <h4 class="story-harness-panel__heading text-sm font-semibold">Change Request</h4>
+        <h4 class="story-harness-panel__heading text-sm font-semibold">建议队列</h4>
         <Tag variant="primary" size="sm">{{ harnessStore.pendingChangeRequestCount }} 待处理</Tag>
       </div>
 
@@ -164,19 +164,19 @@
       :change-requests="changeRequests"
       :handle-change-request-decision="handleChangeRequestDecision"
     />
-    <StoryHarnessReviewPacketDrawer
-      v-model="isReviewPacketDrawerVisible"
-      :chapter-id="chapterId"
-      :chapter-title="chapterTitle"
-      :content="content"
-      :scope-label="scopeLabel"
-      :entity-stats="resolvedEntityStats"
-      :active-characters="activeCharacters"
-      :active-relations="activeRelations"
-      :change-requests="changeRequests"
-    />
-  </aside>
-</template>
+      <StoryHarnessReviewPacketDrawer
+        v-model="isReviewPacketDrawerVisible"
+        :chapter-id="chapterId"
+        :chapter-title="chapterTitle"
+        :content="content"
+        :scope-label="scopeLabel"
+        :entity-stats="resolvedEntityStats"
+        :active-characters="activeCharacters"
+        :active-relations="activeRelations"
+        :change-requests="changeRequests"
+      />
+    </aside>
+  </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
@@ -350,7 +350,6 @@ watch(
 
 <style scoped>
 .story-harness-panel {
-  border-left: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 80%, transparent);
   background: color-mix(in srgb, var(--editor-bg-surface, #f8fafc) 72%, transparent);
 }
 

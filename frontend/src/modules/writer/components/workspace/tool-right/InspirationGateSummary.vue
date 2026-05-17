@@ -1,9 +1,9 @@
 <template>
   <section class="inspiration-gate-summary">
-    <div class="inspiration-gate-summary__card" :class="`is-${status}`">
-      <strong>{{ status === 'ready' ? '可推进到阶段 2' : '仍有阻塞项' }}</strong>
+    <div class="inspiration-gate-summary__line" :class="`is-${status}`">
+      <strong>{{ status === 'ready' ? '阶段 1 已就绪' : '阶段 1 待补齐' }}</strong>
       <span class="inspiration-gate-summary__pill">
-        {{ status === 'ready' ? 'READY' : 'BLOCKED' }}
+        {{ items.filter((item) => item.done).length }}/{{ items.length }}
       </span>
     </div>
 
@@ -34,39 +34,30 @@ defineProps<{
   gap: 10px;
 }
 
-.inspiration-gate-summary__card {
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.2)) 42%, transparent);
+.inspiration-gate-summary__line {
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.82)) 88%, transparent);
+  color: var(--editor-text-primary, #0f172a);
 
   &.is-ready {
-    border-color: color-mix(in srgb, var(--color-success-500, rgba(34, 197, 94, 0.35)) 30%, transparent);
-    background: color-mix(in srgb, var(--editor-layer-accent, rgba(240, 253, 244, 0.86)) 38%, var(--editor-layer-panel, rgba(255, 255, 255, 0.82)) 62%);
+    color: var(--color-success-700, #166534);
   }
 
   &.is-blocked {
-    border-color: color-mix(in srgb, var(--color-warning-500, rgba(245, 158, 11, 0.3)) 28%, transparent);
-    background: color-mix(
-      in srgb,
-      var(--editor-layer-accent, rgba(255, 251, 235, 0.9)) 34%,
-      var(--editor-layer-panel, rgba(255, 255, 255, 0.82)) 66%
-    );
+    color: var(--editor-text-primary, #0f172a);
   }
 }
 
 .inspiration-gate-summary__pill {
-  padding: 6px 10px;
+  padding: 3px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--editor-bg-elevated, rgba(15, 23, 42, 0.08)) 52%, transparent);
-  color: var(--color-warning-700, #92400e);
+  background: var(--editor-bg-surface, #f8fafc);
+  color: var(--editor-text-muted, #64748b);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.06em;
 }
 
 .inspiration-gate-summary__items {
@@ -79,15 +70,11 @@ defineProps<{
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 10px;
+  padding: 4px 0;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.18)) 42%, transparent);
-  background: color-mix(in srgb, var(--editor-layer-glass, rgba(248, 250, 252, 0.78)) 88%, transparent);
   color: var(--editor-text-secondary, #475569);
 
   &.is-done {
-    border-color: color-mix(in srgb, var(--color-success-500, rgba(34, 197, 94, 0.24)) 24%, transparent);
-    background: color-mix(in srgb, var(--editor-layer-accent, rgba(240, 253, 244, 0.86)) 34%, var(--editor-layer-glass, rgba(248, 250, 252, 0.78)) 66%);
     color: var(--color-success-700, #166534);
   }
 

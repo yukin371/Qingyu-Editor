@@ -38,7 +38,7 @@ function createDefaultSnapshot(): WorkspaceLayoutSnapshot {
       },
       bottom: {
         visible: false,
-        activePanelId: 'status',
+        activePanelId: 'scene',
         panelIds: getWorkspaceAreaDefaultPanelIds('bottom'),
       },
       overlay: {
@@ -73,6 +73,7 @@ function sanitizeRightToolArea(
 ): RightToolAreaState {
   const activeTool: RightToolType =
     value?.activeTool === 'assets' ||
+    value?.activeTool === 'harness' ||
     value?.activeTool === 'proofread' ||
     value?.activeTool === 'inspiration'
       ? value.activeTool
@@ -101,7 +102,17 @@ function sanitizeAreaState(
         ),
       )
     : []
-  const normalizedPanelIds = panelIds.length > 0 ? panelIds : fallback.panelIds
+  const normalizedPanelIds =
+    areaId === 'bottom'
+      ? [
+          'scene' as WorkspacePanelId,
+          ...panelIds.filter(
+            (panelId) => panelId !== 'scene' && panelId !== 'status' && panelId !== 'context',
+          ),
+        ]
+      : panelIds.length > 0
+        ? panelIds
+        : fallback.panelIds
   const activePanelId =
     value?.activePanelId && normalizedPanelIds.includes(value.activePanelId as WorkspacePanelId)
       ? (value.activePanelId as WorkspacePanelId)

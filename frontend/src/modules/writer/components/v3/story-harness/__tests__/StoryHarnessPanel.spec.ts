@@ -291,7 +291,7 @@ describe('StoryHarnessPanel', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('Story Harness')
+    expect(wrapper.text()).toContain('审查')
     expect(wrapper.text()).not.toContain('Phase 1')
   })
 

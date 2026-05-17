@@ -63,6 +63,24 @@
           @open-fullscreen="handleOpenAssetsFullscreen"
         />
 
+        <StoryHarnessPanel
+          v-else-if="activeTool === 'harness' && harnessData"
+          :project-id="harnessData.projectId"
+          :chapter-id="harnessData.chapterId"
+          :chapter-title="harnessData.chapterTitle"
+          :content="harnessData.content"
+          :chapter-count="harnessData.chapterCount"
+          :scope-label="harnessData.scopeLabel"
+          :entity-stats="harnessData.entityStats"
+          :active-characters="harnessData.activeCharacters"
+          :active-relations="harnessData.activeRelations"
+          :change-requests="harnessData.changeRequests"
+          :handle-change-request-decision="harnessData.handleChangeRequestDecision"
+          :handle-trigger-index="harnessData.handleTriggerIndex"
+          :is-triggering-index="harnessData.isTriggeringIndex"
+          @trigger-ai-action="(payload) => $emit('trigger-ai-action', payload)"
+        />
+
         <ProofreadPanel v-else-if="activeTool === 'proofread'" :source-text="sourceText" />
 
         <InspirationPanel
@@ -95,6 +113,7 @@ import AssetListPanel from '@/modules/writer/components/workspace/tool-right/Ass
 import AssetQuickEditorDialog from '@/modules/writer/components/workspace/tool-right/AssetQuickEditorDialog.vue'
 import InspirationPanel from '@/modules/writer/components/workspace/tool-right/InspirationPanel.vue'
 import ProofreadPanel from '@/modules/writer/components/workspace/tool-right/ProofreadPanel.vue'
+import StoryHarnessPanel from '@/modules/writer/components/v3/story-harness/StoryHarnessPanel.vue'
 import { useWriterAISummaryContext } from '@/modules/writer/composables/useWriterAISummaryContext'
 import { useToolOverlay } from '@/modules/writer/composables/useToolOverlay'
 import { useToolRightAssets } from '@/modules/writer/composables/useToolRightAssets'
@@ -109,7 +128,14 @@ import type {
   WriterResultCandidate,
   WriterStructurePlanPayload,
   WriterWorkflowContext,
+  WriterWorkflowActionRequest,
 } from '@/modules/writer/types/workflow'
+import type {
+  StoryHarnessChangeRequestDecision,
+  StoryHarnessCharacterSummary,
+  StoryHarnessChangeRequestPreview,
+  StoryHarnessRelationSummary,
+} from '@/modules/writer/stores/v3/storyHarnessStore'
 import type { RightToolType } from '@/modules/writer/types/workspaceLayout'
 
 const props = defineProps<{
@@ -123,6 +149,29 @@ const props = defineProps<{
   aiApplyFeedback: WriterAIApplyFeedback | null
   workflowContext: WriterWorkflowContext
   draftProposals: WriterDraftProposal[]
+  harnessData?: {
+    projectId: string
+    chapterId: string
+    chapterTitle: string
+    content: string
+    chapterCount: number
+    scopeLabel?: string
+    entityStats?: {
+      characters: number
+      locations: number
+      items: number
+      concepts: number
+    }
+    activeCharacters?: StoryHarnessCharacterSummary[]
+    activeRelations?: StoryHarnessRelationSummary[]
+    changeRequests?: StoryHarnessChangeRequestPreview[]
+    handleChangeRequestDecision?: (
+      requestId: string,
+      decision: StoryHarnessChangeRequestDecision,
+    ) => Promise<boolean>
+    handleTriggerIndex?: () => Promise<void>
+    isTriggeringIndex?: boolean
+  }
 }>()
 
 defineEmits<{
@@ -134,6 +183,7 @@ defineEmits<{
   ): void
   (e: 'create-structure-plan', payload: WriterStructurePlanPayload): void
   (e: 'jump-to-chapter', chapterId: string): void
+  (e: 'trigger-ai-action', payload: WriterWorkflowActionRequest): void
   (e: 'close'): void
 }>()
 

@@ -10,7 +10,6 @@
         :active-tool-label="activeToolLabel"
         :save-status-label="saveStatusLabel"
         :is-immersive-mode="isImmersiveMode"
-        :active-bottom-panel-id="workspaceLayoutStore.areas.bottom.activePanelId"
         @save="handleTipTapSave"
         @export="handleExportDraft"
         @share="handleShareDraft"
@@ -98,11 +97,27 @@
             :ai-apply-feedback="aiApplyFeedback"
             :workflow-context="workflowContext"
             :draft-proposals="visibleDraftProposals"
+            :harness-data="{
+              projectId: safeCurrentProjectId,
+              chapterId: displayChapterId,
+              chapterTitle: displayChapterTitle,
+              content: tipTapContent,
+              chapterCount: flatChapters.length,
+              scopeLabel: currentScopeLabel,
+              entityStats: storyHarnessEntityStats,
+              activeCharacters: activeScopeCharacters,
+              activeRelations: activeScopeRelations,
+              changeRequests: storyHarnessChangeRequests,
+              handleChangeRequestDecision,
+              handleTriggerIndex: handleStoryHarnessTriggerIndex,
+              isTriggeringIndex: isStoryHarnessTriggering,
+            }"
             @ai-apply="handleAIApplyGeneratedText"
             @proposal-draft="handleProposalDraft"
             @proposal-status-change="handleProposalStatusChange"
             @create-structure-plan="handleCreateStructurePlan"
             @jump-to-chapter="handleChapterIdUpdate"
+            @trigger-ai-action="handleWorkflowAction"
           />
         </template>
       </EditorLayout>
@@ -112,47 +127,11 @@
       <div class="workspace-bottom-stack">
         <WorkspaceBottomPanel
           :visible="workspaceLayoutStore.areas.bottom.visible"
-          :active-panel-id="workspaceLayoutStore.areas.bottom.activePanelId"
-          :panel-ids="workspaceLayoutStore.areas.bottom.panelIds"
-          :project-id="safeCurrentProjectId"
-          :chapter-id="displayChapterId"
-          :chapter-count="chapterCount"
-          :directory-count="directoryCount"
-          :active-tool-label="activeToolLabel"
-          :save-status-label="saveStatusLabel"
-          :source-text="currentChapterPlainText"
-          :ai-action-trigger="aiActionTrigger"
-          :ai-apply-feedback="aiApplyFeedback"
-          :workflow-context="workflowContext"
-          :draft-proposals="visibleDraftProposals"
-          :extra-status-chips="workspaceExtraStatusChips"
-          :project-display-name="projectDisplayName"
-          :chapter-title="displayChapterTitle"
-          :scope-label="currentScopeLabel"
-          :active-entities="activeEntities"
           :is-immersive-mode="isImmersiveMode"
-          :harness-data="{
-            projectId: safeCurrentProjectId,
-            chapterId: displayChapterId,
-            chapterTitle: displayChapterTitle,
-            content: tipTapContent,
-            chapterCount: flatChapters.length,
-            scopeLabel: currentScopeLabel,
-            entityStats: storyHarnessEntityStats,
-            activeCharacters: activeScopeCharacters,
-            activeRelations: activeScopeRelations,
-            changeRequests: storyHarnessChangeRequests,
-            handleChangeRequestDecision,
-            handleTriggerIndex: handleStoryHarnessTriggerIndex,
-            isTriggeringIndex: isStoryHarnessTriggering,
-          }"
-          @select-panel="handleBottomPanelSelect"
+          :scene-stage="sceneStage"
+          @open-assets="handleOpenRightToolExclusive('assets')"
+          @send-to-ai="handleSceneStageSendToAI"
           @close="toggleBottomPanel"
-          @ai-apply="handleAIApplyGeneratedText"
-          @proposal-draft="handleProposalDraft"
-          @proposal-status-change="handleProposalStatusChange"
-          @trigger-ai-action="handleWorkflowAction"
-          @create-structure-plan="handleCreateStructurePlan"
         />
         <WorkspaceStatusbar
           :chapter-count="chapterCount"
@@ -163,6 +142,12 @@
           :is-immersive-mode="isImmersiveMode"
           :immersive-timer-text="immersiveTimerText"
           :project-word-count="currentProjectWordCount"
+          :bottom-panel-visible="workspaceLayoutStore.areas.bottom.visible"
+          :active-bottom-panel-id="workspaceLayoutStore.areas.bottom.activePanelId"
+          :scene-stage-title="sceneStage.sceneTitle"
+          :scene-stage-summary="sceneStage.summaryLine"
+          @toggle-bottom-panel="toggleBottomPanel"
+          @select-bottom-panel="handleBottomPanelSelect"
         />
       </div>
     </template>
@@ -193,6 +178,7 @@ import { useLegacyEncyclopediaView } from '@/modules/writer/composables/useLegac
 import { useDirectoryOutline } from '@/modules/writer/composables/useDirectoryOutline'
 import { useStoryHarnessWorkspace } from '@/modules/writer/composables/useStoryHarnessWorkspace'
 import { useWorkflowContext } from '@/modules/writer/composables/useWorkflowContext'
+import { useWriterSceneStage } from '@/modules/writer/composables/useWriterSceneStage'
 import { type ToolType } from '@/modules/writer/composables/useToolOverlay'
 
 // 引入 API
@@ -259,9 +245,11 @@ import type {
 } from '@/modules/writer/types/workflow'
 import { buildWriterAIActionTrigger } from '@/modules/writer/types/workflow'
 import type {
+  RightToolType,
   WorkspaceLayoutPreset,
   WorkspacePanelId,
 } from '@/modules/writer/types/workspaceLayout'
+import { buildWriterSceneStagePrompt } from '@/modules/writer/types/sceneStage'
 import { useWorkspaceLayoutStore } from '@/modules/writer/stores/workspaceLayoutStore'
 
 // =======================
@@ -294,6 +282,7 @@ const mockProject = computed(() =>
 )
 const queryChapterId = computed(() => String(route.query.chapterId || ''))
 const queryTool = computed(() => String(route.query.tool || ''))
+const queryRightTool = computed(() => String(route.query.rightTool || ''))
 const resolvedActiveTool = computed<ActiveTool>(() => editorStore.activeTool ?? 'writing')
 const workspaceExtraStatusChips = ref<string[]>([])
 const STANDALONE_LAST_PROJECT_KEY = 'qingyu-editor:last-project'
@@ -373,7 +362,7 @@ const toggleBottomPanel = () => {
   workspaceLayoutStore.setAreaVisibility('bottom', !workspaceLayoutStore.areas.bottom.visible)
 }
 
-const handleOpenRightTool = (tool: 'ai' | 'assets' | 'proofread' | 'inspiration') => {
+const handleOpenRightTool = (tool: 'ai' | 'assets' | 'harness' | 'proofread' | 'inspiration') => {
   if (panelStore.rightCollapsed) {
     panelStore.setRightCollapsed(false)
     workspaceLayoutStore.setRightToolActive(tool)
@@ -382,12 +371,33 @@ const handleOpenRightTool = (tool: 'ai' | 'assets' | 'proofread' | 'inspiration'
   workspaceLayoutStore.toggleRightTool(tool)
 }
 
+const handleOpenRightToolExclusive = (tool: RightToolType) => {
+  panelStore.setRightCollapsed(false)
+  workspaceLayoutStore.setRightToolActive(tool)
+}
+
+const isRightToolType = (tool: string): tool is RightToolType =>
+  tool === 'ai' || tool === 'assets' || tool === 'harness' || tool === 'proofread' || tool === 'inspiration'
+
 const handleToggleImmersive = () => {
   editorStore.setActiveTool(isImmersiveMode.value ? 'writing' : 'immersive')
 }
 
 const handleBottomPanelSelect = (panelId: WorkspacePanelId) => {
   workspaceLayoutStore.setAreaActivePanel('bottom', panelId)
+}
+
+const handleSceneStageSendToAI = () => {
+  if (!sceneStage.value.summaryLine) {
+    return
+  }
+
+  handleWorkflowAction({
+    source: 'workspace',
+    action: 'add_to_chat',
+    title: sceneStage.value.sceneTitle || '场景舞台',
+    text: buildWriterSceneStagePrompt(sceneStage.value),
+  })
 }
 
 const applyLayoutPreset = (preset: WorkspaceLayoutPreset) => {
@@ -502,6 +512,18 @@ const { workflowContext, activeEntities } = useWorkflowContext({
   entityStats: storyHarnessEntityStats,
 })
 
+const safeCurrentProjectId = computed(() => currentProjectId.value || '')
+
+const { sceneStage } = useWriterSceneStage({
+  projectId: safeCurrentProjectId,
+  chapterId: displayChapterId,
+  chapterTitle: displayChapterTitle,
+  scopeLabel: currentScopeLabel,
+  workflowContext,
+  activeEntities,
+  changeRequests: storyHarnessChangeRequests,
+})
+
 const unwrapConceptList = <T,>(payload: unknown): T => {
   if (payload && typeof payload === 'object' && 'data' in (payload as Record<string, unknown>)) {
     return ((payload as Record<string, unknown>).data as T) ?? ([] as unknown as T)
@@ -561,7 +583,6 @@ const visibleDraftProposals = computed(() =>
       proposal.chapterId === displayChapterId.value,
   ),
 )
-const safeCurrentProjectId = computed(() => currentProjectId.value || '')
 const boundProjectId = computed({
   get: () => safeCurrentProjectId.value,
   set: (value: string) => {
@@ -1161,6 +1182,7 @@ void handleCloseFullscreen
 
 const handleWorkflowAction = (payload: WriterWorkflowActionRequest) => {
   panelStore.setRightCollapsed(false)
+  workspaceLayoutStore.setRightToolActive('ai')
   resetWorkflowTransientState({ clearActionTrigger: false })
   const normalizedText = payload.text?.trim() || currentChapterPlainText.value
   latestSelectionContext.value =
@@ -1931,6 +1953,19 @@ watch(
   (tool) => {
     const normalizedTool: ActiveTool = tool === 'immersive' ? 'immersive' : 'writing'
     editorStore.setActiveTool(normalizedTool)
+  },
+  { immediate: true },
+)
+
+watch(
+  () => queryRightTool.value,
+  (tool) => {
+    if (!isRightToolType(tool)) {
+      return
+    }
+
+    panelStore.setRightCollapsed(false)
+    workspaceLayoutStore.setRightToolActive(tool)
   },
   { immediate: true },
 )

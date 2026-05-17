@@ -13,7 +13,7 @@
                                ├→ TipTap + Story Harness（主写作面）
                                ├→ WorkspaceToolOverlay（关系图谱/时间线/分支/结构舞台）
                                ├→ WorkspaceRightPanel（AI / 设定 / 校对 / 灵感常驻右栏）
-                               └→ WorkspaceBottomPanel（status / context / Harness 兼容入口）
+                               └→ WorkspaceBottomPanel（场景舞台）
 
 工具交互/选区动作 → trigger-ai-action → handleWorkflowAction → 右侧 AI 工作台
 快捷键配置 → useShortcutConfig → useWorkspaceShortcuts → overlay / workspace action
@@ -25,6 +25,7 @@
 - **工具唯一入口**：`relations / timeline / branches / structure` 只允许通过 `WorkspaceToolOverlay` 承载；不要再让 `WorkspaceEditorContent` 主内容区直接切成工具页。
 - **工作台是默认首页，编辑器是项目内主工作区**：独立编辑器的 `/` 与 `/writer` 现在应先进入作者工作台，继续创作、项目列表、模板中心都从这里分流；真正的正文编辑只允许落到 `writer-project`，不要再把工作台页面做回第二个编辑器宿主。
 - **五阶段流程配置 owner 是 `config/creativeFlow.ts`**：灵感捕捉、地基构建、蓝图绘制、逐章施工、复盘成长的阶段名称、任务、产出和入口动作统一从该配置读取；工作台首页和项目内阶段导航不得各自复制一套流程文案。
+- **灵感阶段留在项目内创作流**：工作台“灵感捕捉”只负责打开项目内右栏灵感池；题材模板只是灵感工具内部可选输入，不允许把阶段入口直接跳到模板中心，避免作者从流程里被带到新建项目工具页。
 - **编辑器内不再展示五阶段步骤提示**：五阶段流程只保留在工作台首页和项目入口分流层，正文编辑面保持纯写作壳，不在主编辑区再渲染阶段 tab、说明卡或任务面板。
 - **项目列表与模板中心必须保持独立页职责**：工作台首页只展示最近项目和快捷动作；完整项目筛选、模板浏览与模板详情预览分别落到独立项目页与模板中心，不要把这些控件重新塞回首页。
 - **入口动作 owner 是 `useWriterProjectEntryActions`**：工作台、项目列表、模板中心涉及“进入项目 / 继续创作 / 新建后进入 / 导入后进入”时，应复用这个 composable；不要在页面里各自拼 `writer-project` 路由或复制 ZIP 导入成功跳转逻辑。
@@ -91,7 +92,7 @@
 - **文档工具协议优先复用 writer 文档树与内容接口**：`list_documents / read_document / search_document / patch_document` 这类 agent 能力，优先复用 `getDocumentTree / getDocumentContent(s) / updateDocumentContent` 及其 service 封装，不要再造第二套“AI 文件系统”。`patch_document` 即使后续接入真实 tool calling，也必须保留版本校验，并继续走正文 diff / 编辑器确认链路，不能让 AI 直接静默落盘。
 - **`/doc` 命令桥只做轻量演示接入**：`AIPanel` 内的 `/doc list/read/search/patch` 目前是面向当前 writer 工作区的本地命令桥。`list/read/search` 可直接返回文本结果；`patch` 必须统一转换成 `applyGeneratedText -> ProjectWorkspace.handleAIApplyGeneratedText` 的正文 diff。若目标不是当前章节，只允许先读取目标章节内容、生成预览，再通过 `targetDocumentId/targetDocumentTitle` 让宿主切章后挂起 diff，不允许绕过编辑器直接静默保存。
 - **会话操作应并入工具栏，不再回到独立头部**：清空当前对话、重命名、新建会话等动作统一放在 `AIConversationToolbar`，不要为了单个会话动作再长回额外标题栏。
-- **右栏是“双模式速查”宿主，不再只挂 AI/Harness**：`WorkspaceRightPanel` 现在承接 `AI / 设定 / 校对 / 灵感` 四种常驻工具；设定采用“列表 + 详情”双栏，AI/校对/灵感采用单栏。不要再把轻量查阅能力做回全屏覆盖层或主编辑区切页。
+- **右栏是“双模式速查”宿主，不再只挂 AI/Harness**：`WorkspaceRightPanel` 现在承接 `AI / 设定 / 审查 / 校对 / 灵感` 五种常驻工具；设定采用“列表 + 详情”双栏，审查/AI/校对/灵感采用单栏。不要再把轻量查阅能力做回全屏覆盖层或主编辑区切页。
 - **阶段 1 创作流元数据已改为 Wails-first owner**：`题材模板 / 目标读者 / 核心承诺 / 节奏合约 / 黄金三章` 当前由 `services/creativeWorkflow.service.ts` 优先通过 `wailsWriterBridge.creativeWorkflow` 落到本地 SQLite；`localStorage` 只保留无 bridge 的浏览器 fallback，不得再把这批字段写回旧在线 REST schema，也不要在页面里各自维护第二套 sidecar。
 - **模板目录和详情已改为本地 API owner**：作者工作台、模板中心消费的模板列表/详情统一走 `wailsWriterBridge.template`，由 Go `TemplateService` 提供稳定结构；前端静态模板数据只允许作为无 Wails 的开发 fallback，不再是默认运行态真相，且统一收口到 `services/templateCatalog.fallback.ts`，不要在页面或其他 service 再复制第三份模板定义。
 - **灵感笔记已改为本地 API owner**：`InspirationPanel` 的笔记列表、创建、删除统一走 `wailsWriterBridge.inspiration`；本地缓存只作为浏览器 fallback 和读失败兜底，不允许再直接在组件里操作 `localStorage`。
@@ -104,9 +105,10 @@
 - **长篇深度工具也必须按区段定位**：`TimelineOutlineView` 和 `StoryBranchView` 不得默认渲染全量事件/全量分支节点；应按固定区段提供地图、定位输入和当前窗口，避免几千章作品在辅助工具中重新变成长列表或全量画布。
 - **右栏不再伪装成通用 layout area**：布局 store 里的通用区域只剩 `left / bottom / overlay`，右侧常驻工具单独归 `rightToolArea` owner。不要再往 `workspaceLayoutStore.areas` 恢复历史 `right` 区域状态。
 - **Overlay 继续承接深度工具，不回流常驻右栏**：`structure / assets-fullscreen / relations / timeline / branches` 仍由 `WorkspaceToolOverlay` owner 管理；右栏只负责快速查阅和“展开全屏 →” handoff，不要复制第二套全屏宿主状态。
-- **Story Harness 先保留在底栏兼容入口**：当前右侧 activity bar 已切到四个常驻工具，Harness 通过 `WorkspaceBottomPanel` 保留兼容入口；若未来要回到常驻区，必须先补对应 plan 和交互边界。
+- **Story Harness 已切到右侧常驻工具**：右侧 activity bar 现在提供 `审查` 入口，`StoryHarnessPanel` 直接作为右侧工具展开；若未来要再回到其他宿主，必须先补对应 plan 和交互边界。
+- **底栏只做场景舞台**：底部区域现在只承接当前场景、在场资产和下一拍；状态栏保留显性的“场景舞台”入口，状态 / 上下文 / 审查等旧底栏内容不得再作为默认面板扩张，深度审查和资产整理继续放在右侧工具或 overlay。
 - **Review Packet 预览只做前端只读聚合**：`StoryHarnessReviewPacketDrawer` 当前只聚合章节正文、Context Lens、活跃实体/关系、Change Request 和轻量 gate 摘要，服务人类审查，不写后端、不导入外部 Story Canvas 文件，也不替代后续后端正式 review packet owner。
-- **Workflow Gate Panel 只做可见检查点**：`StoryHarnessWorkflowGatePanel` 复用 `storyHarnessWorkflowGates.ts` 的章节级判断，展示写前目标、写后正文、修后建议、卷级审查状态；它只负责打开审查包、建议队列或触发已有索引入口，不持久化 gate decision，不引入自动 runner，也不阻塞作者继续写作。
+- **Workflow Gate Panel 只做可见审查门槛**：`StoryHarnessWorkflowGatePanel` 复用 `storyHarnessWorkflowGates.ts` 的章节级判断，展示写前目标、写后正文、修后建议、卷级审查状态；它只负责打开审查包、建议队列或触发已有索引入口，不持久化 gate decision，不引入自动 runner，也不阻塞作者继续写作。
 - **全屏工具 handoff 要复用共享实体上下文**：`CharacterGraphView / TimelineOutlineView / StoryBranchView / StructureStageView` 发给 AI 的 `add_to_chat` 文本不能只带局部节点名；应优先复用 `useWorkflowContext` 产出的 `activeEntities` / `workflowContext`，把当前章节的活跃角色、物品、地点等上下文一起带过去，避免工具页再次回到各自拼接一套孤立上下文。
 - **全屏工具可见上下文由 overlay 统一展示**：`WorkspaceToolOverlay` 应使用 `useWorkflowContext` 同 owner 的摘要能力，把章节 / 场景 / 活跃实体显示在工具层顶部；不要再让 `CharacterGraphView / TimelineOutlineView / StoryBranchView / StructureStageView` 各自维护一份独立的“当前上下文”条。
 - **资产总览优先复用统一实体口径**：`EncyclopediaView` 当前已被复用为 Phase 4 资产总览 MVP，数据源应优先拼接 `writerStore.characters / locations`、统一实体接口 `api/entities.ts`（至少 item / organization）与 `conceptApi`，不要再额外新建影子资产 store。若后续要升级为独立 `AssetsOverviewView`，也必须先保持这套聚合口径不变。

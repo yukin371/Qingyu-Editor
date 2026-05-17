@@ -7,7 +7,7 @@
     data-testid="story-harness-workflow-gate-panel"
   >
     <div class="flex items-center justify-between gap-3">
-      <h4 class="story-harness-gate__heading text-sm font-semibold">Workflow Gate</h4>
+      <h4 class="story-harness-gate__heading text-sm font-semibold">审查门槛</h4>
       <Tag size="sm" :variant="gateState.summary.variant" effect="light">
         {{ gateState.summary.label }}
       </Tag>
@@ -36,7 +36,7 @@
     </div>
 
     <div class="grid grid-cols-2 gap-2">
-      <QyButton
+        <QyButton
         variant="secondary"
         size="sm"
         class="w-full"

@@ -20,8 +20,6 @@
         @update:active-tab="activeTab = $event"
         @jump-to-chapter="$emit('jump-to-chapter', $event)"
       />
-
-      <p v-if="dataHint" class="asset-detail-panel__footnote">{{ dataHint }}</p>
     </div>
 
     <div v-else class="asset-detail-panel__empty">
@@ -83,13 +81,6 @@ watch(
   gap: 12px;
   padding: 12px 14px;
   overflow: auto;
-}
-
-.asset-detail-panel__footnote {
-  margin: auto 0 0;
-  color: var(--editor-text-ghost, #9ca3af);
-  font-size: 11px;
-  line-height: 1.5;
 }
 
 .asset-detail-panel__empty {

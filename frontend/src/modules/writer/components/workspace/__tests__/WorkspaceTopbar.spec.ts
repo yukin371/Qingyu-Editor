@@ -62,14 +62,12 @@ describe('WorkspaceTopbar', () => {
     const proofreadButton = findButtonByTitle(wrapper, '校对')
     const inspirationButton = findButtonByTitle(wrapper, '灵感')
     const aiButton = findButtonByTitle(wrapper, 'AI 助手')
-    const bottomButton = findButtonByTitle(wrapper, '历史/底栏')
 
     await immersiveButton!.trigger('click')
     await assetsButton!.trigger('click')
     await proofreadButton!.trigger('click')
     await inspirationButton!.trigger('click')
     await aiButton!.trigger('click')
-    await bottomButton!.trigger('click')
 
     expect(wrapper.emitted('toggle-immersive')).toHaveLength(1)
     expect(wrapper.emitted('open-right-tool')).toEqual([
@@ -78,7 +76,6 @@ describe('WorkspaceTopbar', () => {
       ['inspiration'],
       ['ai'],
     ])
-    expect(wrapper.emitted('toggle-bottom-panel')).toHaveLength(1)
   })
 
   it('emits share from the overflow menu', async () => {

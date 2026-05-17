@@ -1,12 +1,5 @@
 <template>
-  <QyDrawer
-    v-model="drawerVisible"
-    title="Review Packet"
-    direction="rtl"
-    size="560px"
-    :destroy-on-close="false"
-    class="story-harness-review-packet-drawer"
-  >
+  <section v-if="drawerVisible" class="story-harness-review-packet">
     <div class="flex h-full min-h-0 flex-col gap-4">
       <QyCard
         variant="glass"
@@ -54,7 +47,7 @@
         class="story-harness-review-packet__card rounded-3xl"
       >
         <div class="flex items-center justify-between gap-3">
-          <h4 class="story-harness-review-packet__heading text-sm font-semibold">Workflow Gate 摘要</h4>
+          <h4 class="story-harness-review-packet__heading text-sm font-semibold">审查摘要</h4>
           <Tag size="sm" :variant="gateSummary.variant" effect="light">{{ gateSummary.label }}</Tag>
         </div>
         <ul class="story-harness-review-packet__secondary mt-3 space-y-2 text-sm leading-6">
@@ -116,7 +109,7 @@
         class="story-harness-review-packet__card min-h-0 rounded-3xl"
       >
         <div class="flex items-center justify-between gap-3">
-          <h4 class="story-harness-review-packet__heading text-sm font-semibold">Change Request 证据</h4>
+          <h4 class="story-harness-review-packet__heading text-sm font-semibold">建议证据</h4>
           <Tag size="sm" variant="warning" effect="light"
             >{{ visibleChangeRequests.length }} 条</Tag
           >
@@ -157,18 +150,18 @@
       </QyCard>
     </div>
 
-    <template #footer>
-      <div class="flex items-center justify-between gap-3">
-        <p class="story-harness-review-packet__muted text-xs leading-5">该预览只聚合当前前端已知上下文，不写入后端。</p>
-        <QyButton variant="secondary" size="sm" @click="drawerVisible = false">关闭</QyButton>
-      </div>
-    </template>
-  </QyDrawer>
+    <div class="story-harness-review-packet__footer mt-4 flex items-center justify-between gap-3">
+      <p class="story-harness-review-packet__muted text-xs leading-5">
+        该预览只聚合当前前端已知上下文，不写入后端。
+      </p>
+      <QyButton variant="secondary" size="sm" @click="drawerVisible = false">关闭</QyButton>
+    </div>
+  </section>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { QyButton, QyCard, QyDrawer } from '@/design-system/components'
+import { QyButton, QyCard } from '@/design-system/components'
 import { Tag } from '@/design-system/base'
 import {
   useStoryHarnessStore,
@@ -277,6 +270,13 @@ const decisionVariant = (changeRequestId: string) =>
 </script>
 
 <style scoped>
+.story-harness-review-packet {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+}
+
 .story-harness-review-packet__card {
   border: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 72%, transparent);
   background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 92%, transparent);
@@ -314,5 +314,9 @@ const decisionVariant = (changeRequestId: string) =>
 .story-harness-review-packet__code {
   background: color-mix(in srgb, var(--editor-text-primary, #0f172a) 92%, transparent);
   color: color-mix(in srgb, var(--editor-text-inverse, #ffffff) 92%, var(--editor-text-secondary, #334155) 8%);
+}
+
+.story-harness-review-packet__footer {
+  flex-shrink: 0;
 }
 </style>

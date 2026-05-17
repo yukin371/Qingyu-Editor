@@ -2,10 +2,11 @@ export type WorkspaceAreaId = 'left' | 'bottom' | 'overlay'
 export type WorkspacePanelDockId = WorkspaceAreaId | 'right-tool'
 
 export type WorkspaceSidebarTab = 'chapters' | 'outline'
-export type RightToolType = 'ai' | 'assets' | 'proofread' | 'inspiration'
+export type RightToolType = 'ai' | 'assets' | 'harness' | 'proofread' | 'inspiration'
 export type OverlayToolType = 'structure' | 'assets' | 'relations' | 'timeline' | 'branches'
 
 export type WorkspacePanelId =
+  | 'scene'
   | 'structure'
   | 'chapters'
   | 'outline'
@@ -40,6 +41,7 @@ export interface WorkspacePanelDefinition {
   tabGroup: 'left-sidebar' | 'right-tool' | 'bottom' | 'overlay'
   icon?: string
   overlayGroup?: 'primary' | 'professional'
+  defaultVisible?: boolean
 }
 
 export interface WorkspaceAreaState {
