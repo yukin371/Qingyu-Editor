@@ -74,7 +74,7 @@ export const WORKSPACE_TOOL_SHORTCUT_ACTIONS: WorkspaceToolShortcutDefinition[] 
   {
     id: 'tool.switchBranches',
     defaultKeys: ['Ctrl', 'Shift', 'B'],
-    description: '打开故事分支',
+    description: '打开互动分支',
     category: 'tool',
     tool: 'branches',
   },

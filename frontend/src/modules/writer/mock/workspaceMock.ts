@@ -293,6 +293,147 @@ export const createMockOutlineTree = (
   ]
 }
 
+export const createInteractiveBranchDemoTree = (
+  projectId: string = `${WRITER_YUNLAN_PROJECT_ID}-interactive-demo`,
+): OutlineNode[] => {
+  const createdAt = iso(20 * 60 * 1000)
+  const updatedAt = iso(10 * 60 * 1000)
+
+  const makeNode = (
+    id: string,
+    title: string,
+    description: string,
+    order: number,
+    level: number,
+    parentId?: string,
+    children: OutlineNode[] = [],
+    extras: Partial<OutlineNode> = {},
+  ): OutlineNode => ({
+    id,
+    projectId,
+    title,
+    description,
+    order,
+    level,
+    parentId,
+    status: 'writing',
+    type: level <= 2 ? 'volume' : 'chapter',
+    wordCount: 0,
+    createdAt,
+    updatedAt,
+    children,
+    ...extras,
+  })
+
+  const rescueEnding = makeNode(
+    `${projectId}-ending-rescue`,
+    '祠堂结盟',
+    '救人后获得同盟，路线暂时并回主线。',
+    0,
+    5,
+    `${projectId}-branch-rescue`,
+  )
+
+  const keyEnding = makeNode(
+    `${projectId}-ending-key`,
+    '黑市脱身',
+    '先取钥匙后遭遇追兵，暂时以独行方式脱身。',
+    0,
+    5,
+    `${projectId}-branch-key`,
+  )
+
+  const mergeNode = makeNode(
+    `${projectId}-merge`,
+    '城门再会（汇合）',
+    '两条路线在城门外重新汇合，为下一卷共用主线。',
+    2,
+    4,
+    `${projectId}-choice`,
+  )
+
+  const rescueBranch = makeNode(
+    `${projectId}-branch-rescue`,
+    '先救人',
+    '主角暴露位置，但换来线人信任。',
+    0,
+    4,
+    `${projectId}-choice`,
+    [rescueEnding],
+  )
+
+  const keyBranch = makeNode(
+    `${projectId}-branch-key`,
+    '先取钥匙',
+    '主角保住任务物，但错失第一时间救援。',
+    1,
+    4,
+    `${projectId}-choice`,
+    [keyEnding],
+  )
+
+  const choiceNode = makeNode(
+    `${projectId}-choice`,
+    '雨夜抉择',
+    '钥匙与伤者只能先保一个，决定后续关系与资源。',
+    1,
+    3,
+    `${projectId}-volume-1`,
+    [rescueBranch, keyBranch, mergeNode],
+  )
+
+  const openingNode = makeNode(
+    `${projectId}-opening`,
+    '雨夜入城',
+    '主角带着钥匙进入北门，第一次遭遇追兵。',
+    0,
+    3,
+    `${projectId}-volume-1`,
+  )
+
+  const endingVolume = makeNode(
+    `${projectId}-volume-2`,
+    '第二卷 暗线回收',
+    '承接第一卷不同抉择的代价与回收。',
+    1,
+    2,
+    `${projectId}-root`,
+    [
+      makeNode(
+        `${projectId}-volume-2-opening`,
+        '回到主线',
+        '无论前序选择如何，这里进入共用主线推进。',
+        0,
+        3,
+        `${projectId}-volume-2`,
+      ),
+    ],
+  )
+
+  const firstVolume = makeNode(
+    `${projectId}-volume-1`,
+    '第一卷 北门雨夜',
+    '展示一个完整的选择分岔示例。',
+    0,
+    2,
+    `${projectId}-root`,
+    [openingNode, choiceNode],
+  )
+
+  return [
+    makeNode(
+      `${projectId}-root`,
+      '互动分支示例',
+      '只读示例数据，用于预览选择、分支、汇合与结局的表达方式。',
+      0,
+      1,
+      undefined,
+      [firstVolume, endingVolume],
+      { type: 'volume', wordCount: 0 },
+    ),
+  ]
+}
+
 // ============================================
 // Mock Data: 时间线事件
 // ============================================

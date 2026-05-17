@@ -96,7 +96,7 @@
         </button>
         <button type="button" class="dropdown-item" @click="$emit('open-tool', 'branches')">
           <QyIcon name="Connection" :size="14" />
-          <span>故事分支</span>
+          <span>互动分支</span>
         </button>
       </div>
     </div>

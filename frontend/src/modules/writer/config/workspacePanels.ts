@@ -114,7 +114,7 @@ export const workspacePanelRegistry: WorkspacePanelDefinition[] = [
   },
   {
     id: 'branches',
-    title: '故事分支',
+    title: '互动分支',
     defaultArea: 'overlay',
     allowedAreas: ['overlay'],
     detachable: true,

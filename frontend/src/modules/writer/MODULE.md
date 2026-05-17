@@ -102,13 +102,14 @@
 - **黄金三章导入控制项仍由宿主兜底**：阶段 3 接力卡可以补 `导入位置（当前卷 / 项目根目录）` 与 `重复策略（跳过 / 允许重复）`，但最终 parent 解析、同名跳过与成功提示都必须落在 `ProjectWorkspace.handleCreateStructurePlan`，不要在结构舞台局部自行分叉创建逻辑。
 - **结构舞台默认层是章节级全局管理视图**：`StructureStageView` 默认只展示章节范围、附近章节卡片、字数、入纲状态和写作 handoff；结构节点、资产、图谱、时间线、分支等深层信息只在检视面板或专业 overlay 中展开，不允许把默认层重新做成长表格或第二套深度编辑 owner。
 - **长篇结构舞台必须用范围地图和附近窗口承载**：几百章以上的作品不得默认铺开完整顺序列表；`StructureStageView` 应按卷或固定章节范围展示全局地图，并只渲染当前/定位章节附近的少量章节卡片，章节号/标题定位和问题筛选只改变当前窗口，不改变章节原始顺序。
-- **长篇深度工具也必须按区段定位**：`TimelineOutlineView` 和 `StoryBranchView` 不得默认渲染全量事件/全量分支节点；应按固定区段提供地图、定位输入和当前窗口，避免几千章作品在辅助工具中重新变成长列表或全量画布。
+- **长篇深度工具也必须按区段定位**：`TimelineOutlineView` 和 `StoryBranchView` 不得默认渲染全量事件/全量分支节点；时间线应按事件窗口工作，互动分支应优先展示路线列表、当前章节附近节点和定位窗口，避免几千章作品在辅助工具中重新变成长列表或全量画布。
 - **右栏不再伪装成通用 layout area**：布局 store 里的通用区域只剩 `left / bottom / overlay`，右侧常驻工具单独归 `rightToolArea` owner。不要再往 `workspaceLayoutStore.areas` 恢复历史 `right` 区域状态。
 - **Overlay 继续承接深度工具，不回流常驻右栏**：`structure / assets-fullscreen / relations / timeline / branches` 仍由 `WorkspaceToolOverlay` owner 管理；右栏只负责快速查阅和“展开全屏 →” handoff，不要复制第二套全屏宿主状态。
 - **Story Harness 已切到右侧常驻工具**：右侧 activity bar 现在提供 `审查` 入口，`StoryHarnessPanel` 直接作为右侧工具展开；若未来要再回到其他宿主，必须先补对应 plan 和交互边界。
 - **底栏只做可编辑场景舞台**：底部区域现在只承接当前场景、在场资产和当前拍管理；状态栏保留显性的“场景舞台”入口，状态 / 上下文 / 审查等旧底栏内容不得再作为默认面板扩张，深度审查和资产整理继续放在右侧工具或 overlay。底栏高度由 `workspaceLayoutStore.bottomPanel.height` 持久化，拖拽把手只调整场景舞台高度，不引入新的底栏工具宿主。场景舞台必须被限制在底栏自身高度内，内容过长时只允许面板内部滚动，不得覆盖或挤占正文区域。当前拍可跨越多个章节，字段包括当前拍、范围、状态、目标、冲突、完成条件和下一拍预告；只有用户点击“进入下一拍”才推进，不按章节自动切换。节拍草稿由 `useWriterSceneStage` 按项目/章节保存为本地 sidecar，不写正文、不接管结构舞台。
 - **Review Packet 预览只做前端只读聚合**：`StoryHarnessReviewPacketDrawer` 当前只聚合章节正文、Context Lens、活跃实体/关系、Change Request 和轻量 gate 摘要，服务人类审查，不写后端、不导入外部 Story Canvas 文件，也不替代后续后端正式 review packet owner。
 - **Workflow Gate Panel 只做可见审查门槛**：`StoryHarnessWorkflowGatePanel` 复用 `storyHarnessWorkflowGates.ts` 的章节级判断，展示写前目标、写后正文、修后建议、卷级审查状态；它只负责打开审查包、建议队列或触发已有索引入口，不持久化 gate decision，不引入自动 runner，也不阻塞作者继续写作。
+- **互动分支是特殊叙事工具，不是通用章节树**：`StoryBranchView` 主要服务视觉小说、互动小说和叙事游戏，默认应以“路线列表 + 分支流 + 节点检视”展示 `剧情 / 选择 / 条件 / 汇合 / 结局`；普通小说只把它当多结局/平行线草案工具，不要再做回泛用大纲组织图。
 - **全屏工具 handoff 要复用共享实体上下文**：`CharacterGraphView / TimelineOutlineView / StoryBranchView / StructureStageView` 发给 AI 的 `add_to_chat` 文本不能只带局部节点名；应优先复用 `useWorkflowContext` 产出的 `activeEntities` / `workflowContext`，把当前章节的活跃角色、物品、地点等上下文一起带过去，避免工具页再次回到各自拼接一套孤立上下文。
 - **全屏工具可见上下文由 overlay 统一展示**：`WorkspaceToolOverlay` 应使用 `useWorkflowContext` 同 owner 的摘要能力，把章节 / 场景 / 活跃实体显示在工具层顶部；不要再让 `CharacterGraphView / TimelineOutlineView / StoryBranchView / StructureStageView` 各自维护一份独立的“当前上下文”条。
 - **资产总览优先复用统一实体口径**：`EncyclopediaView` 当前已被复用为 Phase 4 资产总览 MVP，数据源应优先拼接 `writerStore.characters / locations`、统一实体接口 `api/entities.ts`（至少 item / organization）与 `conceptApi`，不要再额外新建影子资产 store。若后续要升级为独立 `AssetsOverviewView`，也必须先保持这套聚合口径不变。

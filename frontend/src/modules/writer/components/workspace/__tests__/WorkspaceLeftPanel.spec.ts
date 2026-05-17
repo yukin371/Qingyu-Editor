@@ -90,7 +90,7 @@ describe('WorkspaceLeftPanel', () => {
     expect(wrapper.find('[title="资产总览"]').exists()).toBe(true)
     expect(wrapper.find('[title="关系图谱"]').exists()).toBe(false)
     expect(wrapper.find('[title="时间线"]').exists()).toBe(false)
-    expect(wrapper.find('[title="故事分支"]').exists()).toBe(false)
+    expect(wrapper.find('[title="互动分支"]').exists()).toBe(false)
     expect(wrapper.find('[title="显示左侧边栏"]').exists()).toBe(true)
   })
 
@@ -112,7 +112,7 @@ describe('WorkspaceLeftPanel', () => {
     expect(wrapper.text()).toContain('专业工具')
     expect(wrapper.text()).toContain('关系图谱')
     expect(wrapper.text()).toContain('时间线')
-    expect(wrapper.text()).toContain('故事分支')
+    expect(wrapper.text()).toContain('互动分支')
 
     const relationItem = wrapper.findAll('.dropdown-item')[1]
     await relationItem.trigger('click')

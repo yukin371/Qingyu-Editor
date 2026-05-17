@@ -1,14 +1,36 @@
 <template>
-  <section class="story-branch-view">
-    <header class="story-branch-view__header">
-      <ToolAssetSummaryChips :items="visibleAssetSummaryItems" />
-      <div class="story-branch-view__header-actions">
-        <div v-if="activeBranchId" class="branch-breadcrumb">
-          <span class="branch-breadcrumb__label">当前分支：</span>
-          <span class="branch-breadcrumb__name">{{ activeBranchTitle }}</span>
-          <button type="button" class="branch-breadcrumb__back" @click="exitBranch">
-            <QyIcon name="Close" :size="12" />
-            返回全部
+  <section class="interactive-branch-view">
+    <header class="interactive-branch-view__header">
+      <div class="interactive-branch-view__header-main">
+        <div class="interactive-branch-view__title-row">
+          <h2>互动分支</h2>
+          <ToolAssetSummaryChips :items="visibleAssetSummaryItems" />
+        </div>
+      </div>
+
+      <div class="interactive-branch-view__header-actions">
+        <QyButton
+          v-if="showDemoBranchEntry"
+          variant="secondary"
+          size="sm"
+          @click="toggleDemoBranchData"
+        >
+          {{ useDemoBranchData ? '返回项目' : '查看示例' }}
+        </QyButton>
+        <div class="interactive-branch-view__mode-switch">
+          <button
+            type="button"
+            :class="{ 'is-active': viewMode === 'compact' }"
+            @click="viewMode = 'compact'"
+          >
+            轻量模式
+          </button>
+          <button
+            type="button"
+            :class="{ 'is-active': viewMode === 'interactive-flow' }"
+            @click="viewMode = 'interactive-flow'"
+          >
+            互动流
           </button>
         </div>
         <QyButton variant="secondary" size="sm" @click="refreshOutline" :loading="isLoading">
@@ -18,251 +40,705 @@
       </div>
     </header>
 
-    <div class="story-branch-view__stats">
-      <SystemStatCard label="节点总数" :value="flatNodes.length" hint="大纲树" tone="info" />
-      <SystemStatCard label="分支点" :value="branchPointCount" hint="多子节点" tone="warning" />
-      <SystemStatCard label="结局数" :value="endingCount" hint="叶子节点" tone="success" />
+    <div class="interactive-branch-view__stats">
+      <div class="interactive-branch-stat">
+        <span>路线</span>
+        <strong>{{ routeStats.routeCount }}</strong>
+      </div>
+      <div class="interactive-branch-stat">
+        <span>选择点</span>
+        <strong>{{ routeStats.choiceCount }}</strong>
+      </div>
+      <div class="interactive-branch-stat">
+        <span>结局</span>
+        <strong>{{ routeStats.endingCount }}</strong>
+      </div>
+      <div class="interactive-branch-stat">
+        <span>未回收</span>
+        <strong>{{ routeStats.openBranchCount }}</strong>
+      </div>
+      <span class="interactive-branch-view__stats-summary">
+        {{ narrativeModeLabel }} · {{ currentRouteSummary }}
+      </span>
     </div>
 
-    <section class="story-branch-view__navigator">
-      <div class="story-branch-view__segment-map">
-        <button
-          v-for="segment in branchSegments"
-          :key="segment.id"
-          type="button"
-          class="story-branch-view__segment"
-          :class="{ 'is-active': segment.id === activeBranchSegmentId }"
-          @click="activateBranchSegment(segment.id)"
-        >
-          <strong>{{ segment.title }}</strong>
-          <span>{{ segment.total }} 节点</span>
-        </button>
-      </div>
-      <div class="story-branch-view__locator">
-        <label>
+    <div class="interactive-branch-view__body">
+      <aside class="interactive-branch-view__routes">
+        <div class="interactive-branch-view__section-head">
+          <span>路线</span>
+          <strong>{{ filteredRouteCount }}</strong>
+        </div>
+        <label class="interactive-branch-view__search">
           <QyIcon name="Search" :size="14" />
           <input
-            v-model.trim="branchLocatorQuery"
+            v-model.trim="routeQuery"
             type="text"
-            placeholder="定位章节号、节点标题或分支关键词"
-            @keyup.enter="handleBranchLocate"
+            name="interactive-branch-route-search"
+            aria-label="搜索路线"
+            placeholder="搜索路线、选择或结局"
           />
         </label>
-        <button type="button" @click="handleBranchLocate">定位</button>
-        <span>{{ activeBranchSegment?.title || '无可用区段' }}</span>
-      </div>
-    </section>
 
-    <div class="story-branch-view__canvas-area">
-      <!-- 画布 -->
-      <CanvasCore
-        ref="canvasCoreRef"
-        class="story-branch-canvas"
-        :show-grid="true"
-        :grid-size="24"
-        :initial-zoom="0.85"
-        @canvas-click="handleCanvasClick"
-      >
-        <!-- SVG 连线 -->
-        <template #connections>
-          <g v-for="edge in edges" :key="edge.id">
-            <path
-              :d="edge.path"
-              class="org-edge"
-              :class="{ 'org-edge--active': isEdgeActive(edge) }"
-              fill="none"
-              stroke-width="2"
-            />
-          </g>
-        </template>
-
-        <!-- 节点卡片 -->
-        <template #default>
-          <div
-            v-for="node in flatNodes"
-            :key="node.id"
-            class="org-node"
-            :class="[
-              `org-node--${node.category}`,
-              {
-                'org-node--selected': selectedNodeId === node.id,
-                'org-node--active-branch': activeBranchId === node.id,
-                'org-node--dimmed': isDimmed(node),
-              },
-            ]"
-            :style="nodeStyle(node)"
-            @click.stop="selectNode(node)"
-            @dblclick.stop="enterBranch(node)"
+        <div class="interactive-branch-view__route-list">
+          <section
+            v-for="group in displayedRouteGroups"
+            :key="group.id"
+            class="interactive-route-group"
+            :data-group-kind="group.kind"
           >
-            <div class="org-node__icon" :style="{ background: getCategoryColor(node.category) }">
-              <QyIcon :name="getCategoryIcon(node.category)" :size="14" color="#fff" />
-            </div>
-            <div class="org-node__body">
-              <span class="org-node__title">{{ node.title }}</span>
-              <span class="org-node__badge" :style="badgeStyle(node.category)">
-                {{ getCategoryLabel(node.category) }}
-              </span>
-            </div>
-            <div class="org-node__status">
-              <span class="org-node__status-dot" :class="`status-${node.status}`" />
-            </div>
-          </div>
-        </template>
-
-        <!-- 工具栏 -->
-        <template #toolbar>
-          <div class="story-branch-view__toolbar-actions">
             <button
               type="button"
-              class="toolbar-btn"
-              title="自动适配"
-              @click.stop="handleZoomToFit"
+              class="interactive-route-group__header"
+              :data-testid="`route-group-${group.id}`"
+              @click="toggleRouteGroup(group.id)"
             >
-              <QyIcon name="FullScreen" :size="14" />
+              <span class="interactive-route-group__title">{{ group.title }}</span>
+              <span class="interactive-route-group__meta">
+                <span>{{ group.routes.length }}</span>
+                <span>{{ isRouteGroupCollapsed(group.id) ? '展开' : '收起' }}</span>
+              </span>
+            </button>
+            <div v-if="!isRouteGroupCollapsed(group.id)" class="interactive-route-group__body">
+              <button
+                v-for="route in group.visibleRoutes"
+                :key="route.id"
+                type="button"
+                class="interactive-route-card"
+                :class="{ 'is-active': route.id === activeRouteId }"
+                @click="selectRoute(route.id)"
+              >
+                <div class="interactive-route-card__header">
+                  <span class="interactive-route-card__kind" :class="`is-${route.kind}`">
+                    {{ getRouteKindLabel(route.kind) }}
+                  </span>
+                  <span class="interactive-route-card__count">{{ route.nodeIds.length }} 节点</span>
+                </div>
+                <strong class="interactive-route-card__title">{{ route.title }}</strong>
+                <span class="interactive-route-card__summary">{{ route.summary }}</span>
+              </button>
+              <button
+                v-if="group.hiddenRouteCount > 0"
+                type="button"
+                class="interactive-route-group__more"
+                :data-testid="`route-group-more-${group.id}`"
+                @click="toggleRouteGroupExpansion(group.id)"
+              >
+                展开其余 {{ group.hiddenRouteCount }} 条
+              </button>
+              <button
+                v-else-if="expandedRouteGroups[group.id] && group.routes.length > ROUTE_GROUP_WINDOW_SIZE"
+                type="button"
+                class="interactive-route-group__more"
+                :data-testid="`route-group-less-${group.id}`"
+                @click="toggleRouteGroupExpansion(group.id)"
+              >
+                收起更多
+              </button>
+            </div>
+          </section>
+        </div>
+      </aside>
+
+      <main class="interactive-branch-view__flow">
+        <div class="interactive-branch-view__flow-toolbar">
+          <div class="interactive-branch-view__section-head">
+            <span>分支流</span>
+            <strong>{{ visibleNodes.length }} / {{ activeRouteNodes.length }}</strong>
+          </div>
+          <div class="interactive-branch-view__locator">
+            <label>
+              <QyIcon name="Search" :size="14" />
+              <input
+                v-model.trim="branchLocatorQuery"
+                type="text"
+                name="interactive-branch-node-locate"
+                aria-label="定位互动分支节点"
+                placeholder="定位章节号、节点标题或关键词"
+                @keyup.enter="handleBranchLocate"
+              />
+            </label>
+            <button type="button" @click="handleBranchLocate">定位</button>
+          </div>
+        </div>
+
+        <div class="interactive-branch-view__route-summary">
+          <span class="interactive-branch-view__route-label">
+            {{ activeRoute?.title || '全部路线' }}
+          </span>
+          <span>{{ currentWindowLabel }}</span>
+          <span v-if="currentChapterNode">当前章节落点：{{ currentChapterNode.title }}</span>
+        </div>
+
+        <div
+          v-if="branchLocateFeedback"
+          class="interactive-branch-view__locate-feedback"
+          :class="{ 'is-miss': !branchLocateFeedback.matched }"
+          data-testid="branch-locate-feedback"
+        >
+          <span>{{ branchLocateFeedbackText }}</span>
+          <div class="interactive-branch-view__locate-feedback-actions">
+            <button
+              v-if="branchLocateFeedback.matched && branchLocateFeedback.routeId"
+              type="button"
+              class="interactive-branch-view__locate-action"
+              data-testid="branch-locate-open-route"
+              @click="openBranchLocateRoute"
+            >
+              前往路线
+            </button>
+            <button
+              type="button"
+              class="interactive-branch-view__locate-action interactive-branch-view__locate-action--ghost"
+              data-testid="branch-locate-clear"
+              @click="clearBranchLocateFeedback"
+            >
+              清除
             </button>
           </div>
-        </template>
-      </CanvasCore>
+        </div>
 
-      <!-- 无数据提示 -->
-      <div v-if="!flatNodes.length && !isLoading" class="story-branch-view__empty">
-        <Empty description="暂无大纲节点，请先创建大纲后再查看分支结构" iconSize="medium" />
-      </div>
-    </div>
-
-    <!-- 右侧详情面板 -->
-    <aside v-if="selectedOrgNode" class="story-branch-detail">
-      <div class="story-branch-detail__header">
         <div
-          class="story-branch-detail__type"
-          :style="{ color: getCategoryColor(selectedOrgNode.category) }"
+          v-if="displayedOverview.visibleSegments.length"
+          class="interactive-branch-view__overview"
+          data-testid="branch-overview"
         >
-          <QyIcon :name="getCategoryIcon(selectedOrgNode.category)" :size="16" />
-          {{ getCategoryLabel(selectedOrgNode.category) }}
+          <button
+            v-for="segment in displayedOverview.visibleSegments"
+            :key="segment.id"
+            type="button"
+            class="interactive-branch-view__overview-segment"
+            :class="{
+              'is-active': segment.routeId === activeRouteId,
+              'is-related': segment.chapterRelated,
+            }"
+            :data-testid="`branch-overview-${segment.routeId}`"
+            @click="selectRoute(segment.routeId)"
+          >
+            <span class="interactive-branch-view__overview-title">{{ segment.title }}</span>
+            <span class="interactive-branch-view__overview-meta">
+              <span>{{ segment.nodeCount }} 节点</span>
+              <span v-if="segment.choiceCount">{{ segment.choiceCount }} 选择</span>
+              <span v-if="segment.endingCount">{{ segment.endingCount }} 结局</span>
+              <span v-if="segment.unresolved">未回收</span>
+              <span v-if="segment.hasDraft">草案</span>
+              <span v-if="segment.chapterRelated">当前</span>
+            </span>
+          </button>
+          <button
+            v-if="displayedOverview.hiddenSegmentCount > 0"
+            type="button"
+            class="interactive-branch-view__overview-more"
+            data-testid="branch-overview-more"
+            @click="toggleOverviewExpansion"
+          >
+            其余 {{ displayedOverview.hiddenSegmentCount }} 条
+          </button>
+          <button
+            v-else-if="expandedOverview && filteredOverviewSegments.length > OVERVIEW_WINDOW_SIZE"
+            type="button"
+            class="interactive-branch-view__overview-more"
+            data-testid="branch-overview-less"
+            @click="toggleOverviewExpansion"
+          >
+            收起概览
+          </button>
         </div>
-        <button type="button" class="detail-close" @click="clearSelection">
-          <QyIcon name="Close" :size="14" />
-        </button>
-      </div>
 
-      <h3 class="story-branch-detail__title">{{ selectedOrgNode.title }}</h3>
-      <p class="story-branch-detail__desc">
-        {{ selectedOrgNode.outlineNode.description || '暂无描述' }}
-      </p>
-
-      <div class="story-branch-detail__meta">
-        <div class="meta-item">
-          <span class="meta-label">层级</span>
-          <span class="meta-value">L{{ selectedOrgNode.level }}</span>
-        </div>
-        <div class="meta-item">
-          <span class="meta-label">字数</span>
-          <span class="meta-value">{{ selectedOrgNode.outlineNode.wordCount ?? 0 }}</span>
-        </div>
-        <div class="meta-item">
-          <span class="meta-label">状态</span>
-          <span class="meta-value">{{ statusText(selectedOrgNode.status) }}</span>
-        </div>
-        <div class="meta-item">
-          <span class="meta-label">子节点</span>
-          <span class="meta-value">{{ selectedOrgNode.children.length }}</span>
-        </div>
-      </div>
-
-      <!-- 子分支列表 -->
-      <div v-if="selectedOrgNode.children.length" class="story-branch-detail__children">
-        <div class="detail-section-title">子分支</div>
-        <button
-          v-for="child in selectedOrgNode.children"
-          :key="child.id"
-          type="button"
-          class="child-item"
-          :class="{ 'child-item--active': selectedNodeId === child.id }"
-          @click="selectNode(child)"
+        <div
+          v-if="viewMode === 'compact' && focusBreadcrumbNodes.length"
+          class="interactive-branch-view__focus-breadcrumb"
         >
-          <span class="child-item__dot" :style="{ background: getCategoryColor(child.category) }" />
-          <span class="child-item__name">{{ child.title }}</span>
-          <span class="child-item__badge">{{ getCategoryLabel(child.category) }}</span>
-        </button>
-      </div>
+          <span class="interactive-branch-view__focus-label">路径</span>
+          <button
+            v-for="node in focusBreadcrumbNodes"
+            :key="node.id"
+            type="button"
+            class="interactive-branch-view__focus-crumb"
+            :class="{ 'is-active': node.id === focusAnchorNode?.id }"
+            @click="selectNode(node.id)"
+          >
+            {{ node.title }}
+          </button>
+          <span v-if="focusWindowOverflowChildCount > 0" class="interactive-branch-view__focus-overflow">
+            其余后续 {{ focusWindowOverflowChildCount }}
+          </span>
+        </div>
 
-      <!-- 进入分支按钮 -->
-      <div class="story-branch-detail__actions">
-        <button
-          type="button"
-          class="enter-branch-btn enter-branch-btn--secondary"
-          data-testid="branch-send-to-ai"
-          @click="sendSelectedNodeToAI"
-        >
-          <QyIcon name="MagicStick" :size="14" />
-          交给 AI
-        </button>
-        <button
-          v-if="selectedOrgNode.children.length > 0 && activeBranchId !== selectedOrgNode.id"
-          type="button"
-          class="enter-branch-btn"
-          @click="enterBranch(selectedOrgNode)"
-        >
-          <QyIcon name="Right" :size="14" />
-          进入此分支
-        </button>
-      </div>
-    </aside>
+        <div v-if="visibleNodes.length" class="interactive-flow-lane" :class="`is-${viewMode}`">
+          <article
+            v-for="node in visibleNodes"
+            :key="node.id"
+            class="interactive-flow-card"
+            :class="[
+              `is-${node.nodeType}`,
+              {
+                'is-selected': node.id === selectedNodeId,
+                'is-focused': node.id === focusNodeId,
+                'is-current': node.id === currentChapterNode?.id,
+              },
+            ]"
+            :style="{ '--branch-depth': String(node.flowDepth) }"
+            @click="selectNode(node.id)"
+          >
+            <div class="interactive-flow-card__rail"></div>
+            <div class="interactive-flow-card__body">
+              <div class="interactive-flow-card__header">
+                <span
+                  v-if="viewMode === 'compact' && focusWindowRoleByNodeId[node.id]"
+                  class="interactive-flow-card__scope"
+                  :class="`is-${focusWindowRoleByNodeId[node.id]}`"
+                >
+                  {{ focusWindowRoleLabel(focusWindowRoleByNodeId[node.id]) }}
+                </span>
+                <span class="interactive-flow-card__type">{{ getNodeTypeLabel(node.nodeType) }}</span>
+                <span class="interactive-flow-card__meta">{{ node.chapterLabel }}</span>
+              </div>
+              <strong class="interactive-flow-card__title">{{ node.title }}</strong>
+              <p class="interactive-flow-card__summary">
+                {{ node.description || node.routeHint || '暂无节点说明' }}
+              </p>
+              <div class="interactive-flow-card__chips">
+                <span>{{ statusText(node.status) }}</span>
+                <span v-if="node.childCount">出口 {{ node.childCount }}</span>
+                <span v-if="node.parentId">承接上一节点</span>
+                <span v-if="node.outlineNode.documentId">绑定章节</span>
+              </div>
+              <div
+                v-if="node.parentTitle || node.childrenPreview.length"
+                class="interactive-flow-card__relations"
+              >
+                <span v-if="node.parentTitle" class="interactive-flow-card__relation">
+                  来自：{{ node.parentTitle }}
+                </span>
+                <span
+                  v-if="node.childrenPreview.length"
+                  class="interactive-flow-card__relation interactive-flow-card__relation--accent"
+                >
+                  去向：{{ node.childrenPreview.map((child) => child.title).join(' / ') }}
+                </span>
+              </div>
+              <div
+                v-if="node.childrenPreview.length"
+                class="interactive-flow-card__branches"
+              >
+                <span class="interactive-flow-card__branch-label">后续分支</span>
+                <span
+                  v-for="child in node.childrenPreview"
+                  :key="child.id"
+                  class="interactive-flow-card__branch-chip"
+                >
+                  {{ child.title }}
+                </span>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div v-else-if="!isLoading" class="interactive-branch-view__empty">
+          <Empty
+            description="还没有可分析的互动路线。先创建大纲或分支节点，再回来整理路径。"
+            iconSize="medium"
+          />
+          <QyButton
+            v-if="showDemoBranchEntry && !useDemoBranchData"
+            variant="secondary"
+            size="sm"
+            @click="toggleDemoBranchData"
+          >
+            查看示例分支
+          </QyButton>
+        </div>
+      </main>
+
+      <aside class="interactive-branch-view__detail">
+        <div v-if="selectedNode" class="interactive-branch-detail">
+          <div class="interactive-branch-detail__header">
+            <div>
+              <span class="interactive-branch-detail__type">
+                {{ getNodeTypeLabel(selectedNode.nodeType) }}
+              </span>
+              <h3 v-if="!selectedDraftNode">{{ selectedNode.title }}</h3>
+              <input
+                v-else
+                v-model.trim="draftEditTitle"
+                type="text"
+                class="interactive-branch-detail__field"
+                name="interactive-branch-draft-edit-title"
+                aria-label="草案节点标题"
+                placeholder="节点标题"
+              />
+            </div>
+            <button type="button" class="interactive-branch-detail__link" @click="clearSelection">
+              清空
+            </button>
+          </div>
+
+          <p v-if="!selectedDraftNode" class="interactive-branch-detail__summary">
+            {{ selectedNode.description || '暂无节点说明' }}
+          </p>
+          <textarea
+            v-else
+            v-model.trim="draftEditDescription"
+            class="interactive-branch-detail__textarea"
+            name="interactive-branch-draft-edit-description"
+            aria-label="草案节点说明"
+            rows="3"
+            placeholder="节点说明（可选）"
+          />
+
+          <div class="interactive-branch-detail__meta">
+            <div>
+              <span>所属路线</span>
+              <strong>{{ selectedNode.routeHint }}</strong>
+            </div>
+            <div>
+              <span>绑定章节</span>
+              <strong>{{ selectedNode.chapterLabel }}</strong>
+            </div>
+            <div>
+              <span>节点状态</span>
+              <strong>{{ statusText(selectedNode.status) }}</strong>
+            </div>
+            <div>
+              <span>出口数量</span>
+              <strong>{{ selectedNode.childCount }}</strong>
+            </div>
+          </div>
+
+          <div v-if="selectedDraftNode" class="interactive-branch-detail__section">
+            <span class="interactive-branch-detail__section-title">草案设置</span>
+            <div class="interactive-branch-detail__editor-grid">
+              <label class="interactive-branch-detail__editor-field">
+                <span>节点类型</span>
+                <select
+                  v-model="draftEditType"
+                  name="interactive-branch-draft-edit-type"
+                  aria-label="草案节点类型"
+                >
+                  <option value="story">剧情</option>
+                  <option value="choice">选择</option>
+                  <option value="condition">条件</option>
+                  <option value="merge">汇合</option>
+                  <option value="ending">结局</option>
+                </select>
+              </label>
+              <label class="interactive-branch-detail__editor-field">
+                <span>挂载到</span>
+                <select
+                  v-model="draftEditParentId"
+                  name="interactive-branch-draft-parent"
+                  aria-label="草案挂载节点"
+                >
+                  <option
+                    v-for="option in selectedDraftParentOptions"
+                    :key="option.id"
+                    :value="option.id"
+                  >
+                    {{ option.label }}
+                  </option>
+                </select>
+              </label>
+            </div>
+            <div class="interactive-branch-detail__inline-actions">
+              <button
+                type="button"
+                class="interactive-branch-detail__action interactive-branch-detail__action--secondary"
+                :disabled="!canSaveDraftEdit"
+                data-testid="branch-save-draft"
+                @click="saveDraftBranchNode"
+              >
+                保存草案
+              </button>
+              <button
+                type="button"
+                class="interactive-branch-detail__action interactive-branch-detail__action--ghost"
+                data-testid="branch-delete-draft"
+                @click="removeSelectedDraftBranchNode"
+              >
+                删除草案
+              </button>
+            </div>
+          </div>
+
+          <div class="interactive-branch-detail__section">
+            <span class="interactive-branch-detail__section-title">提示</span>
+            <p>
+              {{ selectedNodeHint }}
+            </p>
+          </div>
+
+          <div v-if="selectedNode.childrenPreview.length" class="interactive-branch-detail__section">
+            <span class="interactive-branch-detail__section-title">后续路径</span>
+            <div class="interactive-branch-detail__links">
+              <button
+                v-for="child in selectedNode.childrenPreview"
+                :key="child.id"
+                type="button"
+                class="interactive-branch-detail__path"
+                @click="selectNode(child.id)"
+              >
+                <span>{{ getNodeTypeLabel(child.nodeType) }}</span>
+                <strong>{{ child.title }}</strong>
+              </button>
+            </div>
+          </div>
+
+          <div class="interactive-branch-detail__section">
+            <span class="interactive-branch-detail__section-title">新增后续节点</span>
+            <div class="interactive-branch-detail__composer">
+              <input
+                v-model.trim="draftNodeTitle"
+                type="text"
+                name="interactive-branch-draft-title"
+                aria-label="后续节点标题"
+                placeholder="节点标题"
+              />
+              <input
+                v-model.trim="draftNodeDescription"
+                type="text"
+                name="interactive-branch-draft-description"
+                aria-label="后续节点说明"
+                placeholder="节点说明（可选）"
+              />
+              <div class="interactive-branch-detail__composer-row">
+                <select
+                  v-model="draftNodeType"
+                  name="interactive-branch-draft-type"
+                  aria-label="后续节点类型"
+                >
+                  <option value="story">剧情</option>
+                  <option value="choice">选择</option>
+                  <option value="condition">条件</option>
+                  <option value="merge">汇合</option>
+                  <option value="ending">结局</option>
+                </select>
+                <button
+                  type="button"
+                  class="interactive-branch-detail__action interactive-branch-detail__action--secondary"
+                  :disabled="!draftNodeTitle"
+                  data-testid="branch-add-draft"
+                  @click="addDraftBranchNode"
+                >
+                  添加草案
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="interactive-branch-detail__actions">
+            <button
+              type="button"
+              class="interactive-branch-detail__action interactive-branch-detail__action--secondary"
+              data-testid="branch-send-to-ai"
+              @click="sendSelectedNodeToAI"
+            >
+              <QyIcon name="MagicStick" :size="14" />
+              交给 AI
+            </button>
+            <button
+              v-if="selectedNode.outlineNode.documentId"
+              type="button"
+              class="interactive-branch-detail__action"
+              @click="jumpToNodeChapter(selectedNode.id)"
+            >
+              <QyIcon name="Right" :size="14" />
+              前往正文
+            </button>
+          </div>
+        </div>
+
+        <div v-else class="interactive-branch-detail interactive-branch-detail--empty">
+          <span class="interactive-branch-detail__type">节点检视</span>
+          <h3>选择一个节点</h3>
+          <p>这里会显示当前分支节点的类型、所属路线、绑定章节和后续路径。</p>
+        </div>
+      </aside>
+    </div>
   </section>
 </template>
 
 <script setup lang="ts">
-/**
- * StoryBranchView - 故事分支组织结构图
- *
- * 以组织结构图（Org Chart）形式可视化展示故事分支结构，
- * 支持多结局剧本写作和分支叙事管理。
- *
- * @features
- * - 组织结构图样式展示大纲树
- * - 不同节点类型（主线/章节/支线/结局/分支点）不同颜色/图标
- * - 点击选择节点，双击进入分支
- * - 分支切换后只显示该分支的大纲子树
- * - 普通小说模式（无分支时线性显示）
- * - 画布平移/缩放
- */
-
 import { computed, ref, watch } from 'vue'
 import { QyButton } from '@/design-system/components'
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
 import { Empty } from '@/design-system/base'
 import type { OutlineNode } from '@/types/writer'
 import { useWriterStore } from '@/modules/writer/stores/writerStore'
-import { CanvasCore } from '@/modules/writer/components/canvas'
 import ToolAssetSummaryChips from '@/modules/writer/components/workspace/tool-overlay/ToolAssetSummaryChips.vue'
+import { createInteractiveBranchDemoTree } from '@/modules/writer/mock/workspaceMock'
 import {
   formatActiveEntitiesPrompt,
   type ActiveEntitySummary,
 } from '@/modules/writer/composables/useWorkflowContext'
 import { useWriterAssetSummary } from '@/modules/writer/composables/useWriterAssetSummary'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
-import {
-  locateWriterCandidate,
-  resolveStableWriterSegmentId,
-} from '@/modules/writer/utils/longformLocate'
-import SystemStatCard from '@/modules/writer/components/system-design/SystemStatCard.vue'
+import { locateWriterCandidate } from '@/modules/writer/utils/longformLocate'
 import type {
   WriterWorkflowActionRequest,
   WriterWorkflowContext,
 } from '@/modules/writer/types/workflow'
-import {
-  useOrgTreeLayout,
-  getCategoryColor,
-  getCategoryBgColor,
-  getCategoryLabel,
-  getCategoryIcon,
-  type OrgTreeNode,
-  type OrgTreeEdge,
-} from '@/modules/writer/composables/useOrgTreeLayout'
 
-// ---------------------------------------------------------------------------
-// Props
-// ---------------------------------------------------------------------------
+const BRANCH_DRAFT_STORAGE_KEY = 'qingyu_writer_interactive_branch_drafts_v1'
+
+type BranchViewMode = 'compact' | 'interactive-flow'
+type InteractiveRouteKind = 'all' | 'main' | 'branch' | 'ending'
+type InteractiveNodeType = 'story' | 'choice' | 'condition' | 'merge' | 'ending'
+type BranchRouteGroupKind =
+  | 'chapter_related'
+  | 'overview'
+  | 'main'
+  | 'choice'
+  | 'branch'
+  | 'ending'
+  | 'unresolved'
+
+interface OutlineBranchMeta {
+  id: string
+  title: string
+  description: string
+  parentId: string | null
+  level: number
+  status: string
+  childIds: string[]
+  pathIds: string[]
+  chapterIndex: number
+  outlineNode: OutlineNode
+}
+
+interface InteractiveNodeViewModel extends OutlineBranchMeta {
+  nodeType: InteractiveNodeType
+  routeHint: string
+  childCount: number
+  chapterLabel: string
+  parentTitle: string
+  flowDepth: number
+  childrenPreview: InteractiveNodeViewModel[]
+}
+
+interface InteractiveRouteViewModel {
+  id: string
+  title: string
+  kind: InteractiveRouteKind
+  summary: string
+  nodeIds: string[]
+  depth: number
+}
+
+interface BranchRouteGroupViewModel {
+  id: string
+  title: string
+  kind: BranchRouteGroupKind
+  routes: InteractiveRouteViewModel[]
+}
+
+interface BranchRouteGroupDisplayViewModel extends BranchRouteGroupViewModel {
+  visibleRoutes: InteractiveRouteViewModel[]
+  hiddenRouteCount: number
+}
+
+interface BranchOverviewSegmentViewModel {
+  id: string
+  routeId: string
+  title: string
+  nodeCount: number
+  choiceCount: number
+  endingCount: number
+  hasDraft: boolean
+  unresolved: boolean
+  chapterRelated: boolean
+}
+
+interface DisplayedBranchOverviewViewModel {
+  visibleSegments: BranchOverviewSegmentViewModel[]
+  hiddenSegmentCount: number
+}
+
+interface BranchLocateFeedback {
+  query: string
+  matched: boolean
+  title?: string
+  routeId?: string
+  routeTitle?: string
+  chapterLabel?: string
+  modeLabel?: string
+}
+
+type FocusWindowRole = 'upstream' | 'focus' | 'downstream'
+
+function getBranchDraftStorage(): Storage | null {
+  return typeof globalThis.localStorage === 'undefined' ? null : globalThis.localStorage
+}
+
+function cloneOutlineNode(node: OutlineNode): OutlineNode {
+  return {
+    ...node,
+    children: Array.isArray(node.children) ? node.children.map(cloneOutlineNode) : [],
+  }
+}
+
+function loadBranchDraftMap(): Record<string, OutlineNode[]> {
+  try {
+    const raw = getBranchDraftStorage()?.getItem(BRANCH_DRAFT_STORAGE_KEY)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw) as Record<string, OutlineNode[]>
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+function saveBranchDraftMap(drafts: Record<string, OutlineNode[]>) {
+  try {
+    getBranchDraftStorage()?.setItem(BRANCH_DRAFT_STORAGE_KEY, JSON.stringify(drafts))
+  } catch (error) {
+    console.warn('Failed to save interactive branch drafts:', error)
+  }
+}
+
+function createBranchDraftId() {
+  return `interactive-branch-draft-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+}
+
+function mergeOutlineWithDrafts(baseNodes: OutlineNode[], draftNodes: OutlineNode[]): OutlineNode[] {
+  const roots = baseNodes.map(cloneOutlineNode)
+  const nodeMap = new Map<string, OutlineNode>()
+
+  const indexBase = (nodes: OutlineNode[]) => {
+    nodes.forEach((node) => {
+      nodeMap.set(node.id, node)
+      if (!Array.isArray(node.children)) {
+        node.children = []
+      }
+      indexBase(node.children)
+    })
+  }
+
+  indexBase(roots)
+
+  const draftClones = draftNodes
+    .map((node) => cloneOutlineNode(node))
+    .sort((left, right) => Number(left.order || 0) - Number(right.order || 0))
+
+  draftClones.forEach((node) => {
+    node.children = []
+    nodeMap.set(node.id, node)
+  })
+
+  draftClones.forEach((node) => {
+    const parentId = node.parentId
+    if (parentId && nodeMap.has(parentId)) {
+      const parent = nodeMap.get(parentId)!
+      const existingChildren = Array.isArray(parent.children) ? parent.children : []
+      parent.children = [...existingChildren, node].sort(
+        (left, right) => Number(left.order || 0) - Number(right.order || 0),
+      )
+      return
+    }
+    roots.push(node)
+  })
+
+  return roots.sort((left, right) => Number(left.order || 0) - Number(right.order || 0))
+}
 
 const props = withDefaults(
   defineProps<{
@@ -285,26 +761,40 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: 'trigger-ai-action', payload: WriterWorkflowActionRequest): void
+  (e: 'jump-to-chapter', chapterId: string): void
 }>()
 
-// ---------------------------------------------------------------------------
-// Store & State
-// ---------------------------------------------------------------------------
-
 const writerStore = useWriterStore()
-const selectedNodeId = ref('')
-const activeBranchId = ref('')
-const activeBranchSegmentId = ref('')
+const routeQuery = ref('')
 const branchLocatorQuery = ref('')
-const canvasCoreRef = ref<InstanceType<typeof CanvasCore>>()
-const BRANCH_SEGMENT_SIZE = 50
-
-// ---------------------------------------------------------------------------
-// 数据源
-// ---------------------------------------------------------------------------
+const viewMode = ref<BranchViewMode>('compact')
+const useDemoBranchData = ref(false)
+const activeRouteId = ref('all')
+const selectedNodeId = ref('')
+const focusNodeId = ref('')
+const routeGroupCollapseState = ref<Record<string, boolean>>({})
+const draftNodeTitle = ref('')
+const draftNodeDescription = ref('')
+const draftNodeType = ref<InteractiveNodeType>('story')
+const draftEditTitle = ref('')
+const draftEditDescription = ref('')
+const draftEditType = ref<InteractiveNodeType>('story')
+const draftEditParentId = ref('')
+const WINDOW_SIZE = 18
+const ROUTE_GROUP_WINDOW_SIZE = 6
+const ROUTE_GROUP_QUERY_WINDOW_SIZE = 12
+const OVERVIEW_WINDOW_SIZE = 6
+const OVERVIEW_QUERY_WINDOW_SIZE = 10
+const branchLocateFeedback = ref<BranchLocateFeedback | null>(null)
 
 const effectiveProjectId = computed(() => props.projectId || writerStore.currentProjectId || '')
 const isLoading = computed(() => writerStore.outline.loading)
+const branchDraftScopeKey = computed(() =>
+  `${effectiveProjectId.value || 'interactive-branch'}:${useDemoBranchData.value ? 'demo' : 'project'}`,
+)
+const branchDraftMap = ref<Record<string, OutlineNode[]>>(loadBranchDraftMap())
+const activeBranchDrafts = computed(() => branchDraftMap.value[branchDraftScopeKey.value] || [])
+const expandedOverview = ref(false)
 const { visibleAssetSummaryItems } = useWriterAssetSummary({
   projectId: effectiveProjectId,
   chapterId: computed(() => props.chapterId),
@@ -312,239 +802,682 @@ const { visibleAssetSummaryItems } = useWriterAssetSummary({
   activeEntities: computed(() => props.activeEntities || []),
 })
 
-/** 原始大纲根节点 */
-const rootNodes = computed<OutlineNode[]>(() => writerStore.outline.tree || [])
-const flatOutlineNodes = computed(() => flattenOutlineNodes(rootNodes.value))
-const branchSegments = computed(() => {
-  const segments = new Map<string, { id: string; title: string; total: number }>()
-  flatOutlineNodes.value.forEach((_, index) => {
-    const segmentIndex = Math.floor(index / BRANCH_SEGMENT_SIZE)
-    const id = `segment:${segmentIndex}`
-    const segment =
-      segments.get(id) ||
-      ({
-        id,
-        title: `第 ${segmentIndex * BRANCH_SEGMENT_SIZE + 1}-${Math.min(
-          (segmentIndex + 1) * BRANCH_SEGMENT_SIZE,
-          flatOutlineNodes.value.length,
-        )} 节点`,
-        total: 0,
-      } as { id: string; title: string; total: number })
-    segment.total += 1
-    segments.set(id, segment)
+const realRootNodes = computed<OutlineNode[]>(() => writerStore.outline.tree || [])
+const demoRootNodes = computed<OutlineNode[]>(() =>
+  createInteractiveBranchDemoTree(effectiveProjectId.value || 'interactive-branch-demo'),
+)
+const rootNodes = computed<OutlineNode[]>(() =>
+  mergeOutlineWithDrafts(
+    useDemoBranchData.value ? demoRootNodes.value : realRootNodes.value,
+    activeBranchDrafts.value,
+  ),
+)
+
+const flattenOutlineNodes = (
+  nodes: OutlineNode[],
+  parentId: string | null = null,
+  level = 0,
+  pathIds: string[] = [],
+): OutlineBranchMeta[] => {
+  const result: OutlineBranchMeta[] = []
+  nodes.forEach((node, index) => {
+    const currentPath = [...pathIds, node.id]
+    const meta: OutlineBranchMeta = {
+      id: node.id,
+      title: node.title || '未命名节点',
+      description: node.description || '',
+      parentId,
+      level,
+      status: node.status || 'draft',
+      childIds: (node.children || []).map((child) => child.id),
+      pathIds: currentPath,
+      chapterIndex: index,
+      outlineNode: node,
+    }
+    result.push(meta)
+    if (node.children?.length) {
+      result.push(...flattenOutlineNodes(node.children, node.id, level + 1, currentPath))
+    }
   })
-  return [...segments.values()]
-})
-const activeBranchSegment = computed(
-  () => branchSegments.value.find((segment) => segment.id === activeBranchSegmentId.value) || null,
+  return result
+}
+
+const outlineMetas = computed(() => flattenOutlineNodes(rootNodes.value))
+const outlineMetaMap = computed(
+  () => new Map(outlineMetas.value.map((meta) => [meta.id, meta] as const)),
 )
-const activeSegmentNodeIds = computed(() => {
-  if (!activeBranchSegmentId.value) return new Set<string>()
-  const segmentIndex = Number(activeBranchSegmentId.value.replace('segment:', '')) || 0
-  const start = segmentIndex * BRANCH_SEGMENT_SIZE
-  const end = start + BRANCH_SEGMENT_SIZE
-  return new Set(flatOutlineNodes.value.slice(start, end).map((node) => node.id))
-})
-
-/** 当前活跃分支的子树根节点列表 */
-const activeBranchSubtree = computed<OutlineNode[]>(() => {
-  if (!activeBranchId.value) return rootNodes.value
-
-  // 在完整树中查找分支节点
-  const branchNode = findOutlineNode(rootNodes.value, activeBranchId.value)
-  if (!branchNode) return rootNodes.value
-
-  return [branchNode]
-})
-
-/** 传给布局 composable 的根节点 */
-const layoutInput = computed(() => {
-  if (activeBranchId.value) return activeBranchSubtree.value
-  if (!activeSegmentNodeIds.value.size) return activeBranchSubtree.value
-  return pruneOutlineTreeByIds(activeBranchSubtree.value, activeSegmentNodeIds.value)
-})
-
-// ---------------------------------------------------------------------------
-// 布局
-// ---------------------------------------------------------------------------
-
-const { flatNodes, edges, contentWidth, contentHeight, findNode } = useOrgTreeLayout(layoutInput)
-
-// ---------------------------------------------------------------------------
-// 统计
-// ---------------------------------------------------------------------------
-
-const branchPointCount = computed(
-  () => flatNodes.value.filter((n) => n.category === 'branch-point').length,
+const baseOutlineMetas = computed(() =>
+  flattenOutlineNodes(useDemoBranchData.value ? demoRootNodes.value : realRootNodes.value),
 )
-const endingCount = computed(() => flatNodes.value.filter((n) => n.category === 'ending').length)
+const baseOutlineMetaMap = computed(
+  () => new Map(baseOutlineMetas.value.map((meta) => [meta.id, meta] as const)),
+)
 
-const activeBranchTitle = computed(() => {
-  if (!activeBranchId.value) return ''
-  const node = findNode(activeBranchId.value)
-  return node?.title ?? ''
+const inferInteractiveNodeType = (meta: OutlineBranchMeta): InteractiveNodeType => {
+  const explicitType = String(meta.outlineNode.type || '').toLowerCase()
+  if (explicitType === 'choice') return 'choice'
+  if (explicitType === 'condition') return 'condition'
+  if (explicitType === 'merge') return 'merge'
+  if (explicitType === 'ending') return 'ending'
+  if (explicitType === 'story') return 'story'
+  const text = `${meta.title} ${meta.description}`.toLowerCase()
+  if (
+    ['条件', '判定', '好感', '变量', 'flag', 'if', '达成'].some((keyword) =>
+      text.includes(keyword.toLowerCase()),
+    )
+  ) {
+    return 'condition'
+  }
+  if (['汇合', '合流', '回收', '收束'].some((keyword) => text.includes(keyword))) {
+    return 'merge'
+  }
+  if (meta.childIds.length > 1) {
+    return 'choice'
+  }
+  if (meta.childIds.length === 0) {
+    return 'ending'
+  }
+  return 'story'
+}
+
+const collectSubtreeIds = (rootId: string): string[] => {
+  const ids: string[] = []
+  const walk = (nodeId: string) => {
+    const meta = outlineMetaMap.value.get(nodeId)
+    if (!meta) return
+    ids.push(meta.id)
+    meta.childIds.forEach(walk)
+  }
+  walk(rootId)
+  return ids
+}
+
+const interactiveRoutes = computed<InteractiveRouteViewModel[]>(() => {
+  const routes: InteractiveRouteViewModel[] = [
+    {
+      id: 'all',
+      title: '全部路线',
+      kind: 'all',
+      summary: '适合普通小说，整体查看主线与关键分叉点。',
+      nodeIds: outlineMetas.value.map((meta) => meta.id),
+      depth: -1,
+    },
+  ]
+  const usedIds = new Set<string>(['all'])
+
+  rootNodes.value.forEach((node) => {
+    if (usedIds.has(node.id)) return
+    usedIds.add(node.id)
+    routes.push({
+      id: node.id,
+      title: node.title || '未命名路线',
+      kind: 'main',
+      summary: '主路线入口。',
+      nodeIds: collectSubtreeIds(node.id),
+      depth: 0,
+    })
+  })
+
+  outlineMetas.value.forEach((meta) => {
+    if (inferInteractiveNodeType(meta) !== 'choice') return
+    meta.childIds.forEach((childId) => {
+      if (usedIds.has(childId)) return
+      const child = outlineMetaMap.value.get(childId)
+      if (!child) return
+      usedIds.add(childId)
+      routes.push({
+        id: child.id,
+        title: child.title,
+        kind: inferInteractiveNodeType(child) === 'ending' ? 'ending' : 'branch',
+        summary: `由“${meta.title}”分出的路径。`,
+        nodeIds: collectSubtreeIds(child.id),
+        depth: child.level,
+      })
+    })
+  })
+
+  return routes
 })
 
-// ---------------------------------------------------------------------------
-// 选择
-// ---------------------------------------------------------------------------
+const nodeRouteLookup = computed(() => {
+  const map = new Map<string, string>()
+  interactiveRoutes.value
+    .filter((route) => route.id !== 'all')
+    .forEach((route) => {
+      route.nodeIds.forEach((nodeId) => {
+        const currentRoute = interactiveRoutes.value.find((item) => item.id === map.get(nodeId))
+        if (!currentRoute || currentRoute.depth <= route.depth) {
+          map.set(nodeId, route.title)
+        }
+      })
+    })
+  return map
+})
 
-const selectedOrgNode = computed(() =>
-  selectedNodeId.value ? findNode(selectedNodeId.value) : null,
-)
-const outlineRows = computed(() =>
-  flatOutlineNodes.value.map((node, index) => ({
-    id: node.id,
-    order: index,
-    segmentId: `segment:${Math.floor(index / BRANCH_SEGMENT_SIZE)}`,
-    title: node.title || '未命名节点',
-    description: node.description || '',
-    chapterNumber: index + 1,
-    chapterTitle: node.title || '',
-    aliases: [node.type || ''],
+const interactiveNodes = computed<InteractiveNodeViewModel[]>(() =>
+  outlineMetas.value.map((meta) => ({
+    ...meta,
+    nodeType: inferInteractiveNodeType(meta),
+    routeHint: nodeRouteLookup.value.get(meta.id) || '全部路线',
+    childCount: meta.childIds.length,
+    chapterLabel:
+      meta.outlineNode.documentId || meta.title === props.chapterTitle
+        ? props.chapters?.find(
+            (chapter) =>
+              chapter.id === meta.outlineNode.documentId || chapter.title === meta.title,
+          )?.title || meta.title
+        : `第 ${meta.level + 1} 层节点`,
+    parentTitle: '',
+    flowDepth: 0,
+    childrenPreview: [],
   })),
 )
 
-function selectNode(node: OrgTreeNode) {
-  selectedNodeId.value = node.id
-  writerStore.setCurrentOutlineNode(node.outlineNode)
-}
+const interactiveNodeMap = computed(
+  () => new Map(interactiveNodes.value.map((node) => [node.id, node] as const)),
+)
 
-function clearSelection() {
-  selectedNodeId.value = ''
-}
+const linkedInteractiveNodes = computed<InteractiveNodeViewModel[]>(() =>
+  interactiveNodes.value.map((node) => ({
+    ...node,
+    parentTitle: node.parentId
+      ? interactiveNodeMap.value.get(node.parentId)?.title || ''
+      : '',
+    flowDepth: Math.max(node.pathIds.length - 2, 0),
+    childrenPreview: node.childIds
+      .map((childId) => interactiveNodeMap.value.get(childId))
+      .filter((child): child is InteractiveNodeViewModel => !!child)
+      .slice(0, 4),
+  })),
+)
 
-function handleCanvasClick() {
-  // 点击空白区域不取消选择（保留详情面板）
-}
+const linkedInteractiveNodeMap = computed(
+  () => new Map(linkedInteractiveNodes.value.map((node) => [node.id, node] as const)),
+)
 
-// ---------------------------------------------------------------------------
-// 分支切换
-// ---------------------------------------------------------------------------
-
-function enterBranch(node: OrgTreeNode) {
-  if (node.children.length === 0) return
-  activeBranchId.value = node.id
-  selectedNodeId.value = ''
-  // 重新适配视图
-  requestAnimationFrame(() => {
-    handleZoomToFit()
-  })
-}
-
-function activateBranchSegment(segmentId: string) {
-  activeBranchSegmentId.value = segmentId
-  activeBranchId.value = ''
-  const currentSelected = selectedNodeId.value
-    ? flatOutlineNodes.value.find(
-        (node, index) =>
-          node.id === selectedNodeId.value &&
-          `segment:${Math.floor(index / BRANCH_SEGMENT_SIZE)}` === segmentId,
-      )
-    : null
-  const firstNode =
-    currentSelected ||
-    flatOutlineNodes.value.find((node) => activeSegmentNodeIds.value.has(node.id))
-  if (firstNode) {
-    selectedNodeId.value = firstNode.id
-    writerStore.setCurrentOutlineNode(firstNode)
-  }
-  requestAnimationFrame(() => {
-    handleZoomToFit()
-  })
-}
-
-function handleBranchLocate() {
-  const located = locateWriterCandidate(
-    outlineRows.value,
-    branchLocatorQuery.value,
-    (segmentId) => outlineRows.value.filter((row) => row.segmentId === segmentId),
-    {
-      beforeCount: 0,
-      afterCount: BRANCH_SEGMENT_SIZE - 1,
-      initialCount: BRANCH_SEGMENT_SIZE,
-    },
+const currentChapterNode = computed(() => {
+  const chapterTitle = props.chapterTitle?.trim()
+  const chapterId = props.chapterId?.trim()
+  return (
+    linkedInteractiveNodes.value.find(
+      (node) =>
+        (!!chapterId && node.outlineNode.documentId === chapterId) ||
+        (!!chapterTitle && node.title === chapterTitle),
+    ) || null
   )
-  if (!located) return
-  const matchedNode = flatOutlineNodes.value.find((node) => node.id === located.candidate.id)
-  if (!matchedNode) return
-  activeBranchId.value = ''
-  activeBranchSegmentId.value = located.segmentId
-  selectedNodeId.value = matchedNode.id
-  writerStore.setCurrentOutlineNode(matchedNode)
-  requestAnimationFrame(() => {
-    handleZoomToFit()
+})
+
+const currentChapterPathNodeIds = computed(() => new Set(currentChapterNode.value?.pathIds || []))
+
+const isRouteUnresolved = (route: InteractiveRouteViewModel) => {
+  if (route.kind !== 'branch') return false
+  return route.nodeIds.every((nodeId) => {
+    const node = linkedInteractiveNodeMap.value.get(nodeId)
+    return node ? !['merge', 'ending'].includes(node.nodeType) : true
   })
 }
 
-function exitBranch() {
-  activeBranchId.value = ''
-  selectedNodeId.value = ''
-  requestAnimationFrame(() => {
-    handleZoomToFit()
+const routeGroups = computed<BranchRouteGroupViewModel[]>(() => {
+  const groups: BranchRouteGroupViewModel[] = []
+  const chapterRelatedRoutes = interactiveRoutes.value.filter((route) =>
+    route.nodeIds.some((nodeId) => currentChapterPathNodeIds.value.has(nodeId)),
+  )
+  if (chapterRelatedRoutes.length) {
+    groups.push({
+      id: 'chapter_related',
+      title: '当前章节相关',
+      kind: 'chapter_related',
+      routes: chapterRelatedRoutes,
+    })
+  }
+
+  groups.push({
+    id: 'overview',
+    title: '总览',
+    kind: 'overview',
+    routes: interactiveRoutes.value.filter((route) => route.kind === 'all'),
   })
-}
+  groups.push({
+    id: 'main',
+    title: '主线',
+    kind: 'main',
+    routes: interactiveRoutes.value.filter((route) => route.kind === 'main'),
+  })
 
-// ---------------------------------------------------------------------------
-// 视图
-// ---------------------------------------------------------------------------
+  const choiceRoutes = interactiveRoutes.value.filter((route) => {
+    const node = linkedInteractiveNodeMap.value.get(route.id)
+    return node?.nodeType === 'choice'
+  })
+  if (choiceRoutes.length) {
+    groups.push({
+      id: 'choice',
+      title: '关键选择',
+      kind: 'choice',
+      routes: choiceRoutes,
+    })
+  }
 
-function nodeStyle(node: OrgTreeNode) {
+  const branchRoutes = interactiveRoutes.value.filter((route) => route.kind === 'branch')
+  if (branchRoutes.length) {
+    groups.push({
+      id: 'branch',
+      title: '活跃支线',
+      kind: 'branch',
+      routes: branchRoutes,
+    })
+  }
+
+  const endingRoutes = interactiveRoutes.value.filter((route) => route.kind === 'ending')
+  if (endingRoutes.length) {
+    groups.push({
+      id: 'ending',
+      title: '结局',
+      kind: 'ending',
+      routes: endingRoutes,
+    })
+  }
+
+  const unresolvedRoutes = branchRoutes.filter(isRouteUnresolved)
+  if (unresolvedRoutes.length) {
+    groups.push({
+      id: 'unresolved',
+      title: '未回收',
+      kind: 'unresolved',
+      routes: unresolvedRoutes,
+    })
+  }
+
+  return groups.filter((group) => group.routes.length > 0)
+})
+
+const filteredRouteGroups = computed(() => {
+  const query = routeQuery.value.trim().toLowerCase()
+  if (!query) return routeGroups.value
+  return routeGroups.value
+    .map((group) => ({
+      ...group,
+      routes: group.routes.filter((route) => {
+        if (route.title.toLowerCase().includes(query)) return true
+        return route.summary.toLowerCase().includes(query)
+      }),
+    }))
+    .filter((group) => group.routes.length > 0)
+})
+
+const expandedRouteGroups = ref<Record<string, boolean>>({})
+const filteredRouteCount = computed(() =>
+  filteredRouteGroups.value.reduce((total, group) => total + group.routes.length, 0),
+)
+
+const recentRouteIds = ref<string[]>([])
+
+const activeRoute = computed(
+  () => interactiveRoutes.value.find((route) => route.id === activeRouteId.value) || null,
+)
+
+const activeRouteNodes = computed(() => {
+  const nodeIds = new Set(activeRoute.value?.nodeIds || interactiveRoutes.value[0]?.nodeIds || [])
+  return linkedInteractiveNodes.value.filter((node) => nodeIds.has(node.id))
+})
+
+const overviewSegments = computed<BranchOverviewSegmentViewModel[]>(() =>
+  interactiveRoutes.value
+    .filter((route) => route.id !== 'all' || interactiveRoutes.value.length === 1)
+    .map((route) => {
+      const nodes = route.nodeIds
+        .map((nodeId) => linkedInteractiveNodeMap.value.get(nodeId))
+        .filter((node): node is InteractiveNodeViewModel => !!node)
+      return {
+        id: route.id,
+        routeId: route.id,
+        title: route.title,
+        nodeCount: nodes.length,
+        choiceCount: nodes.filter((node) => node.nodeType === 'choice').length,
+        endingCount: nodes.filter((node) => node.nodeType === 'ending').length,
+        hasDraft: nodes.some((node) => !baseOutlineMetaMap.value.has(node.id)),
+        unresolved: isRouteUnresolved(route),
+        chapterRelated: route.nodeIds.some((nodeId) => currentChapterPathNodeIds.value.has(nodeId)),
+      }
+    }),
+)
+
+const filteredOverviewSegments = computed<BranchOverviewSegmentViewModel[]>(() => {
+  const query = routeQuery.value.trim().toLowerCase()
+  if (!query) return overviewSegments.value
+  return overviewSegments.value.filter((segment) => {
+    if (segment.title.toLowerCase().includes(query)) return true
+    const route = interactiveRoutes.value.find((item) => item.id === segment.routeId)
+    return route?.summary.toLowerCase().includes(query) || false
+  })
+})
+
+const displayedOverview = computed<DisplayedBranchOverviewViewModel>(() => {
+  const queryActive = !!routeQuery.value.trim()
+  const baseWindowSize = queryActive ? OVERVIEW_QUERY_WINDOW_SIZE : OVERVIEW_WINDOW_SIZE
+
+  if (expandedOverview.value || filteredOverviewSegments.value.length <= baseWindowSize) {
+    return {
+      visibleSegments: filteredOverviewSegments.value,
+      hiddenSegmentCount: 0,
+    }
+  }
+
+  const visibleIds = new Set<string>()
+  const fillSegment = (routeId: string | undefined | null) => {
+    if (!routeId || visibleIds.size >= baseWindowSize) return
+    if (!filteredOverviewSegments.value.some((segment) => segment.routeId === routeId)) return
+    visibleIds.add(routeId)
+  }
+
+  fillSegment(activeRouteId.value)
+
+  filteredOverviewSegments.value.forEach((segment) => {
+    if (visibleIds.size >= baseWindowSize) return
+    if (segment.chapterRelated) {
+      visibleIds.add(segment.routeId)
+    }
+  })
+
+  recentRouteIds.value.forEach((routeId) => fillSegment(routeId))
+  filteredOverviewSegments.value.forEach((segment) => fillSegment(segment.routeId))
+
+  const visibleSegments = filteredOverviewSegments.value.filter((segment) =>
+    visibleIds.has(segment.routeId),
+  )
+
   return {
-    left: `${node.x}px`,
-    top: `${node.y}px`,
-    width: `${node.width}px`,
-    height: `${node.height}px`,
+    visibleSegments,
+    hiddenSegmentCount: Math.max(filteredOverviewSegments.value.length - visibleSegments.length, 0),
+  }
+})
+
+const displayedRouteGroups = computed<BranchRouteGroupDisplayViewModel[]>(() => {
+  const queryActive = !!routeQuery.value.trim()
+  const baseWindowSize = queryActive ? ROUTE_GROUP_QUERY_WINDOW_SIZE : ROUTE_GROUP_WINDOW_SIZE
+
+  return filteredRouteGroups.value.map((group) => {
+    if (expandedRouteGroups.value[group.id] || group.routes.length <= baseWindowSize) {
+      return {
+        ...group,
+        visibleRoutes: group.routes,
+        hiddenRouteCount: 0,
+      }
+    }
+
+    const visibleIds = new Set<string>()
+    const fillRoute = (routeId: string | undefined | null) => {
+      if (!routeId || visibleIds.size >= baseWindowSize) return
+      if (!group.routes.some((route) => route.id === routeId)) return
+      visibleIds.add(routeId)
+    }
+
+    fillRoute(activeRouteId.value)
+
+    group.routes.forEach((route) => {
+      if (visibleIds.size >= baseWindowSize) return
+      if (route.nodeIds.some((nodeId) => currentChapterPathNodeIds.value.has(nodeId))) {
+        visibleIds.add(route.id)
+      }
+    })
+
+    recentRouteIds.value.forEach((routeId) => fillRoute(routeId))
+    group.routes.forEach((route) => fillRoute(route.id))
+
+    const visibleRoutes = group.routes.filter((route) => visibleIds.has(route.id))
+
+    return {
+      ...group,
+      visibleRoutes,
+      hiddenRouteCount: Math.max(group.routes.length - visibleRoutes.length, 0),
+    }
+  })
+})
+
+const selectedNode = computed(() =>
+  selectedNodeId.value ? linkedInteractiveNodeMap.value.get(selectedNodeId.value) || null : null,
+)
+const focusAnchorNode = computed(
+  () => selectedNode.value || currentChapterNode.value || activeRouteNodes.value[0] || null,
+)
+const selectedDraftNode = computed(() =>
+  selectedNodeId.value
+    ? activeBranchDrafts.value.find((node) => node.id === selectedNodeId.value) || null
+    : null,
+)
+const selectedDraftSubtreeIds = computed(() =>
+  selectedDraftNode.value ? new Set(collectSubtreeIds(selectedDraftNode.value.id)) : new Set<string>(),
+)
+const selectedDraftParentOptions = computed(() => {
+  if (!selectedDraftNode.value) return []
+  return linkedInteractiveNodes.value
+    .filter((node) => !selectedDraftSubtreeIds.value.has(node.id))
+    .map((node) => ({
+      id: node.id,
+      label: `${node.title} · ${getNodeTypeLabel(node.nodeType)}`,
+    }))
+})
+const canSaveDraftEdit = computed(() => {
+  if (!selectedDraftNode.value) return false
+  const title = draftEditTitle.value.trim()
+  if (!title || !draftEditParentId.value) return false
+  return (
+    title !== (selectedDraftNode.value.title || '') ||
+    draftEditDescription.value.trim() !== (selectedDraftNode.value.description || '') ||
+    draftEditType.value !== String(selectedDraftNode.value.type || 'story') ||
+    draftEditParentId.value !== String(selectedDraftNode.value.parentId || '')
+  )
+})
+
+const routeStats = computed(() => ({
+  routeCount: Math.max(interactiveRoutes.value.length - 1, 0),
+  choiceCount: linkedInteractiveNodes.value.filter((node) => node.nodeType === 'choice').length,
+  endingCount: linkedInteractiveNodes.value.filter((node) => node.nodeType === 'ending').length,
+  openBranchCount: linkedInteractiveNodes.value.filter(
+    (node) => node.nodeType === 'choice' && node.childCount > 0,
+  ).length,
+}))
+
+const hasRealBranches = computed(
+  () =>
+    interactiveNodes.value.some((node) => node.nodeType === 'choice') &&
+    !useDemoBranchData.value,
+)
+const showDemoBranchEntry = computed(() => useDemoBranchData.value || !hasRealBranches.value)
+
+const currentRouteSummary = computed(
+  () =>
+    activeRoute.value?.summary ||
+    (useDemoBranchData.value
+      ? '当前展示只读示例分支，用来预览互动叙事的分岔与回收。'
+      : '适合多结局、视觉小说与游戏叙事的路径管理。'),
+)
+const narrativeModeLabel = computed(() =>
+  useDemoBranchData.value
+    ? '示例分支'
+    : viewMode.value === 'compact'
+      ? '默认轻量模式'
+      : '互动流模式',
+)
+
+const focusBreadcrumbNodes = computed(() => {
+  const focus = focusAnchorNode.value
+  if (!focus) return []
+  return focus.pathIds
+    .map((nodeId) => linkedInteractiveNodeMap.value.get(nodeId))
+    .filter((node): node is InteractiveNodeViewModel => !!node)
+})
+
+const focusWindowNodes = computed(() => {
+  const focus = focusAnchorNode.value
+  if (!focus) return []
+
+  const upstream = focus.pathIds
+    .slice(0, -1)
+    .map((nodeId) => linkedInteractiveNodeMap.value.get(nodeId))
+    .filter((node): node is InteractiveNodeViewModel => !!node)
+    .slice(-3)
+
+  const downstream = focus.childIds
+    .map((nodeId) => linkedInteractiveNodeMap.value.get(nodeId))
+    .filter((node): node is InteractiveNodeViewModel => !!node)
+
+  const primaryDownstream = downstream.slice(0, 4)
+  const endings = primaryDownstream.flatMap((node) => {
+    if (['merge', 'ending'].includes(node.nodeType)) {
+      return []
+    }
+    if (node.childIds.length !== 1) return []
+    const next = linkedInteractiveNodeMap.value.get(node.childIds[0])
+    return next && ['merge', 'ending'].includes(next.nodeType) ? [next] : []
+  })
+
+  const nodes = [...upstream, focus, ...primaryDownstream, ...endings]
+  const seen = new Set<string>()
+  return nodes.filter((node) => {
+    if (seen.has(node.id)) return false
+    seen.add(node.id)
+    return true
+  })
+})
+
+const focusWindowRoleByNodeId = computed<Record<string, FocusWindowRole>>(() => {
+  const focus = focusAnchorNode.value
+  if (!focus) return {}
+  const map: Record<string, FocusWindowRole> = {}
+  focusWindowNodes.value.forEach((node) => {
+    if (node.id === focus.id) {
+      map[node.id] = 'focus'
+      return
+    }
+    map[node.id] = focus.pathIds.includes(node.id) ? 'upstream' : 'downstream'
+  })
+  return map
+})
+
+const focusWindowOverflowChildCount = computed(() => {
+  const focus = focusAnchorNode.value
+  if (!focus) return 0
+  return Math.max(focus.childIds.length - 4, 0)
+})
+
+const visibleNodes = computed(() => {
+  const nodes = activeRouteNodes.value
+  if (viewMode.value === 'interactive-flow') {
+    return nodes
+  }
+  if (nodes.length <= WINDOW_SIZE) {
+    return nodes
+  }
+  return focusWindowNodes.value
+})
+
+const currentWindowLabel = computed(() => {
+  if (!visibleNodes.value.length) return '暂无节点'
+  if (viewMode.value === 'compact' && focusAnchorNode.value) {
+    return `聚焦：${focusAnchorNode.value.title}`
+  }
+  const first = visibleNodes.value[0]
+  const last = visibleNodes.value[visibleNodes.value.length - 1]
+  return `窗口：${first.title} → ${last.title}`
+})
+
+const branchLocateFeedbackText = computed(() => {
+  if (!branchLocateFeedback.value) return ''
+  if (!branchLocateFeedback.value.matched) {
+    return `未命中：${branchLocateFeedback.value.query}`
+  }
+  const parts = [
+    `命中：${branchLocateFeedback.value.title || branchLocateFeedback.value.query}`,
+    branchLocateFeedback.value.routeTitle ? `路线 ${branchLocateFeedback.value.routeTitle}` : '',
+    branchLocateFeedback.value.chapterLabel ? `落点 ${branchLocateFeedback.value.chapterLabel}` : '',
+    branchLocateFeedback.value.modeLabel ? `方式 ${branchLocateFeedback.value.modeLabel}` : '',
+  ].filter(Boolean)
+  return parts.join(' · ')
+})
+
+const selectedNodeHint = computed(() => {
+  if (!selectedNode.value) return ''
+  if (selectedNode.value.nodeType === 'choice') {
+    return '这是选择节点，重点检查选项是否清晰、后续分路是否有明显差异。'
+  }
+  if (selectedNode.value.nodeType === 'condition') {
+    return '这是条件门，适合记录进入该路线需要满足的前置条件。'
+  }
+  if (selectedNode.value.nodeType === 'merge') {
+    return '这是汇合节点，用来回收多条路线并重新并入主叙事。'
+  }
+  if (selectedNode.value.nodeType === 'ending') {
+    return '这是结局节点，建议检查它是否有足够铺垫和清晰的进入条件。'
+  }
+  return '这是剧情推进节点，适合承接前序冲突并为后续分叉做准备。'
+})
+
+const outlineRows = computed(() =>
+  linkedInteractiveNodes.value.map((node, index) => ({
+    id: node.id,
+    order: index,
+    segmentId: node.routeHint,
+    title: node.title,
+    description: node.description,
+    chapterNumber: index + 1,
+    chapterTitle: node.title,
+    aliases: [getNodeTypeLabel(node.nodeType), node.routeHint],
+  })),
+)
+
+const getRouteKindLabel = (kind: InteractiveRouteKind) => {
+  if (kind === 'all') return '总览'
+  if (kind === 'main') return '主线'
+  if (kind === 'ending') return '结局'
+  return '分支'
+}
+
+const defaultRouteGroupCollapsed = (groupId: string) => !['chapter_related', 'main'].includes(groupId)
+
+const isRouteGroupCollapsed = (groupId: string) => {
+  const state = routeGroupCollapseState.value[groupId]
+  return typeof state === 'boolean' ? state : defaultRouteGroupCollapsed(groupId)
+}
+
+function toggleRouteGroup(groupId: string) {
+  routeGroupCollapseState.value = {
+    ...routeGroupCollapseState.value,
+    [groupId]: !isRouteGroupCollapsed(groupId),
   }
 }
 
-function badgeStyle(category: string) {
-  return {
-    color: getCategoryColor(category as OrgTreeNode['category']),
-    background: getCategoryBgColor(category as OrgTreeNode['category']),
+function toggleRouteGroupExpansion(groupId: string) {
+  expandedRouteGroups.value = {
+    ...expandedRouteGroups.value,
+    [groupId]: !expandedRouteGroups.value[groupId],
   }
 }
 
-function isEdgeActive(edge: OrgTreeEdge): boolean {
-  return edge.sourceId === selectedNodeId.value || edge.targetId === selectedNodeId.value
+function toggleOverviewExpansion() {
+  expandedOverview.value = !expandedOverview.value
 }
 
-function isDimmed(node: OrgTreeNode): boolean {
-  if (!selectedNodeId.value) return false
-  return node.id !== selectedNodeId.value && !isAncestorOrDescendant(node.id, selectedNodeId.value)
+function rememberRecentRoute(routeId: string) {
+  if (!routeId || routeId === 'all') return
+  recentRouteIds.value = [routeId, ...recentRouteIds.value.filter((item) => item !== routeId)].slice(
+    0,
+    8,
+  )
 }
 
-/** 判断 targetId 是否是 nodeId 的祖先或后代 */
-function isAncestorOrDescendant(nodeId: string, targetId: string): boolean {
-  // 向上查找
-  const target = findNode(targetId)
-  if (!target) return false
-
-  function checkDescendants(current: OrgTreeNode): boolean {
-    if (current.id === nodeId) return true
-    return current.children.some((child) => checkDescendants(child))
-  }
-
-  // 检查 target 是否是 nodeId 的后代
-  if (checkDescendants(target)) return true
-
-  // 检查 nodeId 是否是 target 的后代（向上遍历比较困难，简化处理）
-  const node = findNode(nodeId)
-  if (node && checkDescendants(node)) return true
-
-  return false
+const getNodeTypeLabel = (nodeType: InteractiveNodeType) => {
+  if (nodeType === 'story') return '剧情'
+  if (nodeType === 'choice') return '选择'
+  if (nodeType === 'condition') return '条件'
+  if (nodeType === 'merge') return '汇合'
+  return '结局'
 }
 
-function handleZoomToFit() {
-  if (!canvasCoreRef.value) return
-  const w = contentWidth.value || 800
-  const h = contentHeight.value || 600
-  canvasCoreRef.value.zoomToFit(w, h, 80)
+const focusWindowRoleLabel = (role: FocusWindowRole) => {
+  if (role === 'upstream') return '前情'
+  if (role === 'focus') return '焦点'
+  return '后续'
 }
-
-// ---------------------------------------------------------------------------
-// 辅助函数
-// ---------------------------------------------------------------------------
 
 function statusText(status: string): string {
   if (status === 'writing') return '写作中'
@@ -553,85 +1486,316 @@ function statusText(status: string): string {
   return '草稿'
 }
 
-function buildSelectedNodeAIContextText(node: OrgTreeNode): string {
+function toggleDemoBranchData() {
+  useDemoBranchData.value = !useDemoBranchData.value
+  routeQuery.value = ''
+  branchLocatorQuery.value = ''
+  activeRouteId.value = 'all'
+  selectedNodeId.value = ''
+  focusNodeId.value = ''
+  expandedOverview.value = false
+}
+
+function persistBranchDrafts(nextDrafts: OutlineNode[]) {
+  branchDraftMap.value = {
+    ...branchDraftMap.value,
+    [branchDraftScopeKey.value]: nextDrafts,
+  }
+  saveBranchDraftMap(branchDraftMap.value)
+}
+
+function getSiblingOrderBase(parentId: string | null | undefined) {
+  if (!parentId) {
+    return (useDemoBranchData.value ? demoRootNodes.value : realRootNodes.value).length
+  }
+  if (baseOutlineMetaMap.value.has(parentId)) {
+    return baseOutlineMetaMap.value.get(parentId)?.childIds.length || 0
+  }
+  return 0
+}
+
+function normalizeDraftBranchNodes(drafts: OutlineNode[]) {
+  const clones = drafts.map((node) => ({
+    ...cloneOutlineNode(node),
+    title: node.title || '未命名节点',
+    description: node.description || '',
+    children: [],
+  }))
+  const draftMap = new Map(clones.map((node) => [node.id, node] as const))
+  const childGroups = new Map<string, OutlineNode[]>()
+
+  clones.forEach((node) => {
+    const key = node.parentId || '__root__'
+    const group = childGroups.get(key) || []
+    group.push(node)
+    childGroups.set(key, group)
+  })
+
+  childGroups.forEach((group, parentKey) => {
+    const sorted = group.sort((left, right) => Number(left.order || 0) - Number(right.order || 0))
+    const offset = parentKey === '__root__' ? getSiblingOrderBase(null) : getSiblingOrderBase(parentKey)
+    sorted.forEach((node, index) => {
+      node.order = offset + index
+    })
+  })
+
+  const resolveLevel = (node: OutlineNode, stack: Set<string> = new Set()): number => {
+    if (stack.has(node.id)) {
+      return Number(node.level || 0)
+    }
+    const parentId = node.parentId
+    if (!parentId) return Number(node.level || 0)
+    if (draftMap.has(parentId)) {
+      stack.add(node.id)
+      const level: number = resolveLevel(draftMap.get(parentId)!, stack) + 1
+      stack.delete(node.id)
+      return level
+    }
+    if (baseOutlineMetaMap.value.has(parentId)) {
+      return baseOutlineMetaMap.value.get(parentId)!.level + 1
+    }
+    return Number(node.level || 0)
+  }
+
+  const now = new Date().toISOString()
+  return clones.map((node) => ({
+    ...node,
+    level: resolveLevel(node),
+    updatedAt: now,
+  }))
+}
+
+function resetDraftComposer() {
+  draftNodeTitle.value = ''
+  draftNodeDescription.value = ''
+  draftNodeType.value = 'story'
+}
+
+function syncSelectedDraftEditor() {
+  const draft = selectedDraftNode.value
+  if (!draft) {
+    draftEditTitle.value = ''
+    draftEditDescription.value = ''
+    draftEditType.value = 'story'
+    draftEditParentId.value = ''
+    return
+  }
+  draftEditTitle.value = draft.title || ''
+  draftEditDescription.value = draft.description || ''
+  draftEditType.value = (String(draft.type || 'story') as InteractiveNodeType) || 'story'
+  draftEditParentId.value = String(draft.parentId || '')
+}
+
+function addDraftBranchNode() {
+  const parent = selectedNode.value
+  const title = draftNodeTitle.value.trim()
+  if (!parent || !title) return
+
+  const siblings = activeBranchDrafts.value.filter((node) => node.parentId === parent.id)
+  const nextOrder =
+    siblings.length > 0
+      ? Math.max(...siblings.map((node) => Number(node.order || 0))) + 1
+      : parent.childCount
+
+  const newNode: OutlineNode = {
+    id: createBranchDraftId(),
+    projectId: effectiveProjectId.value || 'interactive-branch',
+    parentId: parent.id,
+    title,
+    description: draftNodeDescription.value.trim(),
+    order: nextOrder,
+    level: parent.level + 1,
+    status: 'draft',
+    type: draftNodeType.value,
+    wordCount: 0,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    children: [],
+  }
+
+  const nextDrafts = normalizeDraftBranchNodes([...activeBranchDrafts.value, newNode])
+  persistBranchDrafts(nextDrafts)
+  resetDraftComposer()
+  selectedNodeId.value = newNode.id
+  focusNodeId.value = newNode.id
+}
+
+function updateDraftBranchNode(
+  nodeId: string,
+  patch: Partial<Pick<OutlineNode, 'title' | 'description' | 'type' | 'parentId'>>,
+) {
+  const nextDrafts = activeBranchDrafts.value.map((node) =>
+    node.id === nodeId
+      ? {
+          ...node,
+          ...patch,
+          title: patch.title ?? node.title,
+          description: patch.description ?? node.description,
+          type: patch.type ?? node.type,
+          parentId: patch.parentId ?? node.parentId,
+        }
+      : node,
+  )
+  persistBranchDrafts(normalizeDraftBranchNodes(nextDrafts))
+}
+
+function saveDraftBranchNode() {
+  if (!selectedDraftNode.value || !canSaveDraftEdit.value) return
+  updateDraftBranchNode(selectedDraftNode.value.id, {
+    title: draftEditTitle.value.trim(),
+    description: draftEditDescription.value.trim(),
+    type: draftEditType.value,
+    parentId: draftEditParentId.value,
+  })
+}
+
+function removeDraftBranchNode(nodeId: string) {
+  const subtreeIds = new Set(collectSubtreeIds(nodeId))
+  const nextDrafts = activeBranchDrafts.value.filter((node) => !subtreeIds.has(node.id))
+  persistBranchDrafts(normalizeDraftBranchNodes(nextDrafts))
+}
+
+function removeSelectedDraftBranchNode() {
+  if (!selectedDraftNode.value) return
+  const parentId = selectedDraftNode.value.parentId || ''
+  removeDraftBranchNode(selectedDraftNode.value.id)
+  selectedNodeId.value = parentId
+  focusNodeId.value = parentId
+}
+
+function selectRoute(routeId: string) {
+  activeRouteId.value = routeId
+  rememberRecentRoute(routeId)
+  const fallbackNode =
+    activeRouteNodes.value.find((node) => node.id === currentChapterNode.value?.id) ||
+    activeRouteNodes.value[0]
+  if (fallbackNode) {
+    focusNodeId.value = fallbackNode.id
+    selectedNodeId.value = fallbackNode.id
+    writerStore.setCurrentOutlineNode(fallbackNode.outlineNode)
+  }
+}
+
+function selectNode(nodeId: string) {
+  selectedNodeId.value = nodeId
+  focusNodeId.value = nodeId
+  const node = linkedInteractiveNodeMap.value.get(nodeId)
+  if (node) {
+    rememberRecentRoute(findBestRouteForNode(node.id))
+    writerStore.setCurrentOutlineNode(node.outlineNode)
+  }
+}
+
+function clearSelection() {
+  selectedNodeId.value = ''
+}
+
+function clearBranchLocateFeedback() {
+  branchLocateFeedback.value = null
+}
+
+function openBranchLocateRoute() {
+  const routeId = branchLocateFeedback.value?.routeId
+  if (!routeId) return
+  selectRoute(routeId)
+}
+
+function findBestRouteForNode(nodeId: string): string {
+  const matched = interactiveRoutes.value
+    .filter((route) => route.id !== 'all' && route.nodeIds.includes(nodeId))
+    .sort((a, b) => b.depth - a.depth)
+  return matched[0]?.id || 'all'
+}
+
+function handleBranchLocate() {
+  const located = locateWriterCandidate(
+    outlineRows.value,
+    branchLocatorQuery.value,
+    () => outlineRows.value,
+    {
+      beforeCount: 0,
+      afterCount: WINDOW_SIZE - 1,
+      initialCount: WINDOW_SIZE,
+    },
+  )
+  if (!located) {
+    branchLocateFeedback.value = {
+      query: branchLocatorQuery.value.trim(),
+      matched: false,
+    }
+    return
+  }
+  const matchedNode = linkedInteractiveNodeMap.value.get(located.candidate.id)
+  if (!matchedNode) {
+    branchLocateFeedback.value = {
+      query: branchLocatorQuery.value.trim(),
+      matched: false,
+    }
+    return
+  }
+  const matchedRouteId = findBestRouteForNode(matchedNode.id)
+  activeRouteId.value = matchedRouteId
+  selectedNodeId.value = matchedNode.id
+  focusNodeId.value = matchedNode.id
+  branchLocateFeedback.value = {
+    query: branchLocatorQuery.value.trim(),
+    matched: true,
+    title: matchedNode.title,
+    routeId: matchedRouteId,
+    routeTitle: matchedNode.routeHint,
+    chapterLabel: matchedNode.chapterLabel,
+    modeLabel:
+      located.request.mode === 'chapter-number'
+        ? '章节号'
+        : located.request.mode === 'node-id'
+          ? '节点标识'
+          : located.request.mode === 'asset-name'
+            ? '@资产'
+            : '标题关键词',
+  }
+  writerStore.setCurrentOutlineNode(matchedNode.outlineNode)
+}
+
+function buildSelectedNodeAIContextText(node: InteractiveNodeViewModel): string {
   const lines = [
-    `故事分支节点：${node.title}`,
+    `互动分支节点：${node.title}`,
     props.chapterTitle ? `当前章节：${props.chapterTitle}` : '',
     props.workflowContext?.scopeLabel ? `场景作用域：${props.workflowContext.scopeLabel}` : '',
     formatActiveEntitiesPrompt(props.activeEntities),
-    `节点类型：${getCategoryLabel(node.category)}`,
+    `节点类型：${getNodeTypeLabel(node.nodeType)}`,
+    `所属路线：${node.routeHint}`,
     `节点状态：${statusText(node.status)}`,
-    node.outlineNode.description ? `节点描述：${node.outlineNode.description}` : '',
-    `子分支数：${node.children.length}`,
+    node.description ? `节点描述：${node.description}` : '',
+    `后续出口：${node.childCount}`,
   ].filter(Boolean)
 
   return lines.join('\n')
 }
 
 function sendSelectedNodeToAI() {
-  const node = selectedOrgNode.value
+  const node = selectedNode.value
   if (!node) return
 
   emit('trigger-ai-action', {
     source: 'workspace',
     action: 'add_to_chat',
-    title: `故事分支分析：${node.title}`,
+    title: `互动分支分析：${node.title}`,
     text: buildSelectedNodeAIContextText(node),
     instructions:
-      '请分析这个分支节点对当前叙事结构的作用，优先给出分支动机、冲突承接和后续展开建议。',
+      '请分析这个互动分支节点的选择动机、条件约束、后续路线差异，以及是否需要补强铺垫或回收。',
   })
 }
 
-function findOutlineNode(nodes: OutlineNode[], id: string): OutlineNode | null {
-  for (const node of nodes) {
-    if (node.id === id) return node
-    if (node.children?.length) {
-      const found = findOutlineNode(node.children, id)
-      if (found) return found
-    }
-  }
-  return null
+function jumpToNodeChapter(nodeId: string) {
+  const node = linkedInteractiveNodeMap.value.get(nodeId)
+  const documentId = node?.outlineNode.documentId?.trim()
+  if (!documentId) return
+  emit('jump-to-chapter', documentId)
 }
-
-function flattenOutlineNodes(nodes: OutlineNode[]): OutlineNode[] {
-  const result: OutlineNode[] = []
-  const walk = (nodeList: OutlineNode[]) => {
-    for (const node of nodeList) {
-      result.push(node)
-      if (node.children?.length) walk(node.children)
-    }
-  }
-  walk(nodes)
-  return result
-}
-
-function pruneOutlineTreeByIds(nodes: OutlineNode[], allowedIds: Set<string>): OutlineNode[] {
-  const result: OutlineNode[] = []
-  for (const node of nodes) {
-    const children = pruneOutlineTreeByIds(node.children || [], allowedIds)
-    if (allowedIds.has(node.id) || children.length) {
-      result.push({
-        ...node,
-        children,
-      })
-    }
-  }
-  return result
-}
-
-// ---------------------------------------------------------------------------
-// 数据加载
-// ---------------------------------------------------------------------------
 
 async function refreshOutline() {
   if (!effectiveProjectId.value) return
   await writerStore.loadOutlineTree(effectiveProjectId.value)
-  if (!selectedNodeId.value && flatNodes.value.length > 0) {
-    selectNode(flatNodes.value[0])
-  }
-  requestAnimationFrame(() => {
-    handleZoomToFit()
-  })
 }
 
 watch(
@@ -644,658 +1808,1018 @@ watch(
 )
 
 watch(
-  () => branchSegments.value.map((segment) => segment.id).join('|'),
+  () => [interactiveRoutes.value.map((route) => route.id).join('|'), currentChapterNode.value?.id] as const,
   () => {
-    activeBranchSegmentId.value = resolveStableWriterSegmentId(
-      activeBranchSegmentId.value,
-      branchSegments.value.map((segment) => segment.id),
-      [
-        selectedNodeId.value
-          ? outlineRows.value.find((row) => row.id === selectedNodeId.value)?.segmentId
-          : null,
-      ],
-    )
+    if (interactiveRoutes.value.some((route) => route.id === activeRouteId.value)) {
+      return
+    }
+    activeRouteId.value = currentChapterNode.value?.id
+      ? findBestRouteForNode(currentChapterNode.value.id)
+      : 'all'
   },
   { immediate: true },
 )
+
+watch(
+  () => [activeRouteId.value, currentChapterNode.value?.id] as const,
+  () => {
+    const routeNode = activeRouteNodes.value.find((node) => node.id === currentChapterNode.value?.id)
+    const fallbackNode = routeNode || activeRouteNodes.value[0] || null
+    if (fallbackNode && !selectedNodeId.value) {
+      selectedNodeId.value = fallbackNode.id
+      focusNodeId.value = fallbackNode.id
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  () =>
+    [
+      selectedNodeId.value,
+      branchDraftScopeKey.value,
+      selectedDraftNode.value?.updatedAt || '',
+      selectedDraftNode.value?.parentId || '',
+      selectedDraftNode.value?.title || '',
+      selectedDraftNode.value?.description || '',
+      String(selectedDraftNode.value?.type || ''),
+    ] as const,
+  () => {
+    syncSelectedDraftEditor()
+  },
+  { immediate: true },
+)
+
+watch(branchDraftScopeKey, () => {
+  branchDraftMap.value = loadBranchDraftMap()
+  resetDraftComposer()
+  syncSelectedDraftEditor()
+})
 </script>
 
 <style scoped lang="scss">
-/* ==========================================================================
-   StoryBranchView - 故事分支组织结构图
-   ========================================================================== */
-
-.story-branch-view {
-  --branch-main: #4d79da;
-  --branch-chapter: #52c41a;
-  --branch-sidetrack: #faad14;
-  --branch-ending: #ff4d4f;
-  --branch-point: #722ed1;
-
+.interactive-branch-view {
   height: 100%;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--editor-layer-soft, var(--editor-bg-surface, #f7f9ff));
-  position: relative;
+  background: var(--editor-bg-surface, #f8fafc);
 }
 
-// ---------------------------------------------------------------------------
-// 头部
-// ---------------------------------------------------------------------------
+.interactive-branch-view__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--editor-border, #d7dff0);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 96%, transparent);
+}
 
-.story-branch-view__header {
-  padding: 14px 16px;
+.interactive-branch-view__header-main {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.interactive-branch-view__title-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
-  border-bottom: 1px solid var(--editor-border, #d7dff0);
-  flex-shrink: 0;
-}
+  gap: 14px;
 
-.story-branch-view__header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-.branch-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: var(--editor-radius-md, 8px);
-  background: var(--editor-bg-elevated, #f0f4ff);
-  border: 1px solid var(--editor-border, #d6dff2);
-  font-size: 12px;
-}
-
-.branch-breadcrumb__label {
-  color: var(--editor-text-ghost, #8a9cc0);
-}
-
-.branch-breadcrumb__name {
-  color: #3253a8;
-  font-weight: 700;
-  max-width: 120px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.branch-breadcrumb__back {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 6px;
-  border: 1px solid var(--editor-text-ghost, #c8d2ea);
-  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
-  color: var(--editor-text-muted, #68799a);
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.15s;
-
-  &:hover {
-    border-color: var(--editor-text-ghost, #8a9cc0);
-    color: var(--editor-text-primary, #3253a8);
+  h2 {
+    margin: 0;
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 20px;
+    font-weight: 800;
   }
 }
 
-// ---------------------------------------------------------------------------
-// 统计栏
-// ---------------------------------------------------------------------------
+.interactive-branch-view__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
-.story-branch-view__stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.interactive-branch-view__mode-switch {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid var(--editor-border, #d7dff0);
+  background: color-mix(in srgb, var(--editor-layer-soft, #eef4ff) 64%, transparent);
+
+  button {
+    height: 30px;
+    padding: 0 11px;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--editor-text-muted, #64748b);
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+
+    &.is-active {
+      background: var(--editor-layer-panel, #ffffff);
+      color: var(--editor-text-primary, #0f172a);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+    }
+  }
+}
+
+.interactive-branch-view__stats {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
-  padding: 12px 16px;
-  flex-shrink: 0;
+  padding: 10px 20px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--editor-border, #d7dff0) 72%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 76%, transparent);
 }
 
-.story-branch-view__navigator {
-  display: grid;
+.interactive-branch-stat,
+.interactive-branch-view__stats-summary {
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #d7dff0) 84%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 88%, transparent);
+}
+
+.interactive-branch-stat {
+  display: inline-flex;
+  align-items: center;
   gap: 8px;
-  padding: 0 16px 12px;
-}
 
-.story-branch-view__segment-map {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-}
-
-.story-branch-view__segment {
-  min-width: 148px;
-  padding: 9px 11px;
-  border-radius: 12px;
-  border: 1px solid var(--editor-border, #d6dff2);
-  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
-  color: var(--editor-text-secondary, #475569);
-  text-align: left;
-  cursor: pointer;
-
-  strong,
   span {
-    display: block;
-  }
-
-  strong {
-    color: var(--editor-text-primary, #24365d);
+    color: var(--editor-text-muted, #64748b);
     font-size: 12px;
   }
 
-  span {
-    margin-top: 3px;
-    color: var(--editor-text-muted, #68799a);
-    font-size: 11px;
-  }
-
-  &.is-active {
-    border-color: color-mix(in srgb, var(--branch-main) 34%, transparent);
-    background: color-mix(in srgb, var(--editor-accent-soft, #ecf3ff) 76%, transparent);
+  strong {
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 12px;
+    font-weight: 800;
   }
 }
 
-.story-branch-view__locator {
-  display: flex;
-  flex-wrap: wrap;
+.interactive-branch-view__stats-summary {
+  display: inline-flex;
   align-items: center;
+  color: var(--editor-text-muted, #64748b);
+  font-size: 12px;
+}
+
+.interactive-branch-view__body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr) 292px;
+  gap: 0;
+}
+
+.interactive-branch-view__routes,
+.interactive-branch-view__flow,
+.interactive-branch-view__detail {
+  min-width: 0;
+  min-height: 0;
+}
+
+.interactive-branch-view__routes,
+.interactive-branch-view__detail {
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
+}
+
+.interactive-branch-view__routes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-right: 1px solid var(--editor-border, #d7dff0);
+}
+
+.interactive-branch-view__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
 
-  label {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    flex: 1 1 280px;
-    min-height: 34px;
-    padding: 0 10px;
-    border-radius: 12px;
-    border: 1px solid var(--editor-border, #d6dff2);
-    background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
+  span {
+    color: var(--editor-text-ghost, #94a3b8);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
   }
+
+  strong {
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 12px;
+  }
+}
+
+.interactive-branch-view__search,
+.interactive-branch-view__locator label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #d7dff0) 88%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 84%, transparent);
+  color: var(--editor-text-muted, #64748b);
 
   input {
     width: 100%;
     border: none;
     outline: none;
     background: transparent;
-    color: var(--editor-text-primary, #24365d);
+    color: var(--editor-text-primary, #0f172a);
     font-size: 12px;
-  }
-
-  button {
-    min-height: 32px;
-    padding: 0 11px;
-    border-radius: 999px;
-    border: 1px solid var(--editor-border, #d6dff2);
-    background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
-    color: var(--branch-main);
-    font-size: 12px;
-    font-weight: 800;
-    cursor: pointer;
-  }
-
-  span {
-    margin-left: auto;
-    color: var(--editor-text-muted, #68799a);
-    font-size: 12px;
-    font-weight: 800;
   }
 }
 
-// ---------------------------------------------------------------------------
-// 画布区域
-// ---------------------------------------------------------------------------
-
-.story-branch-view__canvas-area {
+.interactive-branch-view__route-list {
   flex: 1;
   min-height: 0;
-  margin: 0 16px 16px;
-  border-radius: var(--editor-radius-lg, 14px);
-  border: 1px solid var(--editor-border, #d6dff2);
-  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
-  overflow: hidden;
-  position: relative;
+  overflow: auto;
+  display: grid;
+  gap: 6px;
 }
 
-.story-branch-canvas {
-  width: 100%;
-  height: 100%;
-  --canvas-bg: var(--editor-canvas-bg, #fafbff);
-  --canvas-grid-dot: var(--editor-grid-dot, #dfe5f0);
+.interactive-route-group {
+  display: grid;
+  gap: 6px;
 }
 
-.story-branch-view__toolbar-actions {
-  display: flex;
-  gap: 4px;
-}
-
-.toolbar-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--editor-border, #d6dff2);
-  border-radius: var(--editor-radius-md, 8px);
-  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 95%, transparent);
-  color: var(--editor-text-muted, #5f7292);
-  cursor: pointer;
-  transition: all 0.15s;
-
-  &:hover {
-    border-color: var(--editor-text-ghost, #8a9cc0);
-    color: var(--editor-text-primary, #3253a8);
-    background: var(--editor-layer-soft, #ffffff);
-  }
-}
-
-.story-branch-view__empty {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-
-// ---------------------------------------------------------------------------
-// 节点卡片
-// ---------------------------------------------------------------------------
-
-.org-node {
-  position: absolute;
-  border-radius: var(--editor-radius-lg, 12px);
-  border: 1.5px solid var(--editor-border, #e1e8f6);
-  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  overflow: hidden;
-  box-shadow: var(--editor-shadow-sm, 0 2px 8px rgba(0, 0, 0, 0.04));
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--editor-shadow-md, 0 8px 20px rgba(0, 0, 0, 0.08));
-    border-color: var(--editor-text-ghost, #b8c8e8);
-  }
-
-  &.org-node--selected {
-    border-color: var(--branch-main);
-    box-shadow:
-      0 0 0 3px rgba(77, 121, 218, 0.15),
-      0 8px 20px rgba(77, 121, 218, 0.12);
-    transform: translateY(-2px);
-  }
-
-  &.org-node--active-branch {
-    border-color: var(--branch-point);
-    box-shadow:
-      0 0 0 3px rgba(114, 46, 209, 0.15),
-      0 8px 20px rgba(114, 46, 209, 0.1);
-  }
-
-  &.org-node--dimmed {
-    opacity: 0.4;
-  }
-
-  // 类型边框色
-  &.org-node--main {
-    border-left: 3px solid var(--branch-main);
-  }
-
-  &.org-node--chapter {
-    border-left: 3px solid var(--branch-chapter);
-  }
-
-  &.org-node--sidetrack {
-    border-left: 3px solid var(--branch-sidetrack);
-  }
-
-  &.org-node--ending {
-    border-left: 3px solid var(--branch-ending);
-  }
-
-  &.org-node--branch-point {
-    border-left: 3px solid var(--branch-point);
-  }
-}
-
-.org-node__icon {
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.org-node__body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.org-node__title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--editor-text-primary, #24365d);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.3;
-}
-
-.org-node__badge {
-  display: inline-block;
-  width: fit-content;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1.4;
-}
-
-.org-node__status {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-}
-
-.org-node__status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-
-  &.status-draft {
-    background: #bfbfbf;
-  }
-
-  &.status-writing {
-    background: #faad14;
-    box-shadow: 0 0 6px rgba(250, 173, 20, 0.4);
-  }
-
-  &.status-reviewing {
-    background: #1890ff;
-    box-shadow: 0 0 6px rgba(24, 144, 255, 0.4);
-  }
-
-  &.status-completed {
-    background: #52c41a;
-    box-shadow: 0 0 6px rgba(82, 196, 26, 0.4);
-  }
-
-  &.status-planned {
-    background: #bfbfbf;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// SVG 连线
-// ---------------------------------------------------------------------------
-
-.org-edge {
-  stroke: var(--editor-border, #c8d2ea);
-  transition: stroke 0.2s;
-
-  &.org-edge--active {
-    stroke: var(--branch-main);
-    stroke-width: 2.5;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// 右侧详情面板
-// ---------------------------------------------------------------------------
-
-.story-branch-detail {
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
-  width: 280px;
-  max-height: calc(100% - 180px);
-  border-radius: var(--editor-radius-lg, 14px);
-  border: 1px solid var(--editor-border, #d6dff2);
-  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 96%, transparent);
-  backdrop-filter: blur(12px);
-  box-shadow: var(--editor-shadow-lg, 0 8px 32px rgba(0, 0, 0, 0.08));
-  padding: 16px;
-  overflow-y: auto;
-  z-index: 20;
-}
-
-.story-branch-detail__header {
+.interactive-route-group__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  gap: 10px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #d7dff0) 88%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 42%, transparent);
+  color: var(--editor-text-primary, #0f172a);
+  cursor: pointer;
 }
 
-.story-branch-detail__type {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.interactive-route-group__title {
   font-size: 12px;
   font-weight: 800;
 }
 
-.detail-close {
-  display: flex;
+.interactive-route-group__meta {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: 1px solid var(--editor-border, #e1e8f6);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--editor-text-ghost, #8a9cc0);
+  gap: 8px;
+  color: var(--editor-text-muted, #64748b);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.interactive-route-group__body {
+  display: grid;
+  gap: 6px;
+  padding-left: 8px;
+}
+
+.interactive-route-group__more {
+  min-height: 32px;
+  padding: 0 11px;
+  border: 1px dashed color-mix(in srgb, var(--editor-border, #d7dff0) 82%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 52%, transparent);
+  color: var(--editor-text-muted, #64748b);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
   cursor: pointer;
-  transition: all 0.15s;
+}
+
+.interactive-route-card {
+  padding: 10px 11px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  border-left-color: color-mix(in srgb, var(--editor-border, #d7dff0) 92%, transparent);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease;
 
   &:hover {
-    background: var(--editor-layer-soft, var(--editor-bg-elevated, #f0f4ff));
-    color: var(--editor-text-primary, #3253a8);
+    border-left-color: color-mix(in srgb, var(--editor-accent, #2563eb) 32%, transparent);
+    background: color-mix(in srgb, var(--editor-accent-soft, #eef4ff) 18%, transparent);
+  }
+
+  &.is-active {
+    border-color: color-mix(in srgb, var(--editor-accent, #2563eb) 18%, transparent);
+    border-left-color: color-mix(in srgb, var(--editor-accent, #2563eb) 44%, transparent);
+    background: color-mix(in srgb, var(--editor-accent-soft, #eef4ff) 36%, transparent);
   }
 }
 
-.story-branch-detail__title {
-  margin: 0;
-  font-size: 16px;
+.interactive-route-card__header,
+.interactive-flow-card__header,
+.interactive-flow-card__chips,
+.interactive-branch-view__route-summary,
+.interactive-branch-view__locator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.interactive-route-card__header {
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.interactive-route-card__kind,
+.interactive-flow-card__type {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
   font-weight: 800;
-  color: var(--editor-text-primary, #203258);
+}
+
+.interactive-route-card__kind.is-main,
+.interactive-flow-card.is-story .interactive-flow-card__type {
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+}
+
+.interactive-route-card__kind.is-branch,
+.interactive-flow-card.is-choice .interactive-flow-card__type {
+  background: rgba(168, 85, 247, 0.12);
+  color: #7c3aed;
+}
+
+.interactive-route-card__kind.is-ending,
+.interactive-flow-card.is-ending .interactive-flow-card__type {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+
+.interactive-route-card__kind.is-all,
+.interactive-flow-card.is-merge .interactive-flow-card__type,
+.interactive-flow-card.is-condition .interactive-flow-card__type {
+  background: rgba(15, 23, 42, 0.08);
+  color: #334155;
+}
+
+.interactive-route-card__count,
+.interactive-route-card__summary,
+.interactive-flow-card__meta,
+.interactive-flow-card__summary,
+.interactive-flow-card__chips span,
+.interactive-branch-view__overview-meta,
+.interactive-branch-view__route-summary span,
+.interactive-branch-detail__summary,
+.interactive-branch-detail__section p {
+  color: var(--editor-text-muted, #64748b);
+  font-size: 12px;
+}
+
+.interactive-route-card__title,
+.interactive-flow-card__title,
+.interactive-branch-detail h3 {
+  color: var(--editor-text-primary, #0f172a);
+  font-weight: 800;
+}
+
+.interactive-route-card__title {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.interactive-branch-view__flow {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  overflow: hidden;
+}
+
+.interactive-branch-view__flow-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.interactive-branch-view__locator {
+  justify-content: flex-end;
+
+  label {
+    min-width: 260px;
+  }
+
+  button {
+    height: 34px;
+    padding: 0 12px;
+    border: 1px solid var(--editor-border, #d7dff0);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 90%, transparent);
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+}
+
+.interactive-branch-view__route-summary {
+  flex-wrap: wrap;
+  padding: 0 2px 2px;
+}
+
+.interactive-branch-view__locate-feedback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 32px;
+  padding: 7px 11px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--editor-accent, #2563eb) 18%, transparent);
+  background: color-mix(in srgb, var(--editor-accent-soft, #eef4ff) 24%, transparent);
+  color: var(--editor-text-muted, #64748b);
+  font-size: 12px;
+  line-height: 1.5;
+
+  &.is-miss {
+    border-color: color-mix(in srgb, var(--editor-danger, #dc2626) 18%, transparent);
+    background: color-mix(in srgb, var(--editor-danger-soft, #fee2e2) 30%, transparent);
+  }
+}
+
+.interactive-branch-view__locate-feedback-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.interactive-branch-view__locate-action {
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--editor-accent, #2563eb) 18%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 72%, transparent);
+  color: var(--editor-text-primary, #0f172a);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.interactive-branch-view__locate-action--ghost {
+  border-color: color-mix(in srgb, var(--editor-border, #d7dff0) 82%, transparent);
+  color: var(--editor-text-muted, #64748b);
+}
+
+.interactive-branch-view__overview {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 4px;
+  scrollbar-width: thin;
+}
+
+.interactive-branch-view__overview-more,
+.interactive-branch-view__overview-segment {
+  flex: 0 0 auto;
+}
+
+.interactive-branch-view__overview-more {
+  min-height: 56px;
+  padding: 0 12px;
+  border: 1px dashed color-mix(in srgb, var(--editor-border, #d7dff0) 82%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 52%, transparent);
+  color: var(--editor-text-muted, #64748b);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.interactive-branch-view__overview-segment {
+  display: grid;
+  gap: 4px;
+  min-width: 148px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #d7dff0) 84%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 86%, transparent);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--editor-accent, #2563eb) 24%, transparent);
+    background: color-mix(in srgb, var(--editor-accent-soft, #eef4ff) 18%, transparent);
+  }
+
+  &.is-active {
+    border-color: color-mix(in srgb, var(--editor-accent, #2563eb) 34%, transparent);
+    background: color-mix(in srgb, var(--editor-accent-soft, #eef4ff) 28%, transparent);
+  }
+
+  &.is-related:not(.is-active) {
+    border-color: color-mix(in srgb, var(--editor-accent, #2563eb) 16%, transparent);
+  }
+}
+
+.interactive-branch-view__overview-title {
+  color: var(--editor-text-primary, #0f172a);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.interactive-branch-view__overview-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
   line-height: 1.4;
 }
 
-.story-branch-detail__desc {
-  margin: 8px 0 0;
-  font-size: 13px;
-  line-height: 1.7;
-  color: var(--editor-text-muted, #5f7292);
-}
-
-.story-branch-detail__meta {
-  margin-top: 14px;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-}
-
-.meta-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 6px 8px;
-  border-radius: var(--editor-radius-md, 8px);
-  background: var(--editor-layer-soft, var(--editor-bg-elevated, #f5f8ff));
-}
-
-.meta-label {
-  font-size: 10px;
-  color: var(--editor-text-ghost, #8a9cc0);
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.meta-value {
-  font-size: 14px;
-  color: var(--editor-text-primary, #24365d);
-  font-weight: 700;
-}
-
-// ---------------------------------------------------------------------------
-// 子分支列表
-// ---------------------------------------------------------------------------
-
-.story-branch-detail__children {
-  margin-top: 16px;
-}
-
-.detail-section-title {
-  font-size: 11px;
+.interactive-branch-view__route-label {
+  color: var(--editor-text-primary, #0f172a) !important;
   font-weight: 800;
-  color: var(--editor-text-ghost, #8a9cc0);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 8px;
 }
 
-.child-item {
-  width: 100%;
+.interactive-branch-view__focus-breadcrumb {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
-  border-radius: var(--editor-radius-md, 8px);
-  border: 1px solid var(--editor-border, #e1e8f6);
-  background: var(--editor-layer-soft, var(--editor-bg-surface, #fafbff));
-  cursor: pointer;
-  transition: all 0.15s;
-  margin-bottom: 6px;
-
-  &:hover {
-    background: var(--editor-layer-strong, var(--editor-bg-elevated, #f0f4ff));
-    border-color: var(--editor-text-ghost, #b8c8e8);
-  }
-
-  &.child-item--active {
-    background: var(--editor-layer-accent, var(--editor-bg-elevated, #ecf3ff));
-    border-color: var(--branch-main);
-  }
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--editor-layer-soft, #eef4ff) 52%, transparent);
 }
 
-.child-item__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.child-item__name {
-  flex: 1;
-  font-size: 13px;
-  color: var(--editor-text-primary, #24365d);
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: left;
-}
-
-.child-item__badge {
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: var(--editor-layer-soft, var(--editor-bg-elevated, #f0f4ff));
-  color: var(--editor-text-muted, #68799a);
+.interactive-branch-view__focus-label,
+.interactive-branch-view__focus-overflow {
+  color: var(--editor-text-muted, #64748b);
+  font-size: 11px;
   font-weight: 700;
 }
 
-// ---------------------------------------------------------------------------
-// 操作按钮
-// ---------------------------------------------------------------------------
+.interactive-branch-view__focus-crumb {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #d7dff0) 84%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 88%, transparent);
+  color: var(--editor-text-primary, #0f172a);
+  font-size: 12px;
+  cursor: pointer;
 
-.story-branch-detail__actions {
-  margin-top: 16px;
+  &.is-active {
+    border-color: color-mix(in srgb, var(--editor-accent, #2563eb) 26%, transparent);
+    background: color-mix(in srgb, var(--editor-accent-soft, #eef4ff) 42%, transparent);
+  }
+}
+
+.interactive-flow-lane {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  gap: 8px;
+  padding-right: 4px;
+}
+
+.interactive-flow-lane.is-compact {
+  grid-auto-rows: min-content;
+}
+
+.interactive-flow-card {
+  position: relative;
   display: flex;
-  flex-direction: column;
+  gap: 10px;
+  margin-left: calc(var(--branch-depth, 0) * 18px);
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #d7dff0) 82%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 82%, transparent);
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--editor-accent, #2563eb) 22%, transparent);
+    background: color-mix(in srgb, var(--editor-accent-soft, #eef4ff) 18%, transparent);
+  }
+
+  &.is-selected {
+    border-color: color-mix(in srgb, var(--editor-accent, #2563eb) 34%, transparent);
+    background: color-mix(in srgb, var(--editor-accent-soft, #eef4ff) 26%, transparent);
+  }
+
+  &.is-focused {
+    background: color-mix(in srgb, var(--editor-accent-soft, #eef4ff) 34%, transparent);
+  }
+
+  &.is-current {
+    outline: 1px solid color-mix(in srgb, var(--editor-accent, #2563eb) 28%, transparent);
+    outline-offset: -1px;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: -12px;
+    top: 18px;
+    width: 10px;
+    height: 1px;
+    background: color-mix(in srgb, var(--editor-border, #d7dff0) 78%, transparent);
+    opacity: min(calc(var(--branch-depth, 0)), 1);
+  }
+}
+
+.interactive-flow-card__rail {
+  width: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--editor-accent, #2563eb) 34%, transparent);
+}
+
+.interactive-flow-card.is-choice .interactive-flow-card__rail {
+  background: rgba(168, 85, 247, 0.46);
+}
+
+.interactive-flow-card.is-ending .interactive-flow-card__rail {
+  background: rgba(239, 68, 68, 0.46);
+}
+
+.interactive-flow-card.is-condition .interactive-flow-card__rail {
+  background: rgba(245, 158, 11, 0.46);
+}
+
+.interactive-flow-card.is-merge .interactive-flow-card__rail {
+  background: rgba(14, 165, 233, 0.46);
+}
+
+.interactive-flow-card__body {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.interactive-flow-card__header {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.interactive-flow-card__scope {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  background: color-mix(in srgb, var(--editor-layer-soft, #eef4ff) 88%, transparent);
+  color: var(--editor-text-muted, #64748b);
+}
+
+.interactive-flow-card__scope.is-focus {
+  background: color-mix(in srgb, var(--editor-accent-soft, #eef4ff) 72%, transparent);
+  color: color-mix(in srgb, var(--editor-accent, #2563eb) 82%, var(--editor-text-primary, #0f172a));
+}
+
+.interactive-flow-card__title {
+  font-size: 14px;
+}
+
+.interactive-flow-card__summary {
+  margin: 0;
+  line-height: 1.65;
+}
+
+.interactive-flow-card__chips {
+  flex-wrap: wrap;
+}
+
+.interactive-flow-card__relations {
+  display: grid;
+  gap: 4px;
+}
+
+.interactive-flow-card__relation {
+  color: var(--editor-text-muted, #64748b);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.interactive-flow-card__relation--accent {
+  color: color-mix(in srgb, var(--editor-accent, #2563eb) 72%, var(--editor-text-muted, #64748b));
+}
+
+.interactive-flow-card__chips span,
+.interactive-flow-card__branch-chip,
+.interactive-branch-detail__path span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--editor-layer-soft, #eef4ff) 72%, transparent);
+}
+
+.interactive-flow-card__branches,
+.interactive-branch-detail__links {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
-.enter-branch-btn {
-  width: 100%;
+.interactive-flow-card__branch-label {
+  color: var(--editor-text-ghost, #94a3b8);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.interactive-branch-view__detail {
+  padding: 14px;
+  border-left: 1px solid var(--editor-border, #d7dff0);
+}
+
+.interactive-branch-detail {
+  height: 100%;
+  min-height: 0;
   display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.interactive-branch-detail--empty {
+  justify-content: center;
+}
+
+.interactive-branch-detail__header,
+.interactive-branch-detail__meta,
+.interactive-branch-detail__actions {
+  display: flex;
+  gap: 10px;
+}
+
+.interactive-branch-detail__header {
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.interactive-branch-detail__type {
+  color: var(--editor-text-ghost, #94a3b8);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.interactive-branch-detail h3 {
+  margin: 4px 0 0;
+  font-size: 18px;
+}
+
+.interactive-branch-detail__field,
+.interactive-branch-detail__textarea,
+.interactive-branch-detail__editor-field select {
+  border: 1px solid color-mix(in srgb, var(--editor-border, #d7dff0) 82%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 88%, transparent);
+  color: var(--editor-text-primary, #0f172a);
+}
+
+.interactive-branch-detail__field {
+  width: 100%;
+  min-height: 38px;
+  margin-top: 6px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.interactive-branch-detail__textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  resize: vertical;
+  line-height: 1.6;
+  font-size: 13px;
+}
+
+.interactive-branch-detail__link {
+  border: none;
+  background: transparent;
+  color: var(--editor-text-muted, #64748b);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.interactive-branch-detail__summary,
+.interactive-branch-detail__section p {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.interactive-branch-detail__meta {
+  flex-wrap: wrap;
+
+  div {
+    flex: 1 1 120px;
+    display: grid;
+    gap: 4px;
+    padding: 9px 10px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--editor-layer-soft, #eef4ff) 58%, transparent);
+  }
+
+  span {
+    color: var(--editor-text-ghost, #94a3b8);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  strong {
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 13px;
+  }
+}
+
+.interactive-branch-detail__section {
+  display: grid;
+  gap: 8px;
+}
+
+.interactive-branch-detail__editor-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.interactive-branch-detail__editor-field {
+  display: grid;
+  gap: 6px;
+
+  span {
+    color: var(--editor-text-ghost, #94a3b8);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  select {
+    min-height: 34px;
+    padding: 0 10px;
+    border-radius: 10px;
+    font-size: 12px;
+  }
+}
+
+.interactive-branch-detail__composer {
+  display: grid;
+  gap: 8px;
+
+  input,
+  select {
+    min-height: 34px;
+    padding: 0 10px;
+    border-radius: 10px;
+    border: 1px solid color-mix(in srgb, var(--editor-border, #d7dff0) 82%, transparent);
+    background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 88%, transparent);
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 12px;
+  }
+}
+
+.interactive-branch-detail__composer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 112px) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.interactive-branch-detail__section-title {
+  color: var(--editor-text-ghost, #94a3b8);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.interactive-branch-detail__path {
+  display: grid;
+  gap: 4px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #d7dff0) 82%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 84%, transparent);
+  text-align: left;
+  cursor: pointer;
+
+  strong {
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 13px;
+  }
+}
+
+.interactive-branch-detail__actions {
+  margin-top: auto;
+  flex-wrap: wrap;
+}
+
+.interactive-branch-detail__inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.interactive-branch-detail__action {
+  flex: 1 1 132px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 10px;
+  height: 38px;
+  border: 1px solid color-mix(in srgb, var(--editor-accent, #2563eb) 22%, transparent);
   border-radius: 10px;
-  border: 1px solid rgba(114, 46, 209, 0.2);
-  background: rgba(114, 46, 209, 0.06);
-  color: var(--branch-point);
+  background: color-mix(in srgb, var(--editor-accent-soft, #eef4ff) 26%, transparent);
+  color: var(--editor-text-primary, #0f172a);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
-  transition: all 0.2s;
 
-  &:hover {
-    background: rgba(114, 46, 209, 0.12);
-    border-color: rgba(114, 46, 209, 0.35);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(114, 46, 209, 0.1);
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
 }
 
-.enter-branch-btn--secondary {
-  border-color: var(--editor-border, #dbe5f5);
-  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
-  color: var(--editor-text-primary, #24365d);
+.interactive-branch-detail__action--secondary {
+  border-color: var(--editor-border, #d7dff0);
+  background: var(--editor-layer-panel, #ffffff);
+}
 
-  &:hover {
-    background: var(--editor-layer-soft, var(--editor-bg-elevated, #f3f7ff));
-    border-color: rgba(77, 121, 218, 0.35);
-    box-shadow: 0 4px 12px rgba(77, 121, 218, 0.08);
+.interactive-branch-detail__action--ghost {
+  border-color: color-mix(in srgb, var(--editor-danger, #dc2626) 20%, transparent);
+  background: color-mix(in srgb, var(--editor-danger-soft, #fee2e2) 38%, transparent);
+  color: color-mix(in srgb, var(--editor-danger, #dc2626) 78%, var(--editor-text-primary, #0f172a));
+}
+
+.interactive-branch-view__empty {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 1200px) {
+  .interactive-branch-view__body {
+    grid-template-columns: 228px minmax(0, 1fr);
+  }
+
+  .interactive-branch-view__detail {
+    grid-column: 1 / -1;
+    border-left: none;
+    border-top: 1px solid var(--editor-border, #d7dff0);
   }
 }
 
-// ---------------------------------------------------------------------------
-// 响应式
-// ---------------------------------------------------------------------------
-
-@media (max-width: 1100px) {
-  .story-branch-view__stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .story-branch-detail {
-    width: 240px;
-  }
-}
-
-@media (max-width: 768px) {
-  .story-branch-view__header {
+@media (max-width: 900px) {
+  .interactive-branch-view__header,
+  .interactive-branch-view__flow-toolbar {
     flex-direction: column;
+    align-items: stretch;
   }
 
-  .story-branch-detail {
-    position: relative;
-    right: auto;
-    bottom: auto;
-    width: 100%;
-    max-height: none;
-    margin: 0 16px 16px;
+  .interactive-branch-view__header-actions,
+  .interactive-branch-view__title-row {
+    justify-content: space-between;
+  }
+
+  .interactive-branch-view__body {
+    grid-template-columns: 1fr;
+  }
+
+  .interactive-branch-view__routes {
+    border-right: none;
+    border-bottom: 1px solid var(--editor-border, #d7dff0);
   }
 }
 </style>
