@@ -133,3 +133,4 @@
 - **画布框选坐标按容器内容框与缩放比计算**：`CanvasCore/useCanvasInteraction` 的选区框必须使用容器相对坐标，并按 `getBoundingClientRect()` 与 `clientWidth/clientHeight` 的比例做归一化；平移可继续使用 viewport 坐标，但框选矩形若直接复用 `clientX/clientY`，或忽略宿主缩放比，在工具 overlay、多栏布局或后续外层 `transform: scale(...)` 下会出现框选区域与鼠标实际位置偏移。
 - **test=true 兼容**：writer 模块保留 mock/test-mode 工作区入口，新增宿主或工具边界时要同时确认真实 API 路径和 mock 路径都能跑通。
 - **文档同步触发条件**：只要修改工作区宿主边界、工具入口策略、快捷键 owner 或 AI handoff 主链，就必须同步本文件和 `docs/plans/v3/implementation/*` 的对应检查点文档。
+- **工具联动原则以父仓 guides 为准**：大纲、节拍、资产、图谱、时间线、分支与 AI 的低负担联动口径统一参考 `docs/guides/writer-tool-ai-linkage-principles.md`；后续实现若要新增入口，先对照这份原则判断是否会增加默认复杂度。

@@ -15,6 +15,11 @@
     ></div>
 
     <div class="workspace-bottom-panel__header">
+      <div class="workspace-bottom-panel__status">
+        <strong>{{ sceneStage.sceneTitle || '未命名场景' }}</strong>
+        <span v-if="sceneStage.chapterTitle">当前章节：{{ sceneStage.chapterTitle }}</span>
+        <span v-if="sceneStage.coverageLabel">覆盖：{{ sceneStage.coverageLabel }}</span>
+      </div>
       <button type="button" class="workspace-bottom-panel__close" @click="$emit('close')">
         收起
       </button>
@@ -149,14 +154,44 @@ onBeforeUnmount(stopResize)
   min-height: 24px;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  gap: 10px;
+  justify-content: space-between;
   padding: 0 8px;
   border-bottom: 1px solid var(--editor-border, #e2e8f0);
   background: var(--editor-bg-surface, #f8fafc);
 }
 
+.workspace-bottom-panel__status {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  color: var(--editor-text-muted, #64748b);
+  font-size: 11px;
+  white-space: nowrap;
+
+  strong {
+    min-width: 0;
+    max-width: 180px;
+    overflow: hidden;
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 12px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+  }
+
+  span {
+    min-width: 0;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 .workspace-bottom-panel__close {
   height: 24px;
+  flex: 0 0 auto;
   padding: 0 10px;
   border: none;
   border-radius: 999px;
