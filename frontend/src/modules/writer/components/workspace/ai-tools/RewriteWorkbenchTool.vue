@@ -29,6 +29,20 @@
       </label>
 
       <label class="field">
+        <span>写作取向</span>
+        <select v-model="skillId">
+          <option value="">自动</option>
+          <option
+            v-for="skill in writingSkills"
+            :key="skill.id"
+            :value="skill.id"
+          >
+            {{ skill.label }}
+          </option>
+        </select>
+      </label>
+
+      <label class="field">
         <span>附加要求</span>
         <input v-model="instructions" type="text" placeholder="例如：保留人物语气，降低重复表达" />
       </label>
@@ -93,6 +107,10 @@
 import { computed, ref, watch } from 'vue'
 import WorkbenchErrorState from './WorkbenchErrorState.vue'
 import { rewriteWithWorkbench } from '@/modules/ai/api/workbench'
+import {
+  listWriterAIWritingSkills,
+  type WriterAIWritingSkillId,
+} from '@/modules/writer/config/writerAIPromptPresets'
 import type {
   WriterAIActionTrigger,
   WriterWorkflowContext,
@@ -131,6 +149,7 @@ const emit = defineEmits<{
 }>()
 
 const mode = ref<'polish' | 'expand' | 'shorten'>('polish')
+const skillId = ref<WriterAIWritingSkillId | ''>('')
 const draftText = ref('')
 const instructions = ref('')
 const resultText = ref('')
@@ -173,6 +192,7 @@ const statusDescription = computed(() => {
 const effectiveWorkflowContext = computed(
   () => props.actionTrigger?.context ?? props.workflowContext ?? null,
 )
+const writingSkills = listWriterAIWritingSkills({ recommendedOnly: true })
 
 watch(
   () => props.seedText,
@@ -226,6 +246,8 @@ async function handleRun() {
       originalText: draftText.value,
       mode: mode.value,
       instructions: mergedInstructions,
+      skillId: skillId.value || undefined,
+      toolHintIds: ['scene_stage', 'assets'],
     })
     resultText.value = result.rewrittenText
   } catch (error) {

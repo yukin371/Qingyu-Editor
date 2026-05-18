@@ -5,6 +5,7 @@ import { userAIProviderApi } from './ai-user-provider'
 import type {
   WriterAIAssetSummary,
   WriterAIContextEvidence,
+  WriterAIPlan,
   WriterAISceneStageSummary,
 } from '@/modules/writer/utils/writerAIContext'
 
@@ -14,6 +15,8 @@ export interface RewriteToolRequest {
   originalText: string
   mode: 'polish' | 'expand' | 'shorten'
   instructions?: string
+  skillId?: WriterAIPlan['skillId']
+  toolHintIds?: WriterAIPlan['toolHintIds']
 }
 
 export interface RewriteToolResult {
@@ -128,6 +131,9 @@ export async function rewriteWithWorkbench(
     intent: {
       action: payload.mode === 'expand' ? 'expand' : 'rewrite',
     },
+    workflow: 'write',
+    skillId: payload.skillId,
+    toolHintIds: payload.toolHintIds,
     requiresConfirmation: true,
     userVisibleSummary:
       payload.instructions ||
@@ -187,6 +193,8 @@ export async function summarizeSelection(payload: SummaryToolRequest): Promise<S
     intent: {
       action: 'summarize',
     },
+    workflow: 'review',
+    toolHintIds: ['structure_stage', 'scene_stage'],
     requiresConfirmation: false,
     userVisibleSummary: [
       payload.summaryType === 'brief'
@@ -356,6 +364,8 @@ export async function generateStructurePlan(
       },
     },
     requiresConfirmation: true,
+    workflow: 'organize',
+    toolHintIds: ['structure_stage'],
     userVisibleSummary: prompt,
   })
   const rawReply = String(response.message || '').trim()
@@ -419,6 +429,8 @@ export async function proofreadContent(payload: ReviewToolRequest): Promise<Revi
     intent: {
       action: 'proofread',
     },
+    workflow: 'review',
+    toolHintIds: ['scene_stage', 'assets'],
     requiresConfirmation: false,
     userVisibleSummary: '检查错别字、语病、标点和表达问题。',
   })

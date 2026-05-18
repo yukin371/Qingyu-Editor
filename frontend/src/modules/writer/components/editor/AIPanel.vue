@@ -68,8 +68,11 @@ import { useBreakpoints } from '@/composables/useBreakpoints'
 import { useChatHistory } from '@/composables/useChatHistory'
 import { useTypewriter } from '@/composables/useTypewriter'
 import { message } from '@/design-system/services'
-import { QUICK_ACTION_PROMPTS, getQuickActionPrompt } from '@/utils/mockAIResponse'
 import { requestWriterAI } from '@/modules/ai/api'
+import {
+  getWriterAIPromptText,
+  listWriterAIPromptPresets,
+} from '@/modules/writer/config/writerAIPromptPresets'
 import { executeWriterDocumentCommand } from '@/modules/writer/services/documentToolCommands.service'
 import {
   writerDocumentAgentService,
@@ -248,15 +251,7 @@ const selectedChatContextScope = ref<{
 } | null>(null)
 
 // ==================== 快捷操作 ====================
-const quickActions = computed<QuickAction[]>(() => [
-  { id: 'continue', ...QUICK_ACTION_PROMPTS.continue },
-  { id: 'scene', ...QUICK_ACTION_PROMPTS.scene },
-  { id: 'polish', ...QUICK_ACTION_PROMPTS.polish },
-  { id: 'chapterReview', ...QUICK_ACTION_PROMPTS.chapterReview },
-  { id: 'recentReview', ...QUICK_ACTION_PROMPTS.recentReview },
-  { id: 'taskCard', ...QUICK_ACTION_PROMPTS.taskCard },
-  { id: 'assets', ...QUICK_ACTION_PROMPTS.assets },
-])
+const quickActions = computed<QuickAction[]>(() => listWriterAIPromptPresets())
 
 // ==================== 计算属性 ====================
 const panelStyle = computed(() => {
@@ -877,7 +872,7 @@ function handleSend() {
 }
 
 function handleQuickAction(action: QuickAction) {
-  const prompt = getQuickActionPrompt(action.id)
+  const prompt = getWriterAIPromptText(action.id)
   interactionMode.value = action.group === 'write' && canEditDirectly.value ? 'edit' : 'chat'
   sendMessage(prompt)
 }

@@ -150,10 +150,10 @@ const emit = defineEmits<{
 const activeTab = ref<WriterWorkbenchTab>('chat')
 
 const tabs: Array<{ id: WriterWorkbenchTab; label: string; description: string }> = [
-  { id: 'rewrite', label: '改写', description: '续写 / 润色 / 扩写' },
-  { id: 'summary', label: '总结', description: '摘要 / 章节提炼' },
-  { id: 'review', label: '审校', description: '校对 / 风险检查' },
-  { id: 'chat', label: '对话协作', description: '开放式协作' },
+  { id: 'rewrite', label: '写作', description: '续写 / 润色 / 扩写' },
+  { id: 'summary', label: '整理', description: '摘要 / 结构草案' },
+  { id: 'review', label: '回审', description: '校对 / 风险检查' },
+  { id: 'chat', label: '问答', description: '开放式协作' },
 ]
 
 const {

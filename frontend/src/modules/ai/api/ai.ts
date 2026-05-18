@@ -11,6 +11,11 @@ import {
   type AIProviderSettings,
 } from '../config/provider'
 import type { WriterAIPlan } from '@/modules/writer/utils/writerAIContext'
+import {
+  buildWriterAIAgentPrompt,
+  inferWriterAIWritingSkillId,
+  inferWriterAIWorkflow,
+} from '@/modules/writer/config/writerAIPromptPresets'
 import { aiDirectApi, isDirectModeEnabled } from './ai-direct'
 import { userAIProviderApi } from './ai-user-provider'
 import { getAIRequest, postAIRequest, putAIRequest } from './request'
@@ -514,7 +519,16 @@ export function updateSceneState(
 }
 
 function formatWriterPlanPrompt(plan: WriterAIPlan): string {
-  const lines = [plan.userVisibleSummary]
+  const workflow = plan.workflow || inferWriterAIWorkflow(plan)
+  const skillId = plan.skillId || inferWriterAIWritingSkillId(plan)
+  const lines = [
+    buildWriterAIAgentPrompt({
+      workflow,
+      skillId,
+      toolHintIds: plan.toolHintIds,
+    }),
+    plan.userVisibleSummary,
+  ]
   if (plan.intent?.action) {
     const actionLabelMap: Record<NonNullable<WriterAIPlan['intent']>['action'] & string, string> = {
       summarize: '总结',

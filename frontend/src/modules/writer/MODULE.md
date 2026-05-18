@@ -33,6 +33,7 @@
 - **模板可携带商业机制与 AI prompt 协议**：`templateCatalog.fallback` / Wails template 可提供主角原型、核心驱动、世界压力、章节循环、读者收益、质量约束和推荐 prompt preset；模板中心只展示和应用这些协议，不在模板页直接生成正文。
 - **模板创建项目只生成骨架，不预写正文**：模板应用可以创建默认卷、黄金三章标题和 sidecar 蓝图，但章节正文必须保持空白，由作者进入章节后再写；不要把模板大纲、钩子或兑现点复制进正文区。
 - **AI prompt preset owner 是 `config/writerAIPromptPresets.ts`**：右栏快捷入口、模板推荐提示词和后续回审工具应复用该 preset，不要继续把写/审/整理提示词散落在组件或 mock helper 中。
+- **极简 AI agent 只是编排层，不是新 runtime**：`config/writerAIPromptPresets.ts` 统一维护 `chat / write / review / organize / explain_tool` 工作流、少量推荐写作 skill 与工具提示；组件只选择 workflow/skill/tool hint，真实请求仍必须走 `requestWriterAI(plan)` 与 `WriterAIContextPacket`。
 - **工作台壳必须保持模块化和简洁**：`WorkbenchShell` 负责左侧主导航和右侧主内容区的基础骨架；首页、项目页、模板页优先复用 `QyCard / QyButton / QyInput / QySelect / QyDrawer / QyModal` 等设计系统原件，不要再堆叠装饰性卡片、大段说明或自定义平台式大壳。
 - **工作台壳桌面端必须分离滚动**：`WorkbenchShell` 在 `lg` 及以上视口下应保持“左侧导航整列固定高度 + 右侧主内容独立滚动”；不要再让 `/writer`、`/writer/projects`、`/writer/templates` 通过整页文档滚动把左侧导航一起带走。
 - **双壳模型要显式，不要伪装成同一页抖动**：顶层页壳只服务 `/writer`、`/writer/projects`、`/writer/templates`，并由页面显式传入 `activeNavId`；`/writer/project/:projectId` 只走 `WorkspaceShell` 编辑器壳。不要再让壳层通过路由猜测去兼容另一条主链。
@@ -85,6 +86,7 @@
 - **AI 上下文包 owner 是 `utils/writerAIContext.ts`**：右栏聊天、Workbench 工具、资产摘要和结构/时间线/分支简化摘要都应先构造成 `WriterAIContextPacket`，再进入 prompt 或 `modules/ai/api` facade；不要在组件内各自拼全量 prompt。
 - **AI 默认只消费简化上下文**：上下文包默认包含当前章节正文、选区/候选稿、目标条、资产简表、创作蓝图/节奏摘要和证据卡，并受字符预算截断；禁止默认把全书全文或深度资产详情塞进 prompt。
 - **工具交给 AI 的上下文要复用共享 handoff**：角色图谱、时间线、分支、结构节点与全屏工具顶部的 `add_to_chat` 文本应优先走共享 handoff 组装器，不要让每个工具各自拼一套 prompt 文案和指令。
+- **工具提示只允许摘要化进入 AI**：结构舞台、当前场景、资产、图谱、时间线、分支只能通过共享 tool hint 告诉 AI “当前能帮什么 / 何时该用 / 给什么摘要”，不得在工具组件内恢复独立长 prompt 或全量 store 注入。
 - **场景舞台只进入 AI 摘要上下文**：底栏当前场景与当前拍仍由 `useWriterSceneStage` 本地 sidecar 持有；当前草稿以项目级 `activeSceneId + scenes` 结构持续保存，覆盖章节会随当前工作章节自动累积，点击“新场景”才归档当前场景并切到新场景。AI 只能通过 `WriterAISceneStageSummary` 消费场景、覆盖章节、目标、冲突、完成条件、下一拍和在场资产摘要，不得把场景舞台状态复制成 AI store 或让 AI 静默推进节拍。
 - **AI 创作辅助采用“双节拍”入口**：右栏快捷入口按“写 / 审 / 整理”组织；写作冲刺入口可进入当前章节/选区 diff，回审和整理入口只输出分析、任务卡或资产候选，不静默改剧情、不批量改章。
 - **本章任务卡只进入上下文包，不成为新持久化 owner**：`WriterChapterTaskCard` 用于约束创作冲刺与质量回审，可从阶段摘要或显式上下文推导；持久化仍归结构舞台、章节/工作流 sidecar 或后续明确 owner。

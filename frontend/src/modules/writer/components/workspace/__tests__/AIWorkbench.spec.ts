@@ -88,7 +88,7 @@ describe('AIWorkbench', () => {
     })
 
     expect(wrapper.find('.ai-workbench__title').exists()).toBe(false)
-    expect(wrapper.text()).toContain('对话协作')
+    expect(wrapper.text()).toContain('问答')
     expect(wrapper.text()).not.toContain('待处理 3')
     expect(wrapper.text()).not.toContain('草案 1')
   })

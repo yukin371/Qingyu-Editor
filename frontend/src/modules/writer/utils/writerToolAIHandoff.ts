@@ -7,6 +7,10 @@ import {
   type WriterWorkflowContext,
   type WriterWorkflowSource,
 } from '@/modules/writer/types/workflow'
+import {
+  getWriterAIToolHintText,
+  type WriterAIToolHintId,
+} from '@/modules/writer/config/writerAIPromptPresets'
 
 export interface WriterToolAIHandoffOptions {
   source?: WriterWorkflowSource
@@ -16,6 +20,7 @@ export interface WriterToolAIHandoffOptions {
   workflowContext?: WriterWorkflowContext | null
   activeEntities?: ActiveEntitySummary[] | null
   instructions?: string
+  toolHintId?: WriterAIToolHintId
 }
 
 export function buildWriterToolAIHandoff({
@@ -26,10 +31,14 @@ export function buildWriterToolAIHandoff({
   workflowContext,
   activeEntities,
   instructions,
+  toolHintId,
 }: WriterToolAIHandoffOptions): WriterWorkflowActionRequest {
+  const resolvedToolHintId = toolHintId || inferToolHintId(toolLabel)
+  const toolHint = getWriterAIToolHintText(resolvedToolHintId)
   const lines = [
     `工具：${toolLabel}`,
     `关注对象：${title}`,
+    toolHint ? `工具提示：${toolHint}` : '',
     workflowContext?.chapterTitle ? `当前章节：${workflowContext.chapterTitle}` : '',
     workflowContext?.scopeLabel ? `场景作用域：${workflowContext.scopeLabel}` : '',
     ...focusLines,
@@ -46,6 +55,16 @@ export function buildWriterToolAIHandoff({
     instructions:
       instructions || '请基于以上上下文给出最值得处理的一项建议，尽量具体、短一点。',
   }
+}
+
+function inferToolHintId(toolLabel: string): WriterAIToolHintId | undefined {
+  if (/结构|大纲/.test(toolLabel)) return 'structure_stage'
+  if (/场景|节拍|当前拍/.test(toolLabel)) return 'scene_stage'
+  if (/资产|设定/.test(toolLabel)) return 'assets'
+  if (/图谱|关系|角色/.test(toolLabel)) return 'character_graph'
+  if (/时间/.test(toolLabel)) return 'timeline'
+  if (/分支|路线|互动/.test(toolLabel)) return 'story_branch'
+  return undefined
 }
 
 function buildWorkflowRelationPrompt(context: WriterWorkflowContext | null | undefined): string {

@@ -1,5 +1,10 @@
 import type { WriterWorkflowContext } from '@/modules/writer/types/workflow'
 import { buildWriterWorkflowContextPrompt } from '@/modules/writer/types/workflow'
+import type {
+  WriterAIMinimalWorkflow,
+  WriterAIToolHintId,
+  WriterAIWritingSkillId,
+} from '@/modules/writer/config/writerAIPromptPresets'
 
 export type WriterAIRoute =
   | 'chat'
@@ -107,6 +112,9 @@ export interface WriterAIPlan {
   mutationMode: 'none' | 'single_document_diff' | 'multi_document_plan' | 'chapter_create_plan'
   target: WriterDocumentTarget
   context: WriterAIContextPacket
+  workflow?: WriterAIMinimalWorkflow
+  skillId?: WriterAIWritingSkillId
+  toolHintIds?: WriterAIToolHintId[]
   intent?: {
     action?: 'summarize' | 'rewrite' | 'continue' | 'proofread' | 'expand'
     targetLength?: number
