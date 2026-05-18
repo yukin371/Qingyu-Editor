@@ -38,6 +38,7 @@ npm run test -- WorkspaceTopbar WorkspaceSettingsPanel ShortcutSettingsPanel
 npm run test -- provider aiProviderStore WorkspaceSettingsPanel
 npm run test -- ProjectWorkspace WorkspaceSceneStagePanel
 npm run test -- EncyclopediaView AssetListPanel TimelineOutlineView StoryBranchView
+npm run test:e2e:core -- tests/e2e/writer-workflow.spec.ts
 cd ..
 git diff --check
 ```
@@ -48,6 +49,7 @@ git diff --check
 cd frontend
 npm run type-check
 npm run test -- provider aiProviderStore WorkspaceSettingsPanel WorkspaceTopbar
+npm run test:e2e:core -- tests/e2e/writer-workflow.spec.ts
 cd ..
 git diff --check
 ```
@@ -117,4 +119,3 @@ git -C E:\Github\Qingyu commit -m "同步编辑器..."
 ```
 
 Tag 默认打在 `Qingyu-Editor` 子仓对应提交上，并在父仓同步子模块指针提交后补同名或说明性 tag。
-

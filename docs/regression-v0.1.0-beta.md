@@ -82,6 +82,7 @@ npm run test -- WorkspaceTopbar WorkspaceSettingsPanel ShortcutSettingsPanel
 npm run test -- provider aiProviderStore WorkspaceSettingsPanel
 npm run test -- ProjectWorkspace WorkspaceSceneStagePanel
 npm run test -- EncyclopediaView AssetListPanel TimelineOutlineView StoryBranchView
+npm run test:e2e:core -- tests/e2e/writer-workflow.spec.ts
 cd ..
 git diff --check
 ```
@@ -91,4 +92,3 @@ git diff --check
 - 阻断级：无法创建项目、无法编辑/保存章节、AI diff 静默覆盖正文、密钥明文进入导出配置或仓库文件。
 - 高优先级：多卷章节顺序混乱、资产引用无法扫描、暗色模式大面积白底、provider 配置无法保存。
 - 可延期：高级工具局部样式不完美、复杂多 provider 按用途自动路由、深度语义检索。
-

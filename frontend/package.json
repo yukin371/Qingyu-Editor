@@ -28,6 +28,7 @@
     "test:ci": "vitest run --config vitest.ci.config.ts src/modules/writer/stores/__tests__/editorStore.spec.ts src/modules/writer/stores/__tests__/editorStore.v2.spec.ts src/modules/writer/api/__tests__/desktop-fallback.spec.ts src/modules/writer/api/__tests__/outline.spec.ts src/modules/writer/api/__tests__/wrapper.test.ts src/modules/writer/data-bridge/__tests__/wails-runtime.spec.ts src/modules/ai/api/__tests__/ai.spec.ts src/modules/ai/api/__tests__/workbench.spec.ts src/utils/api-health.spec.ts src/utils/syncService.spec.ts",
     "test:ci:coverage": "vitest run --config vitest.ci.config.ts --coverage src/modules/writer/stores/__tests__/editorStore.spec.ts src/modules/writer/stores/__tests__/editorStore.v2.spec.ts src/modules/writer/api/__tests__/desktop-fallback.spec.ts src/modules/writer/api/__tests__/outline.spec.ts src/modules/writer/api/__tests__/wrapper.test.ts src/modules/writer/data-bridge/__tests__/wails-runtime.spec.ts src/modules/ai/api/__tests__/ai.spec.ts src/modules/ai/api/__tests__/workbench.spec.ts src/utils/api-health.spec.ts src/utils/syncService.spec.ts",
     "test:e2e": "playwright test",
+    "test:e2e:core": "playwright test --project=chromium",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:headed": "playwright test --headed",

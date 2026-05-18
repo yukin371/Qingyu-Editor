@@ -88,6 +88,7 @@ npm run type-check
 npm run test -- WorkspaceTopbar WorkspaceSettingsPanel ShortcutSettingsPanel
 npm run test -- EncyclopediaView AssetListPanel TimelineOutlineView StoryBranchView
 npm run test -- ProjectWorkspace WorkspaceSceneStagePanel
+npm run test:e2e:core -- tests/e2e/writer-workflow.spec.ts
 git diff --check
 ```
 
