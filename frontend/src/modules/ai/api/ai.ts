@@ -16,6 +16,8 @@ import {
   inferWriterAIWritingSkillId,
   inferWriterAIWorkflow,
 } from '@/modules/writer/config/writerAIPromptPresets'
+import { buildWriterProjectBriefSummaryLines } from '@/modules/writer/services/writerProjectBrief.service'
+import { buildWriterUserPreferenceSummaryLines } from '@/modules/writer/services/writerUserPreferenceMemory.service'
 import { aiDirectApi, isDirectModeEnabled } from './ai-direct'
 import { userAIProviderApi } from './ai-user-provider'
 import { getAIRequest, postAIRequest, putAIRequest } from './request'
@@ -600,6 +602,16 @@ function formatWriterPlanPrompt(plan: WriterAIPlan): string {
         return `- [${scope}] ${asset.assetName}（${asset.assetType}，引用 ${asset.referenceCount}）`
       }),
     )
+  }
+  const projectBriefLines = buildWriterProjectBriefSummaryLines(plan.context.projectBrief)
+  if (projectBriefLines.length > 0) {
+    lines.push('作品 Brief：')
+    lines.push(...projectBriefLines.slice(0, 8).map((line) => `- ${line}`))
+  }
+  const userPreferenceLines = buildWriterUserPreferenceSummaryLines(plan.context.userPreference)
+  if (userPreferenceLines.length > 0) {
+    lines.push('用户长期偏好：')
+    lines.push(...userPreferenceLines.slice(0, 6).map((line) => `- ${line}`))
   }
   return lines.filter(Boolean).join('\n')
 }

@@ -47,6 +47,8 @@
           :ai-summary-context-text="aiSummaryContextText"
           :ai-asset-summaries="aiAssetSummaries"
           :ai-scene-stage-summary="aiSceneStageSummary"
+          :writer-project-brief="writerProjectBrief"
+          :writer-user-preference="writerUserPreference"
           :draft-proposals="draftProposals"
           @ai-apply="(payload) => $emit('ai-apply', payload)"
           @proposal-draft="(payload) => $emit('proposal-draft', payload)"
@@ -217,7 +219,13 @@ const {
   chapterId: computed(() => props.chapterId),
   chapters: computed(() => props.chapters),
 })
-const { aiSummaryContextText, aiAssetSummaries, aiSceneStageSummary } = useWriterAISummaryContext({
+const {
+  aiSummaryContextText,
+  aiAssetSummaries,
+  aiSceneStageSummary,
+  writerProjectBrief,
+  writerUserPreference,
+} = useWriterAISummaryContext({
   projectId: computed(() => props.projectId),
   chapterId: computed(() => props.chapterId),
   chapters: computed(() => props.chapters),

@@ -280,6 +280,9 @@ describe('SummaryWorkbenchTool', () => {
       projectId: 'project-1',
       chapterId: 'chapter-1',
       summaryType: 'detailed',
+      assets: undefined,
+      sceneStage: undefined,
+      workflowContextPrompt: expect.stringContaining('第一章'),
     })
     expect(wrapper.text()).toContain('改为基于正文片段提炼出的章节摘要。')
     expect(wrapper.find('.tool-state-card--error').exists()).toBe(false)

@@ -132,4 +132,46 @@ describe('writerAIContext', () => {
       contextBlock.indexOf('当前章节正文：'),
     )
   })
+
+  it('adds project brief and user preference as compact evidence', () => {
+    const packet = buildWriterAIContextPacket({
+      projectId: 'project-1',
+      currentDocument: {
+        documentId: 'chapter-1',
+        documentTitle: '第一章',
+        sourceText: '正文',
+      },
+      projectBrief: {
+        projectId: 'project-1',
+        premise: '谨慎凡人在资源稀缺的修仙界求生',
+        targetAudience: '凡人流读者',
+        readerPromise: ['谨慎布局', '低调获利'],
+        styleGuide: ['克制', '少解释'],
+        protagonistCore: '极度自保但有底线',
+        worldRules: ['资源有限', '强者掠夺弱者'],
+        constraints: ['奇遇必须有代价'],
+        avoid: ['主角无脑莽'],
+        updatedAt: 1,
+      },
+      userPreference: {
+        preferredGenres: ['凡人流修仙'],
+        stylePreference: ['冷峻'],
+        avoid: ['鸡汤'],
+        updatedAt: 1,
+      },
+    })
+    const contextBlock = buildWriterAIContextBlock({
+      projectId: 'project-1',
+      currentDocument: packet.currentDocument,
+      projectBrief: packet.projectBrief,
+      userPreference: packet.userPreference,
+    })
+
+    expect(packet.evidence.map((item) => item.source)).toContain('project_brief')
+    expect(packet.evidence.map((item) => item.source)).toContain('user_preference')
+    expect(contextBlock).toContain('作品 Brief：')
+    expect(contextBlock).toContain('作品定位：谨慎凡人在资源稀缺的修仙界求生')
+    expect(contextBlock).toContain('用户长期偏好：')
+    expect(contextBlock).toContain('偏好题材：凡人流修仙')
+  })
 })

@@ -196,6 +196,7 @@ import {
   ensureProjectBaseSkeleton,
   sortProjectsByRecent,
 } from '@/modules/writer/services/workbenchProject.service'
+import { saveWriterProjectBrief } from '@/modules/writer/services/writerProjectBrief.service'
 import type { WorkbenchRecentProjectCard } from '@/modules/writer/types/workbench'
 
 const router = useRouter()
@@ -274,6 +275,11 @@ async function handleCreateProject(payload: { title: string; summary: string }) 
     createDialogVisible.value = false
     await refreshWorkbench()
     const projectId = createdProject?.id || createdProject?.projectId || ''
+    if (projectId) {
+      await saveWriterProjectBrief(projectId, {
+        premise: payload.summary || payload.title,
+      })
+    }
     const { chapterId } = await ensureProjectBaseSkeleton(projectId)
     await openCreatedProject(createdProject, chapterId ? { chapterId } : undefined)
   } catch (error) {

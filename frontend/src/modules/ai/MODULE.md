@@ -31,7 +31,8 @@
 - writer 侧主链路（聊天、分析、单章编辑 diff）必须优先走 `requestWriterAI(plan)`；`continueWriting / rewriteText / summarizeText / proofreadText` 只作为 facade 内部或兼容工具入口使用，组件不直接拼 provider 请求策略、超时或直连地址。
 - `requestWriterAI(plan)` 只返回候选结果或计划结果；单章节正文修改仍必须交给 writer 编辑器 diff owner 挂载，多章节/新章节计划不得在 AI API 层静默写入。
 - `requestWriterAI(plan)` 可携带 `intent` 与 `history`；`intent` 只用于选择续写/扩写/改写/总结/审校的生成路径，`history` 只用于普通聊天，不允许把当前发送内容重复写入历史。
-- `requestWriterAI(plan)` 是 writer 极简 AI agent 的唯一执行入口；`workflow / skillId / toolHintIds` 只用于 prompt orchestration，不代表新增 LLM agent runtime、第二套 AI store 或组件级 provider 策略。
+- `requestWriterAI(plan)` 是 writer 极简 AI agent 的唯一执行入口；`workflow / skillId / toolHintIds` 与阶段内置 skill 只用于 prompt orchestration，不代表新增 LLM agent runtime、第二套 AI store 或组件级 provider 策略。
+- `requestWriterAI(plan)` 可以消费 `WriterAIContextPacket` 中的作品 Brief 与用户长期偏好摘要；AI 模块只格式化这些摘要，不拥有项目定位、用户偏好或初始化流程的持久化真相。
 - 分析类请求（总结、审校、风控）也必须通过 `contextPrompt` 接收当前章节、场景舞台、资产与工作流摘要；provider 提示词必须声明这些上下文只供判断叙事语境，不作为待摘要/待审校正文。
 - 用户 API 模式当前以 OpenAI 兼容接口为准，最小配置为 `服务地址 + 接口路径 + 模型`
 - 用户 API Provider 可通过预设快速填入常见 baseURL / endpoint / model，但预设只服务设置页体验，不改变请求 facade owner；模型必须继续允许手动输入。

@@ -5,6 +5,8 @@ import { useWriterAISummaryContext } from '../useWriterAISummaryContext'
 const loadCreativeWorkflow = vi.fn()
 const buildCreativeWorkflowSnapshot = vi.fn()
 const buildCreativeWorkflowSummaryLines = vi.fn()
+const loadWriterProjectBrief = vi.fn()
+const loadWriterUserPreferenceMemory = vi.fn()
 const currentWriterAssetSummaryItemsRef = ref<Array<{ label: string; count: number }>>([])
 const assetRefStateRef = ref({
   chapterRefs: {},
@@ -24,11 +26,21 @@ vi.mock('@/modules/writer/services/creativeWorkflow.service', () => ({
   buildCreativeWorkflowSummaryLines: (...args: unknown[]) => buildCreativeWorkflowSummaryLines(...args),
 }))
 
+vi.mock('@/modules/writer/services/writerProjectBrief.service', () => ({
+  loadWriterProjectBrief: (...args: unknown[]) => loadWriterProjectBrief(...args),
+}))
+
+vi.mock('@/modules/writer/services/writerUserPreferenceMemory.service', () => ({
+  loadWriterUserPreferenceMemory: (...args: unknown[]) => loadWriterUserPreferenceMemory(...args),
+}))
+
 describe('useWriterAISummaryContext', () => {
   beforeEach(() => {
     loadCreativeWorkflow.mockReset()
     buildCreativeWorkflowSnapshot.mockReset()
     buildCreativeWorkflowSummaryLines.mockReset()
+    loadWriterProjectBrief.mockReset()
+    loadWriterUserPreferenceMemory.mockReset()
     currentWriterAssetSummaryItemsRef.value = []
     assetRefStateRef.value = {
       chapterRefs: {},
@@ -46,6 +58,22 @@ describe('useWriterAISummaryContext', () => {
       '目标读者：男频都市',
       '核心承诺：打脸与反转',
     ])
+    loadWriterProjectBrief.mockResolvedValue({
+      projectId: 'project-1',
+      premise: '都市逆袭',
+      readerPromise: [],
+      styleGuide: [],
+      worldRules: [],
+      constraints: [],
+      avoid: [],
+      updatedAt: 1,
+    })
+    loadWriterUserPreferenceMemory.mockResolvedValue({
+      preferredGenres: ['都市'],
+      stylePreference: [],
+      avoid: [],
+      updatedAt: 1,
+    })
   })
 
   it('merges creative workflow summary with current chapter asset summary', async () => {
@@ -69,6 +97,8 @@ describe('useWriterAISummaryContext', () => {
     await nextTick()
 
     expect(loadCreativeWorkflow).toHaveBeenCalledWith('project-1')
+    expect(loadWriterProjectBrief).toHaveBeenCalledWith('project-1')
+    expect(loadWriterUserPreferenceMemory).toHaveBeenCalled()
     expect(creativeWorkflowSnapshot.value).toEqual({ projectId: 'project-1' })
     expect(aiSummaryContextLines.value).toEqual([
       '题材模板：都市逆袭',

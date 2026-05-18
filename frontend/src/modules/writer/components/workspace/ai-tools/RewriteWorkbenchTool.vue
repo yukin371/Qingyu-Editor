@@ -111,6 +111,8 @@ import {
   listWriterAIWritingSkills,
   type WriterAIWritingSkillId,
 } from '@/modules/writer/config/writerAIPromptPresets'
+import type { WriterProjectBrief } from '@/modules/writer/services/writerProjectBrief.service'
+import type { WriterUserPreferenceMemory } from '@/modules/writer/services/writerUserPreferenceMemory.service'
 import type {
   WriterAIActionTrigger,
   WriterWorkflowContext,
@@ -134,6 +136,8 @@ const props = defineProps<{
   aiSummaryContextText?: string
   aiAssetSummaries?: WriterAIAssetSummary[]
   aiSceneStageSummary?: WriterAISceneStageSummary
+  writerProjectBrief?: WriterProjectBrief | null
+  writerUserPreference?: WriterUserPreferenceMemory | null
 }>()
 
 const emit = defineEmits<{
@@ -239,6 +243,8 @@ async function handleRun() {
       aiSummaryContextText: props.aiSummaryContextText,
       assets: props.aiAssetSummaries,
       sceneStage: props.aiSceneStageSummary,
+      projectBrief: props.writerProjectBrief,
+      userPreference: props.writerUserPreference,
     })
     const result = await rewriteWithWorkbench({
       projectId: props.projectId,

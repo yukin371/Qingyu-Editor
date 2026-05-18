@@ -5,6 +5,14 @@ import type {
   WriterAIToolHintId,
   WriterAIWritingSkillId,
 } from '@/modules/writer/config/writerAIPromptPresets'
+import {
+  buildWriterProjectBriefSummaryLines,
+  type WriterProjectBrief,
+} from '@/modules/writer/services/writerProjectBrief.service'
+import {
+  buildWriterUserPreferenceSummaryLines,
+  type WriterUserPreferenceMemory,
+} from '@/modules/writer/services/writerUserPreferenceMemory.service'
 
 export type WriterAIRoute =
   | 'chat'
@@ -79,6 +87,8 @@ export interface WriterAIContextEvidence {
     | 'workflow'
     | 'chapter_task'
     | 'scene_stage'
+    | 'project_brief'
+    | 'user_preference'
 }
 
 export interface WriterChapterTaskCard {
@@ -98,6 +108,8 @@ export interface WriterAIContextPacket {
   selection?: WriterSelectionContext
   sceneStage?: WriterAISceneStageSummary
   chapterTask?: WriterChapterTaskCard
+  projectBrief?: WriterProjectBrief
+  userPreference?: WriterUserPreferenceMemory
   assets: WriterAIAssetSummary[]
   workflowSummary: string[]
   evidence: WriterAIContextEvidence[]
@@ -132,6 +144,8 @@ export interface WriterAIContextOptions {
   assets?: WriterAIAssetSummary[] | null
   sceneStage?: WriterAISceneStageSummary | null
   chapterTask?: WriterChapterTaskCard | null
+  projectBrief?: WriterProjectBrief | null
+  userPreference?: WriterUserPreferenceMemory | null
   workflowContext?: WriterWorkflowContext | null
   aiSummaryContextText?: string | null | undefined
   maxContextChars?: number
@@ -327,6 +341,26 @@ function buildContextEvidence(
     })
   }
 
+  const projectBriefLines = buildWriterProjectBriefSummaryLines(options.projectBrief)
+  if (projectBriefLines.length > 0) {
+    evidence.push({
+      id: `project-brief:${options.projectBrief?.projectId || 'current'}`,
+      label: '作品 Brief',
+      detail: projectBriefLines.slice(0, 2).join('；'),
+      source: 'project_brief',
+    })
+  }
+
+  const userPreferenceLines = buildWriterUserPreferenceSummaryLines(options.userPreference)
+  if (userPreferenceLines.length > 0) {
+    evidence.push({
+      id: 'user-preference',
+      label: '用户写作偏好',
+      detail: userPreferenceLines.slice(0, 2).join('；'),
+      source: 'user_preference',
+    })
+  }
+
   return evidence
 }
 
@@ -356,6 +390,8 @@ export function buildWriterAIContextPacket(options: WriterAIContextOptions): Wri
     selection: options.selection || undefined,
     sceneStage: hasSceneStage(options.sceneStage) ? options.sceneStage : undefined,
     chapterTask,
+    projectBrief: options.projectBrief || undefined,
+    userPreference: options.userPreference || undefined,
     assets: (options.assets || []).slice(0, 24),
     workflowSummary,
     evidence: buildContextEvidence({ ...options, chapterTask }, workflowSummary),
@@ -413,6 +449,18 @@ export function formatWriterAIContextPacket(packet: WriterAIContextPacket): stri
   if (sceneStageLines.length > 0) {
     lines.push('当前场景舞台：')
     lines.push(...sceneStageLines)
+  }
+
+  const projectBriefLines = buildWriterProjectBriefSummaryLines(packet.projectBrief)
+  if (projectBriefLines.length > 0) {
+    lines.push('作品 Brief：')
+    lines.push(...projectBriefLines.slice(0, 10).map((line) => `- ${line}`))
+  }
+
+  const userPreferenceLines = buildWriterUserPreferenceSummaryLines(packet.userPreference)
+  if (userPreferenceLines.length > 0) {
+    lines.push('用户长期偏好：')
+    lines.push(...userPreferenceLines.slice(0, 6).map((line) => `- ${line}`))
   }
 
   if (packet.workflowSummary.length > 0) {

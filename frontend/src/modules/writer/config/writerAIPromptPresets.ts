@@ -2,6 +2,13 @@ import type { WriterAIPlan, WriterAIRoute } from '../utils/writerAIContext'
 
 export type WriterAIPromptGroup = 'write' | 'review' | 'organize'
 export type WriterAIMinimalWorkflow = 'chat' | 'write' | 'review' | 'organize' | 'explain_tool'
+export type WriterCreationStage =
+  | 'initialization'
+  | 'foundation'
+  | 'outline'
+  | 'draft'
+  | 'review'
+  | 'organize'
 export type WriterAIWritingSkillId =
   | 'commercial_loop'
   | 'literary_texture'
@@ -49,6 +56,99 @@ export interface WriterAIToolHintPreset {
   whenToUse: string
   contextHint: string
 }
+
+export interface WriterInternalSkill {
+  id: string
+  stage: WriterCreationStage
+  label: string
+  hiddenPrompt: string
+  inputKeys: string[]
+  outputSchema: string
+  guardrails: string[]
+}
+
+export const WRITER_INTERNAL_SKILLS = {
+  project_positioning: {
+    stage: 'initialization',
+    label: '作品定位',
+    hiddenPrompt: '提炼作品一句话、题材、目标读者、核心卖点、商业风险和创作难点。',
+    inputKeys: ['灵感', '题材模板', '目标体验', '参考作品', '否定项'],
+    outputSchema: '作品定位卡：premise、targetAudience、readerPromise、risk、constraints。',
+    guardrails: ['不生成正文', '不把未确认候选写成事实', '给出 2-3 套方向而不是唯一答案'],
+  },
+  genre_contract: {
+    stage: 'initialization',
+    label: '类型合约',
+    hiddenPrompt: '根据题材模板整理读者期待、章节循环、风险提醒和质量约束。',
+    inputKeys: ['模板 id', '题材偏好', '读者体验'],
+    outputSchema: '类型合约：readerExpectation、chapterLoop、qualityConstraints、avoid。',
+    guardrails: ['模板用于降低风险，不强迫套路化', '不替代作者选择'],
+  },
+  audience_promise: {
+    stage: 'initialization',
+    label: '读者承诺',
+    hiddenPrompt: '明确读者为什么追读，以及作品要稳定交付的情绪价值。',
+    inputKeys: ['目标读者', '情绪价值', '追读理由'],
+    outputSchema: '读者承诺：readerPromise、payoffFrequency、hookExpectation。',
+    guardrails: ['只约束体验，不替代具体剧情'],
+  },
+  character_foundation: {
+    stage: 'foundation',
+    label: '人物地基',
+    hiddenPrompt: '构建主角欲望、恐惧、底色、矛盾、行动逻辑和成长路径。',
+    inputKeys: ['主角身份', '欲望', '恐惧', '弱点', '世界压力'],
+    outputSchema: '主角卡：protagonistCore、innerConflict、actionLogic、arcType。',
+    guardrails: ['人物不能只为剧情服务', '关键选择必须来自内在驱动'],
+  },
+  world_rules: {
+    stage: 'foundation',
+    label: '世界规则',
+    hiddenPrompt: '建立能制造冲突的世界规则、资源、阶层、禁忌和代价。',
+    inputKeys: ['世界观片段', '题材模板', '资源压力'],
+    outputSchema: '世界规则卡：rules、scarcity、cost、taboo、conflictSource。',
+    guardrails: ['规则必须能限制人物', '不做纯装饰设定'],
+  },
+  outline_architect: {
+    stage: 'outline',
+    label: '大纲架构',
+    hiddenPrompt: '把作品定位转成卷级目标、章节功能和结构草案。',
+    inputKeys: ['ProjectBrief', '模板', '主角', '世界规则'],
+    outputSchema: '蓝图卡：volumeGoal、goldenChapters、firstTenDirections。',
+    guardrails: ['不生成正文', '不创建不可回退的章节事实'],
+  },
+  golden_three_chapters: {
+    stage: 'outline',
+    label: '黄金三章',
+    hiddenPrompt: '设计前三章的吸引、加压、兑现和钩子。',
+    inputKeys: ['读者承诺', '主角开局', '第一卷压力'],
+    outputSchema: '黄金三章：title、goal、hook、payoff。',
+    guardrails: ['只做骨架和大纲', '不把摘要复制进正文'],
+  },
+  scene_writer: {
+    stage: 'draft',
+    label: '正文写作',
+    hiddenPrompt: '根据当前章节、节拍、大纲摘要和资产摘要生成正文候选。',
+    inputKeys: ['当前章节', '当前节拍', '资产摘要', '大纲摘要'],
+    outputSchema: '正文候选文本。',
+    guardrails: ['必须走 inline diff', '不静默写入', '不批量改多章'],
+  },
+  chapter_review: {
+    stage: 'review',
+    label: '章节回审',
+    hiddenPrompt: '检查章节目标、爽点、钩子、人物主动性和读者体验。',
+    inputKeys: ['章节正文', '章节任务卡', 'ProjectBrief'],
+    outputSchema: '回审结果：必须修、建议修、可不修、下一章风险。',
+    guardrails: ['不替作者审美', '不直接改正文'],
+  },
+  asset_extractor: {
+    stage: 'organize',
+    label: '资产整理',
+    hiddenPrompt: '从正文 @资产、资产简表和章节文本中整理候选资产变化。',
+    inputKeys: ['章节正文', '@资产引用', '资产简表'],
+    outputSchema: '资产候选：type、name、summary、reason、requiresConfirmation。',
+    guardrails: ['全局资产必须确认后创建', '局部资产只由系统自动检出'],
+  },
+} satisfies Record<string, Omit<WriterInternalSkill, 'id'>>
 
 export const WRITER_AI_AGENT_WORKFLOWS = {
   chat: {
@@ -290,6 +390,43 @@ export function getWriterAIToolHintText(id: string | null | undefined): string {
   const hint = getWriterAIToolHint(id)
   if (!hint) return ''
   return `${hint.label}：${hint.canHelp} 使用时机：${hint.whenToUse} 上下文：${hint.contextHint}`
+}
+
+export function listWriterInternalSkills(stage?: WriterCreationStage): WriterInternalSkill[] {
+  return Object.entries(WRITER_INTERNAL_SKILLS)
+    .map(([id, skill]) => ({
+      id,
+      ...skill,
+    }))
+    .filter((skill) => !stage || skill.stage === stage)
+}
+
+export function getWriterInternalSkill(id: string | null | undefined): WriterInternalSkill | null {
+  const skill =
+    id && Object.prototype.hasOwnProperty.call(WRITER_INTERNAL_SKILLS, id)
+      ? WRITER_INTERNAL_SKILLS[id as keyof typeof WRITER_INTERNAL_SKILLS]
+      : null
+  return skill ? { id: id as string, ...skill } : null
+}
+
+export function buildWriterInternalSkillPrompt(ids: string[]): string {
+  const skills = ids
+    .map((id) => getWriterInternalSkill(id))
+    .filter((skill): skill is WriterInternalSkill => Boolean(skill))
+
+  if (skills.length === 0) return ''
+
+  return [
+    '内置写作 Skill：',
+    ...skills.map((skill) =>
+      [
+        `- ${skill.label}（${skill.stage}）：${skill.hiddenPrompt}`,
+        `  输入：${skill.inputKeys.join(' / ')}`,
+        `  输出：${skill.outputSchema}`,
+        `  约束：${skill.guardrails.join('；')}`,
+      ].join('\n'),
+    ),
+  ].join('\n')
 }
 
 export function inferWriterAIWorkflow(plan: Pick<WriterAIPlan, 'route' | 'mutationMode' | 'intent'>): WriterAIMinimalWorkflow {

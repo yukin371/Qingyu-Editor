@@ -208,6 +208,8 @@ import {
 } from '@/modules/writer/utils/writerAIContext'
 import { resolveWriterAIErrorState } from '@/modules/writer/utils/writerAIError'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
+import type { WriterProjectBrief } from '@/modules/writer/services/writerProjectBrief.service'
+import type { WriterUserPreferenceMemory } from '@/modules/writer/services/writerUserPreferenceMemory.service'
 
 const props = defineProps<{
   projectId: string
@@ -220,6 +222,8 @@ const props = defineProps<{
   aiSummaryContextText?: string
   aiAssetSummaries?: WriterAIAssetSummary[]
   aiSceneStageSummary?: WriterAISceneStageSummary
+  writerProjectBrief?: WriterProjectBrief | null
+  writerUserPreference?: WriterUserPreferenceMemory | null
 }>()
 
 const emit = defineEmits<{
@@ -348,6 +352,21 @@ async function handleSelectionSummary() {
       projectId: props.projectId || undefined,
       chapterId: props.chapterId || undefined,
       summaryType: 'detailed',
+      assets: props.aiAssetSummaries,
+      sceneStage: props.aiSceneStageSummary,
+      workflowContextPrompt: buildWriterAIContextBlock({
+        projectId: props.projectId,
+        currentDocument: {
+          documentId: props.chapterId,
+          documentTitle: props.chapterTitle,
+          sourceText: content.value,
+        },
+        aiSummaryContextText: props.aiSummaryContextText,
+        assets: props.aiAssetSummaries,
+        sceneStage: props.aiSceneStageSummary,
+        projectBrief: props.writerProjectBrief,
+        userPreference: props.writerUserPreference,
+      }),
     })
     summary.value = result.summary
     keyPoints.value = result.keyPoints
@@ -383,6 +402,21 @@ async function handleChapterSummary() {
           projectId: props.projectId || undefined,
           chapterId: props.chapterId || undefined,
           summaryType: 'detailed',
+          assets: props.aiAssetSummaries,
+          sceneStage: props.aiSceneStageSummary,
+          workflowContextPrompt: buildWriterAIContextBlock({
+            projectId: props.projectId,
+            currentDocument: {
+              documentId: props.chapterId,
+              documentTitle: props.chapterTitle,
+              sourceText: props.seedText,
+            },
+            aiSummaryContextText: props.aiSummaryContextText,
+            assets: props.aiAssetSummaries,
+            sceneStage: props.aiSceneStageSummary,
+            projectBrief: props.writerProjectBrief,
+            userPreference: props.writerUserPreference,
+          }),
         })
         summary.value = fallbackResult.summary
         keyPoints.value = fallbackResult.keyPoints
@@ -424,6 +458,8 @@ async function handleGenerateStructure(mode: WriterStructurePlanMode) {
         aiSummaryContextText: props.aiSummaryContextText,
         assets: props.aiAssetSummaries,
         sceneStage: props.aiSceneStageSummary,
+        projectBrief: props.writerProjectBrief,
+        userPreference: props.writerUserPreference,
       }),
     })
     structurePlanSummary.value = result.summary

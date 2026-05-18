@@ -117,6 +117,8 @@ import type {
   WriterAISceneStageSummary,
 } from '@/modules/writer/utils/writerAIContext'
 import { buildWriterAIContextBlock } from '@/modules/writer/utils/writerAIContext'
+import type { WriterProjectBrief } from '@/modules/writer/services/writerProjectBrief.service'
+import type { WriterUserPreferenceMemory } from '@/modules/writer/services/writerUserPreferenceMemory.service'
 
 const props = defineProps<{
   projectId: string
@@ -128,6 +130,8 @@ const props = defineProps<{
   aiSummaryContextText?: string
   aiAssetSummaries?: WriterAIAssetSummary[]
   aiSceneStageSummary?: WriterAISceneStageSummary
+  writerProjectBrief?: WriterProjectBrief | null
+  writerUserPreference?: WriterUserPreferenceMemory | null
 }>()
 
 const emit = defineEmits<{
@@ -152,6 +156,8 @@ const reviewContextPrompt = computed(() =>
     assets: props.aiAssetSummaries || [],
     aiSummaryContextText: props.aiSummaryContextText,
     sceneStage: props.aiSceneStageSummary,
+    projectBrief: props.writerProjectBrief,
+    userPreference: props.writerUserPreference,
   }),
 )
 

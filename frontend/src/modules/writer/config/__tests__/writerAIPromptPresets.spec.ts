@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildWriterAIAgentPrompt,
+  buildWriterInternalSkillPrompt,
   getWriterAIToolHintText,
   getWriterAIPromptPreset,
   getWriterAIPromptText,
   inferWriterAIWorkflow,
   inferWriterAIWritingSkillId,
+  listWriterInternalSkills,
   listWriterAIAgentWorkflows,
   listWriterAIWritingSkills,
   listWriterAIPromptPresets,
@@ -78,5 +80,23 @@ describe('writerAIPromptPresets', () => {
     expect(prompt).toContain('当前场景')
     expect(prompt).toContain('设定资产')
     expect(getWriterAIToolHintText('timeline')).toContain('时间线')
+  })
+
+  it('keeps internal writing skills stage-based instead of exposing them as UI presets', () => {
+    const initializationSkills = listWriterInternalSkills('initialization')
+    const prompt = buildWriterInternalSkillPrompt([
+      'project_positioning',
+      'genre_contract',
+      'golden_three_chapters',
+    ])
+
+    expect(initializationSkills.map((skill) => skill.id)).toEqual([
+      'project_positioning',
+      'genre_contract',
+      'audience_promise',
+    ])
+    expect(prompt).toContain('内置写作 Skill：')
+    expect(prompt).toContain('作品定位')
+    expect(prompt).toContain('不生成正文')
   })
 })

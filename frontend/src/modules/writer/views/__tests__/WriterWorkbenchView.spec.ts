@@ -11,6 +11,7 @@ const {
   openProjectMock,
   projectStoreMock,
   routerPushMock,
+  saveWriterProjectBriefMock,
 } = vi.hoisted(() => ({
   buildWorkbenchRecentProjectCardsMock: vi.fn(),
   ensureProjectBaseSkeletonMock: vi.fn(),
@@ -30,6 +31,7 @@ const {
     create: vi.fn(),
   },
   routerPushMock: vi.fn(),
+  saveWriterProjectBriefMock: vi.fn(),
 }))
 
 vi.mock('vue-router', () => ({
@@ -55,6 +57,10 @@ vi.mock('@/modules/writer/services/workbenchProject.service', () => ({
   buildWorkbenchRecentProjectCards: buildWorkbenchRecentProjectCardsMock,
   ensureProjectBaseSkeleton: ensureProjectBaseSkeletonMock,
   sortProjectsByRecent: (projects: unknown[]) => projects,
+}))
+
+vi.mock('@/modules/writer/services/writerProjectBrief.service', () => ({
+  saveWriterProjectBrief: saveWriterProjectBriefMock,
 }))
 
 vi.mock('@/design-system/services', () => ({
@@ -119,6 +125,8 @@ describe('WriterWorkbenchView', () => {
     openCreatedProjectMock.mockReset()
     openProjectMock.mockReset()
     routerPushMock.mockReset()
+    saveWriterProjectBriefMock.mockReset()
+    saveWriterProjectBriefMock.mockResolvedValue(undefined)
   })
 
   it('opens the in-project inspiration panel from the inspiration stage', async () => {
@@ -151,5 +159,22 @@ describe('WriterWorkbenchView', () => {
     expect(firstStage.text()).toContain('灵感原点')
     expect(firstStage.text()).toContain('题材坐标')
     expect(firstStage.text()).toContain('读者承诺')
+  })
+
+  it('persists a project brief when creating a blank project', async () => {
+    projectStoreMock.create.mockResolvedValue({ id: 'project-new' })
+    ensureProjectBaseSkeletonMock.mockResolvedValue({ chapterId: 'chapter-1' })
+    const wrapper = await createWrapper()
+
+    wrapper.findComponent({ name: 'ProjectCreateDialog' }).vm.$emit('submit', {
+      title: '夜航人手册',
+      summary: '一个关于夜航员寻找失落航线的故事。',
+    })
+    await flushPromises()
+
+    expect(saveWriterProjectBriefMock).toHaveBeenCalledWith('project-new', {
+      premise: '一个关于夜航员寻找失落航线的故事。',
+    })
+    expect(openCreatedProjectMock).toHaveBeenCalledWith({ id: 'project-new' }, { chapterId: 'chapter-1' })
   })
 })

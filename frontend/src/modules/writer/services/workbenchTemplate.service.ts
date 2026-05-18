@@ -5,6 +5,7 @@ import {
   saveCreativeWorkflow,
   type CreativeWorkflowTemplateId,
 } from './creativeWorkflow.service'
+import { saveWriterProjectBrief } from './writerProjectBrief.service'
 import {
   getTemplateCatalogFallback,
   listTemplateCatalogFallbacks,
@@ -164,6 +165,25 @@ export async function createProjectFromTemplate(
   }
 
   await saveCreativeWorkflow(projectId, { templateId: detail.id })
+  await saveWriterProjectBrief(projectId, {
+    premise: input.summary || detail.tagline,
+    genreTemplateId: detail.id,
+    targetAudience: detail.seed.projectCategory,
+    readerPromise: detail.payoffFocus,
+    styleGuide: detail.commercialMechanism?.qualityConstraints || [],
+    protagonistCore: detail.commercialMechanism?.protagonistArchetype,
+    worldRules: detail.previewTabs.settings.flatMap((section) => section.bullets).slice(0, 6),
+    constraints: detail.commercialMechanism?.qualityConstraints || [],
+    commercialLoop: detail.commercialMechanism
+      ? {
+          pressure: detail.commercialMechanism.worldPressure,
+          expectation: detail.commercialMechanism.readerPayoff.join(' / '),
+          payoff: detail.commercialMechanism.readerPayoff[0] || '',
+          upgrade: detail.commercialMechanism.chapterLoop[0] || '',
+          hook: detail.tagline,
+        }
+      : undefined,
+  })
 
   const volume = await createDocument(projectId, {
     projectId,

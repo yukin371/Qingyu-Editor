@@ -4,10 +4,12 @@ const {
   createProjectMock,
   createDocumentMock,
   saveCreativeWorkflowMock,
+  saveWriterProjectBriefMock,
 } = vi.hoisted(() => ({
   createProjectMock: vi.fn(),
   createDocumentMock: vi.fn(),
   saveCreativeWorkflowMock: vi.fn(),
+  saveWriterProjectBriefMock: vi.fn(),
 }))
 
 vi.mock('@/modules/writer/api/project', () => ({
@@ -30,6 +32,10 @@ vi.mock('../creativeWorkflow.service', async () => {
   }
 })
 
+vi.mock('../writerProjectBrief.service', () => ({
+  saveWriterProjectBrief: saveWriterProjectBriefMock,
+}))
+
 import {
   createProjectFromTemplate,
   getWorkbenchTemplateDetail,
@@ -42,6 +48,8 @@ describe('workbenchTemplate.service', () => {
     createDocumentMock.mockReset()
     saveCreativeWorkflowMock.mockReset()
     saveCreativeWorkflowMock.mockResolvedValue(undefined)
+    saveWriterProjectBriefMock.mockReset()
+    saveWriterProjectBriefMock.mockResolvedValue(undefined)
   })
 
   it('模板详情应提供大纲/角色/设定三类结构化预览', async () => {
@@ -86,6 +94,14 @@ describe('workbenchTemplate.service', () => {
       }),
     )
     expect(saveCreativeWorkflowMock).toHaveBeenCalledWith('project-77', { templateId: 'comeback' })
+    expect(saveWriterProjectBriefMock).toHaveBeenCalledWith(
+      'project-77',
+      expect.objectContaining({
+        premise: '先抑后扬的开局验证',
+        genreTemplateId: 'comeback',
+        targetAudience: '赘婿',
+      }),
+    )
     expect(createDocumentMock).toHaveBeenCalledTimes(4)
     expect(createDocumentMock).not.toHaveBeenCalledWith(
       expect.any(String),

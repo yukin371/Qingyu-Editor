@@ -13,6 +13,14 @@ import {
   type CreativeWorkflowSnapshot,
 } from '@/modules/writer/services/creativeWorkflow.service'
 import {
+  loadWriterProjectBrief,
+  type WriterProjectBrief,
+} from '@/modules/writer/services/writerProjectBrief.service'
+import {
+  loadWriterUserPreferenceMemory,
+  type WriterUserPreferenceMemory,
+} from '@/modules/writer/services/writerUserPreferenceMemory.service'
+import {
   mergeWriterAssetRefs,
   type WriterAssetRef,
 } from '@/modules/writer/utils/writerAssetRefs'
@@ -26,6 +34,8 @@ export function useWriterAISummaryContext(options: {
   sceneStage?: MaybeComputed<WriterSceneStageState | null | undefined>
 }) {
   const creativeWorkflowSnapshot = ref<CreativeWorkflowSnapshot | null>(null)
+  const writerProjectBrief = ref<WriterProjectBrief | null>(null)
+  const writerUserPreference = ref<WriterUserPreferenceMemory | null>(null)
   const loading = ref(false)
 
   const { assetRefState, currentWriterAssetSummaryItems } = useWriterAssetSummary({
@@ -39,13 +49,21 @@ export function useWriterAISummaryContext(options: {
     async (projectId) => {
       if (!projectId) {
         creativeWorkflowSnapshot.value = null
+        writerProjectBrief.value = null
+        writerUserPreference.value = null
         return
       }
 
       loading.value = true
       try {
-        const workflow = await loadCreativeWorkflow(projectId)
+        const [workflow, projectBrief, userPreference] = await Promise.all([
+          loadCreativeWorkflow(projectId),
+          loadWriterProjectBrief(projectId),
+          loadWriterUserPreferenceMemory(),
+        ])
         creativeWorkflowSnapshot.value = buildCreativeWorkflowSnapshot(workflow)
+        writerProjectBrief.value = projectBrief
+        writerUserPreference.value = userPreference
       } finally {
         loading.value = false
       }
@@ -150,6 +168,8 @@ export function useWriterAISummaryContext(options: {
   return {
     loading,
     creativeWorkflowSnapshot,
+    writerProjectBrief,
+    writerUserPreference,
     currentWriterAssetSummaryItems,
     aiAssetSummaries,
     aiSceneStageSummary,

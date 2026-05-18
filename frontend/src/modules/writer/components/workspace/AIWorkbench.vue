@@ -43,6 +43,8 @@
         :ai-summary-context-text="aiSummaryContextText"
         :ai-asset-summaries="aiAssetSummaries"
         :ai-scene-stage-summary="aiSceneStageSummary"
+        :writer-project-brief="writerProjectBrief"
+        :writer-user-preference="writerUserPreference"
         @apply="handleApplyPayload"
       />
 
@@ -58,6 +60,8 @@
         :ai-summary-context-text="aiSummaryContextText"
         :ai-asset-summaries="aiAssetSummaries"
         :ai-scene-stage-summary="aiSceneStageSummary"
+        :writer-project-brief="writerProjectBrief"
+        :writer-user-preference="writerUserPreference"
         @result-candidate="handleResultCandidate"
         @apply-structure-plan="(payload) => emit('applyStructurePlan', payload)"
       />
@@ -73,6 +77,8 @@
         :ai-summary-context-text="aiSummaryContextText"
         :ai-asset-summaries="aiAssetSummaries"
         :ai-scene-stage-summary="aiSceneStageSummary"
+        :writer-project-brief="writerProjectBrief"
+        :writer-user-preference="writerUserPreference"
         @result-candidate="handleResultCandidate"
       />
 
@@ -86,6 +92,8 @@
         :ai-summary-context-text="aiSummaryContextText"
         :ai-asset-summaries="aiAssetSummaries"
         :ai-scene-stage-summary="aiSceneStageSummary"
+        :writer-project-brief="writerProjectBrief"
+        :writer-user-preference="writerUserPreference"
         :revision-seed="revisionSeed"
         @apply-generated-text="handleApplyPayload"
         @result-candidate="handleResultCandidate"
@@ -107,6 +115,8 @@ import type {
   WriterAIAssetSummary,
   WriterAISceneStageSummary,
 } from '@/modules/writer/utils/writerAIContext'
+import type { WriterProjectBrief } from '@/modules/writer/services/writerProjectBrief.service'
+import type { WriterUserPreferenceMemory } from '@/modules/writer/services/writerUserPreferenceMemory.service'
 import type {
   WriterAIActionTrigger,
   WriterAIApplyFeedback,
@@ -131,6 +141,8 @@ const props = withDefaults(defineProps<{
   aiSummaryContextText?: string
   aiAssetSummaries?: WriterAIAssetSummary[]
   aiSceneStageSummary?: WriterAISceneStageSummary
+  writerProjectBrief?: WriterProjectBrief | null
+  writerUserPreference?: WriterUserPreferenceMemory | null
   draftProposals: WriterDraftProposal[]
 }>(), {
   chapters: () => [],

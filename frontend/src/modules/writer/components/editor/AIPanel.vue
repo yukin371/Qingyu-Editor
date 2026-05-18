@@ -132,6 +132,8 @@ import {
   type WriterAIContextOptions,
   type WriterAISceneStageSummary,
 } from '@/modules/writer/utils/writerAIContext'
+import type { WriterProjectBrief } from '@/modules/writer/services/writerProjectBrief.service'
+import type { WriterUserPreferenceMemory } from '@/modules/writer/services/writerUserPreferenceMemory.service'
 import type { WriterContextEvidenceItem } from './ai/types'
 
 // 子组件
@@ -163,6 +165,8 @@ interface Props {
   aiSummaryContextText?: string
   aiAssetSummaries?: WriterAIAssetSummary[]
   aiSceneStageSummary?: WriterAISceneStageSummary
+  writerProjectBrief?: WriterProjectBrief | null
+  writerUserPreference?: WriterUserPreferenceMemory | null
 }
 
 interface Emits {
@@ -926,6 +930,8 @@ function buildAIContextOptions(
     selection,
     assets: props.aiAssetSummaries,
     sceneStage: props.aiSceneStageSummary,
+    projectBrief: props.writerProjectBrief,
+    userPreference: props.writerUserPreference,
     workflowContext: effectiveWorkflowContext.value,
     aiSummaryContextText: props.aiSummaryContextText,
   }
