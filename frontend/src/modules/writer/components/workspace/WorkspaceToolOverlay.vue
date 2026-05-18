@@ -21,36 +21,19 @@
           class="tool-overlay__context"
           data-testid="tool-overlay-context"
         >
-          <span class="tool-overlay__context-label">当前上下文</span>
-          <div class="tool-overlay__context-chips">
-            <span v-if="effectiveChapterTitle" class="tool-overlay__context-chip is-neutral">
-              章节 {{ effectiveChapterTitle }}
-            </span>
+          <span class="tool-overlay__context-label">工具参考</span>
+          <div class="tool-overlay__context-summary" aria-label="当前工具可见上下文">
             <span
-              v-if="workflowContext?.scopeLabel"
-              class="tool-overlay__context-chip is-neutral is-scope"
+              v-for="part in contextSummaryParts"
+              :key="part"
+              class="tool-overlay__context-part"
             >
-              场景 {{ workflowContext.scopeLabel }}
-            </span>
-            <span
-              v-for="entity in activeEntityPreview.items"
-              :key="entity.key"
-              class="tool-overlay__context-chip"
-              :class="`is-${entity.type}`"
-            >
-              <span class="tool-overlay__context-chip-type">{{ entity.typeLabel }}</span>
-              <strong>{{ entity.name }}</strong>
-              <span v-if="entity.summary" class="tool-overlay__context-chip-summary">
-                {{ entity.summary }}
-              </span>
-            </span>
-            <span
-              v-if="activeEntityPreview.hiddenCount > 0"
-              class="tool-overlay__context-chip is-overflow"
-            >
-              +{{ activeEntityPreview.hiddenCount }}
+              {{ part }}
             </span>
           </div>
+          <button class="tool-overlay__context-ai" type="button" @click="handleSendContextToAI">
+            交给 AI
+          </button>
         </section>
 
         <!-- 主体区域：侧边栏 + 内容 -->
@@ -99,7 +82,8 @@ import { useToolOverlay, type ToolType } from '@/modules/writer/composables/useT
 import type { EncyclopediaCategory, GraphFocusTarget } from '@/modules/writer/composables/types'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 import {
-  buildActiveEntityPreview,
+  buildActiveEntityTypeSummary,
+  formatActiveEntitiesPrompt,
   type ActiveEntitySummary,
 } from '@/modules/writer/composables/useWorkflowContext'
 import type { WriterStructurePlanPayload, WriterWorkflowContext } from '@/modules/writer/types/workflow'
@@ -188,12 +172,28 @@ const relationsFocusedAsset = ref<GraphFocusTarget | null>(null)
 const effectiveChapterTitle = computed(
   () => props.chapterTitle || props.workflowContext?.chapterTitle || '',
 )
-const activeEntityPreview = computed(() => buildActiveEntityPreview(props.activeEntities))
+const activeEntityTypeSummary = computed(() => buildActiveEntityTypeSummary(props.activeEntities))
+const contextSummaryParts = computed(() => {
+  const parts: string[] = []
+  if (effectiveChapterTitle.value) {
+    parts.push(`章节：${effectiveChapterTitle.value}`)
+  }
+  if (props.workflowContext?.scopeLabel) {
+    parts.push(`场景：${props.workflowContext.scopeLabel}`)
+  }
+  if (activeEntityTypeSummary.value.total > 0) {
+    const entitySummary = activeEntityTypeSummary.value.items
+      .map((item) => `${item.typeLabel}${item.count}`)
+      .join(' / ')
+    parts.push(`设定：${entitySummary}`)
+  }
+  return parts
+})
 const hasWorkflowContextSummary = computed(() =>
   Boolean(
     effectiveChapterTitle.value ||
     props.workflowContext?.scopeLabel ||
-    activeEntityPreview.value.total,
+    activeEntityTypeSummary.value.total,
   ),
 )
 const currentToolExtraProps = computed(() =>
@@ -245,6 +245,23 @@ const handleGraphAssetFocus = (target: GraphFocusTarget) => {
 
 const handleGraphFocusConsumed = () => {
   relationsFocusedAsset.value = null
+}
+
+const handleSendContextToAI = () => {
+  const lines = [
+    `当前工具：${currentToolName.value}`,
+    effectiveChapterTitle.value ? `当前章节：${effectiveChapterTitle.value}` : '',
+    props.workflowContext?.scopeLabel ? `当前场景：${props.workflowContext.scopeLabel}` : '',
+    formatActiveEntitiesPrompt(props.activeEntities, 6),
+  ].filter(Boolean)
+
+  emit('trigger-ai-action', {
+    source: 'workspace_tool_overlay',
+    action: 'add_to_chat',
+    title: `${currentToolName.value}上下文`,
+    text: lines.join('\n'),
+    instructions: '基于当前章节、场景和设定摘要给出当前工具相关建议，只指出最值得处理的一项。',
+  })
 }
 
 watch(
@@ -317,103 +334,67 @@ watch(
 
   &__context {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 12px;
-    padding: 10px 20px;
+    min-height: 38px;
+    padding: 6px 20px;
     border-bottom: 1px solid var(--editor-border);
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--editor-layer-panel, rgba(15, 23, 42, 0.9)) 96%, transparent),
-        color-mix(in srgb, var(--editor-layer-soft, rgba(15, 23, 42, 0.82)) 94%, transparent)
-      );
+    background: var(--editor-bg-elevated);
   }
 
   &__context-label {
     flex-shrink: 0;
-    margin-top: 2px;
     font-size: 12px;
     font-weight: 700;
     color: var(--editor-text-secondary);
   }
 
-  &__context-chips {
+  &__context-summary {
     display: flex;
     flex: 1;
-    flex-wrap: wrap;
-    gap: 8px;
-    min-width: 0;
-  }
-
-  &__context-chip {
-    display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 10px;
     min-width: 0;
-    padding: 5px 10px;
-    border-radius: 999px;
-    border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.34)) 52%, transparent);
-    background: color-mix(in srgb, var(--editor-layer-panel, rgba(15, 23, 42, 0.88)) 90%, transparent);
-    color: var(--editor-text-primary);
-    font-size: 12px;
-    line-height: 1.2;
-
-    strong {
-      max-width: 180px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    &.is-neutral {
-      background: color-mix(in srgb, var(--editor-layer-soft, rgba(15, 23, 42, 0.78)) 90%, transparent);
-      color: var(--editor-text-secondary, rgba(226, 232, 240, 0.86));
-    }
-
-    &.is-scope {
-      border-color: color-mix(in srgb, var(--editor-accent, rgba(96, 165, 250, 0.32)) 36%, transparent);
-    }
-
-    &.is-character {
-      border-color: rgba(96, 165, 250, 0.28);
-      background: rgba(37, 99, 235, 0.16);
-    }
-
-    &.is-item {
-      border-color: rgba(245, 158, 11, 0.24);
-      background: rgba(180, 83, 9, 0.16);
-    }
-
-    &.is-location {
-      border-color: rgba(52, 211, 153, 0.24);
-      background: rgba(5, 150, 105, 0.16);
-    }
-
-    &.is-organization,
-    &.is-concept,
-    &.is-foreshadowing {
-      border-color: rgba(167, 139, 250, 0.24);
-      background: rgba(109, 40, 217, 0.14);
-    }
-
-    &.is-overflow {
-      background: color-mix(in srgb, var(--editor-layer-soft, rgba(15, 23, 42, 0.78)) 92%, transparent);
-      color: var(--editor-text-secondary, rgba(226, 232, 240, 0.84));
-    }
+    overflow: hidden;
   }
 
-  &__context-chip-type {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--editor-text-secondary);
-  }
-
-  &__context-chip-summary {
-    max-width: 180px;
+  &__context-part {
+    min-width: 0;
+    max-width: 32%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     color: var(--editor-text-secondary);
+    font-size: 12px;
+    line-height: 1.2;
+
+    &::before {
+      content: '';
+      display: inline-block;
+      width: 3px;
+      height: 3px;
+      margin: 0 7px 2px 0;
+      border-radius: 999px;
+      background: var(--editor-border-strong, var(--editor-border));
+    }
+  }
+
+  &__context-ai {
+    flex-shrink: 0;
+    border: 1px solid var(--editor-border);
+    border-radius: 999px;
+    padding: 4px 10px;
+    background: var(--editor-bg-surface);
+    color: var(--editor-text-secondary);
+    font-size: 12px;
+    line-height: 1.2;
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--editor-accent);
+      color: var(--editor-accent);
+      background: var(--editor-accent-soft);
+    }
   }
 
   &__content {
@@ -450,14 +431,16 @@ watch(
   .tool-overlay {
     &__context {
       flex-direction: column;
-      gap: 8px;
+      align-items: stretch;
+      gap: 6px;
     }
 
-    &__context-chip {
-      strong,
-      .tool-overlay__context-chip-summary {
-        max-width: 140px;
-      }
+    &__context-summary {
+      flex-wrap: wrap;
+    }
+
+    &__context-part {
+      max-width: 100%;
     }
   }
 }

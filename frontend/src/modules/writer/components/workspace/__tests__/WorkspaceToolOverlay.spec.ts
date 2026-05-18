@@ -88,15 +88,21 @@ describe('WorkspaceToolOverlay', () => {
     await settleAsyncToolView()
 
     const contextBar = wrapper.get('[data-testid="tool-overlay-context"]')
-    expect(contextBar.text()).toContain('当前上下文')
-    expect(contextBar.text()).toContain('章节 第一章')
-    expect(contextBar.text()).toContain('场景 第一幕 / 港口追踪')
-    expect(contextBar.text()).toContain('角色')
-    expect(contextBar.text()).toContain('林舟')
-    expect(contextBar.text()).toContain('地点')
-    expect(contextBar.text()).toContain('云港')
-    expect(contextBar.text()).toContain('物品')
-    expect(contextBar.text()).toContain('+1')
+    expect(contextBar.text()).toContain('工具参考')
+    expect(contextBar.text()).toContain('章节：第一章')
+    expect(contextBar.text()).toContain('场景：第一幕 / 港口追踪')
+    expect(contextBar.text()).toContain('设定：角色1 / 地点1 / 物品1 / 组织1 / 概念1')
+
+    await contextBar.get('button').trigger('click')
+
+    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0]).toMatchObject({
+      source: 'workspace_tool_overlay',
+      action: 'add_to_chat',
+      title: '时间线上下文',
+    })
+    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain('当前章节：第一章')
+    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain('当前场景：第一幕 / 港口追踪')
+    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain('角色：林舟')
   })
 
   it('应以结构舞台作为默认主辅助工具之外提供资产总览工具', async () => {
