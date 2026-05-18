@@ -164,6 +164,14 @@ describe('ai workbench api', () => {
       content: '正文内容',
       projectId: 'project-1',
       chapterId: 'chapter-1',
+      workflowContextPrompt: '当前工作流上下文：雨夜冲突升级',
+      sceneStage: {
+        sceneTitle: '雨夜追杀',
+        beatTitle: '旧友现身',
+        beatStatus: 'active',
+        goal: '逼主角做选择',
+        conflict: '救人与守秘冲突',
+      },
     })
 
     expect(requestWriterAI).toHaveBeenNthCalledWith(
@@ -182,6 +190,10 @@ describe('ai workbench api', () => {
         intent: { action: 'proofread' },
       }),
     )
+    expect(requestWriterAI.mock.calls[1]?.[0]?.context.workflowSummary).toContain(
+      '当前工作流上下文：雨夜冲突升级',
+    )
+    expect(requestWriterAI.mock.calls[1]?.[0]?.context.sceneStage?.beatTitle).toBe('旧友现身')
     expect(summary.summary).toBe('摘要结果')
     expect(review.score).toBe(9)
   })

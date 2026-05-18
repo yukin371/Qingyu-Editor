@@ -5,7 +5,7 @@ import type {
 } from '@/modules/writer/types/workflow'
 import { resolveWriterPromptExecution } from '@/modules/writer/types/workflow'
 import { buildChatRequestMessage } from './writerAIChatMeta'
-import { mergeWriterAIInstructions } from './writerAIContext'
+import { mergeWriterAIInstructions, type WriterAISceneStageSummary } from './writerAIContext'
 
 export interface WriterMessageDispatchInput {
   content: string
@@ -15,6 +15,7 @@ export interface WriterMessageDispatchInput {
   hasSelectionContext: boolean
   workflowContext?: WriterWorkflowContext | null
   aiSummaryContextText?: string | null | undefined
+  sceneStage?: WriterAISceneStageSummary | null | undefined
 }
 
 export interface WriterMessageDispatchResult {
@@ -42,6 +43,7 @@ export function buildWriterMessageDispatch(
       mergeWriterAIInstructions([requestMessage], {
         workflowContext: input.workflowContext,
         aiSummaryContextText: input.aiSummaryContextText,
+        sceneStage: input.sceneStage,
       }) || requestMessage,
   }
 }

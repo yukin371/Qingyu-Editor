@@ -177,13 +177,25 @@
           </div>
 
           <template v-if="aiProviderStore.mode === 'user_api'">
+            <div class="workspace-settings-panel__provider-presets">
+              <button
+                v-for="preset in aiProviderStore.providerPresets"
+                :key="preset.id"
+                type="button"
+                :class="{ 'is-active': activeProviderPresetId === preset.id }"
+                @click="applyProviderPreset(preset.id)"
+              >
+                {{ preset.label }}
+              </button>
+            </div>
+
             <div class="workspace-settings-panel__provider-form-grid">
               <label class="workspace-settings-panel__field">
-                <span>服务地址</span>
+                <span>Provider 地址</span>
                 <input
                   v-model="aiProviderStore.baseURL"
                   type="text"
-                  placeholder="http://127.0.0.1:11434"
+                  placeholder="https://api.openai.com 或 http://localhost:11434"
                 />
               </label>
 
@@ -200,9 +212,13 @@
                 <span>模型</span>
                 <input
                   v-model="aiProviderStore.model"
+                  list="workspace-ai-provider-models"
                   type="text"
-                  placeholder="gpt-4o-mini / qwen3 / llama3"
+                  placeholder="选择或输入模型名"
                 />
+                <datalist id="workspace-ai-provider-models">
+                  <option v-for="model in modelOptions" :key="model" :value="model" />
+                </datalist>
               </label>
 
               <label class="workspace-settings-panel__field">
@@ -244,6 +260,25 @@
                 清空配置
               </button>
             </div>
+
+            <div class="workspace-settings-panel__config-file">
+              <div class="workspace-settings-panel__config-file-header">
+                <span>配置文件</span>
+                <div class="workspace-settings-panel__config-file-actions">
+                  <button type="button" @click="loadConfigTemplate">模板</button>
+                  <button type="button" @click="exportCurrentConfig">导出</button>
+                  <button type="button" @click="applyConfigText">应用</button>
+                </div>
+              </div>
+              <textarea
+                v-model="configTextDraft"
+                spellcheck="false"
+                placeholder='{"mode":"user_api","userProvider":{"baseURL":"...","endpointPath":"/v1/chat/completions","model":"...","apiKey":"..."}}'
+              ></textarea>
+              <p class="workspace-settings-panel__config-file-note" :class="configMessageClass">
+                {{ configImportMessage || '导出配置不会包含明文 API Key；粘贴含 key 的 JSON 后会写入安全存储或本次会话。' }}
+              </p>
+            </div>
           </template>
 
           <template v-else>
@@ -280,6 +315,8 @@ const editorThemeStore = useEditorThemeStore()
 const appearanceStore = useEditorAppearanceStore()
 const aiProviderStore = useAIProviderStore()
 const apiKeyDraft = ref(aiProviderStore.apiKey)
+const configTextDraft = ref('')
+const configImportMessage = ref('')
 
 const providerModeLabel = computed(() =>
   aiProviderStore.mode === 'user_api' ? '用户 API' : '系统服务',
@@ -310,6 +347,29 @@ const healthCardClass = computed(() => ({
   'is-ok': aiProviderStore.health?.ok,
   'is-error': aiProviderStore.health && !aiProviderStore.health.ok,
 }))
+const activeProviderPresetId = computed(
+  () =>
+    aiProviderStore.providerPresets.find(
+      (preset) =>
+        preset.baseURL === aiProviderStore.baseURL &&
+        preset.endpointPath === aiProviderStore.endpointPath,
+    )?.id || '',
+)
+const modelOptions = computed(() => {
+  const activePreset = aiProviderStore.providerPresets.find(
+    (preset) => preset.id === activeProviderPresetId.value,
+  )
+  const models = [
+    ...(activePreset?.models || []),
+    ...aiProviderStore.providerPresets.flatMap((preset) => preset.models),
+    aiProviderStore.model,
+  ]
+  return Array.from(new Set(models.map((model) => model.trim()).filter(Boolean)))
+})
+const configMessageClass = computed(() => ({
+  'is-error': configImportMessage.value.startsWith('导入失败'),
+  'is-ok': configImportMessage.value.startsWith('已应用'),
+}))
 
 onMounted(() => {
   void aiProviderStore.hydrate()
@@ -326,6 +386,31 @@ watch(
 function commitApiKeyDraft() {
   aiProviderStore.apiKey = apiKeyDraft.value
   apiKeyDraft.value = aiProviderStore.apiKey
+}
+
+function applyProviderPreset(presetId: string) {
+  aiProviderStore.applyPreset(presetId)
+  configImportMessage.value = ''
+}
+
+function loadConfigTemplate() {
+  configTextDraft.value = aiProviderStore.createConfigTemplate()
+  configImportMessage.value = '已生成模板，可按需填写后应用。'
+}
+
+function exportCurrentConfig() {
+  configTextDraft.value = aiProviderStore.exportConfigText()
+  configImportMessage.value = '已导出当前非敏感配置。'
+}
+
+function applyConfigText() {
+  try {
+    const imported = aiProviderStore.importConfigText(configTextDraft.value)
+    apiKeyDraft.value = imported.userProvider.apiKey
+    configImportMessage.value = '已应用配置文件。'
+  } catch (error) {
+    configImportMessage.value = `导入失败：${error instanceof Error ? error.message : '配置文件无法解析。'}`
+  }
 }
 </script>
 
@@ -587,19 +672,30 @@ function commitApiKeyDraft() {
   select,
   input[type='range'],
   input[type='text'],
-  input[type='password'] {
+  input[type='password'],
+  textarea {
     width: 100%;
   }
 
   select,
   input[type='text'],
-  input[type='password'] {
+  input[type='password'],
+  textarea {
     height: 38px;
     padding: 0 12px;
     border: 1px solid var(--editor-border, #dbe3ee);
     border-radius: 11px;
     background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
     color: var(--editor-text-primary, #0f172a);
+  }
+
+  textarea {
+    min-height: 132px;
+    padding: 10px 12px;
+    resize: vertical;
+    font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.55;
   }
 }
 
@@ -608,6 +704,31 @@ function commitApiKeyDraft() {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 2px 14px;
   margin-top: 16px;
+}
+
+.workspace-settings-panel__provider-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+
+  button {
+    min-height: 30px;
+    padding: 0 11px;
+    border: 1px solid var(--editor-border, #dbe3ee);
+    border-radius: 999px;
+    background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
+    color: var(--editor-text-secondary, #334155);
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+
+    &.is-active {
+      border-color: color-mix(in srgb, var(--editor-accent, #2563eb) 58%, var(--editor-border, #dbe3ee));
+      background: color-mix(in srgb, var(--editor-accent-soft, #dbeafe) 52%, var(--editor-layer-panel, #ffffff));
+      color: var(--editor-accent-strong, #1d4ed8);
+    }
+  }
 }
 
 .workspace-settings-panel__field--range {
@@ -656,6 +777,73 @@ function commitApiKeyDraft() {
   min-width: 180px;
   font-size: 12px;
   color: var(--editor-text-muted, #64748b);
+}
+
+.workspace-settings-panel__config-file {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 72%, transparent);
+
+  textarea {
+    width: 100%;
+    min-height: 136px;
+    padding: 10px 12px;
+    border: 1px solid var(--editor-border, #dbe3ee);
+    border-radius: 12px;
+    background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
+    color: var(--editor-text-primary, #0f172a);
+    resize: vertical;
+    font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.55;
+  }
+}
+
+.workspace-settings-panel__config-file-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  > span {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--editor-text-secondary, #334155);
+  }
+}
+
+.workspace-settings-panel__config-file-actions {
+  display: inline-flex;
+  gap: 8px;
+
+  button {
+    min-height: 28px;
+    padding: 0 10px;
+    border: 1px solid var(--editor-border, #dbe3ee);
+    border-radius: 999px;
+    background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
+    color: var(--editor-text-secondary, #334155);
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+}
+
+.workspace-settings-panel__config-file-note {
+  margin: 0;
+  color: var(--editor-text-muted, #64748b);
+  font-size: 12px;
+  line-height: 1.5;
+
+  &.is-ok {
+    color: var(--editor-accent-strong, #1d4ed8);
+  }
+
+  &.is-error {
+    color: color-mix(in srgb, #ef4444 78%, var(--editor-text-primary, #0f172a));
+  }
 }
 
 .workspace-settings-panel__health-button {

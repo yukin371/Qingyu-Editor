@@ -206,6 +206,7 @@ export const aiDirectApi = {
         maxLength?: number
         summaryType?: 'brief' | 'detailed' | 'keypoints'
         includeQuotes?: boolean
+        contextPrompt?: string
       },
     ): Promise<AISummaryResponse> => {
       const prompt = [
@@ -215,11 +216,14 @@ export const aiDirectApi = {
           : options?.summaryType === 'keypoints'
             ? '摘要请偏向要点提炼。'
             : '摘要请兼顾情节与人物状态。',
-        typeof options?.maxLength === 'number'
-          ? `摘要正文尽量控制在 ${options.maxLength} 字以内。`
-          : '',
-        options?.includeQuotes ? '允许引用极短原文短句。' : '不要直接引用原文句子。',
-        '请严格只输出 JSON，不要输出其他解释。',
+          typeof options?.maxLength === 'number'
+            ? `摘要正文尽量控制在 ${options.maxLength} 字以内。`
+            : '',
+          options?.includeQuotes ? '允许引用极短原文短句。' : '不要直接引用原文句子。',
+          options?.contextPrompt?.trim()
+            ? `以下上下文只用于判断剧情、人物状态和当前创作目标，不要把它当作待摘要原文：\n${options.contextPrompt.trim()}`
+            : '',
+          '请严格只输出 JSON，不要输出其他解释。',
         '{"summary":"摘要正文","keyPoints":["要点1","要点2"]}',
         '待处理内容：',
         text,
@@ -247,10 +251,18 @@ export const aiDirectApi = {
       }
     },
 
-    proofread: async (text: string): Promise<AIProofreadResponse> => {
-      const prompt = [
-        '你是中文小说审校助手。请检查下面内容中的错别字、语病、标点和表达问题。',
-        '请严格只输出 JSON，不要输出其他解释。',
+      proofread: async (
+        text: string,
+        options?: {
+          contextPrompt?: string
+        },
+      ): Promise<AIProofreadResponse> => {
+        const prompt = [
+          '你是中文小说审校助手。请检查下面内容中的错别字、语病、标点和表达问题。',
+          options?.contextPrompt?.trim()
+            ? `以下上下文只用于判断措辞是否符合当前场景、人物和节拍，不要审校上下文本身：\n${options.contextPrompt.trim()}`
+            : '',
+          '请严格只输出 JSON，不要输出其他解释。',
         '{"score":8.5,"issues":[{"type":"语法","severity":"medium","message":"问题描述","suggestions":["修改建议"]}]}',
         '如果没有明显问题，issues 返回空数组。',
         '待审校内容：',

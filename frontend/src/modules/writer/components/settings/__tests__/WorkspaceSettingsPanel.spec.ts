@@ -129,4 +129,42 @@ describe('WorkspaceSettingsPanel', () => {
     expect(checkAIProviderHealth).toHaveBeenCalled()
     expect(wrapper.text()).toContain('系统远程 AI 服务可用。')
   })
+
+  it('imports user provider config JSON from ai settings', async () => {
+    const wrapper = mount(WorkspaceSettingsPanel, {
+      global: {
+        plugins: [createPinia()],
+        stubs: {
+          ShortcutSettingsPanel: {
+            template: '<div data-testid="shortcut-settings-stub" />',
+          },
+        },
+      },
+    })
+
+    await wrapper.findAll('.workspace-settings-panel__tab')[2]!.trigger('click')
+    const modeButtons = wrapper.findAll('.workspace-settings-panel__mode-card')
+    await modeButtons[1]!.trigger('click')
+    await wrapper.find('textarea').setValue(
+      JSON.stringify({
+        mode: 'user_api',
+        userProvider: {
+          baseURL: 'http://127.0.0.1:11434',
+          endpointPath: '/v1/chat/completions',
+          model: 'qwen3',
+          apiKey: 'sk-1234567890abcdefghijkl',
+          temperature: 0.4,
+        },
+      }),
+    )
+
+    const buttons = wrapper.findAll('.workspace-settings-panel__config-file-actions button')
+    await buttons[2]!.trigger('click')
+
+    const inputs = wrapper.findAll('input[type="text"]')
+    expect((inputs[0]!.element as HTMLInputElement).value).toBe('http://127.0.0.1:11434')
+    expect((inputs[2]!.element as HTMLInputElement).value).toBe('qwen3')
+    expect(wrapper.text()).toContain('已应用配置文件')
+    expect(wrapper.text()).toContain('API Key 已载入本次会话')
+  })
 })

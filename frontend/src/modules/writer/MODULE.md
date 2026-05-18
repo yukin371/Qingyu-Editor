@@ -84,6 +84,7 @@
 - **普通聊天历史由 plan 显式携带**：`WriterAIPlan.history` 只保留已存在的 user/assistant 往返，不包含当前发送内容；这样既能走统一 facade，又不会把当前 prompt 重复塞进 provider history。
 - **AI 上下文包 owner 是 `utils/writerAIContext.ts`**：右栏聊天、Workbench 工具、资产摘要和结构/时间线/分支简化摘要都应先构造成 `WriterAIContextPacket`，再进入 prompt 或 `modules/ai/api` facade；不要在组件内各自拼全量 prompt。
 - **AI 默认只消费简化上下文**：上下文包默认包含当前章节正文、选区/候选稿、目标条、资产简表、创作蓝图/节奏摘要和证据卡，并受字符预算截断；禁止默认把全书全文或深度资产详情塞进 prompt。
+- **场景舞台只进入 AI 摘要上下文**：底栏当前场景与当前拍仍由 `useWriterSceneStage` 本地 sidecar 持有；AI 只能通过 `WriterAISceneStageSummary` 消费场景、目标、冲突、完成条件、下一拍和在场资产摘要，不得把场景舞台状态复制成 AI store 或让 AI 静默推进节拍。
 - **AI 创作辅助采用“双节拍”入口**：右栏快捷入口按“写 / 审 / 整理”组织；写作冲刺入口可进入当前章节/选区 diff，回审和整理入口只输出分析、任务卡或资产候选，不静默改剧情、不批量改章。
 - **本章任务卡只进入上下文包，不成为新持久化 owner**：`WriterChapterTaskCard` 用于约束创作冲刺与质量回审，可从阶段摘要或显式上下文推导；持久化仍归结构舞台、章节/工作流 sidecar 或后续明确 owner。
 - **跨章节 resolved target 必须覆盖当前章节上下文**：当 `writerDocumentAgent` 已解析到目标章节时，AI prompt 和结果证据条必须使用目标章节标题与正文；不要继续把当前打开章节误作为主要正文上下文。

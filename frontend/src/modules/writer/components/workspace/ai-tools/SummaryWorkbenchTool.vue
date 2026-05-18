@@ -204,6 +204,7 @@ import type {
 import {
   buildWriterAIContextBlock,
   type WriterAIAssetSummary,
+  type WriterAISceneStageSummary,
 } from '@/modules/writer/utils/writerAIContext'
 import { resolveWriterAIErrorState } from '@/modules/writer/utils/writerAIError'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
@@ -218,6 +219,7 @@ const props = defineProps<{
   workflowContext?: WriterWorkflowContext | null
   aiSummaryContextText?: string
   aiAssetSummaries?: WriterAIAssetSummary[]
+  aiSceneStageSummary?: WriterAISceneStageSummary
 }>()
 
 const emit = defineEmits<{
@@ -421,6 +423,7 @@ async function handleGenerateStructure(mode: WriterStructurePlanMode) {
         workflowContext: effectiveWorkflowContext.value,
         aiSummaryContextText: props.aiSummaryContextText,
         assets: props.aiAssetSummaries,
+        sceneStage: props.aiSceneStageSummary,
       }),
     })
     structurePlanSummary.value = result.summary

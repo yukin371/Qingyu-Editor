@@ -18,11 +18,11 @@ export interface WriterAnalysisRunnerInput {
   resolvedTarget: WriterResolvedDocumentTarget
   currentDocumentId?: string | null
   projectId: string
-  requestProofread: (
+  requestProofread?: (
     sourceText: string,
     projectId: string,
   ) => Promise<WriterAnalysisProofreadResult>
-  requestSummary: (sourceText: string, projectId: string) => Promise<WriterAnalysisSummaryResult>
+  requestSummary?: (sourceText: string, projectId: string) => Promise<WriterAnalysisSummaryResult>
   requestAnalysisText?: (params: {
     sourceText: string
     projectId: string
@@ -64,12 +64,12 @@ export async function runWriterResolvedAnalysis({
   let generatedText = ''
   if (requestAnalysisText) {
     generatedText = await requestAnalysisText({ sourceText, projectId, intent })
-  } else if (intent.action === 'proofread') {
+  } else if (intent.action === 'proofread' && requestProofread) {
     const proofread = await requestProofread(sourceText, projectId)
     generatedText = resolveWriterAnalysisText({
       proofreadIssues: proofread.issues,
     })
-  } else {
+  } else if (requestSummary) {
     const response = await requestSummary(sourceText, projectId)
     generatedText = resolveWriterAnalysisText({
       summary: response.summary,

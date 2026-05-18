@@ -25,11 +25,61 @@ export interface AIProviderSettings {
   userProvider: AIUserProviderConfig
 }
 
+export interface AIProviderPreset {
+  id: string
+  label: string
+  baseURL: string
+  endpointPath: string
+  models: string[]
+}
+
+export interface AIProviderConfigFile {
+  version?: 1
+  mode?: AIAccessMode
+  baseURL?: string
+  endpointPath?: string
+  model?: string
+  apiKey?: string
+  temperature?: number
+  userProvider?: Partial<AIUserProviderConfig>
+}
+
 const STORAGE_KEY = 'qingyu-ai-provider-settings'
 const SESSION_API_KEY_STORAGE_KEY = 'qingyu-ai-provider-session-api-key'
 const DESKTOP_SETTING_KEY = 'ai.provider.settings'
 const DESKTOP_SECRET_KEY = 'ai.provider.api-key'
 const DEFAULT_ENDPOINT_PATH = '/v1/chat/completions'
+
+export const AI_PROVIDER_PRESETS: AIProviderPreset[] = [
+  {
+    id: 'ollama',
+    label: 'Ollama 本地',
+    baseURL: 'http://localhost:11434',
+    endpointPath: DEFAULT_ENDPOINT_PATH,
+    models: ['qwen3', 'qwen2.5', 'llama3.1', 'deepseek-r1'],
+  },
+  {
+    id: 'lm-studio',
+    label: 'LM Studio 本地',
+    baseURL: 'http://localhost:1234',
+    endpointPath: DEFAULT_ENDPOINT_PATH,
+    models: ['local-model', 'qwen3', 'llama3.1'],
+  },
+  {
+    id: 'openai',
+    label: 'OpenAI',
+    baseURL: 'https://api.openai.com',
+    endpointPath: DEFAULT_ENDPOINT_PATH,
+    models: ['gpt-4.1', 'gpt-4.1-mini', 'gpt-4o', 'gpt-4o-mini'],
+  },
+  {
+    id: 'openrouter',
+    label: 'OpenRouter',
+    baseURL: 'https://openrouter.ai/api',
+    endpointPath: DEFAULT_ENDPOINT_PATH,
+    models: ['openai/gpt-4.1-mini', 'anthropic/claude-3.5-sonnet', 'qwen/qwen3-coder'],
+  },
+]
 
 export const DEFAULT_USER_PROVIDER_CONFIG: AIUserProviderConfig = {
   providerType: 'openai-compatible',
@@ -110,6 +160,79 @@ function parseAIProviderSettings(raw: string | null | undefined): AIProviderSett
   } catch {
     return null
   }
+}
+
+function normalizeProviderConfigFile(value: AIProviderConfigFile): AIProviderSettings {
+  const userProvider = {
+    ...value.userProvider,
+    baseURL: value.userProvider?.baseURL ?? value.baseURL,
+    endpointPath: value.userProvider?.endpointPath ?? value.endpointPath,
+    model: value.userProvider?.model ?? value.model,
+    apiKey: value.userProvider?.apiKey ?? value.apiKey,
+    temperature: value.userProvider?.temperature ?? value.temperature,
+  }
+
+  return {
+    mode: normalizeMode(value.mode ?? 'user_api'),
+    userProvider: normalizeUserProvider(userProvider),
+  }
+}
+
+export function parseAIProviderConfigText(raw: string): AIProviderSettings {
+  if (!raw.trim()) {
+    throw new Error('请粘贴 AI provider 配置 JSON。')
+  }
+
+  let parsed: AIProviderConfigFile
+  try {
+    parsed = JSON.parse(raw) as AIProviderConfigFile
+  } catch {
+    throw new Error('配置文件不是有效 JSON。')
+  }
+
+  const settings = normalizeProviderConfigFile(parsed)
+  if (settings.mode === 'user_api' && !hasUsableUserProviderConfig(settings.userProvider)) {
+    throw new Error('配置文件缺少服务地址、接口路径或模型。')
+  }
+
+  return settings
+}
+
+export function createAIProviderConfigTemplate(): string {
+  return JSON.stringify(
+    {
+      version: 1,
+      mode: 'user_api',
+      userProvider: {
+        providerType: 'openai-compatible',
+        baseURL: 'http://localhost:11434',
+        endpointPath: DEFAULT_ENDPOINT_PATH,
+        model: 'qwen3',
+        apiKey: '',
+        temperature: DEFAULT_USER_PROVIDER_CONFIG.temperature,
+      },
+    } satisfies AIProviderConfigFile,
+    null,
+    2,
+  )
+}
+
+export function exportAIProviderConfigText(
+  settings: AIProviderSettings = loadAIProviderSettings(),
+): string {
+  const normalized = normalizeProviderConfigFile(settings)
+  return JSON.stringify(
+    {
+      version: 1,
+      mode: normalized.mode,
+      userProvider: {
+        ...normalized.userProvider,
+        apiKey: '',
+      },
+    } satisfies AIProviderConfigFile,
+    null,
+    2,
+  )
 }
 
 function loadSessionApiKey(): string {

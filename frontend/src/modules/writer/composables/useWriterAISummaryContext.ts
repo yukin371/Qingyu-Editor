@@ -1,7 +1,11 @@
 import { computed, ref, watch, type ComputedRef, type Ref } from 'vue'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 import { useWriterAssetSummary } from '@/modules/writer/composables/useWriterAssetSummary'
-import type { WriterAIAssetSummary } from '@/modules/writer/utils/writerAIContext'
+import type {
+  WriterAIAssetSummary,
+  WriterAISceneStageSummary,
+} from '@/modules/writer/utils/writerAIContext'
+import type { WriterSceneStageState } from '@/modules/writer/types/sceneStage'
 import {
   buildCreativeWorkflowSnapshot,
   buildCreativeWorkflowSummaryLines,
@@ -19,6 +23,7 @@ export function useWriterAISummaryContext(options: {
   projectId: MaybeComputed<string>
   chapterId: MaybeComputed<string>
   chapters: MaybeComputed<SidebarChapterSummary[]>
+  sceneStage?: MaybeComputed<WriterSceneStageState | null | undefined>
 }) {
   const creativeWorkflowSnapshot = ref<CreativeWorkflowSnapshot | null>(null)
   const loading = ref(false)
@@ -58,15 +63,6 @@ export function useWriterAISummaryContext(options: {
       .join('；')}`
   })
 
-  const summaryLines = computed(() => {
-    const workflowLines = buildCreativeWorkflowSummaryLines(creativeWorkflowSnapshot.value).slice(0, 5)
-    return [...workflowLines, assetSummaryLine.value].filter(Boolean)
-  })
-
-  const summaryText = computed(() =>
-    summaryLines.value.length ? `创作蓝图与资产摘要：\n${summaryLines.value.join('\n')}` : '',
-  )
-
   const currentChapter = computed(() =>
     options.chapters.value.find((chapter) => chapter.id === options.chapterId.value),
   )
@@ -100,11 +96,58 @@ export function useWriterAISummaryContext(options: {
     )
   })
 
+  const aiSceneStageSummary = computed<WriterAISceneStageSummary | undefined>(() => {
+    const sceneStage = options.sceneStage?.value
+    if (!sceneStage || sceneStage.isEmpty) return undefined
+
+    return {
+      sceneTitle: sceneStage.sceneTitle,
+      beatTitle: sceneStage.beatTitle,
+      beatStatus: sceneStage.beatStatus,
+      goal: sceneStage.goal,
+      conflict: sceneStage.conflict,
+      rangeLabel: sceneStage.rangeLabel,
+      doneCondition: sceneStage.doneCondition,
+      nextBeatTitle: sceneStage.nextBeatTitle,
+      locationName: sceneStage.locationName,
+      povCharacterName: sceneStage.povCharacterName,
+      assetNames: sceneStage.assets
+        .map((asset) => asset.assetName)
+        .filter((name) => name.trim())
+        .slice(0, 8),
+    }
+  })
+
+  const sceneStageSummaryLine = computed(() => {
+    const sceneStage = aiSceneStageSummary.value
+    if (!sceneStage) return ''
+
+    const parts = [
+      sceneStage.sceneTitle,
+      sceneStage.beatTitle ? `当前拍：${sceneStage.beatTitle}` : '',
+      sceneStage.goal ? `目标：${sceneStage.goal}` : '',
+      sceneStage.conflict ? `冲突：${sceneStage.conflict}` : '',
+      sceneStage.nextBeatTitle ? `下一拍：${sceneStage.nextBeatTitle}` : '',
+    ].filter(Boolean)
+
+    return parts.length ? `当前场景舞台：${parts.join('；')}` : ''
+  })
+
+  const summaryLines = computed(() => {
+    const workflowLines = buildCreativeWorkflowSummaryLines(creativeWorkflowSnapshot.value).slice(0, 5)
+    return [...workflowLines, assetSummaryLine.value, sceneStageSummaryLine.value].filter(Boolean)
+  })
+
+  const summaryText = computed(() =>
+    summaryLines.value.length ? `创作蓝图与资产摘要：\n${summaryLines.value.join('\n')}` : '',
+  )
+
   return {
     loading,
     creativeWorkflowSnapshot,
     currentWriterAssetSummaryItems,
     aiAssetSummaries,
+    aiSceneStageSummary,
     aiSummaryContextLines: summaryLines,
     aiSummaryContextText: summaryText,
   }

@@ -98,6 +98,10 @@ export interface AIProviderHealth {
   checkedAt: number
 }
 
+interface AIAnalysisContextOptions {
+  contextPrompt?: string
+}
+
 export interface WriterAIResult {
   route: WriterAIPlan['route']
   mutationMode: WriterAIPlan['mutationMode']
@@ -314,13 +318,14 @@ export const summarizeText = async (
     maxLength?: number
     summaryType?: 'brief' | 'detailed' | 'keypoints'
     includeQuotes?: boolean
-  },
+  } & AIAnalysisContextOptions,
 ): Promise<AISummaryResponse> => {
   if (isUserProviderModeEnabled()) {
     return userAIProviderApi.writing.summarize(text, {
       maxLength: options?.maxLength,
       summaryType: options?.summaryType,
       includeQuotes: options?.includeQuotes,
+      contextPrompt: options?.contextPrompt,
     })
   }
 
@@ -329,6 +334,7 @@ export const summarizeText = async (
       maxLength: options?.maxLength,
       summaryType: options?.summaryType,
       includeQuotes: options?.includeQuotes,
+      contextPrompt: options?.contextPrompt,
     })
   }
 
@@ -352,6 +358,12 @@ export const summarizeText = async (
     maxLength: options?.maxLength,
     summaryType: options?.summaryType || 'detailed',
     includeQuotes: options?.includeQuotes ?? false,
+    ...(options?.contextPrompt
+      ? {
+          contextPrompt: options.contextPrompt,
+          context_prompt: options.contextPrompt,
+        }
+      : {}),
   })
 
   const data = response as unknown as Record<string, any>
@@ -371,14 +383,18 @@ export const proofreadText = async (
   options?: {
     projectId?: string
     chapterId?: string
-  },
+  } & AIAnalysisContextOptions,
 ): Promise<AIProofreadResponse> => {
   if (isUserProviderModeEnabled()) {
-    return userAIProviderApi.writing.proofread(text)
+    return userAIProviderApi.writing.proofread(text, {
+      contextPrompt: options?.contextPrompt,
+    })
   }
 
   if (isDirectModeEnabled()) {
-    return aiDirectApi.writing.proofread(text)
+    return aiDirectApi.writing.proofread(text, {
+      contextPrompt: options?.contextPrompt,
+    })
   }
 
   const response = await postAIRequest<{
@@ -403,6 +419,12 @@ export const proofreadText = async (
     checkTypes: ['spelling', 'grammar', 'punctuation'],
     language: 'zh-CN',
     suggestions: true,
+    ...(options?.contextPrompt
+      ? {
+          contextPrompt: options.contextPrompt,
+          context_prompt: options.contextPrompt,
+        }
+      : {}),
   })
 
   const data = response as unknown as Record<string, any>
@@ -534,6 +556,28 @@ function formatWriterPlanPrompt(plan: WriterAIPlan): string {
     lines.push('上下文摘要：')
     lines.push(...plan.context.workflowSummary.slice(0, 8).map((line) => `- ${line}`))
   }
+  const sceneStage = plan.context.sceneStage
+  if (
+    sceneStage &&
+    Object.values(sceneStage).some((value) =>
+      Array.isArray(value) ? value.length > 0 : String(value || '').trim().length > 0,
+    )
+  ) {
+    lines.push('当前场景舞台：')
+    lines.push(
+      ...[
+        sceneStage.sceneTitle ? `- 场景：${sceneStage.sceneTitle}` : '',
+        sceneStage.beatTitle ? `- 当前拍：${sceneStage.beatTitle}` : '',
+        sceneStage.goal ? `- 目标：${sceneStage.goal}` : '',
+        sceneStage.conflict ? `- 冲突：${sceneStage.conflict}` : '',
+        sceneStage.doneCondition ? `- 完成条件：${sceneStage.doneCondition}` : '',
+        sceneStage.nextBeatTitle ? `- 下一拍：${sceneStage.nextBeatTitle}` : '',
+        sceneStage.assetNames?.length
+          ? `- 在场资产：${sceneStage.assetNames.slice(0, 8).join(' / ')}`
+          : '',
+      ].filter(Boolean),
+    )
+  }
   if (plan.context.assets.length > 0) {
     lines.push('资产简表：')
     lines.push(
@@ -640,6 +684,7 @@ export async function requestWriterAI(plan: WriterAIPlan): Promise<WriterAIResul
       const response = await proofreadText(sourceText, {
         projectId: plan.context.projectId,
         chapterId: plan.context.currentDocument?.documentId || undefined,
+        contextPrompt: formatWriterPlanPrompt(plan),
       })
       return {
         route: plan.route,
@@ -659,6 +704,7 @@ export async function requestWriterAI(plan: WriterAIPlan): Promise<WriterAIResul
       projectId: plan.context.projectId,
       chapterId: plan.context.currentDocument?.documentId || undefined,
       summaryType: 'detailed',
+      contextPrompt: formatWriterPlanPrompt(plan),
     })
     return {
       route: plan.route,
@@ -703,17 +749,6 @@ export async function checkAIProviderHealth(
         checkedAt,
       }
     }
-    if (!hasRuntimeSecret) {
-      return {
-        mode: 'user_api',
-        ok: false,
-        configured,
-        hasRuntimeSecret,
-        message: 'API Key 尚未保存到当前运行时，请重新输入并保存。',
-        checkedAt,
-      }
-    }
-
     try {
       await userAIProviderApi.chat('请只回复 OK，用于连接测试。', [])
       return {
@@ -721,7 +756,9 @@ export async function checkAIProviderHealth(
         ok: true,
         configured,
         hasRuntimeSecret,
-        message: '用户 API provider 可用。',
+        message: hasRuntimeSecret
+          ? '用户 API provider 可用，已使用运行时密钥。'
+          : '用户 API provider 可用，当前未使用 API Key。',
         checkedAt,
       }
     } catch (error) {

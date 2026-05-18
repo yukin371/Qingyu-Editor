@@ -96,6 +96,7 @@
             :ai-action-trigger="aiActionTrigger"
             :ai-apply-feedback="aiApplyFeedback"
             :workflow-context="workflowContext"
+            :scene-stage="sceneStage"
             :draft-proposals="visibleDraftProposals"
             :harness-data="{
               projectId: safeCurrentProjectId,

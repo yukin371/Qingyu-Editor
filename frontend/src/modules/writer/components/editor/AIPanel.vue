@@ -69,7 +69,7 @@ import { useChatHistory } from '@/composables/useChatHistory'
 import { useTypewriter } from '@/composables/useTypewriter'
 import { message } from '@/design-system/services'
 import { QUICK_ACTION_PROMPTS, getQuickActionPrompt } from '@/utils/mockAIResponse'
-import { requestWriterAI, summarizeText, proofreadText } from '@/modules/ai/api'
+import { requestWriterAI } from '@/modules/ai/api'
 import { executeWriterDocumentCommand } from '@/modules/writer/services/documentToolCommands.service'
 import {
   writerDocumentAgentService,
@@ -127,6 +127,7 @@ import {
   buildWriterAIContextPacket,
   type WriterAIAssetSummary,
   type WriterAIContextOptions,
+  type WriterAISceneStageSummary,
 } from '@/modules/writer/utils/writerAIContext'
 import type { WriterContextEvidenceItem } from './ai/types'
 
@@ -158,6 +159,7 @@ interface Props {
   chapters?: SidebarChapterSummary[]
   aiSummaryContextText?: string
   aiAssetSummaries?: WriterAIAssetSummary[]
+  aiSceneStageSummary?: WriterAISceneStageSummary
 }
 
 interface Emits {
@@ -522,15 +524,6 @@ async function runResolvedAnalysis(
       resolvedTarget,
       currentDocumentId: effectiveWorkflowContext.value?.chapterId,
       projectId: props.sessionId || 'demo-project',
-      requestProofread: (sourceText, projectId) =>
-        proofreadText(sourceText, {
-          projectId,
-        }),
-      requestSummary: (sourceText, projectId) =>
-        summarizeText(sourceText, {
-          projectId,
-          summaryType: 'detailed',
-        }),
       requestAnalysisText: async ({ intent }) => {
         const contextPacket = buildWriterAIContextPacket({
           ...buildAIContextOptions(resolvedTarget),
@@ -937,6 +930,7 @@ function buildAIContextOptions(
     },
     selection,
     assets: props.aiAssetSummaries,
+    sceneStage: props.aiSceneStageSummary,
     workflowContext: effectiveWorkflowContext.value,
     aiSummaryContextText: props.aiSummaryContextText,
   }

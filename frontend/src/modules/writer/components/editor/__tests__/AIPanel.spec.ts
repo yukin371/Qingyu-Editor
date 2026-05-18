@@ -152,6 +152,10 @@ const AIInputAreaStub = defineComponent({
       type: String,
       default: '',
     },
+    contextEvidence: {
+      type: String,
+      default: '',
+    },
     mode: {
       type: String,
       default: 'chat',
@@ -175,7 +179,7 @@ const AIInputAreaStub = defineComponent({
   },
   emits: ['update:modelValue', 'update:mode', 'send', 'clear-context'],
   template:
-    '<div><div data-testid="input-target">{{ targetLabel }}</div><div data-testid="input-target-detail">{{ targetDetail }}</div><div data-testid="input-context">{{ context ? context.text : "empty" }}</div><div data-testid="input-mode">{{ mode }}</div><button data-testid="input-send" @click="$emit(\'send\')">send</button></div>',
+    '<div><div data-testid="input-target">{{ targetLabel }}</div><div data-testid="input-target-detail">{{ targetDetail }}</div><div data-testid="input-context-evidence">{{ contextEvidence }}</div><div data-testid="input-context">{{ context ? context.text : "empty" }}</div><div data-testid="input-mode">{{ mode }}</div><button data-testid="input-send" @click="$emit(\'send\')">send</button></div>',
 })
 
 function buildWorkflowContext(signature: string, chapterId = signature): WriterWorkflowContext {
@@ -200,6 +204,13 @@ function mountPanel() {
       workflowContext: buildWorkflowContext('chapter-1'),
       actionTrigger: null,
       aiSummaryContextText: '创作蓝图与资产摘要：\n当前章节资产：角色 2；地点 1',
+      aiSceneStageSummary: {
+        sceneTitle: '雨夜祠堂',
+        beatTitle: '主角救下线人',
+        goal: '建立信任',
+        conflict: '追兵逼近',
+        nextBeatTitle: '黑市脱身',
+      },
     },
     global: {
       stubs: {
@@ -494,6 +505,8 @@ describe('AIPanel', () => {
     expect(vi.mocked(chatWithAI).mock.calls[0]?.[0]).toContain('当前工作流上下文：')
     expect(vi.mocked(chatWithAI).mock.calls[0]?.[0]).toContain('创作蓝图与资产摘要：')
     expect(vi.mocked(chatWithAI).mock.calls[0]?.[0]).toContain('当前章节资产：角色 2；地点 1')
+    expect(vi.mocked(chatWithAI).mock.calls[0]?.[0]).toContain('当前场景舞台：')
+    expect(vi.mocked(chatWithAI).mock.calls[0]?.[0]).toContain('当前拍：主角救下线人')
     expect(vi.mocked(chatWithAI).mock.calls[0]?.[0]).toContain('聊聊这章的节奏问题')
     expect(vi.mocked(chatWithAI).mock.calls[0]?.[1]).toEqual([])
   })

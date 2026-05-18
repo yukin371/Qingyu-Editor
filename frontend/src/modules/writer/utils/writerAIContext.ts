@@ -44,11 +44,32 @@ export interface WriterAIAssetSummary {
   unresolved?: boolean
 }
 
+export interface WriterAISceneStageSummary {
+  sceneTitle?: string
+  beatTitle?: string
+  beatStatus?: 'planned' | 'active' | 'done'
+  goal?: string
+  conflict?: string
+  rangeLabel?: string
+  doneCondition?: string
+  nextBeatTitle?: string
+  locationName?: string
+  povCharacterName?: string
+  assetNames?: string[]
+}
+
 export interface WriterAIContextEvidence {
   id: string
   label: string
   detail?: string
-  source: 'current_document' | 'selection' | 'revision' | 'asset' | 'workflow' | 'chapter_task'
+  source:
+    | 'current_document'
+    | 'selection'
+    | 'revision'
+    | 'asset'
+    | 'workflow'
+    | 'chapter_task'
+    | 'scene_stage'
 }
 
 export interface WriterChapterTaskCard {
@@ -66,6 +87,7 @@ export interface WriterAIContextPacket {
   currentDocument?: WriterDocumentContext
   target?: WriterDocumentTarget
   selection?: WriterSelectionContext
+  sceneStage?: WriterAISceneStageSummary
   chapterTask?: WriterChapterTaskCard
   assets: WriterAIAssetSummary[]
   workflowSummary: string[]
@@ -96,6 +118,7 @@ export interface WriterAIContextOptions {
   target?: WriterDocumentTarget | null
   selection?: WriterSelectionContext | null
   assets?: WriterAIAssetSummary[] | null
+  sceneStage?: WriterAISceneStageSummary | null
   chapterTask?: WriterChapterTaskCard | null
   workflowContext?: WriterWorkflowContext | null
   aiSummaryContextText?: string | null | undefined
@@ -169,6 +192,46 @@ export function inferWriterChapterTaskCard(
   return hasChapterTask(task) ? task : undefined
 }
 
+function hasSceneStage(
+  sceneStage: WriterAISceneStageSummary | null | undefined,
+): sceneStage is WriterAISceneStageSummary {
+  return Boolean(
+    sceneStage &&
+      Object.entries(sceneStage).some(([key, value]) => {
+        if (key === 'assetNames') return Array.isArray(value) && value.length > 0
+        return typeof value === 'string' && value.trim().length > 0
+      }),
+  )
+}
+
+function formatBeatStatus(status: WriterAISceneStageSummary['beatStatus']): string {
+  if (status === 'planned') return '未开始'
+  if (status === 'done') return '已完成'
+  return '进行中'
+}
+
+function formatSceneStageLines(sceneStage: WriterAISceneStageSummary | null | undefined): string[] {
+  if (!hasSceneStage(sceneStage)) return []
+
+  const lines = [
+    sceneStage.sceneTitle ? `- 场景：${sceneStage.sceneTitle}` : '',
+    sceneStage.beatTitle ? `- 当前拍：${sceneStage.beatTitle}` : '',
+    sceneStage.beatStatus ? `- 状态：${formatBeatStatus(sceneStage.beatStatus)}` : '',
+    sceneStage.rangeLabel ? `- 范围：${sceneStage.rangeLabel}` : '',
+    sceneStage.locationName ? `- 地点：${sceneStage.locationName}` : '',
+    sceneStage.povCharacterName ? `- 视角：${sceneStage.povCharacterName}` : '',
+    sceneStage.goal ? `- 目标：${sceneStage.goal}` : '',
+    sceneStage.conflict ? `- 冲突：${sceneStage.conflict}` : '',
+    sceneStage.doneCondition ? `- 完成条件：${sceneStage.doneCondition}` : '',
+    sceneStage.nextBeatTitle ? `- 下一拍：${sceneStage.nextBeatTitle}` : '',
+    sceneStage.assetNames?.length
+      ? `- 在场资产：${sceneStage.assetNames.slice(0, 8).join(' / ')}`
+      : '',
+  ]
+
+  return lines.filter(Boolean)
+}
+
 function formatChapterTaskLines(task: WriterChapterTaskCard | null | undefined): string[] {
   if (!hasChapterTask(task)) return []
 
@@ -233,6 +296,15 @@ function buildContextEvidence(
     })
   }
 
+  if (hasSceneStage(options.sceneStage)) {
+    evidence.push({
+      id: 'scene-stage',
+      label: options.sceneStage.beatTitle || options.sceneStage.sceneTitle || '当前场景舞台',
+      detail: options.sceneStage.goal || options.sceneStage.conflict || '当前拍与场景约束',
+      source: 'scene_stage',
+    })
+  }
+
   if (hasChapterTask(options.chapterTask)) {
     evidence.push({
       id: 'chapter-task',
@@ -269,6 +341,7 @@ export function buildWriterAIContextPacket(options: WriterAIContextOptions): Wri
     currentDocument,
     target: options.target || undefined,
     selection: options.selection || undefined,
+    sceneStage: hasSceneStage(options.sceneStage) ? options.sceneStage : undefined,
     chapterTask,
     assets: (options.assets || []).slice(0, 24),
     workflowSummary,
@@ -321,6 +394,12 @@ export function formatWriterAIContextPacket(packet: WriterAIContextPacket): stri
   if (chapterTaskLines.length > 0) {
     lines.push('本章任务卡：')
     lines.push(...chapterTaskLines)
+  }
+
+  const sceneStageLines = formatSceneStageLines(packet.sceneStage)
+  if (sceneStageLines.length > 0) {
+    lines.push('当前场景舞台：')
+    lines.push(...sceneStageLines)
   }
 
   if (packet.workflowSummary.length > 0) {

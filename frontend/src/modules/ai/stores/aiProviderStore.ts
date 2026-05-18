@@ -2,11 +2,15 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import {
   clearAIProviderSettingsFromDesktop,
+  AI_PROVIDER_PRESETS,
+  createAIProviderConfigTemplate,
   DEFAULT_USER_PROVIDER_CONFIG,
+  exportAIProviderConfigText,
   hasSessionApiKey,
   hydrateAIProviderSettingsFromDesktop,
   isUserProviderModeEnabled,
   loadAIProviderSettings,
+  parseAIProviderConfigText,
   persistAIProviderSettingsToDesktop,
   saveAIProviderSettings,
   type AIAccessMode,
@@ -110,6 +114,31 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     persist()
   }
 
+  const applyPreset = (presetId: string) => {
+    const preset = AI_PROVIDER_PRESETS.find((item) => item.id === presetId)
+    if (!preset) {
+      return
+    }
+    snapshot.value.userProvider.baseURL = preset.baseURL
+    snapshot.value.userProvider.endpointPath = preset.endpointPath
+    if (!preset.models.includes(snapshot.value.userProvider.model.trim())) {
+      snapshot.value.userProvider.model = preset.models[0] || ''
+    }
+    clearHealth()
+    persist()
+  }
+
+  const importConfigText = (raw: string) => {
+    snapshot.value = parseAIProviderConfigText(raw)
+    clearHealth()
+    persist()
+    return snapshot.value
+  }
+
+  const exportConfigText = () => exportAIProviderConfigText(snapshot.value)
+
+  const createConfigTemplate = () => createAIProviderConfigTemplate()
+
   const hydrate = async () => {
     if (hydrated.value) {
       return
@@ -158,6 +187,11 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     healthChecking,
     checkHealth,
     hydrate,
+    providerPresets: AI_PROVIDER_PRESETS,
+    applyPreset,
+    importConfigText,
+    exportConfigText,
+    createConfigTemplate,
     resetAll,
     resetUserProvider,
   }

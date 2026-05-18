@@ -112,7 +112,11 @@ import type {
 } from '@/modules/writer/types/workflow'
 import { resolveWriterAIErrorState } from '@/modules/writer/utils/writerAIError'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
-import type { WriterAIAssetSummary } from '@/modules/writer/utils/writerAIContext'
+import type {
+  WriterAIAssetSummary,
+  WriterAISceneStageSummary,
+} from '@/modules/writer/utils/writerAIContext'
+import { buildWriterAIContextBlock } from '@/modules/writer/utils/writerAIContext'
 
 const props = defineProps<{
   projectId: string
@@ -123,6 +127,7 @@ const props = defineProps<{
   actionTrigger: WriterAIActionTrigger | null
   aiSummaryContextText?: string
   aiAssetSummaries?: WriterAIAssetSummary[]
+  aiSceneStageSummary?: WriterAISceneStageSummary
 }>()
 
 const emit = defineEmits<{
@@ -136,6 +141,19 @@ const mode = ref<'proofread' | 'audit'>('proofread')
 const issues = ref<ReviewIssue[]>([])
 const score = ref<number | undefined>(undefined)
 const auditWords = ref<Array<Record<string, unknown>>>([])
+const reviewContextPrompt = computed(() =>
+  buildWriterAIContextBlock({
+    projectId: props.projectId,
+    currentDocument: {
+      documentId: props.chapterId,
+      documentTitle: props.chapterTitle,
+      sourceText: content.value,
+    },
+    assets: props.aiAssetSummaries || [],
+    aiSummaryContextText: props.aiSummaryContextText,
+    sceneStage: props.aiSceneStageSummary,
+  }),
+)
 
 const scoreText = computed(() => (typeof score.value === 'number' ? score.value.toFixed(1) : '--'))
 const auditSummaryText = computed(() => auditWords.value.length > 0 ? `待人工复核 ${auditWords.value.length} 项` : '未发现明显风险词')
@@ -251,6 +269,9 @@ async function handleProofread() {
       content: content.value,
       projectId: props.projectId || undefined,
       chapterId: props.chapterId || undefined,
+      workflowContextPrompt: reviewContextPrompt.value,
+      assets: props.aiAssetSummaries,
+      sceneStage: props.aiSceneStageSummary,
     })
     issues.value = result.issues
     score.value = result.score
@@ -273,6 +294,9 @@ async function handleAudit() {
       content: content.value,
       projectId: props.projectId || undefined,
       chapterId: props.chapterId || undefined,
+      workflowContextPrompt: reviewContextPrompt.value,
+      assets: props.aiAssetSummaries,
+      sceneStage: props.aiSceneStageSummary,
     })
     auditWords.value = result.sensitiveWords
     emitAuditCandidate(result.sensitiveWords)

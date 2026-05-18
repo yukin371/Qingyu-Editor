@@ -98,4 +98,38 @@ describe('writerAIContext', () => {
     expect(contextBlock).toContain('目标：完成第一次反击')
     expect(contextBlock).toContain('读者收益：读者看到主角拿回主动权')
   })
+
+  it('adds scene stage evidence and formats beat constraints before source text', () => {
+    const packet = buildWriterAIContextPacket({
+      projectId: 'project-1',
+      currentDocument: {
+        documentId: 'chapter-3',
+        documentTitle: '第三章',
+        sourceText: '正文',
+      },
+      sceneStage: {
+        sceneTitle: '雨夜祠堂',
+        beatTitle: '主角救下线人',
+        beatStatus: 'active',
+        goal: '拿到北门钥匙的线索',
+        conflict: '追兵逼近',
+        doneCondition: '线人交出暗号',
+        nextBeatTitle: '黑市脱身',
+        assetNames: ['林舟', '北门钥匙'],
+      },
+    })
+    const contextBlock = buildWriterAIContextBlock({
+      projectId: 'project-1',
+      currentDocument: packet.currentDocument,
+      sceneStage: packet.sceneStage,
+    })
+
+    expect(packet.evidence.map((item) => item.source)).toContain('scene_stage')
+    expect(contextBlock).toContain('当前场景舞台：')
+    expect(contextBlock).toContain('当前拍：主角救下线人')
+    expect(contextBlock).toContain('冲突：追兵逼近')
+    expect(contextBlock.indexOf('当前场景舞台：')).toBeLessThan(
+      contextBlock.indexOf('当前章节正文：'),
+    )
+  })
 })

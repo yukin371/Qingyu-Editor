@@ -42,6 +42,7 @@
         :workflow-context="workflowContext"
         :ai-summary-context-text="aiSummaryContextText"
         :ai-asset-summaries="aiAssetSummaries"
+        :ai-scene-stage-summary="aiSceneStageSummary"
         @apply="handleApplyPayload"
       />
 
@@ -56,6 +57,7 @@
         :workflow-context="workflowContext"
         :ai-summary-context-text="aiSummaryContextText"
         :ai-asset-summaries="aiAssetSummaries"
+        :ai-scene-stage-summary="aiSceneStageSummary"
         @result-candidate="handleResultCandidate"
         @apply-structure-plan="(payload) => emit('applyStructurePlan', payload)"
       />
@@ -70,6 +72,7 @@
         :action-trigger="actionTrigger"
         :ai-summary-context-text="aiSummaryContextText"
         :ai-asset-summaries="aiAssetSummaries"
+        :ai-scene-stage-summary="aiSceneStageSummary"
         @result-candidate="handleResultCandidate"
       />
 
@@ -82,6 +85,7 @@
         :chapters="chapters"
         :ai-summary-context-text="aiSummaryContextText"
         :ai-asset-summaries="aiAssetSummaries"
+        :ai-scene-stage-summary="aiSceneStageSummary"
         :revision-seed="revisionSeed"
         @apply-generated-text="handleApplyPayload"
         @result-candidate="handleResultCandidate"
@@ -99,7 +103,10 @@ import SummaryWorkbenchTool from '@/modules/writer/components/workspace/ai-tools
 import ReviewWorkbenchTool from '@/modules/writer/components/workspace/ai-tools/ReviewWorkbenchTool.vue'
 import { useAIWorkbenchRail } from '@/modules/writer/composables/useAIWorkbenchRail'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
-import type { WriterAIAssetSummary } from '@/modules/writer/utils/writerAIContext'
+import type {
+  WriterAIAssetSummary,
+  WriterAISceneStageSummary,
+} from '@/modules/writer/utils/writerAIContext'
 import type {
   WriterAIActionTrigger,
   WriterAIApplyFeedback,
@@ -123,6 +130,7 @@ const props = withDefaults(defineProps<{
   workflowContext: WriterWorkflowContext
   aiSummaryContextText?: string
   aiAssetSummaries?: WriterAIAssetSummary[]
+  aiSceneStageSummary?: WriterAISceneStageSummary
   draftProposals: WriterDraftProposal[]
 }>(), {
   chapters: () => [],

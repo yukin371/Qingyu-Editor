@@ -11,6 +11,7 @@
       :workflow-context="workflowContext"
       :ai-summary-context-text="aiSummaryContextText"
       :ai-asset-summaries="aiAssetSummaries"
+      :ai-scene-stage-summary="aiSceneStageSummary"
       :draft-proposals="draftProposals"
       @apply-generated-text="(payload) => $emit('ai-apply', payload)"
       @proposal-draft="(payload) => $emit('proposal-draft', payload)"
@@ -33,7 +34,10 @@ import type {
   WriterWorkflowContext,
 } from '@/modules/writer/types/workflow'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
-import type { WriterAIAssetSummary } from '@/modules/writer/utils/writerAIContext'
+import type {
+  WriterAIAssetSummary,
+  WriterAISceneStageSummary,
+} from '@/modules/writer/utils/writerAIContext'
 
 defineProps<{
   projectId: string
@@ -46,6 +50,7 @@ defineProps<{
   workflowContext: WriterWorkflowContext
   aiSummaryContextText?: string
   aiAssetSummaries?: WriterAIAssetSummary[]
+  aiSceneStageSummary?: WriterAISceneStageSummary
   draftProposals: WriterDraftProposal[]
 }>()
 

@@ -2,7 +2,11 @@ import { requestWriterAI } from './ai'
 import { isUserProviderModeEnabled } from '../config/provider'
 import { postAIRequest } from './request'
 import { userAIProviderApi } from './ai-user-provider'
-import type { WriterAIContextEvidence } from '@/modules/writer/utils/writerAIContext'
+import type {
+  WriterAIAssetSummary,
+  WriterAIContextEvidence,
+  WriterAISceneStageSummary,
+} from '@/modules/writer/utils/writerAIContext'
 
 export interface RewriteToolRequest {
   projectId: string
@@ -24,6 +28,9 @@ export interface SummaryToolRequest {
   maxLength?: number
   summaryType?: 'brief' | 'detailed' | 'keypoints'
   includeQuotes?: boolean
+  workflowContextPrompt?: string
+  assets?: WriterAIAssetSummary[]
+  sceneStage?: WriterAISceneStageSummary
 }
 
 export interface ChapterSummaryRequest {
@@ -67,6 +74,9 @@ export interface ReviewToolRequest {
   content: string
   projectId?: string
   chapterId?: string
+  workflowContextPrompt?: string
+  assets?: WriterAIAssetSummary[]
+  sceneStage?: WriterAISceneStageSummary
 }
 
 export interface ReviewIssue {
@@ -153,12 +163,25 @@ export async function summarizeSelection(payload: SummaryToolRequest): Promise<S
         kind: 'selection',
         text: payload.content,
       },
-      assets: [],
-      workflowSummary: [],
-      evidence: [],
+      assets: payload.assets || [],
+      workflowSummary: payload.workflowContextPrompt ? [payload.workflowContextPrompt] : [],
+      sceneStage: payload.sceneStage,
+      evidence: payload.sceneStage
+        ? [
+            {
+              id: `review-scene-stage:${payload.chapterId || 'current'}`,
+              label: payload.sceneStage.beatTitle || payload.sceneStage.sceneTitle || '当前场景舞台',
+              source: 'scene_stage',
+              detail: payload.sceneStage.goal || payload.sceneStage.conflict || '审校场景约束',
+            },
+          ]
+        : [],
       budget: {
-        maxChars: payload.content.length,
-        truncated: false,
+        maxChars: Math.min(
+          payload.content.length + (payload.workflowContextPrompt?.length || 0),
+          4000,
+        ),
+        truncated: payload.content.length + (payload.workflowContextPrompt?.length || 0) > 4000,
       },
     },
     intent: {
@@ -372,12 +395,25 @@ export async function proofreadContent(payload: ReviewToolRequest): Promise<Revi
         kind: 'selection',
         text: payload.content,
       },
-      assets: [],
-      workflowSummary: [],
-      evidence: [],
+      assets: payload.assets || [],
+      workflowSummary: payload.workflowContextPrompt ? [payload.workflowContextPrompt] : [],
+      sceneStage: payload.sceneStage,
+      evidence: payload.sceneStage
+        ? [
+            {
+              id: `review-scene-stage:${payload.chapterId || 'current'}`,
+              label: payload.sceneStage.beatTitle || payload.sceneStage.sceneTitle || '当前场景舞台',
+              source: 'scene_stage',
+              detail: payload.sceneStage.goal || payload.sceneStage.conflict || '审校场景约束',
+            },
+          ]
+        : [],
       budget: {
-        maxChars: payload.content.length,
-        truncated: false,
+        maxChars: Math.min(
+          payload.content.length + (payload.workflowContextPrompt?.length || 0),
+          4000,
+        ),
+        truncated: payload.content.length + (payload.workflowContextPrompt?.length || 0) > 4000,
       },
     },
     intent: {
@@ -414,6 +450,12 @@ export async function auditSensitiveWords(
       projectId: payload.projectId,
       chapterId: payload.chapterId,
       category: 'all',
+      ...(payload.workflowContextPrompt
+        ? {
+            contextPrompt: payload.workflowContextPrompt,
+            context_prompt: payload.workflowContextPrompt,
+          }
+        : {}),
     },
   )
 

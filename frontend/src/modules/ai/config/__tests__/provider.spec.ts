@@ -20,11 +20,14 @@ vi.mock('../../../../wailsjs/go/main/App', () => ({
 
 import {
   DEFAULT_AI_PROVIDER_SETTINGS,
+  createAIProviderConfigTemplate,
+  exportAIProviderConfigText,
   getUserProviderRuntimeConfig,
   hasUsableUserProviderConfig,
   hasSessionApiKey,
   hydrateAIProviderSettingsFromDesktop,
   loadAIProviderSettings,
+  parseAIProviderConfigText,
   persistAIProviderSettingsToDesktop,
   saveAIProviderSettings,
 } from '../provider'
@@ -118,6 +121,46 @@ describe('ai provider settings', () => {
         temperature: 0.7,
       }),
     ).toBe(true)
+  })
+
+  it('imports provider settings from config file text and stores api key only in session', () => {
+    const imported = parseAIProviderConfigText(
+      JSON.stringify({
+        mode: 'user_api',
+        baseURL: 'http://127.0.0.1:11434/',
+        endpointPath: 'v1/chat/completions',
+        model: ' qwen3 ',
+        apiKey: 'sk-1234567890abcdefghijkl',
+        temperature: 0.4,
+      }),
+    )
+    const saved = saveAIProviderSettings(imported)
+
+    expect(saved.userProvider.baseURL).toBe('http://127.0.0.1:11434')
+    expect(saved.userProvider.endpointPath).toBe('/v1/chat/completions')
+    expect(saved.userProvider.apiKey).toContain('****')
+    expect(getUserProviderRuntimeConfig().apiKey).toBe('sk-1234567890abcdefghijkl')
+  })
+
+  it('exports and templates provider config without leaking api key', () => {
+    const exported = exportAIProviderConfigText({
+      mode: 'user_api',
+      userProvider: {
+        providerType: 'openai-compatible',
+        baseURL: 'http://127.0.0.1:11434',
+        endpointPath: '/v1/chat/completions',
+        model: 'qwen3',
+        apiKey: 'sk-1234567890abcdefghijkl',
+        temperature: 0.7,
+      },
+    })
+    const template = createAIProviderConfigTemplate()
+
+    expect(exported).toContain('"apiKey": ""')
+    expect(exported).not.toContain('sk-1234567890abcdefghijkl')
+    expect(template).toContain('"version": 1')
+    expect(template).toContain('"mode": "user_api"')
+    expect(template).toContain('"baseURL": "http://localhost:11434"')
   })
 
   it('hydrates provider settings from desktop storage when wails runtime is available', async () => {

@@ -17,6 +17,7 @@
         :ai-action-trigger="aiActionTrigger"
         :ai-apply-feedback="aiApplyFeedback"
         :workflow-context="workflowContext"
+        :scene-stage="sceneStage"
         :draft-proposals="draftProposals"
         :harness-data="harnessData"
         @ai-apply="(payload: WriterAIApplyPayload) => $emit('ai-apply', payload)"
@@ -59,6 +60,7 @@ import type {
 } from '@/modules/writer/stores/v3/storyHarnessStore'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 import type { RightToolType } from '@/modules/writer/types/workspaceLayout'
+import type { WriterSceneStageState } from '@/modules/writer/types/sceneStage'
 
 // =======================
 // Props & Emits
@@ -74,6 +76,7 @@ defineProps<{
   aiActionTrigger: import('@/modules/writer/types/workflow').WriterAIActionTrigger | null
   aiApplyFeedback: import('@/modules/writer/types/workflow').WriterAIApplyFeedback | null
   workflowContext: import('@/modules/writer/types/workflow').WriterWorkflowContext
+  sceneStage?: WriterSceneStageState | null
   draftProposals: WriterDraftProposal[]
   harnessData?: {
     projectId: string

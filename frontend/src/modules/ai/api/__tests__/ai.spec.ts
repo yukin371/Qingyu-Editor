@@ -150,7 +150,8 @@ describe('ai api facade', () => {
     expect(health.hasRuntimeSecret).toBe(true)
   })
 
-  it('does not call user api health check when runtime secret is missing', async () => {
+  it('allows user api health check without runtime secret for local providers', async () => {
+    userAIProviderApi.chat.mockResolvedValue({ reply: 'OK' })
     hasSessionApiKey.mockReturnValue(false)
 
     const health = await checkAIProviderHealth({
@@ -165,11 +166,11 @@ describe('ai api facade', () => {
       },
     })
 
-    expect(userAIProviderApi.chat).not.toHaveBeenCalled()
-    expect(health.ok).toBe(false)
+    expect(userAIProviderApi.chat).toHaveBeenCalledWith('请只回复 OK，用于连接测试。', [])
+    expect(health.ok).toBe(true)
     expect(health.configured).toBe(true)
     expect(health.hasRuntimeSecret).toBe(false)
-    expect(health.message).toContain('API Key')
+    expect(health.message).toContain('未使用 API Key')
   })
 
   it('routes chat requests through the shared backend ai helper when direct mode is off', async () => {
@@ -283,7 +284,14 @@ describe('ai api facade', () => {
           sourceText: '原正文',
         },
         assets: [],
-        workflowSummary: [],
+        workflowSummary: ['节奏：压迫后反击'],
+        sceneStage: {
+          sceneTitle: '雨夜追杀',
+          beatTitle: '旧友现身',
+          beatStatus: 'active',
+          goal: '逼主角做选择',
+          conflict: '救人与守秘冲突',
+        },
         evidence: [],
         budget: {
           maxChars: 6000,
@@ -328,9 +336,16 @@ describe('ai api facade', () => {
           documentTitle: '第一章',
           sourceText: '原正文',
         },
-        assets: [],
-        workflowSummary: [],
-        evidence: [],
+          assets: [],
+          workflowSummary: ['节奏：压迫后反击'],
+          sceneStage: {
+            sceneTitle: '雨夜追杀',
+            beatTitle: '旧友现身',
+            beatStatus: 'active',
+            goal: '逼主角做选择',
+            conflict: '救人与守秘冲突',
+          },
+          evidence: [],
         budget: {
           maxChars: 6000,
           truncated: false,
@@ -349,8 +364,11 @@ describe('ai api facade', () => {
         content: '原正文',
         projectId: 'project-1',
         chapterId: 'chapter-1',
+        contextPrompt: expect.stringContaining('当前场景舞台：'),
       }),
     )
+    expect(postAIRequest.mock.calls[0]?.[1].contextPrompt).toContain('当前拍：旧友现身')
+    expect(postAIRequest.mock.calls[0]?.[1].contextPrompt).toContain('节奏：压迫后反击')
     expect(result.message).toContain('章节摘要')
   })
 

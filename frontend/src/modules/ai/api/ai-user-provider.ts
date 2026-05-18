@@ -284,6 +284,7 @@ export const userAIProviderApi = {
         maxLength?: number
         summaryType?: 'brief' | 'detailed' | 'keypoints'
         includeQuotes?: boolean
+        contextPrompt?: string
       },
     ): Promise<AISummaryResponse> => {
       const response = await promptForText(
@@ -298,6 +299,9 @@ export const userAIProviderApi = {
             ? `摘要正文尽量控制在 ${options.maxLength} 字以内。`
             : '',
           options?.includeQuotes ? '允许极短引用原文。' : '不要直接引用原文句子。',
+          options?.contextPrompt?.trim()
+            ? `以下上下文只用于判断剧情、人物状态和当前创作目标，不要把它当作原文摘要对象：\n${options.contextPrompt.trim()}`
+            : '',
           'JSON schema:',
           '{"summary":"摘要正文","keyPoints":["要点1","要点2"]}',
           '原文：',
@@ -328,11 +332,19 @@ export const userAIProviderApi = {
       }
     },
 
-    proofread: async (text: string): Promise<AIProofreadResponse> => {
+    proofread: async (
+      text: string,
+      options?: {
+        contextPrompt?: string
+      },
+    ): Promise<AIProofreadResponse> => {
       const response = await promptForText(
         '你是中文小说审校助手。请只输出 JSON，不要输出其他解释。',
         [
           '检查错别字、语病、标点和表达问题，没有问题时 issues 返回空数组。',
+          options?.contextPrompt?.trim()
+            ? `以下上下文只用于判断措辞是否符合当前场景、人物和节拍，不要审校上下文本身：\n${options.contextPrompt.trim()}`
+            : '',
           'JSON schema:',
           '{"score":8.5,"issues":[{"type":"语法","severity":"medium","message":"问题描述","suggestions":["修改建议"]}]}',
           '原文：',
@@ -409,6 +421,8 @@ export const userAIProviderApi = {
       content: string
       projectId?: string
       chapterId?: string
+      workflowContextPrompt?: string
+      contextPrompt?: string
     }): Promise<{
       totalMatches?: number
       isSafe?: boolean
@@ -422,6 +436,9 @@ export const userAIProviderApi = {
           '{"totalMatches":1,"isSafe":false,"sensitiveWords":[{"word":"示例","reason":"涉政/暴力/违规"}]}',
           payload.projectId ? `项目ID：${payload.projectId}` : '',
           payload.chapterId ? `章节ID：${payload.chapterId}` : '',
+          (payload.contextPrompt || payload.workflowContextPrompt)?.trim()
+            ? `以下上下文只用于判断表达风险和叙事语境，不要检测上下文本身：\n${(payload.contextPrompt || payload.workflowContextPrompt)?.trim()}`
+            : '',
           '待检测内容：',
           payload.content,
         ]

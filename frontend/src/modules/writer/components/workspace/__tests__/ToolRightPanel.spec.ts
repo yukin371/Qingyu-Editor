@@ -44,6 +44,10 @@ vi.mock('@/modules/writer/composables/useToolOverlay', () => ({
 vi.mock('@/modules/writer/composables/useWriterAISummaryContext', () => ({
   useWriterAISummaryContext: () => ({
     aiSummaryContextText: computed(() => '创作蓝图与资产摘要：\n当前章节资产：角色 2；地点 1'),
+    aiSceneStageSummary: computed(() => ({
+      sceneTitle: '雨夜祠堂',
+      beatTitle: '主角救下线人',
+    })),
   }),
 }))
 
@@ -86,9 +90,9 @@ describe('ToolRightPanel', () => {
           AssetDetailPanel: { template: '<div data-testid="asset-detail-panel" />' },
           AssetQuickEditorDialog: { template: '<div data-testid="asset-quick-editor-dialog" />' },
           AIChatPanel: {
-            props: ['aiSummaryContextText'],
+            props: ['aiSummaryContextText', 'aiSceneStageSummary'],
             template:
-              '<div data-testid="ai-chat-panel-summary-context">{{ aiSummaryContextText }}</div>',
+              '<div><div data-testid="ai-chat-panel-summary-context">{{ aiSummaryContextText }}</div><div data-testid="ai-chat-panel-scene-stage">{{ aiSceneStageSummary?.beatTitle }}</div></div>',
           },
           ProofreadPanel: true,
           InspirationPanel: true,
@@ -137,9 +141,9 @@ describe('ToolRightPanel', () => {
           AssetDetailPanel: { template: '<div data-testid="asset-detail-panel" />' },
           AssetQuickEditorDialog: { template: '<div data-testid="asset-quick-editor-dialog" />' },
           AIChatPanel: {
-            props: ['aiSummaryContextText'],
+            props: ['aiSummaryContextText', 'aiSceneStageSummary'],
             template:
-              '<div data-testid="ai-chat-panel-summary-context">{{ aiSummaryContextText }}</div>',
+              '<div><div data-testid="ai-chat-panel-summary-context">{{ aiSummaryContextText }}</div><div data-testid="ai-chat-panel-scene-stage">{{ aiSceneStageSummary?.beatTitle }}</div></div>',
           },
           ProofreadPanel: true,
           InspirationPanel: true,
@@ -152,6 +156,9 @@ describe('ToolRightPanel', () => {
     )
     expect(wrapper.get('[data-testid="ai-chat-panel-summary-context"]').text()).toContain(
       '当前章节资产：角色 2；地点 1',
+    )
+    expect(wrapper.get('[data-testid="ai-chat-panel-scene-stage"]').text()).toContain(
+      '主角救下线人',
     )
   })
 })

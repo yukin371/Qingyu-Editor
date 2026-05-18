@@ -46,6 +46,7 @@
           :workflow-context="workflowContext"
           :ai-summary-context-text="aiSummaryContextText"
           :ai-asset-summaries="aiAssetSummaries"
+          :ai-scene-stage-summary="aiSceneStageSummary"
           :draft-proposals="draftProposals"
           @ai-apply="(payload) => $emit('ai-apply', payload)"
           @proposal-draft="(payload) => $emit('proposal-draft', payload)"
@@ -130,6 +131,7 @@ import type {
   WriterWorkflowContext,
   WriterWorkflowActionRequest,
 } from '@/modules/writer/types/workflow'
+import type { WriterSceneStageState } from '@/modules/writer/types/sceneStage'
 import type {
   StoryHarnessChangeRequestDecision,
   StoryHarnessCharacterSummary,
@@ -148,6 +150,7 @@ const props = defineProps<{
   aiActionTrigger: WriterAIActionTrigger | null
   aiApplyFeedback: WriterAIApplyFeedback | null
   workflowContext: WriterWorkflowContext
+  sceneStage?: WriterSceneStageState | null
   draftProposals: WriterDraftProposal[]
   harnessData?: {
     projectId: string
@@ -214,10 +217,11 @@ const {
   chapterId: computed(() => props.chapterId),
   chapters: computed(() => props.chapters),
 })
-const { aiSummaryContextText, aiAssetSummaries } = useWriterAISummaryContext({
+const { aiSummaryContextText, aiAssetSummaries, aiSceneStageSummary } = useWriterAISummaryContext({
   projectId: computed(() => props.projectId),
   chapterId: computed(() => props.chapterId),
   chapters: computed(() => props.chapters),
+  sceneStage: computed(() => props.sceneStage),
 })
 const setDetailPanelRef = (
   value: Element | ComponentPublicInstance | null,

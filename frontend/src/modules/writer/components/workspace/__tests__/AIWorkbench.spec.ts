@@ -157,9 +157,9 @@ describe('AIWorkbench', () => {
 
   it('passes current chapter source text down to chat AIPanel', () => {
     const AIPanelStub = defineComponent({
-      props: ['sourceText', 'aiSummaryContextText'],
+      props: ['sourceText', 'aiSummaryContextText', 'aiSceneStageSummary'],
       template:
-        '<div><div data-testid="ai-panel-source-text">{{ sourceText }}</div><div data-testid="ai-panel-summary-context">{{ aiSummaryContextText }}</div></div>',
+        '<div><div data-testid="ai-panel-source-text">{{ sourceText }}</div><div data-testid="ai-panel-summary-context">{{ aiSummaryContextText }}</div><div data-testid="ai-panel-scene-stage">{{ aiSceneStageSummary?.beatTitle }}</div></div>',
     })
 
     const wrapper = mount(AIWorkbench, {
@@ -183,6 +183,10 @@ describe('AIWorkbench', () => {
           pendingChangeRequestCount: 0,
         },
         aiSummaryContextText: '创作蓝图与资产摘要：\n当前章节资产：角色 2',
+        aiSceneStageSummary: {
+          sceneTitle: '雨夜祠堂',
+          beatTitle: '主角救下线人',
+        },
         draftProposals: [],
       },
       global: {
@@ -199,6 +203,7 @@ describe('AIWorkbench', () => {
     expect(wrapper.get('[data-testid="ai-panel-summary-context"]').text()).toContain(
       '创作蓝图与资产摘要：',
     )
+    expect(wrapper.get('[data-testid="ai-panel-scene-stage"]').text()).toBe('主角救下线人')
   })
 
   it('promotes AI result candidates into proposal drafts through emitted events', async () => {
