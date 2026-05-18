@@ -68,7 +68,7 @@
 - **主区模式 owner 已收窄**：`editorStore.activeTool` 现在只承担 `writing / immersive` 两种主区状态；`ai / encyclopedia / chapters` 这类历史模式只能留在路由兼容或侧栏/overlay owner 中，不能再写回主编辑区状态机。
 - **快捷键 owner 已收口**：`useToolOverlay` 只做状态管理；快捷键动作定义在 `workspaceShortcutActions.ts`，配置由 `useShortcutConfig` 承接，行为绑定由 `useWorkspaceShortcuts` 承接。
 - **快捷键配置只保留设置页入口**：工作区顶部齿轮打开 `WorkspaceSettingsPanel`，其中的“快捷键”页签是唯一配置入口；更多操作菜单不得再直接弹 `ShortcutSettingsPanel`，避免同一配置能力出现两个弹窗壳和重复回归面。
-- **使用文档入口归工作台顶部更多操作**：`WorkspaceTopbar` 的更多操作可以打开轻量内置帮助文档，完整长文档仍归 `Qingyu-Editor/docs`；不要把帮助中心做成新路由、右栏工具或第二套设置页入口。
+- **使用文档入口归工作台顶部更多操作**：`WorkspaceTopbar` 的更多操作可以打开内嵌产品说明书，内容需要与 `Qingyu-Editor/docs/user-guide.md` 保持同步；不要把帮助中心做成新路由、右栏工具或第二套设置页入口。
 - **快捷键锁定规则按 action id**：快捷键设置面板不得再按 `Tab`、`Escape` 这类具体键名推断“系统键”；是否可编辑必须复用 `workspaceShortcutActions.ts` 中声明的 action 级锁定口径，避免编辑器宿主拆分后再次回到键位硬编码。
 - **AI handoff 不要断链**：工具页、Story Harness、编辑器选区发出的 `trigger-ai-action` 必须继续落到 `ProjectWorkspace.handleWorkflowAction`，否则右栏 AI 工作台会失去上下文注入。
 - **正文改写 diff owner 在编辑器，不在右栏审批**：`AIWorkbench` / `AIPanel` / `RewriteWorkbenchTool` 产生的 `apply-generated-text` 必须立刻转交 `ProjectWorkspace.handleAIApplyGeneratedText`，由正文编辑器注册 inline diff 并在正文内接受/放弃；右栏只允许展示候选摘要与“继续修改”入口，不能再次拦截成第二套侧栏审批流。

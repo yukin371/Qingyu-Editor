@@ -116,7 +116,10 @@ describe('WorkspaceTopbar', () => {
     await wrapper.vm.$nextTick()
 
     expect(wrapper.find('.workspace-help-docs').exists()).toBe(true)
-    expect(wrapper.text()).toContain('推荐创作流程')
+    expect(wrapper.text()).toContain('Qingyu-Editor 产品说明书')
+    expect(wrapper.text()).toContain('从灵感到第一章')
+    expect(wrapper.text()).toContain('截图演示：新项目骨架')
+    expect(wrapper.find('.workspace-help-docs__figure').exists()).toBe(true)
     expect(wrapper.text()).toContain('docs/user-guide.md')
   })
 })

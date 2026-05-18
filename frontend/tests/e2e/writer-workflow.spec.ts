@@ -40,8 +40,9 @@ test('新建项目后进入第一卷第一章，并能打开内置使用文档',
 
   await openHelpDocs(page)
   await expect(page.getByRole('dialog', { name: 'Qingyu-Editor 使用文档' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: '推荐创作流程' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'AI Provider 与正文 diff' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '把小说创作收进一条清晰链路' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '从灵感到第一章' })).toBeVisible()
+  await expect(page.getByLabel('AI 辅助写作截图演示')).toBeVisible()
 })
 
 test('AI Provider 设置支持用户 API、多 provider 配置和密钥脱敏导出', async ({ page }) => {

@@ -136,27 +136,72 @@
     >
       <div class="workspace-help-docs">
         <aside class="workspace-help-docs__nav" aria-label="文档目录">
+          <div class="workspace-help-docs__nav-title">产品说明书</div>
           <a
             v-for="section in helpSections"
             :key="section.id"
             :href="`#${section.id}`"
           >
+            <span>{{ section.kicker }}</span>
             {{ section.title }}
           </a>
         </aside>
         <div class="workspace-help-docs__content">
+          <div class="workspace-help-docs__hero">
+            <p>Qingyu-Editor 产品说明书</p>
+            <h2>把小说创作收进一条清晰链路</h2>
+            <div class="workspace-help-docs__hero-grid">
+              <span>创建骨架</span>
+              <span>写当前章节</span>
+              <span>沉淀设定</span>
+              <span>AI 回审</span>
+            </div>
+          </div>
           <section
             v-for="section in helpSections"
             :id="section.id"
             :key="section.id"
             class="workspace-help-docs__section"
           >
-            <p class="workspace-help-docs__eyebrow">{{ section.kicker }}</p>
-            <h3>{{ section.title }}</h3>
-            <p>{{ section.summary }}</p>
-            <ul>
-              <li v-for="item in section.items" :key="item">{{ item }}</li>
-            </ul>
+            <div class="workspace-help-docs__section-copy">
+              <p class="workspace-help-docs__eyebrow">{{ section.kicker }}</p>
+              <h3>{{ section.title }}</h3>
+              <p>{{ section.summary }}</p>
+              <ol>
+                <li v-for="step in section.steps" :key="step">{{ step }}</li>
+              </ol>
+              <div class="workspace-help-docs__tips">
+                <span v-for="tip in section.tips" :key="tip">{{ tip }}</span>
+              </div>
+            </div>
+            <figure class="workspace-help-docs__figure" :aria-label="`${section.title}截图演示`">
+              <figcaption>
+                <strong>{{ section.demo.title }}</strong>
+                <span>{{ section.demo.caption }}</span>
+              </figcaption>
+              <div class="workspace-help-docs__mock-window">
+                <div class="workspace-help-docs__mock-bar">
+                  <i></i>
+                  <i></i>
+                  <i></i>
+                  <span>{{ section.demo.windowTitle }}</span>
+                </div>
+                <div class="workspace-help-docs__mock-body">
+                  <div
+                    v-for="panel in section.demo.panels"
+                    :key="panel.label"
+                    class="workspace-help-docs__mock-panel"
+                    :class="`is-${panel.tone}`"
+                  >
+                    <small>{{ panel.label }}</small>
+                    <strong>{{ panel.value }}</strong>
+                  </div>
+                </div>
+              </div>
+              <div class="workspace-help-docs__callouts">
+                <span v-for="callout in section.demo.callouts" :key="callout">{{ callout }}</span>
+              </div>
+            </figure>
           </section>
         </div>
       </div>
@@ -193,61 +238,223 @@ defineEmits<{
 const overflowOpen = ref(false)
 const showWorkspaceSettings = ref(false)
 const showHelpDocs = ref(false)
-const helpSections = [
+
+type HelpDemoPanel = {
+  label: string
+  value: string
+  tone: 'primary' | 'soft' | 'plain' | 'accent'
+}
+
+type HelpSection = {
+  id: string
+  kicker: string
+  title: string
+  summary: string
+  steps: string[]
+  tips: string[]
+  demo: {
+    title: string
+    caption: string
+    windowTitle: string
+    panels: HelpDemoPanel[]
+    callouts: string[]
+  }
+}
+
+const helpSections: HelpSection[] = [
   {
     id: 'help-flow',
-    kicker: '用户指南',
-    title: '推荐创作流程',
-    summary: '先确定作品方向和基础骨架，再围绕当前场景写正文，最后用 AI 和工具回审。',
-    items: [
-      '新项目默认生成第一卷和第一章，创建后进入章节标题行。',
-      '大纲负责规划，当前场景负责当前剧情段承诺，章节负责正文保存。',
-      '结构舞台是默认聚合入口，右侧设定和下侧场景舞台服务日常写作。',
+    kicker: '01',
+    title: '从灵感到第一章',
+    summary: '第一次使用时，只要先完成项目骨架，再进入第一章写作。系统不会要求作者先学完整套工具。',
+    steps: [
+      '在工作台点击“新建项目”，填写作品名后创建。',
+      '系统自动生成第一卷、第一章，并进入章节标题行。',
+      '正文区保持空白，作者先命名章节，再开始写正文。',
+      '如果还没有完整设定，可以先写一句灵感，再逐步让 AI 协助扩展。',
     ],
+    tips: ['适合新作品起步', '默认骨架：第一卷 / 第一章', '正文不重复渲染标题'],
+    demo: {
+      title: '截图演示：新项目骨架',
+      caption: '创建后直接进入第一章，左侧目录只保留必要层级。',
+      windowTitle: '工作台 -> 新建项目',
+      panels: [
+        { label: '左侧目录', value: '第一卷 / 第一章', tone: 'primary' },
+        { label: '标题行', value: '第一章，可直接改名', tone: 'soft' },
+        { label: '正文区', value: '空白，等待落稿', tone: 'plain' },
+      ],
+      callouts: ['不用先配置复杂项目', '创建后自动跳转', '标题与正文职责分离'],
+    },
+  },
+  {
+    id: 'help-drafting',
+    kicker: '02',
+    title: '日常写作主界面',
+    summary: '工作区只围绕三件事展开：左侧管理章节，中间写正文，右侧和下侧提供当前写作需要的辅助。',
+    steps: [
+      '左侧栏管理卷和章节，新建章节会追加到当前卷末尾。',
+      '中间标题行只负责章节名，正文区负责正文、图片、AI diff。',
+      '右侧栏保留 AI、设定、灵感、审查、校对几个常用入口。',
+      '下侧场景舞台管理当前剧情段，不会因为切章自动换拍。',
+    ],
+    tips: ['章节是保存单位', '场景是叙事单位', '切章不自动推进节拍'],
+    demo: {
+      title: '截图演示：工作区分区',
+      caption: '左中右下四区固定职责，避免工具互相抢位置。',
+      windowTitle: '项目工作区',
+      panels: [
+        { label: '左栏', value: '卷 / 章节', tone: 'soft' },
+        { label: '主编辑区', value: '标题 + 正文 + diff', tone: 'primary' },
+        { label: '右栏', value: 'AI / 设定 / 审查', tone: 'accent' },
+        { label: '下侧', value: '当前场景与节拍', tone: 'plain' },
+      ],
+      callouts: ['高频入口常驻', '高级工具进 overlay', '长篇通过定位而非全量铺开'],
+    },
   },
   {
     id: 'help-assets',
-    kicker: '资产闭环',
+    kicker: '03',
     title: '设定、资产与 @ 引用',
-    summary: '全局资产由作者创建和维护，本章/本卷资产由系统从正文引用自动检出。',
-    items: [
-      '正文中输入 @名称 可创建或引用角色、地点、物件、组织、概念。',
-      '右侧设定支持本章、本卷、全局视图；资产总览提供完整增删改查。',
-      '删除正文中的 @资产 只解除局部引用，不会删除全局资产。',
+    summary: '手动创建永远是全局资产；本章和本卷只是系统从正文中自动检测出的局部投影。',
+    steps: [
+      '正文输入 @名称，可创建或引用角色、地点、物件、组织、概念。',
+      '右侧设定按“本章 / 本卷 / 全局”查看，从小范围到全局逐层理解。',
+      '分类右侧的 + 用于快速创建对应类型的全局资产。',
+      '删除正文里的 @资产 只解除当前章节引用，不删除全局资产。',
     ],
+    tips: ['全局是 canonical 资产', '本章/本卷自动检出', '局部不提供手动删除资产'],
+    demo: {
+      title: '截图演示：右侧设定',
+      caption: '同一个资产能在全局维护，也能在本章/本卷被自动检出。',
+      windowTitle: '右侧设定',
+      panels: [
+        { label: '范围切换', value: '本章 / 本卷 / 全局', tone: 'primary' },
+        { label: '分类树', value: '角色 + 地点 + 物件', tone: 'soft' },
+        { label: '详情区', value: '摘要 / 引用 / 编辑', tone: 'plain' },
+      ],
+      callouts: ['@ 引用形成局部投影', '右栏可快建快编', '资产总览负责完整 CRUD'],
+    },
   },
   {
     id: 'help-ai',
-    kicker: 'AI 协作',
-    title: 'AI Provider 与正文 diff',
-    summary: 'AI 只辅助写作、审查和整理，正文修改必须进入可审阅 diff。',
-    items: [
-      '设置页支持系统服务和用户 API，用户 API 可保存多个 provider 配置槽。',
-      'API Key 不回显，导出配置不包含明文密钥；桌面端通过 secret store 保存。',
-      '改写、扩写、续写会挂正文 inline diff；总结、审校、整理只输出建议。',
+    kicker: '04',
+    title: 'AI 辅助写作',
+    summary: 'AI 不是替作者接管作品，而是帮助写、审、整理。所有正文改动都必须进入可审阅 diff。',
+    steps: [
+      '设置页可选择系统服务，或配置自己的 OpenAI 兼容 provider。',
+      '用户 API 支持多个 provider 配置槽，导出配置不会包含明文 Key。',
+      '续写、扩写、改写会挂 inline diff；作者确认后才进入正文。',
+      '总结、审校、整理只输出建议、候选卡或任务卡，不静默修改正文。',
     ],
+    tips: ['正文修改必须可审阅', '密钥不回显', '默认只给必要上下文'],
+    demo: {
+      title: '截图演示：AI 与 Provider',
+      caption: '右侧发起写作请求，设置页统一管理 provider 与模型。',
+      windowTitle: 'AI 面板 / Provider 设置',
+      panels: [
+        { label: 'AI 模式', value: '写作 / 整理 / 回审 / 问答', tone: 'primary' },
+        { label: 'Provider', value: '系统服务 / 用户 API', tone: 'soft' },
+        { label: '正文结果', value: 'inline diff 后确认', tone: 'accent' },
+      ],
+      callouts: ['不静默覆盖正文', '多章节默认出计划', 'evidence 显示参考来源'],
+    },
   },
   {
-    id: 'help-tools',
-    kicker: '工具分层',
-    title: '基础工具与高级工具',
-    summary: '基础工具保持简单，高级工具只在复杂作品需要时介入。',
-    items: [
-      '结构舞台、当前场景、设定是日常工具，建议优先使用。',
-      '关系图谱、时间线、故事分支适合复杂人物关系、多线叙事和互动作品。',
-      '长篇作品通过搜索、定位、窗口化和范围地图管理，不默认铺开全量节点。',
+    id: 'help-structure',
+    kicker: '05',
+    title: '大纲、结构舞台与当前场景',
+    summary: '大纲是规划草稿，当前场景是当前剧情段承诺，结构舞台是把章节、大纲、节拍和设定聚合起来看的入口。',
+    steps: [
+      '用大纲记录卷、章节目标和草稿想法，不要求一次写完整。',
+      '用下侧当前场景写清目标、冲突、完成条件和下一拍。',
+      '用结构舞台检查当前章节是否入纲、节拍是否明确、附近章节是否连贯。',
+      '点击“进入下一拍”才推进节拍；切换章节不会自动推进。',
     ],
+    tips: ['大纲偏规划', '节拍偏执行', '结构舞台偏聚合'],
+    demo: {
+      title: '截图演示：结构聚合',
+      caption: '结构舞台不是第二个大纲，而是当前写作状态的总控台。',
+      windowTitle: '结构舞台 / 当前场景',
+      panels: [
+        { label: '当前章节', value: '第二章', tone: 'primary' },
+        { label: '当前拍', value: '旧友现身', tone: 'accent' },
+        { label: '大纲绑定', value: '卷一 / 起势段', tone: 'soft' },
+        { label: '下一步', value: '进入下一拍', tone: 'plain' },
+      ],
+      callouts: ['避免重复录入', '聚合基本工具', 'AI 可读取摘要但不推进剧情'],
+    },
+  },
+  {
+    id: 'help-advanced',
+    kicker: '06',
+    title: '高级工具何时使用',
+    summary: '商业写作可以只用基础工具；关系图谱、时间线、故事分支用于复杂作品，不是每个作者都必须打开。',
+    steps: [
+      '人物关系复杂时，用关系图谱理解阵营、关系和变化。',
+      '多线叙事、倒叙或长跨度事件时，用时间线保持因果清晰。',
+      '互动小说、视觉小说或游戏叙事时，用故事分支管理路线。',
+      '长篇项目中，这些工具都默认窗口化展示，不全量铺开几千个节点。',
+    ],
+    tips: ['基础工具优先', '高级工具按需', '长篇默认窗口化'],
+    demo: {
+      title: '截图演示：高级工具 overlay',
+      caption: '高级工具在 overlay 中展开，日常工作区不会被复杂信息淹没。',
+      windowTitle: 'Overlay 工具',
+      panels: [
+        { label: '关系图谱', value: '角色 / 阵营 / 关系', tone: 'primary' },
+        { label: '时间线', value: '事件窗口 + 定位', tone: 'soft' },
+        { label: '故事分支', value: '路线 / 节点 / 结局', tone: 'accent' },
+      ],
+      callouts: ['普通小说可不使用', '复杂作品再打开', 'AI 消费摘要而非全量细节'],
+    },
+  },
+  {
+    id: 'help-safe',
+    kicker: '07',
+    title: '安全边界与常见问题',
+    summary: '工具默认保护正文、密钥和资产真相，避免 AI 或误操作造成难以恢复的变化。',
+    steps: [
+      'AI 不自动批量改多个章节；多章节请求默认返回计划或候选。',
+      '全局资产删除只能在明确资产管理动作中发生。',
+      'Provider 配置导出不包含明文 API Key，浏览器环境只保存本次会话密钥。',
+      '如果某个工具看起来太复杂，先回到结构舞台、右侧设定和当前场景三个基础入口。',
+    ],
+    tips: ['AI 不拥有最终决定权', '资产真相在全局', '密钥不进导出文件'],
+    demo: {
+      title: '截图演示：安全确认',
+      caption: '关键改动都保留确认点，作者始终能看见发生了什么。',
+      windowTitle: '安全执行规则',
+      panels: [
+        { label: '正文修改', value: 'inline diff', tone: 'primary' },
+        { label: '资产删除', value: '显式管理动作', tone: 'soft' },
+        { label: 'Provider', value: '密钥脱敏', tone: 'accent' },
+      ],
+      callouts: ['先预览再应用', '本章引用不等于全局资产', '失败原因要可理解'],
+    },
   },
   {
     id: 'help-dev',
-    kicker: '开发者',
+    kicker: '08',
     title: '开发与回归入口',
-    summary: '完整文档位于 Qingyu-Editor/docs，发布前以 v0.1.0-beta 回归清单为准。',
-    items: [
+    summary: '如果你在参与开发或发布验证，以仓库文档和 Playwright 核心链路为准。',
+    steps: [
       '用户指南：docs/user-guide.md；开发者指南：docs/developer-guide.md。',
       '回归清单：docs/ux-regression-checklist.md 与 docs/regression-v0.1.0-beta.md。',
-      '发布说明：docs/release-notes-v0.1.0-beta.md。',
+      '核心 E2E：npm run test:e2e:core -- tests/e2e/writer-workflow.spec.ts。',
+      '发布前还需要 type-check、定向 Vitest 和必要的 Wails 手工回归。',
     ],
+    tips: ['文档与产品入口同步', 'E2E 覆盖主流程', 'Wails secret 仍需手工验收'],
+    demo: {
+      title: '截图演示：回归矩阵',
+      caption: '产品说明书会告诉测试者从哪里验证，不再只靠口头清单。',
+      windowTitle: '发布验证',
+      panels: [
+        { label: '自动化', value: 'type-check + Vitest + E2E', tone: 'primary' },
+        { label: '手工', value: 'Wails / provider / 暗色模式', tone: 'soft' },
+        { label: '文档', value: '回归清单 + 发布说明', tone: 'plain' },
+      ],
+      callouts: ['测试入口固定', '报告产物不提交', '真实 provider 单独验收'],
+    },
   },
 ]
 
@@ -381,30 +588,62 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
 
 .workspace-help-docs {
   display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
+  grid-template-columns: 220px minmax(0, 1fr);
   gap: 18px;
-  height: min(72vh, 760px);
+  height: min(78vh, 860px);
   color: var(--editor-text-primary, #0f172a);
 }
 
 .workspace-help-docs__nav {
   display: grid;
   align-content: start;
-  gap: 8px;
-  padding: 12px;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--editor-bg-base, #ffffff) 96%, transparent), color-mix(in srgb, var(--editor-bg-elevated, #eef2f7) 68%, transparent));
   border-right: 1px solid var(--editor-border, #e2e8f0);
 
+  .workspace-help-docs__nav-title {
+    margin-bottom: 4px;
+    color: var(--editor-text-ghost, #64748b);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
   a {
-    padding: 9px 10px;
-    border-radius: 10px;
+    display: grid;
+    gap: 4px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid transparent;
     color: var(--editor-text-secondary, #475569);
     font-size: 12px;
     font-weight: 700;
     text-decoration: none;
+    line-height: 1.35;
+    background: transparent;
+    transition:
+      background 120ms ease,
+      color 120ms ease,
+      border-color 120ms ease,
+      transform 120ms ease;
 
     &:hover {
-      background: var(--editor-bg-elevated, #eef2f7);
+      background: color-mix(in srgb, var(--editor-accent-soft, #dbeafe) 24%, transparent);
+      border-color: color-mix(in srgb, var(--editor-accent-soft-border, #93c5fd) 38%, transparent);
       color: var(--editor-text-primary, #0f172a);
+      transform: translateX(2px);
+    }
+
+    span {
+      color: var(--editor-text-ghost, #64748b);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
     }
   }
 }
@@ -412,19 +651,82 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
 .workspace-help-docs__content {
   min-width: 0;
   overflow: auto;
-  padding: 4px 8px 18px 0;
+  padding: 4px 6px 18px 0;
+  display: grid;
+  gap: 22px;
+}
+
+.workspace-help-docs__hero {
+  display: grid;
+  gap: 8px;
+  padding: 20px 22px;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #cbd5e1) 84%, transparent);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--editor-accent-soft, #dbeafe) 34%, transparent), transparent 52%),
+    linear-gradient(180deg, color-mix(in srgb, var(--editor-bg-base, #ffffff) 98%, transparent), color-mix(in srgb, var(--editor-bg-elevated, #eef2f7) 78%, transparent));
+  box-shadow: 0 16px 34px color-mix(in srgb, #0f172a 8%, transparent);
+
+  p {
+    margin: 0;
+    color: var(--editor-accent-strong, #1d4ed8);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  h2 {
+    margin: 0;
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 30px;
+    line-height: 1.15;
+  }
+}
+
+.workspace-help-docs__hero-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--editor-bg-elevated, #eef2f7) 74%, transparent);
+    color: var(--editor-text-secondary, #475569);
+    font-size: 12px;
+    font-weight: 700;
+  }
 }
 
 .workspace-help-docs__section {
-  padding: 18px 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 72%, transparent);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--editor-bg-base, #ffffff) 98%, transparent), color-mix(in srgb, var(--editor-bg-elevated, #eef2f7) 84%, transparent));
+  box-shadow: 0 12px 28px color-mix(in srgb, #0f172a 5%, transparent);
   border-bottom: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 70%, transparent);
 
-  &:first-child {
-    padding-top: 0;
+  &:last-child {
+    border-bottom: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 72%, transparent);
+  }
+
+  .workspace-help-docs__section-copy {
+    display: grid;
+    gap: 12px;
+    align-content: start;
   }
 
   h3 {
-    margin: 4px 0 8px;
+    margin: 0;
     color: var(--editor-text-primary, #0f172a);
     font-size: 20px;
     line-height: 1.35;
@@ -437,14 +739,14 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
     line-height: 1.7;
   }
 
-  ul {
+  ol {
     display: grid;
     gap: 8px;
-    margin: 12px 0 0;
-    padding-left: 18px;
+    margin: 0;
+    padding-left: 20px;
   }
 
-  li {
+  ol li {
     color: var(--editor-text-secondary, #475569);
     font-size: 13px;
     line-height: 1.65;
@@ -455,7 +757,178 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   color: var(--editor-accent-strong, #1d4ed8) !important;
   font-size: 11px !important;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.workspace-help-docs__tips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--editor-accent-soft, #dbeafe) 22%, transparent);
+    color: var(--editor-accent-strong, #1d4ed8);
+    font-size: 11px;
+    font-weight: 700;
+  }
+}
+
+.workspace-help-docs__figure {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #cbd5e1) 82%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--editor-bg-base, #ffffff) 98%, transparent), color-mix(in srgb, var(--editor-bg-elevated, #eef2f7) 86%, transparent));
+}
+
+.workspace-help-docs__figure figcaption {
+  display: grid;
+  gap: 4px;
+
+  strong {
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  span {
+    color: var(--editor-text-ghost, #64748b);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+}
+
+.workspace-help-docs__mock-window {
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #cbd5e1) 84%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--editor-bg-base, #ffffff) 98%, transparent), color-mix(in srgb, var(--editor-bg-elevated, #eef2f7) 92%, transparent));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 74%, transparent);
+}
+
+.workspace-help-docs__mock-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--editor-border, #cbd5e1) 78%, transparent);
+  background: color-mix(in srgb, var(--editor-bg-elevated, #eef2f7) 72%, transparent);
+
+  i {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--editor-accent-soft, #dbeafe) 40%, #94a3b8);
+  }
+
+  span {
+    margin-left: 4px;
+    color: var(--editor-text-secondary, #475569);
+    font-size: 11px;
+    font-weight: 700;
+  }
+}
+
+.workspace-help-docs__mock-body {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.workspace-help-docs__mock-panel {
+  display: grid;
+  gap: 5px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #cbd5e1) 80%, transparent);
+  background: color-mix(in srgb, var(--editor-bg-base, #ffffff) 92%, transparent);
+
+  small {
+    color: var(--editor-text-ghost, #64748b);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  strong {
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  &.is-primary {
+    border-color: color-mix(in srgb, var(--editor-accent-soft-border, #93c5fd) 54%, transparent);
+    background: color-mix(in srgb, var(--editor-accent-soft, #dbeafe) 30%, transparent);
+  }
+
+  &.is-soft {
+    background: color-mix(in srgb, var(--editor-bg-elevated, #eef2f7) 72%, transparent);
+  }
+
+  &.is-accent {
+    border-color: color-mix(in srgb, var(--color-warning-300, #f59e0b) 42%, transparent);
+    background: color-mix(in srgb, var(--color-warning-100, #fef3c7) 52%, transparent);
+  }
+}
+
+.workspace-help-docs__callouts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--editor-border, #cbd5e1) 76%, transparent);
+    background: var(--editor-bg-base, #ffffff);
+    color: var(--editor-text-secondary, #475569);
+    font-size: 11px;
+    font-weight: 700;
+  }
+}
+
+@media (max-width: 960px) {
+  .workspace-help-docs {
+    grid-template-columns: 1fr;
+    height: min(78vh, 820px);
+  }
+
+  .workspace-help-docs__nav {
+    display: flex;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--editor-border, #e2e8f0);
+
+    .workspace-help-docs__nav-title {
+      display: none;
+    }
+
+    a {
+      min-width: 150px;
+    }
+  }
+
+  .workspace-help-docs__section {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-help-docs__hero-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .workspace-topbar__right {
