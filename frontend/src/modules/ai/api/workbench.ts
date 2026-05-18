@@ -2,12 +2,28 @@ import { requestWriterAI } from './ai'
 import { isUserProviderModeEnabled } from '../config/provider'
 import { postAIRequest } from './request'
 import { userAIProviderApi } from './ai-user-provider'
-import type {
-  WriterAIAssetSummary,
-  WriterAIContextEvidence,
-  WriterAIPlan,
-  WriterAISceneStageSummary,
-} from '@/modules/writer/utils/writerAIContext'
+
+interface WorkbenchAssetSummary {
+  scope?: 'global' | 'volume' | 'chapter'
+  assetName: string
+  assetType?: string
+  referenceCount?: number
+}
+
+interface WorkbenchSceneStageSummary {
+  sceneTitle?: string
+  beatTitle?: string
+  goal?: string
+  conflict?: string
+  assetNames?: string[]
+}
+
+interface WorkbenchContextEvidence {
+  id: string
+  label: string
+  source: string
+  detail?: string
+}
 
 export interface RewriteToolRequest {
   projectId: string
@@ -15,8 +31,8 @@ export interface RewriteToolRequest {
   originalText: string
   mode: 'polish' | 'expand' | 'shorten'
   instructions?: string
-  skillId?: WriterAIPlan['skillId']
-  toolHintIds?: WriterAIPlan['toolHintIds']
+  skillId?: string
+  toolHintIds?: string[]
 }
 
 export interface RewriteToolResult {
@@ -32,8 +48,8 @@ export interface SummaryToolRequest {
   summaryType?: 'brief' | 'detailed' | 'keypoints'
   includeQuotes?: boolean
   workflowContextPrompt?: string
-  assets?: WriterAIAssetSummary[]
-  sceneStage?: WriterAISceneStageSummary
+  assets?: WorkbenchAssetSummary[]
+  sceneStage?: WorkbenchSceneStageSummary
 }
 
 export interface ChapterSummaryRequest {
@@ -78,8 +94,8 @@ export interface ReviewToolRequest {
   projectId?: string
   chapterId?: string
   workflowContextPrompt?: string
-  assets?: WriterAIAssetSummary[]
-  sceneStage?: WriterAISceneStageSummary
+  assets?: WorkbenchAssetSummary[]
+  sceneStage?: WorkbenchSceneStageSummary
 }
 
 export interface ReviewIssue {
@@ -357,7 +373,7 @@ export async function generateStructurePlan(
               source: 'workflow',
             }
           : undefined,
-      ].filter(Boolean) as WriterAIContextEvidence[],
+      ].filter(Boolean) as WorkbenchContextEvidence[],
       budget: {
         maxChars: Math.min(prompt.length, 4000),
         truncated: prompt.length > 4000,

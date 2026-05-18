@@ -48,7 +48,8 @@ import type {
   OutlineNode,
 } from '@/types/writer'
 import type { ChatMessage, AIToolType, AIConfig, AIHistory } from '@/types/ai'
-import { requestWriterAI, storyGenerate } from '@/modules/ai/api'
+import { storyGenerate } from '@/modules/ai/api'
+import { requestWriterOrchestratedAI } from '@/modules/writer/services/writerAIRequest.service'
 import { useAIContext } from '../composables/useAIContext'
 import { executeWriterTextAction } from '../utils/writerAIGeneration'
 import { syncService, type SyncStatus } from '@/utils/syncService'
@@ -969,7 +970,7 @@ export const useWriterStore = defineStore('writer', {
 
       try {
         const currentDocumentText = this.editorContent || ''
-        const response = await requestWriterAI({
+        const response = await requestWriterOrchestratedAI({
           route: 'chat',
           mutationMode: 'none',
           target: {

@@ -10,14 +10,11 @@ import {
   loadAIProviderSettings,
   type AIProviderSettings,
 } from '../config/provider'
-import type { WriterAIPlan } from '@/modules/writer/utils/writerAIContext'
 import {
-  buildWriterAIAgentPrompt,
-  inferWriterAIWritingSkillId,
-  inferWriterAIWorkflow,
-} from '@/modules/writer/config/writerAIPromptPresets'
-import { buildWriterProjectBriefSummaryLines } from '@/modules/writer/services/writerProjectBrief.service'
-import { buildWriterUserPreferenceSummaryLines } from '@/modules/writer/services/writerUserPreferenceMemory.service'
+  formatAIOrchestrationPrompt,
+  type AIExecutablePlan,
+  type AIPlanEvidence,
+} from '../types/agent'
 import { aiDirectApi, isDirectModeEnabled } from './ai-direct'
 import { userAIProviderApi } from './ai-user-provider'
 import { getAIRequest, postAIRequest, putAIRequest } from './request'
@@ -110,8 +107,8 @@ interface AIAnalysisContextOptions {
 }
 
 export interface WriterAIResult {
-  route: WriterAIPlan['route']
-  mutationMode: WriterAIPlan['mutationMode']
+  route: AIExecutablePlan['route']
+  mutationMode: AIExecutablePlan['mutationMode']
   message: string
   generatedText?: string
   analysis?: {
@@ -122,7 +119,7 @@ export interface WriterAIResult {
   }
   usage?: unknown
   requiresConfirmation: boolean
-  evidence: WriterAIPlan['context']['evidence']
+  evidence?: AIPlanEvidence[]
 }
 
 /**
@@ -520,19 +517,13 @@ export function updateSceneState(
   return putAIRequest(`/ai/story/documents/${documentId}/scene-state`, data)
 }
 
-function formatWriterPlanPrompt(plan: WriterAIPlan): string {
-  const workflow = plan.workflow || inferWriterAIWorkflow(plan)
-  const skillId = plan.skillId || inferWriterAIWritingSkillId(plan)
+function formatWriterPlanPrompt(plan: AIExecutablePlan): string {
   const lines = [
-    buildWriterAIAgentPrompt({
-      workflow,
-      skillId,
-      toolHintIds: plan.toolHintIds,
-    }),
+    formatAIOrchestrationPrompt(plan.orchestration),
     plan.userVisibleSummary,
   ]
   if (plan.intent?.action) {
-    const actionLabelMap: Record<NonNullable<WriterAIPlan['intent']>['action'] & string, string> = {
+    const actionLabelMap: Record<string, string> = {
       summarize: '总结',
       rewrite: '改写',
       continue: '续写',
@@ -568,9 +559,9 @@ function formatWriterPlanPrompt(plan: WriterAIPlan): string {
         .filter(Boolean),
     )
   }
-  if (plan.context.workflowSummary.length > 0) {
+  if ((plan.context.workflowSummary || []).length > 0) {
     lines.push('上下文摘要：')
-    lines.push(...plan.context.workflowSummary.slice(0, 8).map((line) => `- ${line}`))
+    lines.push(...(plan.context.workflowSummary || []).slice(0, 8).map((line) => `- ${line}`))
   }
   const sceneStage = plan.context.sceneStage
   if (
@@ -594,24 +585,14 @@ function formatWriterPlanPrompt(plan: WriterAIPlan): string {
       ].filter(Boolean),
     )
   }
-  if (plan.context.assets.length > 0) {
+  if ((plan.context.assets || []).length > 0) {
     lines.push('资产简表：')
     lines.push(
-      ...plan.context.assets.slice(0, 12).map((asset) => {
+      ...(plan.context.assets || []).slice(0, 12).map((asset) => {
         const scope = asset.scope === 'chapter' ? '章节' : asset.scope === 'volume' ? '卷' : '全局'
-        return `- [${scope}] ${asset.assetName}（${asset.assetType}，引用 ${asset.referenceCount}）`
+        return `- [${scope}] ${asset.assetName}（${asset.assetType || 'asset'}，引用 ${asset.referenceCount || 0}）`
       }),
     )
-  }
-  const projectBriefLines = buildWriterProjectBriefSummaryLines(plan.context.projectBrief)
-  if (projectBriefLines.length > 0) {
-    lines.push('作品 Brief：')
-    lines.push(...projectBriefLines.slice(0, 8).map((line) => `- ${line}`))
-  }
-  const userPreferenceLines = buildWriterUserPreferenceSummaryLines(plan.context.userPreference)
-  if (userPreferenceLines.length > 0) {
-    lines.push('用户长期偏好：')
-    lines.push(...userPreferenceLines.slice(0, 6).map((line) => `- ${line}`))
   }
   return lines.filter(Boolean).join('\n')
 }
@@ -639,7 +620,7 @@ function formatSummaryResponse(response: AISummaryResponse): string {
     .join('\n')
 }
 
-export async function requestWriterAI(plan: WriterAIPlan): Promise<WriterAIResult> {
+export async function requestWriterAI(plan: AIExecutablePlan): Promise<WriterAIResult> {
   if (plan.mutationMode === 'multi_document_plan' || plan.mutationMode === 'chapter_create_plan') {
     return {
       route: plan.route,

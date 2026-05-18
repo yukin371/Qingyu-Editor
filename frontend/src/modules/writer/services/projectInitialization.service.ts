@@ -1,7 +1,7 @@
-import { requestWriterAI } from '@/modules/ai/api'
 import {
   buildWriterInternalSkillPrompt,
 } from '@/modules/writer/config/writerAIPromptPresets'
+import { requestWriterOrchestratedAI } from './writerAIRequest.service'
 import {
   createDefaultWriterProjectBrief,
   type WriterProjectBrief,
@@ -323,7 +323,7 @@ export async function generateWriterProjectInitialization(
   request: WriterProjectInitializationRequest,
 ): Promise<WriterProjectInitializationResult> {
   const prompt = buildInitializationPrompt(request)
-  const result = await requestWriterAI({
+  const result = await requestWriterOrchestratedAI({
     route: 'plan_only',
     mutationMode: 'none',
     target: {

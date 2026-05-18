@@ -68,12 +68,12 @@ import { useBreakpoints } from '@/composables/useBreakpoints'
 import { useChatHistory } from '@/composables/useChatHistory'
 import { useTypewriter } from '@/composables/useTypewriter'
 import { message } from '@/design-system/services'
-import { requestWriterAI } from '@/modules/ai/api'
 import {
   getWriterAIPromptText,
   listWriterAIPromptPresets,
 } from '@/modules/writer/config/writerAIPromptPresets'
 import { executeWriterDocumentCommand } from '@/modules/writer/services/documentToolCommands.service'
+import { requestWriterOrchestratedAI } from '@/modules/writer/services/writerAIRequest.service'
 import {
   writerDocumentAgentService,
   type WriterEditorPlan,
@@ -528,7 +528,7 @@ async function runResolvedAnalysis(
           ...buildAIContextOptions(resolvedTarget),
           projectId: props.sessionId || 'demo-project',
         })
-        const result = await requestWriterAI({
+        const result = await requestWriterOrchestratedAI({
           route: 'analysis',
           mutationMode: 'none',
           target: contextPacket.target || {
@@ -683,7 +683,7 @@ async function runGeneralChatRoute(finalRequestMessage: string) {
         ...buildAIContextOptions(),
         projectId: props.sessionId || 'demo-project',
       })
-      const result = await requestWriterAI({
+      const result = await requestWriterOrchestratedAI({
         route: 'chat',
         mutationMode: 'none',
         target: contextPacket.target || {

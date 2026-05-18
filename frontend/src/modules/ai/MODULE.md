@@ -1,20 +1,21 @@
 # AI 模块
 
-> 最后更新：2026-05-16
+> 最后更新：2026-05-18
 
 ## 职责
 
-独立编辑器中的 AI 接入层，只服务 writer 工作区。负责：
+独立编辑器中的 AI 接入层，目标是成为可拔插、可替换的通用执行系统。负责：
 
-- 对接 `/api/v1/ai/*` 写作辅助接口
-- 提供 writer 可直接消费的 facade 与 workbench 工具函数
+- 对接 `/api/v1/ai/*` 与用户 OpenAI 兼容 provider
+- 提供领域无关的 AI executable plan、工具注册表描述和 orchestration prompt 格式化能力
 - 保持 system remote / 用户 API / legacy direct 的运行时适配
-- 统一 writer AI 请求、provider 健康检查、错误状态与 provider 选择边界
+- 统一 provider 健康检查、错误状态、超时/取消与 provider 选择边界
 
 ## Owns
 
 - `api/ai.ts`：通用 AI 写作能力 facade
-- `api/workbench.ts`：工作区工具化封装
+- `types/agent.ts`：领域无关的可执行 plan、工具 registry 与 orchestration prompt 协议
+- `api/workbench.ts`：历史 workbench 兼容封装；只能消费通用 plan，不得反向依赖 writer 类型
 - `api/request.ts`、`api/ai-direct.ts`、`api/ai-user-provider.ts`：请求与 provider 适配
 - `config/provider.ts`、`stores/aiProviderStore.ts`：AI 接入模式与本地配置
 - `utils/apikey.ts`：本地 AI key 相关辅助
@@ -23,17 +24,18 @@
 
 - 不再承载历史平台 AI 管理后台页面、路由、store、types
 - 不再把 Orval generated API 作为默认导出层
-- 不直接拥有 writer 状态或页面布局，只提供能力接口
+- 不直接拥有 writer 状态、写作 prompt、项目 Brief、用户偏好、页面布局或正文 diff owner
+- 不从 `@/modules/writer/*` 导入写作语义；writer 只能通过 `AIExecutablePlan.orchestration`、`context` 和通用工具 registry 把领域语义交给 AI 执行层
 
 ## 约定
 
 - 运行态默认从 `api/index.ts` 暴露手写 facade，不依赖 `generated/`
-- writer 侧主链路（聊天、分析、单章编辑 diff）必须优先走 `requestWriterAI(plan)`；`continueWriting / rewriteText / summarizeText / proofreadText` 只作为 facade 内部或兼容工具入口使用，组件不直接拼 provider 请求策略、超时或直连地址。
+- writer 侧主链路（聊天、分析、单章编辑 diff）应先在 writer 模块生成 `WriterAIPlan`，再经 `requestWriterOrchestratedAI(plan)` 注入 writer-owned prompt / skill / tool registry，最后调用 AI 模块的 `requestWriterAI(plan)`。
+- `requestWriterAI(plan)` 只认识 `AIExecutablePlan`、provider、history、intent 和 orchestration prompt；不得 import writer prompt preset、项目 Brief service 或用户偏好 service。
 - `requestWriterAI(plan)` 只返回候选结果或计划结果；单章节正文修改仍必须交给 writer 编辑器 diff owner 挂载，多章节/新章节计划不得在 AI API 层静默写入。
 - `requestWriterAI(plan)` 可携带 `intent` 与 `history`；`intent` 只用于选择续写/扩写/改写/总结/审校的生成路径，`history` 只用于普通聊天，不允许把当前发送内容重复写入历史。
-- `requestWriterAI(plan)` 是 writer 极简 AI agent 的唯一执行入口；`workflow / skillId / toolHintIds` 与阶段内置 skill 只用于 prompt orchestration，不代表新增 LLM agent runtime、第二套 AI store 或组件级 provider 策略。
-- `requestWriterAI(plan)` 可以消费 `WriterAIContextPacket` 中的作品 Brief 与用户长期偏好摘要；AI 模块只格式化这些摘要，不拥有项目定位、用户偏好或初始化流程的持久化真相。
-- 分析类请求（总结、审校、风控）也必须通过 `contextPrompt` 接收当前章节、场景舞台、资产与工作流摘要；provider 提示词必须声明这些上下文只供判断叙事语境，不作为待摘要/待审校正文。
+- `workflow / skillId / toolHintIds` 在 AI 层只是通用字符串元数据；真正的写作 skill、阶段提示词和工具说明由 writer orchestration 写入 `plan.orchestration`。
+- 分析类请求（总结、审校、风控）也必须通过 `orchestration.contextPrompt` 或 plan context 接收领域摘要；AI 层只格式化和转发，不成为领域事实 owner。
 - 用户 API 模式当前以 OpenAI 兼容接口为准，最小配置为 `服务地址 + 接口路径 + 模型`
 - 用户 API Provider 可通过预设快速填入常见 baseURL / endpoint / model，但预设只服务设置页体验，不改变请求 facade owner；模型必须继续允许手动输入。
 - Wails 桌面宿主下，用户 API 的真实 API Key 通过系统 secret store 持久化；`localStorage` / SQLite settings 只保留掩码和非敏感配置，浏览器环境仍退回 `sessionStorage`

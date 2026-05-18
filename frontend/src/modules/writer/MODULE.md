@@ -1,6 +1,6 @@
 # Writer Module
 
-> 最后更新：2026-05-16
+> 最后更新：2026-05-18
 
 ## 职责
 
@@ -33,7 +33,8 @@
 - **模板可携带商业机制与 AI prompt 协议**：`templateCatalog.fallback` / Wails template 可提供主角原型、核心驱动、世界压力、章节循环、读者收益、质量约束和推荐 prompt preset；模板中心只展示和应用这些协议，不在模板页直接生成正文。
 - **模板创建项目只生成骨架，不预写正文**：模板应用可以创建默认卷、黄金三章标题和 sidecar 蓝图，但章节正文必须保持空白，由作者进入章节后再写；不要把模板大纲、钩子或兑现点复制进正文区。
 - **AI prompt preset owner 是 `config/writerAIPromptPresets.ts`**：右栏快捷入口、模板推荐提示词和后续回审工具应复用该 preset，不要继续把写/审/整理提示词散落在组件或 mock helper 中。
-- **极简 AI agent 只是编排层，不是新 runtime**：`config/writerAIPromptPresets.ts` 统一维护 `chat / write / review / organize / explain_tool` 工作流、少量推荐写作 skill、阶段内置 skill 与工具提示；组件只选择 workflow/skill/tool hint，真实请求仍必须走 `requestWriterAI(plan)` 与 `WriterAIContextPacket`。
+- **极简 AI agent 只是 writer 编排层，不是新 runtime**：`config/writerAIPromptPresets.ts` 统一维护 `chat / write / review / organize / explain_tool` 工作流、少量推荐写作 skill、阶段内置 skill 与工具提示；组件只选择 workflow/skill/tool hint，真实请求必须先走 `requestWriterOrchestratedAI(plan)` 注入 writer prompt / tool registry，再交给 AI 模块执行。
+- **writer 只向 AI 暴露工具协议，不拥有 provider runtime**：`services/writerAIToolRegistry.service.ts` 维护 `writer.*` 工具说明与安全级别，`utils/writerAIOrchestration.ts` 负责把 `WriterAIPlan + WriterAIContextPacket + skill` 组装成通用 `AIExecutablePlan.orchestration`；provider、密钥、连接健康、超时和错误映射只归 `modules/ai`。
 - **阶段内置 skill 是隐藏提示词能力**：`WRITER_INTERNAL_SKILLS` 按 `initialization / foundation / outline / draft / review / organize` 分层服务“人给方向，AI 补结构”的创作流程，不作为右栏长列表暴露给作者，也不得绕过项目 brief、资产、大纲和正文 diff owner。
 - **工作台壳必须保持模块化和简洁**：`WorkbenchShell` 负责左侧主导航和右侧主内容区的基础骨架；首页、项目页、模板页优先复用 `QyCard / QyButton / QyInput / QySelect / QyDrawer / QyModal` 等设计系统原件，不要再堆叠装饰性卡片、大段说明或自定义平台式大壳。
 - **工作台壳桌面端必须分离滚动**：`WorkbenchShell` 在 `lg` 及以上视口下应保持“左侧导航整列固定高度 + 右侧主内容独立滚动”；不要再让 `/writer`、`/writer/projects`、`/writer/templates` 通过整页文档滚动把左侧导航一起带走。
@@ -82,12 +83,12 @@
 - **AI 工作台头部只保留一层模式切换**：`AIWorkbench` 不再渲染独立“AI 助手”标题，`AIPanel` 也不再额外渲染“对话协作”子头；聊天、改写、总结、审校统一收敛到 `AIWorkbench` 的 tab row，避免右栏出现双头部与重复层级。
 - **对话、改写、总结、审校要共享同一套工作台视觉语言**：`AIPanel`、`RewriteWorkbenchTool`、`SummaryWorkbenchTool`、`ReviewWorkbenchTool` 的 header、说明文案、状态栏和主按钮布局应复用统一样式 token，不要让右栏看起来像四套不同产品拼接。
 - **`/doc patch` 预览也要走统一右栏视觉语言**：命令桥返回的章节 patch 预览不能只是一大段 markdown 说明；`AIChatMessages` 应把它渲染成与当前简约主题一致的状态条 + 变更块卡片，至少展示目标章节、执行状态、变更块摘要与 before/after 片段。
-- **writer 侧 AI 主链路必须走统一 API facade**：右栏聊天、自然语言单章编辑、跨章节单目标编辑、总结与审校都应先构造 `WriterAIPlan` 并调用 `requestWriterAI(plan)`，再由 `src/modules/ai/api` 决定 provider 与具体生成路径。Workbench 兼容工具若暂时保留旧 facade，也不得在组件里各自直接 new axios、各自写 timeout，避免再次出现 15s / 60s / 默认值混杂。
+- **writer 侧 AI 主链路必须走统一 orchestration wrapper**：右栏聊天、自然语言单章编辑、跨章节单目标编辑、总结与审校都应先构造 `WriterAIPlan` 并调用 `requestWriterOrchestratedAI(plan)`，再由 `src/modules/ai/api` 决定 provider 与具体生成路径。Workbench 兼容工具若暂时保留旧 facade，也不得在组件里各自直接 new axios、各自写 timeout，避免再次出现 15s / 60s / 默认值混杂。
 - **普通聊天历史由 plan 显式携带**：`WriterAIPlan.history` 只保留已存在的 user/assistant 往返，不包含当前发送内容；这样既能走统一 facade，又不会把当前 prompt 重复塞进 provider history。
 - **AI 上下文包 owner 是 `utils/writerAIContext.ts`**：右栏聊天、Workbench 工具、资产摘要和结构/时间线/分支简化摘要都应先构造成 `WriterAIContextPacket`，再进入 prompt 或 `modules/ai/api` facade；不要在组件内各自拼全量 prompt。
 - **AI 默认只消费简化上下文**：上下文包默认包含当前章节正文、选区/候选稿、目标条、资产简表、创作蓝图/节奏摘要和证据卡，并受字符预算截断；禁止默认把全书全文或深度资产详情塞进 prompt。
 - **作品 Brief 与用户偏好必须分层**：`services/writerProjectBrief.service.ts` 只保存项目级定位、读者承诺、主题、主角、世界规则和约束；`services/writerUserPreferenceMemory.service.ts` 只保存跨项目写作偏好。项目事实不得写入长期偏好，用户偏好也不得替代当前项目 brief。
-- **项目初始化只生成候选骨架**：`services/projectInitialization.service.ts` 通过 `requestWriterAI(plan)` 生成定位候选、黄金三章骨架和建议资产，必须保持 `mutationMode: none`，不能生成正文、不能静默创建章节或资产。
+- **项目初始化只生成候选骨架**：`services/projectInitialization.service.ts` 通过 `requestWriterOrchestratedAI(plan)` 生成定位候选、黄金三章骨架和建议资产，必须保持 `mutationMode: none`，不能生成正文、不能静默创建章节或资产。
 - **工具交给 AI 的上下文要复用共享 handoff**：角色图谱、时间线、分支、结构节点与全屏工具顶部的 `add_to_chat` 文本应优先走共享 handoff 组装器，不要让每个工具各自拼一套 prompt 文案和指令。
 - **工具提示只允许摘要化进入 AI**：结构舞台、当前场景、资产、图谱、时间线、分支只能通过共享 tool hint 告诉 AI “当前能帮什么 / 何时该用 / 给什么摘要”，不得在工具组件内恢复独立长 prompt 或全量 store 注入。
 - **场景舞台只进入 AI 摘要上下文**：底栏当前场景与当前拍仍由 `useWriterSceneStage` 本地 sidecar 持有；当前草稿以项目级 `activeSceneId + scenes` 结构持续保存，覆盖章节会随当前工作章节自动累积，点击“新场景”才归档当前场景并切到新场景。AI 只能通过 `WriterAISceneStageSummary` 消费场景、覆盖章节、目标、冲突、完成条件、下一拍和在场资产摘要，不得把场景舞台状态复制成 AI store 或让 AI 静默推进节拍。

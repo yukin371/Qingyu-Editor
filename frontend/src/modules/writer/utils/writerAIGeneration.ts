@@ -1,5 +1,5 @@
-import { requestWriterAI } from '@/modules/ai/api'
 import type { AIApplyMode, WriterPromptIntent } from '@/modules/writer/types/workflow'
+import { requestWriterOrchestratedAI } from '@/modules/writer/services/writerAIRequest.service'
 import { buildWriterAIContextPacket, type WriterAIContextOptions } from './writerAIContext'
 import {
   buildWriterEditInstructions,
@@ -53,7 +53,7 @@ export async function executeWriterTextAction({
   documentId,
   documentTitle,
 }: WriterActionExecutionParams): Promise<Record<string, any>> {
-  const result = await requestWriterAI({
+  const result = await requestWriterOrchestratedAI({
     route: 'single_document_edit',
     mutationMode: 'single_document_diff',
     target: {
@@ -176,7 +176,7 @@ export async function requestWriterContextualEditIntent(params: {
       label: params.applyMode === 'replace_document' ? '本章全文' : undefined,
     },
   })
-  const result = await requestWriterAI({
+  const result = await requestWriterOrchestratedAI({
     route: 'single_document_edit',
     mutationMode: 'single_document_diff',
     target: contextPacket.target || {

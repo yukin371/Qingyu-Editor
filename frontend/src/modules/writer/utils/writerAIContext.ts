@@ -1,5 +1,6 @@
 import type { WriterWorkflowContext } from '@/modules/writer/types/workflow'
 import { buildWriterWorkflowContextPrompt } from '@/modules/writer/types/workflow'
+import type { AIExecutablePlan, AIOrchestrationPrompt } from '@/modules/ai/types/agent'
 import type {
   WriterAIMinimalWorkflow,
   WriterAIToolHintId,
@@ -119,7 +120,7 @@ export interface WriterAIContextPacket {
   }
 }
 
-export interface WriterAIPlan {
+export interface WriterAIPlan extends AIExecutablePlan {
   route: WriterAIRoute
   mutationMode: 'none' | 'single_document_diff' | 'multi_document_plan' | 'chapter_create_plan'
   target: WriterDocumentTarget
@@ -132,6 +133,7 @@ export interface WriterAIPlan {
     targetLength?: number
   }
   history?: Array<{ role: 'user' | 'assistant'; content: string }>
+  orchestration?: AIOrchestrationPrompt
   requiresConfirmation: boolean
   userVisibleSummary: string
 }
