@@ -34,15 +34,15 @@ const sceneStage: WriterSceneStageState = {
 }
 
 describe('WorkspaceSceneStagePanel', () => {
-  it('renders compact scene stage summary', () => {
+  it('renders only the editable scene columns without duplicate summary chrome', () => {
     const wrapper = mount(WorkspaceSceneStagePanel, {
       props: { sceneStage },
     })
 
-    expect(wrapper.text()).toContain('当前场景')
-    expect(wrapper.text()).toContain('当前章节：第一章')
+    expect(wrapper.find('.workspace-scene-stage__summary-row').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('当前章节：第一章')
+    expect(wrapper.text()).not.toContain('当前章节已纳入')
     expect(wrapper.text()).toContain('第一章 - 第二章（2章）')
-    expect(wrapper.text()).toContain('2 章覆盖')
     expect(wrapper.find('input[name="scene-stage-beat-title"]').exists()).toBe(true)
   })
 
@@ -52,6 +52,7 @@ describe('WorkspaceSceneStagePanel', () => {
     })
 
     await wrapper.get('input[aria-label="场景名称"]').setValue('雨夜追杀')
+    await wrapper.get('select[name="scene-stage-beat-status"]').setValue('done')
     await wrapper.get('input[name="scene-stage-beat-title"]').setValue('旧友现身')
     await wrapper.get('select[name="scene-stage-coverage-count"]').setValue('1')
     await wrapper.get('input[name="scene-stage-range"]').setValue('第3-5章')
@@ -63,6 +64,7 @@ describe('WorkspaceSceneStagePanel', () => {
 
     expect(wrapper.emitted('update-draft')).toEqual([
       [{ sceneTitle: '雨夜追杀' }],
+      [{ beatStatus: 'done' }],
       [{ beatTitle: '旧友现身' }],
       [{ coverageChapterCount: '1' }],
       [{ rangeLabel: '第3-5章' }],

@@ -1,46 +1,5 @@
 <template>
   <div class="workspace-scene-stage">
-    <section class="workspace-scene-stage__summary-row">
-      <div class="workspace-scene-stage__identity">
-        <span>当前场景</span>
-        <strong>{{ sceneStage.sceneTitle || '未命名场景' }}</strong>
-      </div>
-
-      <div class="workspace-scene-stage__center">
-        <p class="workspace-scene-stage__summary">
-          {{ sceneStage.summaryLine || '还没有写入当前场景摘要。' }}
-        </p>
-        <div class="workspace-scene-stage__chips">
-          <span class="workspace-scene-stage__chip">当前章节：{{ sceneStage.chapterTitle || '未选择' }}</span>
-          <span class="workspace-scene-stage__chip">系统覆盖：{{ sceneStage.coverageLabel || '未关联章节' }}</span>
-          <span class="workspace-scene-stage__chip">
-            {{ sceneStage.currentChapterLinked ? '当前章节已纳入' : '当前章节未纳入' }}
-          </span>
-          <span class="workspace-scene-stage__chip">{{ sceneStage.chapterCount || 0 }} 章覆盖</span>
-        </div>
-      </div>
-
-      <div class="workspace-scene-stage__controls">
-        <select
-          class="workspace-scene-stage__status-select"
-          :value="sceneStage.beatStatus"
-          name="scene-stage-beat-status"
-          aria-label="当前场景状态"
-          @change="handleDraftInput('beatStatus', $event)"
-        >
-          <option value="planned">未开始</option>
-          <option value="active">进行中</option>
-          <option value="done">已完成</option>
-        </select>
-        <div class="workspace-scene-stage__actions">
-          <button type="button" @click="$emit('advance-beat')">进入下一拍</button>
-          <button type="button" @click="$emit('start-scene')">新场景</button>
-          <button type="button" @click="$emit('send-to-ai')">交给 AI</button>
-          <button type="button" @click="$emit('open-assets')">查看设定</button>
-        </div>
-      </div>
-    </section>
-
     <section class="workspace-scene-stage__editor-row">
       <div class="workspace-scene-stage__edit-grid">
         <div class="workspace-scene-stage__edit-zone workspace-scene-stage__edit-zone--basic">
@@ -86,6 +45,19 @@
         </div>
         <div class="workspace-scene-stage__edit-zone workspace-scene-stage__edit-zone--beat">
           <label class="workspace-scene-stage__field">
+            <span>状态</span>
+            <select
+              :value="sceneStage.beatStatus"
+              name="scene-stage-beat-status"
+              aria-label="当前场景状态"
+              @change="handleDraftInput('beatStatus', $event)"
+            >
+              <option value="planned">未开始</option>
+              <option value="active">进行中</option>
+              <option value="done">已完成</option>
+            </select>
+          </label>
+          <label class="workspace-scene-stage__field">
             <span>当前拍</span>
             <input
               :value="sceneStage.beatTitle || ''"
@@ -104,6 +76,12 @@
               @input="handleDraftInput('nextBeatTitle', $event)"
             />
           </label>
+          <div class="workspace-scene-stage__actions">
+            <button type="button" @click="$emit('advance-beat')">进入下一拍</button>
+            <button type="button" @click="$emit('start-scene')">新场景</button>
+            <button type="button" @click="$emit('send-to-ai')">交给 AI</button>
+            <button type="button" @click="$emit('open-assets')">查看设定</button>
+          </div>
         </div>
         <div class="workspace-scene-stage__edit-zone workspace-scene-stage__edit-zone--stakes">
           <label class="workspace-scene-stage__field workspace-scene-stage__field--stacked">
@@ -170,130 +148,17 @@ const handleDraftInput = (field: keyof WriterSceneStageDraft, event: Event) => {
   box-sizing: border-box;
   height: 100%;
   min-height: 0;
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 0;
+  display: block;
   overflow: hidden;
   overscroll-behavior: contain;
 }
 
-.workspace-scene-stage__summary-row,
 .workspace-scene-stage__editor-row {
+  height: 100%;
   min-width: 0;
-  background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
-}
-
-.workspace-scene-stage__summary-row {
-  min-height: 46px;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: center;
-  gap: 0;
-  padding: 0;
-  overflow: hidden;
-  border-bottom: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 88%, transparent);
-  background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
-}
-
-.workspace-scene-stage__editor-row {
   min-height: 0;
-  padding: 0;
   overflow: hidden;
-}
-
-.workspace-scene-stage__identity {
-  min-width: 0;
-  max-width: 100%;
-  min-height: 46px;
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 7px 12px;
-  background: color-mix(in srgb, var(--editor-accent, #2563eb) 5%, transparent);
-
-  span {
-    flex: 0 0 auto;
-    color: var(--editor-text-ghost, #94a3b8);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-  }
-
-  strong {
-    min-width: 0;
-    color: var(--editor-text-primary, #0f172a);
-    font-size: 15px;
-    font-weight: 800;
-    line-height: 1.2;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
-
-.workspace-scene-stage__center {
-  min-width: 0;
-  max-width: 100%;
-  min-height: 46px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 12px;
-  border-left: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 88%, transparent);
-  background: color-mix(in srgb, var(--editor-bg-surface, #f8fafc) 42%, transparent);
-}
-
-.workspace-scene-stage__summary {
-  min-width: 120px;
-  flex: 1 1 auto;
-  margin: 0;
-  color: var(--editor-text-secondary, #334155);
-  font-size: 12px;
-  line-height: 1.35;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.workspace-scene-stage__chips {
-  flex: 0 1 auto;
-  min-width: 0;
-  max-width: 48%;
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 6px;
-  overflow: hidden;
-}
-
-.workspace-scene-stage__chip {
-  flex: 0 0 auto;
-  max-width: 170px;
-  display: inline-flex;
-  align-items: center;
-  min-height: 22px;
-  padding: 0 8px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--editor-bg-surface, #f8fafc) 82%, transparent);
-  color: var(--editor-text-secondary, #334155);
-  font-size: 11px;
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.workspace-scene-stage__controls {
-  min-width: 0;
-  max-width: 100%;
-  min-height: 46px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 7px 10px 7px 12px;
-  border-left: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 88%, transparent);
-  background: color-mix(in srgb, var(--editor-bg-elevated, #f1f5f9) 36%, transparent);
+  background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
 }
 
 .workspace-scene-stage__actions {
@@ -346,13 +211,8 @@ const handleDraftInput = (field: keyof WriterSceneStageDraft, event: Event) => {
 }
 
 .workspace-scene-stage__status-select {
-  width: auto;
-  min-width: 88px;
-  height: 26px;
-  padding: 0 20px 0 9px;
-  color: var(--editor-text-secondary, #334155);
-  font-size: 11px;
-  font-weight: 800;
+  min-height: 28px;
+  padding: 5px 8px;
 }
 
 .workspace-scene-stage__edit-grid {
@@ -458,35 +318,7 @@ const handleDraftInput = (field: keyof WriterSceneStageDraft, event: Event) => {
 }
 
 @media (max-width: 760px) {
-  .workspace-scene-stage__summary-row {
-    grid-template-columns: 1fr;
-    align-items: stretch;
-  }
-
-  .workspace-scene-stage__identity,
-  .workspace-scene-stage__center,
-  .workspace-scene-stage__controls {
-    min-height: 0;
-    padding: 7px 10px;
-    border-left: none;
-  }
-
-  .workspace-scene-stage__center,
-  .workspace-scene-stage__controls {
-    border-top: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 68%, transparent);
-  }
-
-  .workspace-scene-stage__center,
-  .workspace-scene-stage__controls {
-    align-items: flex-start;
-  }
-
-  .workspace-scene-stage__controls {
-    justify-content: flex-start;
-  }
-
-  .workspace-scene-stage__actions,
-  .workspace-scene-stage__chips {
+  .workspace-scene-stage__actions {
     flex-wrap: wrap;
   }
 

@@ -49,6 +49,9 @@ describe('WorkspaceBottomPanel', () => {
     expect(wrapper.get('.workspace-bottom-panel__resize-handle').attributes('aria-label')).toBe(
       '调整场景舞台高度',
     )
+    expect(wrapper.text()).not.toContain('当前场景')
+    expect(wrapper.text()).not.toContain('当前章节：第一章')
+    expect(wrapper.text()).toContain('收起')
   })
 
   it('emits the next height when dragging upward or downward', async () => {
