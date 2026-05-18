@@ -19,6 +19,7 @@ vi.mock('../../../../wailsjs/go/main/App', () => ({
 }))
 
 import {
+  AI_PROVIDER_PRESETS,
   DEFAULT_AI_PROVIDER_SETTINGS,
   createAIProviderConfigTemplate,
   exportAIProviderConfigText,
@@ -72,6 +73,18 @@ describe('ai provider settings', () => {
 
   it('loads default settings when storage is empty', () => {
     expect(loadAIProviderSettings()).toEqual(DEFAULT_AI_PROVIDER_SETTINGS)
+  })
+
+  it('provides common provider presets and custom provider entry', () => {
+    const presetIds = AI_PROVIDER_PRESETS.map((preset) => preset.id)
+
+    expect(presetIds).toEqual(
+      expect.arrayContaining(['qwen', 'deepseek', 'kimi', 'glm', 'gemini', 'gpt', 'claude', 'custom']),
+    )
+    expect(AI_PROVIDER_PRESETS.find((preset) => preset.id === 'custom')?.baseURL).toBe('')
+    expect(AI_PROVIDER_PRESETS.find((preset) => preset.id === 'qwen')?.endpointPath).toBe(
+      '/chat/completions',
+    )
   })
 
   it('normalizes and persists user provider settings', () => {
@@ -161,6 +174,7 @@ describe('ai provider settings', () => {
     expect(template).toContain('"version": 1')
     expect(template).toContain('"mode": "user_api"')
     expect(template).toContain('"baseURL": "http://localhost:11434"')
+    expect(template).toContain('"roleModels"')
   })
 
   it('hydrates provider settings from desktop storage when wails runtime is available', async () => {

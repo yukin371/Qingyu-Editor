@@ -87,6 +87,33 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     },
   })
 
+  const writingModel = computed({
+    get: () => snapshot.value.roleModels.writing,
+    set: (value: string) => {
+      snapshot.value.roleModels.writing = value
+      clearHealth()
+      persist()
+    },
+  })
+
+  const reviewModel = computed({
+    get: () => snapshot.value.roleModels.review,
+    set: (value: string) => {
+      snapshot.value.roleModels.review = value
+      clearHealth()
+      persist()
+    },
+  })
+
+  const organizeModel = computed({
+    get: () => snapshot.value.roleModels.organize,
+    set: (value: string) => {
+      snapshot.value.roleModels.organize = value
+      clearHealth()
+      persist()
+    },
+  })
+
   const providerReady = computed(
     () =>
       snapshot.value.userProvider.baseURL.trim().length > 0 &&
@@ -110,6 +137,7 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
 
   const resetUserProvider = () => {
     snapshot.value.userProvider = { ...DEFAULT_USER_PROVIDER_CONFIG }
+    snapshot.value.roleModels = { writing: '', review: '', organize: '' }
     clearHealth()
     persist()
   }
@@ -119,10 +147,18 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     if (!preset) {
       return
     }
+    if (preset.id === 'custom') {
+      snapshot.value.userProvider.baseURL = ''
+      snapshot.value.userProvider.endpointPath = preset.endpointPath
+      snapshot.value.userProvider.model = ''
+      clearHealth()
+      persist()
+      return
+    }
     snapshot.value.userProvider.baseURL = preset.baseURL
     snapshot.value.userProvider.endpointPath = preset.endpointPath
     if (!preset.models.includes(snapshot.value.userProvider.model.trim())) {
-      snapshot.value.userProvider.model = preset.models[0] || ''
+      snapshot.value.userProvider.model = preset.recommendedModel || preset.models[0] || ''
     }
     clearHealth()
     persist()
@@ -155,6 +191,7 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     snapshot.value = saveAIProviderSettings({
       mode: 'system_remote',
       userProvider: { ...DEFAULT_USER_PROVIDER_CONFIG },
+      roleModels: { writing: '', review: '', organize: '' },
     })
     health.value = null
     await clearAIProviderSettingsFromDesktop()
@@ -175,6 +212,9 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     baseURL,
     endpointPath,
     model,
+    writingModel,
+    reviewModel,
+    organizeModel,
     apiKey,
     temperature,
     providerReady,

@@ -20,28 +20,40 @@ export interface AIUserProviderConfig {
   temperature: number
 }
 
+export interface AIProviderRoleModels {
+  writing: string
+  review: string
+  organize: string
+}
+
 export interface AIProviderSettings {
   mode: AIAccessMode
   userProvider: AIUserProviderConfig
+  roleModels: AIProviderRoleModels
 }
 
 export interface AIProviderPreset {
   id: string
   label: string
+  description: string
   baseURL: string
   endpointPath: string
+  providerType: AIUserProviderType
   models: string[]
+  recommendedModel: string
 }
 
 export interface AIProviderConfigFile {
   version?: 1
   mode?: AIAccessMode
+  providerPresetId?: string
   baseURL?: string
   endpointPath?: string
   model?: string
   apiKey?: string
   temperature?: number
   userProvider?: Partial<AIUserProviderConfig>
+  roleModels?: Partial<AIProviderRoleModels>
 }
 
 const STORAGE_KEY = 'qingyu-ai-provider-settings'
@@ -53,33 +65,109 @@ const DEFAULT_ENDPOINT_PATH = '/v1/chat/completions'
 export const AI_PROVIDER_PRESETS: AIProviderPreset[] = [
   {
     id: 'ollama',
-    label: 'Ollama 本地',
+    label: 'Ollama',
+    description: '本地模型，适合离线写作与快速回审',
     baseURL: 'http://localhost:11434',
     endpointPath: DEFAULT_ENDPOINT_PATH,
+    providerType: 'openai-compatible',
     models: ['qwen3', 'qwen2.5', 'llama3.1', 'deepseek-r1'],
+    recommendedModel: 'qwen3',
+  },
+  {
+    id: 'qwen',
+    label: 'Qwen / 百炼',
+    description: '国内常用，兼容 OpenAI 协议',
+    baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    endpointPath: '/chat/completions',
+    providerType: 'openai-compatible',
+    models: ['qwen-max', 'qwen-plus', 'qwen3-max', 'qwen3-plus'],
+    recommendedModel: 'qwen3-max',
+  },
+  {
+    id: 'deepseek',
+    label: 'DeepSeek',
+    description: '适合长文写作、审校与思考型任务',
+    baseURL: 'https://api.deepseek.com/v1',
+    endpointPath: '/chat/completions',
+    providerType: 'openai-compatible',
+    models: ['deepseek-v4-pro', 'deepseek-chat', 'deepseek-reasoner'],
+    recommendedModel: 'deepseek-v4-pro',
+  },
+  {
+    id: 'kimi',
+    label: 'Kimi',
+    description: '长上下文友好，适合整章整理与复盘',
+    baseURL: 'https://api.moonshot.cn/v1',
+    endpointPath: '/chat/completions',
+    providerType: 'openai-compatible',
+    models: ['kimi-k2.5', 'moonshot-v1-128k', 'moonshot-v1-32k'],
+    recommendedModel: 'kimi-k2.5',
+  },
+  {
+    id: 'glm',
+    label: 'GLM / Z.AI',
+    description: '适合结构化生成与中文创作',
+    baseURL: 'https://open.bigmodel.cn/api/paas/v4',
+    endpointPath: '/chat/completions',
+    providerType: 'openai-compatible',
+    models: ['GLM-5', 'GLM-4.7', 'GLM-4.6', 'glm-5.1'],
+    recommendedModel: 'GLM-5',
+  },
+  {
+    id: 'gemini',
+    label: 'Gemini',
+    description: '适合多模态与跨段分析，兼容 OpenAI 端点',
+    baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai',
+    endpointPath: '/chat/completions',
+    providerType: 'openai-compatible',
+    models: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash'],
+    recommendedModel: 'gemini-2.5-flash',
+  },
+  {
+    id: 'gpt',
+    label: 'GPT / OpenAI',
+    description: '通用基线，适合稳定聊天和轻量写作',
+    baseURL: 'https://api.openai.com/v1',
+    endpointPath: '/chat/completions',
+    providerType: 'openai-compatible',
+    models: ['gpt-4.1', 'gpt-4.1-mini', 'gpt-4o', 'gpt-4o-mini'],
+    recommendedModel: 'gpt-4.1',
+  },
+  {
+    id: 'claude',
+    label: 'Claude / Anthropic',
+    description: '擅长长文理解与审校，支持兼容层',
+    baseURL: 'https://api.anthropic.com/v1',
+    endpointPath: '/chat/completions',
+    providerType: 'openai-compatible',
+    models: ['claude-opus-4-1-20250805', 'claude-sonnet-4-20250514', 'claude-haiku-4-20250514'],
+    recommendedModel: 'claude-sonnet-4-20250514',
+  },
+  {
+    id: 'custom',
+    label: '自定义',
+    description: '填入自有兼容 provider，适合代理或私有网关',
+    baseURL: '',
+    endpointPath: DEFAULT_ENDPOINT_PATH,
+    providerType: 'openai-compatible',
+    models: [],
+    recommendedModel: '',
   },
   {
     id: 'lm-studio',
-    label: 'LM Studio 本地',
+    label: 'LM Studio',
+    description: '本地兼容服务，适合调试与离线试写',
     baseURL: 'http://localhost:1234',
     endpointPath: DEFAULT_ENDPOINT_PATH,
+    providerType: 'openai-compatible',
     models: ['local-model', 'qwen3', 'llama3.1'],
-  },
-  {
-    id: 'openai',
-    label: 'OpenAI',
-    baseURL: 'https://api.openai.com',
-    endpointPath: DEFAULT_ENDPOINT_PATH,
-    models: ['gpt-4.1', 'gpt-4.1-mini', 'gpt-4o', 'gpt-4o-mini'],
-  },
-  {
-    id: 'openrouter',
-    label: 'OpenRouter',
-    baseURL: 'https://openrouter.ai/api',
-    endpointPath: DEFAULT_ENDPOINT_PATH,
-    models: ['openai/gpt-4.1-mini', 'anthropic/claude-3.5-sonnet', 'qwen/qwen3-coder'],
+    recommendedModel: 'local-model',
   },
 ]
+
+function cloneDefaultRoleModels(): AIProviderRoleModels {
+  return { ...DEFAULT_AI_PROVIDER_SETTINGS.roleModels }
+}
 
 export const DEFAULT_USER_PROVIDER_CONFIG: AIUserProviderConfig = {
   providerType: 'openai-compatible',
@@ -93,6 +181,11 @@ export const DEFAULT_USER_PROVIDER_CONFIG: AIUserProviderConfig = {
 export const DEFAULT_AI_PROVIDER_SETTINGS: AIProviderSettings = {
   mode: 'system_remote',
   userProvider: { ...DEFAULT_USER_PROVIDER_CONFIG },
+  roleModels: {
+    writing: '',
+    review: '',
+    organize: '',
+  },
 }
 
 function sanitizeText(value: unknown, maxLength: number = 500): string {
@@ -129,12 +222,22 @@ function normalizeUserProvider(
   value: Partial<AIUserProviderConfig> | undefined,
 ): AIUserProviderConfig {
   return {
-    providerType: 'openai-compatible',
+    providerType: value?.providerType || 'openai-compatible',
     baseURL: normalizeBaseURL(value?.baseURL),
     endpointPath: normalizeEndpointPath(value?.endpointPath),
     model: sanitizeText(value?.model, 200),
     apiKey: sanitizeText(value?.apiKey, 500),
     temperature: clampTemperature(value?.temperature),
+  }
+}
+
+function normalizeRoleModels(
+  value: Partial<AIProviderRoleModels> | undefined,
+): AIProviderRoleModels {
+  return {
+    writing: sanitizeText(value?.writing, 200),
+    review: sanitizeText(value?.review, 200),
+    organize: sanitizeText(value?.organize, 200),
   }
 }
 
@@ -156,6 +259,7 @@ function parseAIProviderSettings(raw: string | null | undefined): AIProviderSett
     return {
       mode: normalizeMode(parsed.mode),
       userProvider: normalizeUserProvider(parsed.userProvider),
+      roleModels: normalizeRoleModels(parsed.roleModels),
     }
   } catch {
     return null
@@ -175,6 +279,7 @@ function normalizeProviderConfigFile(value: AIProviderConfigFile): AIProviderSet
   return {
     mode: normalizeMode(value.mode ?? 'user_api'),
     userProvider: normalizeUserProvider(userProvider),
+    roleModels: normalizeRoleModels(value.roleModels),
   }
 }
 
@@ -211,6 +316,11 @@ export function createAIProviderConfigTemplate(): string {
         apiKey: '',
         temperature: DEFAULT_USER_PROVIDER_CONFIG.temperature,
       },
+      roleModels: {
+        writing: 'qwen3',
+        review: 'qwen3',
+        organize: 'qwen3',
+      },
     } satisfies AIProviderConfigFile,
     null,
     2,
@@ -229,6 +339,7 @@ export function exportAIProviderConfigText(
         ...normalized.userProvider,
         apiKey: '',
       },
+      roleModels: normalized.roleModels,
     } satisfies AIProviderConfigFile,
     null,
     2,
@@ -264,6 +375,7 @@ export function loadAIProviderSettings(): AIProviderSettings {
       return {
         ...DEFAULT_AI_PROVIDER_SETTINGS,
         userProvider: { ...DEFAULT_USER_PROVIDER_CONFIG },
+        roleModels: cloneDefaultRoleModels(),
       }
     }
     const sessionApiKey = loadSessionApiKey()
@@ -274,11 +386,13 @@ export function loadAIProviderSettings(): AIProviderSettings {
         ...normalizedUserProvider,
         apiKey: sessionApiKey || normalizedUserProvider.apiKey,
       },
+      roleModels: normalizeRoleModels(parsed.roleModels),
     }
   } catch {
     return {
       ...DEFAULT_AI_PROVIDER_SETTINGS,
       userProvider: { ...DEFAULT_USER_PROVIDER_CONFIG },
+      roleModels: cloneDefaultRoleModels(),
     }
   }
 }
@@ -288,6 +402,7 @@ export function saveAIProviderSettings(settings: AIProviderSettings): AIProvider
   const normalized: AIProviderSettings = {
     mode: normalizeMode(settings.mode),
     userProvider: normalizeUserProvider(settings.userProvider),
+    roleModels: normalizeRoleModels(settings.roleModels),
   }
   const nextApiKey = normalized.userProvider.apiKey
 
@@ -336,6 +451,7 @@ export async function hydrateAIProviderSettingsFromDesktop(): Promise<AIProvider
         ...hydrated.userProvider,
         apiKey: loadSessionApiKey() || hydrated.userProvider.apiKey,
       },
+      roleModels: { ...hydrated.roleModels },
     }
   } catch {
     return null
@@ -358,6 +474,7 @@ export async function persistAIProviderSettingsToDesktop(
       ...sanitized.userProvider,
       apiKey: isApiKeyMasked(sanitized.userProvider.apiKey) ? sanitized.userProvider.apiKey : '',
     },
+    roleModels: sanitized.roleModels,
   } satisfies AIProviderSettings)
 
   try {

@@ -27,9 +27,22 @@ vi.mock('../../config/provider', () => ({
     {
       id: 'ollama',
       label: 'Ollama 本地',
+      description: '本地模型',
       baseURL: 'http://localhost:11434',
       endpointPath: '/v1/chat/completions',
+      providerType: 'openai-compatible',
       models: ['qwen3', 'llama3.1'],
+      recommendedModel: 'qwen3',
+    },
+    {
+      id: 'custom',
+      label: '自定义',
+      description: '自定义 provider',
+      baseURL: '',
+      endpointPath: '/v1/chat/completions',
+      providerType: 'openai-compatible',
+      models: [],
+      recommendedModel: '',
     },
   ],
   DEFAULT_USER_PROVIDER_CONFIG: {
@@ -70,6 +83,11 @@ const defaultSettings = () => ({
     model: '',
     apiKey: '',
     temperature: 0.7,
+  },
+  roleModels: {
+    writing: '',
+    review: '',
+    organize: '',
   },
 })
 
@@ -137,6 +155,11 @@ describe('aiProviderStore', () => {
         apiKey: 'sk-1234567890abcdefghijkl',
         temperature: 0.7,
       },
+      roleModels: {
+        writing: 'qwen3',
+        review: 'llama3.1',
+        organize: '',
+      },
     }
     parseAIProviderConfigText.mockReturnValue(imported)
 
@@ -148,6 +171,8 @@ describe('aiProviderStore', () => {
     expect(store.health).toBeNull()
     expect(store.exportConfigText()).toContain('qwen3')
     expect(store.createConfigTemplate()).toBe('{"mode":"user_api"}')
+    expect(store.writingModel).toBe('qwen3')
+    expect(store.reviewModel).toBe('llama3.1')
   })
 
   it('applies provider presets and keeps model selection reusable', async () => {
@@ -160,5 +185,20 @@ describe('aiProviderStore', () => {
     expect(store.endpointPath).toBe('/v1/chat/completions')
     expect(store.model).toBe('qwen3')
     expect(store.providerPresets[0]?.models).toContain('llama3.1')
+  })
+
+  it('supports custom provider and optional role model assignments', async () => {
+    const store = useAIProviderStore()
+    store.baseURL = 'http://localhost:11434'
+    store.model = 'qwen3'
+    store.writingModel = 'qwen3'
+    store.reviewModel = 'llama3.1'
+
+    store.applyPreset('custom')
+
+    expect(store.baseURL).toBe('')
+    expect(store.model).toBe('')
+    expect(store.writingModel).toBe('qwen3')
+    expect(store.reviewModel).toBe('llama3.1')
   })
 })

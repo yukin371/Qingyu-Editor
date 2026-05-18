@@ -182,10 +182,15 @@
                 v-for="preset in aiProviderStore.providerPresets"
                 :key="preset.id"
                 type="button"
-                :class="{ 'is-active': activeProviderPresetId === preset.id }"
+                :class="{
+                  'is-active':
+                    activeProviderPresetId === preset.id ||
+                    (!activeProviderPresetId && preset.id === 'custom'),
+                }"
                 @click="applyProviderPreset(preset.id)"
               >
-                {{ preset.label }}
+                <strong>{{ preset.label }}</strong>
+                <span>{{ preset.description }}</span>
               </button>
             </div>
 
@@ -243,6 +248,39 @@
                 step="0.05"
               />
             </label>
+
+            <div class="workspace-settings-panel__role-models">
+              <div class="workspace-settings-panel__section-title">用途模型（可选）</div>
+              <div class="workspace-settings-panel__role-grid">
+                <label class="workspace-settings-panel__field">
+                  <span>写作模型</span>
+                  <input
+                    v-model="aiProviderStore.writingModel"
+                    list="workspace-ai-provider-models"
+                    type="text"
+                    placeholder="留空则使用默认模型"
+                  />
+                </label>
+                <label class="workspace-settings-panel__field">
+                  <span>审查模型</span>
+                  <input
+                    v-model="aiProviderStore.reviewModel"
+                    list="workspace-ai-provider-models"
+                    type="text"
+                    placeholder="留空则使用默认模型"
+                  />
+                </label>
+                <label class="workspace-settings-panel__field">
+                  <span>整理模型</span>
+                  <input
+                    v-model="aiProviderStore.organizeModel"
+                    list="workspace-ai-provider-models"
+                    type="text"
+                    placeholder="留空则使用默认模型"
+                  />
+                </label>
+              </div>
+            </div>
 
             <div class="workspace-settings-panel__status-row">
               <span
@@ -363,6 +401,9 @@ const modelOptions = computed(() => {
     ...(activePreset?.models || []),
     ...aiProviderStore.providerPresets.flatMap((preset) => preset.models),
     aiProviderStore.model,
+    aiProviderStore.writingModel,
+    aiProviderStore.reviewModel,
+    aiProviderStore.organizeModel,
   ]
   return Array.from(new Set(models.map((model) => model.trim()).filter(Boolean)))
 })
@@ -707,32 +748,59 @@ function applyConfigText() {
 }
 
 .workspace-settings-panel__provider-presets {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 8px;
   margin-top: 16px;
 
   button {
-    min-height: 30px;
-    padding: 0 11px;
+    min-height: 72px;
+    padding: 10px 11px;
     border: 1px solid var(--editor-border, #dbe3ee);
-    border-radius: 999px;
+    border-radius: 12px;
     background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
     color: var(--editor-text-secondary, #334155);
+    display: grid;
+    gap: 5px;
+    text-align: left;
     font-size: 12px;
-    font-weight: 800;
     cursor: pointer;
+
+    strong {
+      color: var(--editor-text-primary, #0f172a);
+      font-size: 13px;
+    }
+
+    span {
+      color: var(--editor-text-muted, #64748b);
+      line-height: 1.45;
+    }
 
     &.is-active {
       border-color: color-mix(in srgb, var(--editor-accent, #2563eb) 58%, var(--editor-border, #dbe3ee));
       background: color-mix(in srgb, var(--editor-accent-soft, #dbeafe) 52%, var(--editor-layer-panel, #ffffff));
-      color: var(--editor-accent-strong, #1d4ed8);
+
+      strong {
+        color: var(--editor-accent-strong, #1d4ed8);
+      }
     }
   }
 }
 
 .workspace-settings-panel__field--range {
   margin-top: 16px;
+}
+
+.workspace-settings-panel__role-models {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 72%, transparent);
+}
+
+.workspace-settings-panel__role-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .workspace-settings-panel__switch {
@@ -945,6 +1013,7 @@ function applyConfigText() {
 @media (max-width: 760px) {
   .workspace-settings-panel__body--ai,
   .workspace-settings-panel__provider-form-grid,
+  .workspace-settings-panel__role-grid,
   .workspace-settings-panel__system-grid {
     grid-template-columns: 1fr;
   }
