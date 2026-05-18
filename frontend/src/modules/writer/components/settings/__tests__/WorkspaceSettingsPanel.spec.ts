@@ -71,6 +71,7 @@ describe('WorkspaceSettingsPanel', () => {
     expect(wrapper.text()).toContain('用户 API Provider')
     expect(wrapper.text()).toContain('配置就绪')
     expect(wrapper.text()).toContain('API Key 已载入本次会话')
+    expect((wrapper.find('input[type="password"]').element as HTMLInputElement).value).toBe('')
   })
 
   it('clears user provider config from ai settings', async () => {
@@ -166,5 +167,86 @@ describe('WorkspaceSettingsPanel', () => {
     expect((inputs[2]!.element as HTMLInputElement).value).toBe('qwen3')
     expect(wrapper.text()).toContain('已应用配置文件')
     expect(wrapper.text()).toContain('API Key 已载入本次会话')
+    expect((wrapper.find('input[type="password"]').element as HTMLInputElement).value).toBe('')
+  })
+
+  it('applies provider template from compact provider select', async () => {
+    const wrapper = mount(WorkspaceSettingsPanel, {
+      global: {
+        plugins: [createPinia()],
+        stubs: {
+          ShortcutSettingsPanel: {
+            template: '<div data-testid="shortcut-settings-stub" />',
+          },
+        },
+      },
+    })
+
+    await wrapper.findAll('.workspace-settings-panel__tab')[2]!.trigger('click')
+    const modeButtons = wrapper.findAll('.workspace-settings-panel__mode-card')
+    await modeButtons[1]!.trigger('click')
+    await wrapper.find('.workspace-settings-panel__provider-select select').setValue('deepseek')
+
+    const inputs = wrapper.findAll('input[type="text"]')
+    expect((inputs[0]!.element as HTMLInputElement).value).toBe('https://api.deepseek.com/v1')
+    expect((inputs[1]!.element as HTMLInputElement).value).toBe('/chat/completions')
+    expect((inputs[2]!.element as HTMLInputElement).value).toBe('deepseek-v4-pro')
+    expect(wrapper.text()).toContain('适合长文写作、审校与思考型任务')
+  })
+
+  it('creates and switches provider profiles from ai settings', async () => {
+    const wrapper = mount(WorkspaceSettingsPanel, {
+      global: {
+        plugins: [createPinia()],
+        stubs: {
+          ShortcutSettingsPanel: {
+            template: '<div data-testid="shortcut-settings-stub" />',
+          },
+        },
+      },
+    })
+
+    await wrapper.findAll('.workspace-settings-panel__tab')[2]!.trigger('click')
+    const modeButtons = wrapper.findAll('.workspace-settings-panel__mode-card')
+    await modeButtons[1]!.trigger('click')
+
+    const profileSelect = wrapper.find('.workspace-settings-panel__provider-profile select')
+    expect(profileSelect.findAll('option')).toHaveLength(1)
+
+    await wrapper.find('.workspace-settings-panel__secondary-button').trigger('click')
+
+    const nextProfileSelect = wrapper.find('.workspace-settings-panel__provider-profile select')
+    expect(nextProfileSelect.findAll('option')).toHaveLength(2)
+    expect(wrapper.text()).toContain('当前配置')
+  })
+
+  it('deletes extra provider profile but keeps one profile available', async () => {
+    const wrapper = mount(WorkspaceSettingsPanel, {
+      global: {
+        plugins: [createPinia()],
+        stubs: {
+          ShortcutSettingsPanel: {
+            template: '<div data-testid="shortcut-settings-stub" />',
+          },
+        },
+      },
+    })
+
+    await wrapper.findAll('.workspace-settings-panel__tab')[2]!.trigger('click')
+    const modeButtons = wrapper.findAll('.workspace-settings-panel__mode-card')
+    await modeButtons[1]!.trigger('click')
+
+    let profileButtons = wrapper.findAll('.workspace-settings-panel__secondary-button')
+    expect((profileButtons[1]!.element as HTMLButtonElement).disabled).toBe(true)
+
+    await profileButtons[0]!.trigger('click')
+    profileButtons = wrapper.findAll('.workspace-settings-panel__secondary-button')
+    expect((profileButtons[1]!.element as HTMLButtonElement).disabled).toBe(false)
+
+    await profileButtons[1]!.trigger('click')
+
+    const profileSelect = wrapper.find('.workspace-settings-panel__provider-profile select')
+    expect(profileSelect.findAll('option')).toHaveLength(1)
+    expect((wrapper.findAll('.workspace-settings-panel__secondary-button')[1]!.element as HTMLButtonElement).disabled).toBe(true)
   })
 })

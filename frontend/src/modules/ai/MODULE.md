@@ -38,9 +38,10 @@
 - 分析类请求（总结、审校、风控）也必须通过 `orchestration.contextPrompt` 或 plan context 接收领域摘要；AI 层只格式化和转发，不成为领域事实 owner。
 - 用户 API 模式当前以 OpenAI 兼容接口为准，最小配置为 `服务地址 + 接口路径 + 模型`
 - 用户 API Provider 可通过预设快速填入常见 baseURL / endpoint / model，但预设只服务设置页体验，不改变请求 facade owner；模型必须继续允许手动输入。
-- 设置页现在还提供常见 provider 模板与“自定义”模板，用于快速切换 Qwen / DeepSeek / Kimi / GLM / Gemini / GPT / Claude / 本地兼容服务；这些模板只负责填充当前用户 provider，不代表新增第二套运行时 owner。
-- `roleModels` 只是未来按功能分配模型的配置槽位，当前仅用于设置页保存“写作 / 审查 / 整理”的偏好，不直接改写 `requestWriterAI` 的运行时路由。
-- Wails 桌面宿主下，用户 API 的真实 API Key 通过系统 secret store 持久化；`localStorage` / SQLite settings 只保留掩码和非敏感配置，浏览器环境仍退回 `sessionStorage`
-- Provider 配置文件只作为导入/导出载体：导入时允许 JSON 临时包含 `apiKey` 以便快速初始化，应用后真实 key 仍写入 secret store 或 session；导出与持久化必须清空明文 key，只保留非敏感 provider 参数。
+- 设置页现在还提供常见 provider 模板与“自定义”模板，用于快速切换 Qwen / DeepSeek / Kimi / GLM / Gemini / GPT / Claude / 本地兼容服务；模板只填充当前激活的 provider 配置槽，不改变请求 facade owner。
+- 用户 API 支持多个 `providerProfiles` 配置槽；当前运行时只读取 `activeProviderProfileId` 指向的配置槽，后续按写作/审查/整理分配 provider 时仍必须先经 AI 模块配置层收口。
+- `roleModels` 只是未来按功能分配模型的配置槽位，当前跟随各 provider profile 保存“写作 / 审查 / 整理”的偏好，不直接改写 `requestWriterAI` 的运行时路由。
+- Wails 桌面宿主下，用户 API 的真实 API Key 通过系统 secret store 持久化；每个 provider profile 使用独立 secret key，`localStorage` / SQLite settings 只保留掩码和非敏感配置，浏览器环境仍退回 `sessionStorage`
+- Provider 配置文件只作为导入/导出载体：导入时允许 JSON 临时包含 `apiKey` 以便快速初始化，应用后真实 key 仍写入 secret store 或 session；导出与持久化必须清空明文 key，只保留非敏感 provider 参数和配置槽结构。
 - provider 设置页的“检测连接”只暴露当前模式、配置完整性、运行时 secret 是否可用和失败原因；API Key 对本地 OpenAI 兼容 provider 可为空，连接测试不得仅因无 key 失败；不得展示明文 API Key。
 - 任何新增 AI 能力都先判断是否属于 writer 工作区主链路；如果不是，标记 `TBD` 并补确认路径

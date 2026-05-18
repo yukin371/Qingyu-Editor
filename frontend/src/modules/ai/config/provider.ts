@@ -26,10 +26,20 @@ export interface AIProviderRoleModels {
   organize: string
 }
 
+export interface AIProviderProfile {
+  id: string
+  label: string
+  presetId?: string
+  userProvider: AIUserProviderConfig
+  roleModels: AIProviderRoleModels
+}
+
 export interface AIProviderSettings {
   mode: AIAccessMode
   userProvider: AIUserProviderConfig
   roleModels: AIProviderRoleModels
+  activeProviderProfileId: string
+  providerProfiles: AIProviderProfile[]
 }
 
 export interface AIProviderPreset {
@@ -54,6 +64,8 @@ export interface AIProviderConfigFile {
   temperature?: number
   userProvider?: Partial<AIUserProviderConfig>
   roleModels?: Partial<AIProviderRoleModels>
+  activeProviderProfileId?: string
+  providerProfiles?: Partial<AIProviderProfile>[]
 }
 
 const STORAGE_KEY = 'qingyu-ai-provider-settings'
@@ -61,6 +73,7 @@ const SESSION_API_KEY_STORAGE_KEY = 'qingyu-ai-provider-session-api-key'
 const DESKTOP_SETTING_KEY = 'ai.provider.settings'
 const DESKTOP_SECRET_KEY = 'ai.provider.api-key'
 const DEFAULT_ENDPOINT_PATH = '/v1/chat/completions'
+const DEFAULT_PROVIDER_PROFILE_ID = 'default'
 
 export const AI_PROVIDER_PRESETS: AIProviderPreset[] = [
   {
@@ -169,6 +182,10 @@ function cloneDefaultRoleModels(): AIProviderRoleModels {
   return { ...DEFAULT_AI_PROVIDER_SETTINGS.roleModels }
 }
 
+function cloneDefaultUserProviderConfig(): AIUserProviderConfig {
+  return { ...DEFAULT_USER_PROVIDER_CONFIG }
+}
+
 export const DEFAULT_USER_PROVIDER_CONFIG: AIUserProviderConfig = {
   providerType: 'openai-compatible',
   baseURL: '',
@@ -186,6 +203,19 @@ export const DEFAULT_AI_PROVIDER_SETTINGS: AIProviderSettings = {
     review: '',
     organize: '',
   },
+  activeProviderProfileId: DEFAULT_PROVIDER_PROFILE_ID,
+  providerProfiles: [
+    {
+      id: DEFAULT_PROVIDER_PROFILE_ID,
+      label: '默认配置',
+      userProvider: { ...DEFAULT_USER_PROVIDER_CONFIG },
+      roleModels: {
+        writing: '',
+        review: '',
+        organize: '',
+      },
+    },
+  ],
 }
 
 function sanitizeText(value: unknown, maxLength: number = 500): string {
@@ -218,6 +248,11 @@ function normalizeMode(value: unknown): AIAccessMode {
   return value === 'user_api' ? 'user_api' : 'system_remote'
 }
 
+function normalizeProfileId(value: unknown): string {
+  const normalized = sanitizeText(value, 80).replace(/[^\w.-]/g, '-')
+  return normalized || DEFAULT_PROVIDER_PROFILE_ID
+}
+
 function normalizeUserProvider(
   value: Partial<AIUserProviderConfig> | undefined,
 ): AIUserProviderConfig {
@@ -241,6 +276,76 @@ function normalizeRoleModels(
   }
 }
 
+function normalizeProviderProfile(
+  value: Partial<AIProviderProfile> | undefined,
+  fallbackId: string,
+): AIProviderProfile {
+  const id = normalizeProfileId(value?.id || fallbackId)
+  return {
+    id,
+    label: sanitizeText(value?.label, 80) || '用户 API',
+    presetId: sanitizeText(value?.presetId, 80) || undefined,
+    userProvider: normalizeUserProvider(value?.userProvider),
+    roleModels: normalizeRoleModels(value?.roleModels),
+  }
+}
+
+function ensureProviderProfiles(
+  profiles: Partial<AIProviderProfile>[] | undefined,
+  fallbackProvider: AIUserProviderConfig,
+  fallbackRoleModels: AIProviderRoleModels,
+): AIProviderProfile[] {
+  const normalized = (profiles || [])
+    .map((profile, index) => normalizeProviderProfile(profile, `provider-${index + 1}`))
+    .filter((profile, index, all) => all.findIndex((item) => item.id === profile.id) === index)
+
+  if (normalized.length > 0) {
+    return normalized
+  }
+
+  return [
+    {
+      id: DEFAULT_PROVIDER_PROFILE_ID,
+      label: '默认配置',
+      userProvider: { ...fallbackProvider },
+      roleModels: { ...fallbackRoleModels },
+    },
+  ]
+}
+
+function findActiveProfile(settings: AIProviderSettings): AIProviderProfile {
+  return (
+    settings.providerProfiles.find((profile) => profile.id === settings.activeProviderProfileId) ||
+    settings.providerProfiles[0] || {
+      id: DEFAULT_PROVIDER_PROFILE_ID,
+      label: '默认配置',
+      userProvider: normalizeUserProvider(settings.userProvider),
+      roleModels: normalizeRoleModels(settings.roleModels),
+    }
+  )
+}
+
+function syncSettingsFromActiveProfile(settings: Partial<AIProviderSettings>): AIProviderSettings {
+  const profiles = ensureProviderProfiles(
+    settings.providerProfiles,
+    normalizeUserProvider(settings.userProvider),
+    normalizeRoleModels(settings.roleModels),
+  )
+  const requestedProfileId = normalizeProfileId(settings.activeProviderProfileId)
+  const activeProviderProfileId = profiles.some((profile) => profile.id === requestedProfileId)
+    ? requestedProfileId
+    : profiles[0]!.id
+  const activeProfile = profiles.find((profile) => profile.id === activeProviderProfileId)!
+
+  return {
+    mode: normalizeMode(settings.mode),
+    userProvider: { ...activeProfile.userProvider },
+    roleModels: { ...activeProfile.roleModels },
+    activeProviderProfileId,
+    providerProfiles: profiles,
+  }
+}
+
 function isDesktopBridgeAvailable(): boolean {
   if (typeof window === 'undefined') {
     return false
@@ -256,11 +361,17 @@ function parseAIProviderSettings(raw: string | null | undefined): AIProviderSett
 
   try {
     const parsed = JSON.parse(raw) as Partial<AIProviderSettings>
-    return {
+    return syncSettingsFromActiveProfile({
       mode: normalizeMode(parsed.mode),
       userProvider: normalizeUserProvider(parsed.userProvider),
       roleModels: normalizeRoleModels(parsed.roleModels),
-    }
+      activeProviderProfileId: normalizeProfileId(parsed.activeProviderProfileId),
+      providerProfiles: ensureProviderProfiles(
+        parsed.providerProfiles,
+        normalizeUserProvider(parsed.userProvider),
+        normalizeRoleModels(parsed.roleModels),
+      ),
+    })
   } catch {
     return null
   }
@@ -276,11 +387,17 @@ function normalizeProviderConfigFile(value: AIProviderConfigFile): AIProviderSet
     temperature: value.userProvider?.temperature ?? value.temperature,
   }
 
-  return {
+  return syncSettingsFromActiveProfile({
     mode: normalizeMode(value.mode ?? 'user_api'),
     userProvider: normalizeUserProvider(userProvider),
     roleModels: normalizeRoleModels(value.roleModels),
-  }
+    activeProviderProfileId: normalizeProfileId(value.activeProviderProfileId),
+    providerProfiles: ensureProviderProfiles(
+      value.providerProfiles,
+      normalizeUserProvider(userProvider),
+      normalizeRoleModels(value.roleModels),
+    ),
+  })
 }
 
 export function parseAIProviderConfigText(raw: string): AIProviderSettings {
@@ -321,6 +438,27 @@ export function createAIProviderConfigTemplate(): string {
         review: 'qwen3',
         organize: 'qwen3',
       },
+      activeProviderProfileId: DEFAULT_PROVIDER_PROFILE_ID,
+      providerProfiles: [
+        {
+          id: DEFAULT_PROVIDER_PROFILE_ID,
+          label: '默认配置',
+          presetId: 'ollama',
+          userProvider: {
+            providerType: 'openai-compatible',
+            baseURL: 'http://localhost:11434',
+            endpointPath: DEFAULT_ENDPOINT_PATH,
+            model: 'qwen3',
+            apiKey: '',
+            temperature: DEFAULT_USER_PROVIDER_CONFIG.temperature,
+          },
+          roleModels: {
+            writing: 'qwen3',
+            review: 'qwen3',
+            organize: 'qwen3',
+          },
+        },
+      ],
     } satisfies AIProviderConfigFile,
     null,
     2,
@@ -328,7 +466,7 @@ export function createAIProviderConfigTemplate(): string {
 }
 
 export function exportAIProviderConfigText(
-  settings: AIProviderSettings = loadAIProviderSettings(),
+  settings: Partial<AIProviderSettings> = loadAIProviderSettings(),
 ): string {
   const normalized = normalizeProviderConfigFile(settings)
   return JSON.stringify(
@@ -340,31 +478,55 @@ export function exportAIProviderConfigText(
         apiKey: '',
       },
       roleModels: normalized.roleModels,
+      activeProviderProfileId: normalized.activeProviderProfileId,
+      providerProfiles: normalized.providerProfiles.map((profile) => ({
+        ...profile,
+        userProvider: {
+          ...profile.userProvider,
+          apiKey: '',
+        },
+      })),
     } satisfies AIProviderConfigFile,
     null,
     2,
   )
 }
 
-function loadSessionApiKey(): string {
+function getSessionApiKeyStorageKey(profileId: string = DEFAULT_PROVIDER_PROFILE_ID): string {
+  return profileId === DEFAULT_PROVIDER_PROFILE_ID
+    ? SESSION_API_KEY_STORAGE_KEY
+    : `${SESSION_API_KEY_STORAGE_KEY}:${profileId}`
+}
+
+function getDesktopSecretKey(profileId: string = DEFAULT_PROVIDER_PROFILE_ID): string {
+  return profileId === DEFAULT_PROVIDER_PROFILE_ID
+    ? DESKTOP_SECRET_KEY
+    : `${DESKTOP_SECRET_KEY}.${profileId}`
+}
+
+function loadSessionApiKey(profileId: string = DEFAULT_PROVIDER_PROFILE_ID): string {
   try {
-    const raw = sessionStorage.getItem(SESSION_API_KEY_STORAGE_KEY)
+    const raw = sessionStorage.getItem(getSessionApiKeyStorageKey(profileId))
     return typeof raw === 'string' ? raw.trim() : ''
   } catch {
     return ''
   }
 }
 
-function saveSessionApiKey(apiKey: string): void {
+function saveSessionApiKey(apiKey: string, profileId: string = DEFAULT_PROVIDER_PROFILE_ID): void {
   try {
     if (apiKey.trim()) {
-      sessionStorage.setItem(SESSION_API_KEY_STORAGE_KEY, apiKey.trim())
+      sessionStorage.setItem(getSessionApiKeyStorageKey(profileId), apiKey.trim())
       return
     }
-    sessionStorage.removeItem(SESSION_API_KEY_STORAGE_KEY)
+    sessionStorage.removeItem(getSessionApiKeyStorageKey(profileId))
   } catch {
     // ignore sessionStorage failures
   }
+}
+
+export function clearAIProviderProfileSessionSecret(profileId: string): void {
+  saveSessionApiKey('', normalizeProfileId(profileId))
 }
 
 export function loadAIProviderSettings(): AIProviderSettings {
@@ -374,56 +536,72 @@ export function loadAIProviderSettings(): AIProviderSettings {
     if (!parsed) {
       return {
         ...DEFAULT_AI_PROVIDER_SETTINGS,
-        userProvider: { ...DEFAULT_USER_PROVIDER_CONFIG },
+        userProvider: cloneDefaultUserProviderConfig(),
         roleModels: cloneDefaultRoleModels(),
+        activeProviderProfileId: DEFAULT_PROVIDER_PROFILE_ID,
+        providerProfiles: ensureProviderProfiles(undefined, cloneDefaultUserProviderConfig(), cloneDefaultRoleModels()),
       }
     }
-    const sessionApiKey = loadSessionApiKey()
-    const normalizedUserProvider = normalizeUserProvider(parsed.userProvider)
-    return {
-      mode: normalizeMode(parsed.mode),
+    const profiles = parsed.providerProfiles.map((profile) => ({
+      ...profile,
       userProvider: {
-        ...normalizedUserProvider,
-        apiKey: sessionApiKey || normalizedUserProvider.apiKey,
+        ...profile.userProvider,
+        apiKey: loadSessionApiKey(profile.id) || profile.userProvider.apiKey,
       },
-      roleModels: normalizeRoleModels(parsed.roleModels),
-    }
+    }))
+    return syncSettingsFromActiveProfile({
+      ...parsed,
+      providerProfiles: profiles,
+    })
   } catch {
     return {
       ...DEFAULT_AI_PROVIDER_SETTINGS,
-      userProvider: { ...DEFAULT_USER_PROVIDER_CONFIG },
+      userProvider: cloneDefaultUserProviderConfig(),
       roleModels: cloneDefaultRoleModels(),
+      activeProviderProfileId: DEFAULT_PROVIDER_PROFILE_ID,
+      providerProfiles: ensureProviderProfiles(undefined, cloneDefaultUserProviderConfig(), cloneDefaultRoleModels()),
     }
   }
 }
 
-export function saveAIProviderSettings(settings: AIProviderSettings): AIProviderSettings {
-  const sessionApiKey = loadSessionApiKey()
-  const normalized: AIProviderSettings = {
-    mode: normalizeMode(settings.mode),
-    userProvider: normalizeUserProvider(settings.userProvider),
-    roleModels: normalizeRoleModels(settings.roleModels),
-  }
-  const nextApiKey = normalized.userProvider.apiKey
+export function saveAIProviderSettings(settings: Partial<AIProviderSettings>): AIProviderSettings {
+  const normalized = syncSettingsFromActiveProfile(settings)
+  const activeProfile = findActiveProfile(normalized)
+  const profiles = normalized.providerProfiles.map((profile) => {
+    const nextApiKey = profile.userProvider.apiKey
+    const sessionApiKey = loadSessionApiKey(profile.id)
+    const userProvider = { ...profile.userProvider }
 
-  if (hasValidApiKey(nextApiKey)) {
-    saveSessionApiKey(nextApiKey)
-    normalized.userProvider.apiKey = maskApiKey(nextApiKey)
-  } else if (isApiKeyMasked(nextApiKey)) {
-    normalized.userProvider.apiKey = nextApiKey
-  } else if (!nextApiKey && sessionApiKey) {
-    saveSessionApiKey('')
-  } else {
-    normalized.userProvider.apiKey = ''
+    if (hasValidApiKey(nextApiKey)) {
+      saveSessionApiKey(nextApiKey, profile.id)
+      userProvider.apiKey = maskApiKey(nextApiKey)
+    } else if (isApiKeyMasked(nextApiKey)) {
+      userProvider.apiKey = nextApiKey
+    } else if (!nextApiKey && sessionApiKey) {
+      saveSessionApiKey('', profile.id)
+      userProvider.apiKey = ''
+    } else {
+      userProvider.apiKey = ''
+    }
+
+    return { ...profile, userProvider }
+  })
+  const nextActiveProfile = profiles.find((profile) => profile.id === activeProfile.id) || profiles[0]!
+  const snapshot: AIProviderSettings = {
+    ...normalized,
+    userProvider: { ...nextActiveProfile.userProvider },
+    roleModels: { ...nextActiveProfile.roleModels },
+    activeProviderProfileId: nextActiveProfile.id,
+    providerProfiles: profiles,
   }
 
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot))
   } catch {
     // ignore localStorage failures
   }
 
-  return normalized
+  return snapshot
 }
 
 export async function hydrateAIProviderSettingsFromDesktop(): Promise<AIProviderSettings | null> {
@@ -441,33 +619,34 @@ export async function hydrateAIProviderSettingsFromDesktop(): Promise<AIProvider
       return null
     }
 
-    const hydrated = saveAIProviderSettings(parsed)
+    await Promise.all(
+      parsed.providerProfiles.map(async (profile) => {
+        const profileSecret = await GetAppSecret(getDesktopSecretKey(profile.id))
+        if (hasValidApiKey(profileSecret)) {
+          saveSessionApiKey(profileSecret, profile.id)
+        }
+      }),
+    )
     if (hasValidApiKey(secret)) {
-      saveSessionApiKey(secret)
+      saveSessionApiKey(secret, parsed.activeProviderProfileId)
     }
-    return {
-      ...hydrated,
-      userProvider: {
-        ...hydrated.userProvider,
-        apiKey: loadSessionApiKey() || hydrated.userProvider.apiKey,
-      },
-      roleModels: { ...hydrated.roleModels },
-    }
+    saveAIProviderSettings(parsed)
+    return loadAIProviderSettings()
   } catch {
     return null
   }
 }
 
 export async function persistAIProviderSettingsToDesktop(
-  settings: AIProviderSettings,
+  settings: Partial<AIProviderSettings>,
 ): Promise<void> {
   if (!isDesktopBridgeAvailable()) {
     return
   }
 
   const sanitized = saveAIProviderSettings(settings)
-  const inputApiKey = sanitizeText(settings.userProvider.apiKey, 500)
-  const runtimeApiKey = loadSessionApiKey()
+  const inputApiKey = sanitizeText(settings.userProvider?.apiKey, 500)
+  const runtimeApiKey = loadSessionApiKey(sanitized.activeProviderProfileId)
   const payload = JSON.stringify({
     mode: sanitized.mode,
     userProvider: {
@@ -475,17 +654,41 @@ export async function persistAIProviderSettingsToDesktop(
       apiKey: isApiKeyMasked(sanitized.userProvider.apiKey) ? sanitized.userProvider.apiKey : '',
     },
     roleModels: sanitized.roleModels,
+    activeProviderProfileId: sanitized.activeProviderProfileId,
+    providerProfiles: sanitized.providerProfiles.map((profile) => ({
+      ...profile,
+      userProvider: {
+        ...profile.userProvider,
+        apiKey: isApiKeyMasked(profile.userProvider.apiKey) ? profile.userProvider.apiKey : '',
+      },
+    })),
   } satisfies AIProviderSettings)
 
   try {
     await SetAppSetting(DESKTOP_SETTING_KEY, payload)
 
+    await Promise.all(
+      sanitized.providerProfiles.map(async (profile) => {
+        const profileRuntimeApiKey = loadSessionApiKey(profile.id)
+        const profileInputApiKey =
+          profile.id === sanitized.activeProviderProfileId
+            ? inputApiKey
+            : sanitizeText(profile.userProvider.apiKey, 500)
+
+        if (hasValidApiKey(profileRuntimeApiKey)) {
+          await SetAppSecret(getDesktopSecretKey(profile.id), profileRuntimeApiKey)
+          return
+        }
+
+        if (!profileInputApiKey || !isApiKeyMasked(profileInputApiKey)) {
+          await DeleteAppSecret(getDesktopSecretKey(profile.id))
+        }
+      }),
+    )
+
     if (hasValidApiKey(runtimeApiKey)) {
       await SetAppSecret(DESKTOP_SECRET_KEY, runtimeApiKey)
-      return
-    }
-
-    if (!inputApiKey || !isApiKeyMasked(inputApiKey)) {
+    } else if (!inputApiKey || !isApiKeyMasked(inputApiKey)) {
       await DeleteAppSecret(DESKTOP_SECRET_KEY)
     }
   } catch {
@@ -498,10 +701,28 @@ export async function clearAIProviderSettingsFromDesktop(): Promise<void> {
     return
   }
   try {
+    const profileSecretKeys = loadAIProviderSettings().providerProfiles.map((profile) =>
+      getDesktopSecretKey(profile.id),
+    )
     await Promise.all([
       DeleteAppSetting(DESKTOP_SETTING_KEY),
       DeleteAppSecret(DESKTOP_SECRET_KEY),
+      ...profileSecretKeys.map((key) => DeleteAppSecret(key)),
     ])
+  } catch {
+    // ignore desktop cleanup failures
+  }
+}
+
+export async function clearAIProviderProfileSecretFromDesktop(profileId: string): Promise<void> {
+  if (!isDesktopBridgeAvailable()) {
+    clearAIProviderProfileSessionSecret(profileId)
+    return
+  }
+  try {
+    const normalizedProfileId = normalizeProfileId(profileId)
+    clearAIProviderProfileSessionSecret(normalizedProfileId)
+    await DeleteAppSecret(getDesktopSecretKey(normalizedProfileId))
   } catch {
     // ignore desktop cleanup failures
   }
@@ -527,7 +748,8 @@ export function hasUsableUserProviderConfig(
 }
 
 export function hasSessionApiKey(): boolean {
-  return hasValidApiKey(loadSessionApiKey())
+  const settings = loadAIProviderSettings()
+  return hasValidApiKey(loadSessionApiKey(settings.activeProviderProfileId))
 }
 
 export function getUserProviderRuntimeConfig(): AIUserProviderConfig {
@@ -540,6 +762,6 @@ export function getUserProviderRuntimeConfig(): AIUserProviderConfig {
   }
   return {
     ...settings.userProvider,
-    apiKey: loadSessionApiKey(),
+    apiKey: loadSessionApiKey(settings.activeProviderProfileId),
   }
 }

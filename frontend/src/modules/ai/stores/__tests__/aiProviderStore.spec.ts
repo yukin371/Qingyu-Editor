@@ -54,6 +54,7 @@ vi.mock('../../config/provider', () => ({
     temperature: 0.7,
   },
   clearAIProviderSettingsFromDesktop: vi.fn(),
+  clearAIProviderProfileSecretFromDesktop: vi.fn(),
   createAIProviderConfigTemplate,
   exportAIProviderConfigText,
   hasSessionApiKey: vi.fn(() => false),
@@ -74,21 +75,38 @@ vi.mock('../../api/ai', () => ({
   checkAIProviderHealth,
 }))
 
-const defaultSettings = () => ({
-  mode: 'system_remote' as const,
-  userProvider: {
+const defaultUserProvider = () => ({
     providerType: 'openai-compatible' as const,
     baseURL: '',
     endpointPath: '/v1/chat/completions',
     model: '',
     apiKey: '',
     temperature: 0.7,
-  },
+})
+
+const defaultRoleModels = () => ({
+  writing: '',
+  review: '',
+  organize: '',
+})
+
+const defaultSettings = () => ({
+  mode: 'system_remote' as const,
+  userProvider: defaultUserProvider(),
   roleModels: {
     writing: '',
     review: '',
     organize: '',
   },
+  activeProviderProfileId: 'default',
+  providerProfiles: [
+    {
+      id: 'default',
+      label: '默认配置',
+      userProvider: defaultUserProvider(),
+      roleModels: defaultRoleModels(),
+    },
+  ],
 })
 
 describe('aiProviderStore', () => {
@@ -160,6 +178,26 @@ describe('aiProviderStore', () => {
         review: 'llama3.1',
         organize: '',
       },
+      activeProviderProfileId: 'default',
+      providerProfiles: [
+        {
+          id: 'default',
+          label: '默认配置',
+          userProvider: {
+            providerType: 'openai-compatible' as const,
+            baseURL: 'http://127.0.0.1:11434',
+            endpointPath: '/v1/chat/completions',
+            model: 'qwen3',
+            apiKey: 'sk-1234567890abcdefghijkl',
+            temperature: 0.7,
+          },
+          roleModels: {
+            writing: 'qwen3',
+            review: 'llama3.1',
+            organize: '',
+          },
+        },
+      ],
     }
     parseAIProviderConfigText.mockReturnValue(imported)
 
@@ -173,6 +211,38 @@ describe('aiProviderStore', () => {
     expect(store.createConfigTemplate()).toBe('{"mode":"user_api"}')
     expect(store.writingModel).toBe('qwen3')
     expect(store.reviewModel).toBe('llama3.1')
+  })
+
+  it('creates and switches provider profiles without losing existing config', async () => {
+    const store = useAIProviderStore()
+    store.baseURL = 'http://localhost:11434'
+    store.model = 'qwen3'
+
+    store.createProviderProfile('custom')
+
+    expect(store.providerProfiles).toHaveLength(2)
+    expect(store.activeProviderProfileId).not.toBe('default')
+    expect(store.baseURL).toBe('')
+
+    store.activeProviderProfileId = 'default'
+
+    expect(store.baseURL).toBe('http://localhost:11434')
+    expect(store.model).toBe('qwen3')
+  })
+
+  it('deletes active provider profile and falls back to remaining profile', async () => {
+    const store = useAIProviderStore()
+    store.baseURL = 'http://localhost:11434'
+    store.model = 'qwen3'
+    store.createProviderProfile('custom')
+    const deletingId = store.activeProviderProfileId
+
+    await store.deleteActiveProviderProfile()
+
+    expect(store.providerProfiles).toHaveLength(1)
+    expect(store.activeProviderProfileId).toBe('default')
+    expect(store.activeProviderProfileId).not.toBe(deletingId)
+    expect(store.baseURL).toBe('http://localhost:11434')
   })
 
   it('applies provider presets and keeps model selection reusable', async () => {

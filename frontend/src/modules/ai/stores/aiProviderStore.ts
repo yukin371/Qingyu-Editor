@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import {
   clearAIProviderSettingsFromDesktop,
+  clearAIProviderProfileSecretFromDesktop,
   AI_PROVIDER_PRESETS,
   createAIProviderConfigTemplate,
   DEFAULT_USER_PROVIDER_CONFIG,
@@ -14,6 +15,7 @@ import {
   persistAIProviderSettingsToDesktop,
   saveAIProviderSettings,
   type AIAccessMode,
+  type AIProviderProfile,
 } from '../config/provider'
 import { hasValidApiKey, isApiKeyMasked } from '../utils/apikey'
 import { checkAIProviderHealth, type AIProviderHealth } from '../api/ai'
@@ -26,6 +28,30 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
 
   const clearHealth = () => {
     health.value = null
+  }
+
+  const activeProviderProfile = computed(
+    () =>
+      snapshot.value.providerProfiles.find(
+        (profile) => profile.id === snapshot.value.activeProviderProfileId,
+      ) || snapshot.value.providerProfiles[0],
+  )
+
+  const syncActiveProfileToRuntime = () => {
+    const profile = activeProviderProfile.value
+    if (!profile) {
+      return
+    }
+    snapshot.value.userProvider = { ...profile.userProvider }
+    snapshot.value.roleModels = { ...profile.roleModels }
+  }
+
+  const updateActiveProfile = (updater: (profile: AIProviderProfile) => AIProviderProfile) => {
+    const activeId = snapshot.value.activeProviderProfileId
+    snapshot.value.providerProfiles = snapshot.value.providerProfiles.map((profile) =>
+      profile.id === activeId ? updater(profile) : profile,
+    )
+    syncActiveProfileToRuntime()
   }
 
   const persist = () => {
@@ -46,6 +72,10 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     get: () => snapshot.value.userProvider.baseURL,
     set: (value: string) => {
       snapshot.value.userProvider.baseURL = value
+      updateActiveProfile((profile) => ({
+        ...profile,
+        userProvider: { ...profile.userProvider, baseURL: value },
+      }))
       clearHealth()
       persist()
     },
@@ -55,6 +85,10 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     get: () => snapshot.value.userProvider.endpointPath,
     set: (value: string) => {
       snapshot.value.userProvider.endpointPath = value
+      updateActiveProfile((profile) => ({
+        ...profile,
+        userProvider: { ...profile.userProvider, endpointPath: value },
+      }))
       clearHealth()
       persist()
     },
@@ -64,6 +98,10 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     get: () => snapshot.value.userProvider.model,
     set: (value: string) => {
       snapshot.value.userProvider.model = value
+      updateActiveProfile((profile) => ({
+        ...profile,
+        userProvider: { ...profile.userProvider, model: value },
+      }))
       clearHealth()
       persist()
     },
@@ -73,6 +111,10 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     get: () => snapshot.value.userProvider.apiKey,
     set: (value: string) => {
       snapshot.value.userProvider.apiKey = value
+      updateActiveProfile((profile) => ({
+        ...profile,
+        userProvider: { ...profile.userProvider, apiKey: value },
+      }))
       clearHealth()
       persist()
     },
@@ -82,6 +124,10 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     get: () => snapshot.value.userProvider.temperature,
     set: (value: number) => {
       snapshot.value.userProvider.temperature = value
+      updateActiveProfile((profile) => ({
+        ...profile,
+        userProvider: { ...profile.userProvider, temperature: value },
+      }))
       clearHealth()
       persist()
     },
@@ -91,6 +137,10 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     get: () => snapshot.value.roleModels.writing,
     set: (value: string) => {
       snapshot.value.roleModels.writing = value
+      updateActiveProfile((profile) => ({
+        ...profile,
+        roleModels: { ...profile.roleModels, writing: value },
+      }))
       clearHealth()
       persist()
     },
@@ -100,6 +150,10 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     get: () => snapshot.value.roleModels.review,
     set: (value: string) => {
       snapshot.value.roleModels.review = value
+      updateActiveProfile((profile) => ({
+        ...profile,
+        roleModels: { ...profile.roleModels, review: value },
+      }))
       clearHealth()
       persist()
     },
@@ -109,6 +163,10 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     get: () => snapshot.value.roleModels.organize,
     set: (value: string) => {
       snapshot.value.roleModels.organize = value
+      updateActiveProfile((profile) => ({
+        ...profile,
+        roleModels: { ...profile.roleModels, organize: value },
+      }))
       clearHealth()
       persist()
     },
@@ -138,6 +196,12 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
   const resetUserProvider = () => {
     snapshot.value.userProvider = { ...DEFAULT_USER_PROVIDER_CONFIG }
     snapshot.value.roleModels = { writing: '', review: '', organize: '' }
+    updateActiveProfile((profile) => ({
+      ...profile,
+      presetId: undefined,
+      userProvider: { ...DEFAULT_USER_PROVIDER_CONFIG },
+      roleModels: { writing: '', review: '', organize: '' },
+    }))
     clearHealth()
     persist()
   }
@@ -151,6 +215,16 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
       snapshot.value.userProvider.baseURL = ''
       snapshot.value.userProvider.endpointPath = preset.endpointPath
       snapshot.value.userProvider.model = ''
+      updateActiveProfile((profile) => ({
+        ...profile,
+        presetId: preset.id,
+        userProvider: {
+          ...profile.userProvider,
+          baseURL: '',
+          endpointPath: preset.endpointPath,
+          model: '',
+        },
+      }))
       clearHealth()
       persist()
       return
@@ -160,7 +234,69 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     if (!preset.models.includes(snapshot.value.userProvider.model.trim())) {
       snapshot.value.userProvider.model = preset.recommendedModel || preset.models[0] || ''
     }
+    updateActiveProfile((profile) => ({
+      ...profile,
+      label: profile.label === '默认配置' ? preset.label : profile.label,
+      presetId: preset.id,
+      userProvider: {
+        ...profile.userProvider,
+        baseURL: snapshot.value.userProvider.baseURL,
+        endpointPath: snapshot.value.userProvider.endpointPath,
+        model: snapshot.value.userProvider.model,
+      },
+    }))
     clearHealth()
+    persist()
+  }
+
+  const activeProviderProfileId = computed({
+    get: () => snapshot.value.activeProviderProfileId,
+    set: (value: string) => {
+      if (!snapshot.value.providerProfiles.some((profile) => profile.id === value)) {
+        return
+      }
+      snapshot.value.activeProviderProfileId = value
+      syncActiveProfileToRuntime()
+      clearHealth()
+      persist()
+    },
+  })
+
+  const providerProfiles = computed(() => snapshot.value.providerProfiles)
+
+  const createProviderProfile = (presetId: string = 'custom') => {
+    const preset = AI_PROVIDER_PRESETS.find((item) => item.id === presetId)
+    const id = `provider-${Date.now().toString(36)}`
+    const profile: AIProviderProfile = {
+      id,
+      label: preset?.label || `配置 ${snapshot.value.providerProfiles.length + 1}`,
+      presetId: preset?.id,
+      userProvider: {
+        ...DEFAULT_USER_PROVIDER_CONFIG,
+        baseURL: preset?.baseURL || '',
+        endpointPath: preset?.endpointPath || DEFAULT_USER_PROVIDER_CONFIG.endpointPath,
+        model: preset?.recommendedModel || preset?.models[0] || '',
+      },
+      roleModels: { writing: '', review: '', organize: '' },
+    }
+    snapshot.value.providerProfiles = [...snapshot.value.providerProfiles, profile]
+    snapshot.value.activeProviderProfileId = id
+    syncActiveProfileToRuntime()
+    clearHealth()
+    persist()
+  }
+
+  const deleteActiveProviderProfile = async () => {
+    if (snapshot.value.providerProfiles.length <= 1) {
+      return
+    }
+    const deletingId = snapshot.value.activeProviderProfileId
+    const nextProfiles = snapshot.value.providerProfiles.filter((profile) => profile.id !== deletingId)
+    snapshot.value.providerProfiles = nextProfiles
+    snapshot.value.activeProviderProfileId = nextProfiles[0]!.id
+    syncActiveProfileToRuntime()
+    clearHealth()
+    await clearAIProviderProfileSecretFromDesktop(deletingId)
     persist()
   }
 
@@ -192,6 +328,8 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
       mode: 'system_remote',
       userProvider: { ...DEFAULT_USER_PROVIDER_CONFIG },
       roleModels: { writing: '', review: '', organize: '' },
+      activeProviderProfileId: 'default',
+      providerProfiles: [],
     })
     health.value = null
     await clearAIProviderSettingsFromDesktop()
@@ -209,6 +347,9 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
 
   return {
     mode,
+    activeProviderProfileId,
+    activeProviderProfile,
+    providerProfiles,
     baseURL,
     endpointPath,
     model,
@@ -229,6 +370,8 @@ export const useAIProviderStore = defineStore('writer-ai-provider-settings', () 
     hydrate,
     providerPresets: AI_PROVIDER_PRESETS,
     applyPreset,
+    createProviderProfile,
+    deleteActiveProviderProfile,
     importConfigText,
     exportConfigText,
     createConfigTemplate,

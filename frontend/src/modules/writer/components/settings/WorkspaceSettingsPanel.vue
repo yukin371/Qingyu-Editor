@@ -177,22 +177,49 @@
           </div>
 
           <template v-if="aiProviderStore.mode === 'user_api'">
-            <div class="workspace-settings-panel__provider-presets">
+            <div class="workspace-settings-panel__provider-profile-row">
+              <label class="workspace-settings-panel__field workspace-settings-panel__provider-profile">
+                <span>配置槽</span>
+                <select v-model="aiProviderStore.activeProviderProfileId">
+                  <option
+                    v-for="profile in aiProviderStore.providerProfiles"
+                    :key="profile.id"
+                    :value="profile.id"
+                  >
+                    {{ profile.label }}
+                  </option>
+                </select>
+              </label>
               <button
-                v-for="preset in aiProviderStore.providerPresets"
-                :key="preset.id"
                 type="button"
-                :class="{
-                  'is-active':
-                    activeProviderPresetId === preset.id ||
-                    (!activeProviderPresetId && preset.id === 'custom'),
-                }"
-                @click="applyProviderPreset(preset.id)"
+                class="workspace-settings-panel__secondary-button"
+                @click="aiProviderStore.createProviderProfile(selectedProviderPresetId)"
               >
-                <strong>{{ preset.label }}</strong>
-                <span>{{ preset.description }}</span>
+                新增配置
+              </button>
+              <button
+                type="button"
+                class="workspace-settings-panel__secondary-button is-danger"
+                :disabled="aiProviderStore.providerProfiles.length <= 1"
+                @click="aiProviderStore.deleteActiveProviderProfile()"
+              >
+                删除
               </button>
             </div>
+
+            <label class="workspace-settings-panel__field workspace-settings-panel__provider-select">
+              <span>提供商模板</span>
+              <select :value="selectedProviderPresetId" @change="handleProviderPresetChange">
+                <option
+                  v-for="preset in aiProviderStore.providerPresets"
+                  :key="preset.id"
+                  :value="preset.id"
+                >
+                  {{ preset.label }}
+                </option>
+              </select>
+              <small>{{ selectedProviderPresetDescription }}</small>
+            </label>
 
             <div class="workspace-settings-panel__provider-form-grid">
               <label class="workspace-settings-panel__field">
@@ -231,7 +258,8 @@
                 <input
                   v-model="apiKeyDraft"
                   type="password"
-                  placeholder="sk-..."
+                  autocomplete="new-password"
+                  placeholder="留空保持当前密钥，输入新 Key 后保存"
                   @blur="commitApiKeyDraft"
                   @change="commitApiKeyDraft"
                 />
@@ -288,6 +316,9 @@
                 :class="{ 'is-ready': aiProviderStore.providerReady }"
               >
                 {{ aiProviderStore.providerReady ? '配置就绪' : '待补全' }}
+              </span>
+              <span class="workspace-settings-panel__status-meta">
+                当前配置：{{ aiProviderStore.activeProviderProfile?.label || '默认配置' }}
               </span>
               <span class="workspace-settings-panel__status-meta">{{ apiKeyStatusLabel }}</span>
               <button
@@ -352,7 +383,7 @@ const activeTab = ref<'appearance' | 'shortcuts' | 'ai'>('appearance')
 const editorThemeStore = useEditorThemeStore()
 const appearanceStore = useEditorAppearanceStore()
 const aiProviderStore = useAIProviderStore()
-const apiKeyDraft = ref(aiProviderStore.apiKey)
+const apiKeyDraft = ref('')
 const configTextDraft = ref('')
 const configImportMessage = ref('')
 
@@ -393,6 +424,12 @@ const activeProviderPresetId = computed(
         preset.endpointPath === aiProviderStore.endpointPath,
     )?.id || '',
 )
+const selectedProviderPresetId = computed(() => activeProviderPresetId.value || 'custom')
+const selectedProviderPresetDescription = computed(
+  () =>
+    aiProviderStore.providerPresets.find((preset) => preset.id === selectedProviderPresetId.value)
+      ?.description || '填入自有兼容 provider，适合代理或私有网关',
+)
 const modelOptions = computed(() => {
   const activePreset = aiProviderStore.providerPresets.find(
     (preset) => preset.id === activeProviderPresetId.value,
@@ -418,20 +455,27 @@ onMounted(() => {
 
 watch(
   () => aiProviderStore.apiKey,
-  (value) => {
-    apiKeyDraft.value = value
+  () => {
+    apiKeyDraft.value = ''
   },
   { immediate: true },
 )
 
 function commitApiKeyDraft() {
+  if (!apiKeyDraft.value.trim()) {
+    return
+  }
   aiProviderStore.apiKey = apiKeyDraft.value
-  apiKeyDraft.value = aiProviderStore.apiKey
+  apiKeyDraft.value = ''
 }
 
 function applyProviderPreset(presetId: string) {
   aiProviderStore.applyPreset(presetId)
   configImportMessage.value = ''
+}
+
+function handleProviderPresetChange(event: Event) {
+  applyProviderPreset((event.target as HTMLSelectElement).value)
 }
 
 function loadConfigTemplate() {
@@ -447,7 +491,8 @@ function exportCurrentConfig() {
 function applyConfigText() {
   try {
     const imported = aiProviderStore.importConfigText(configTextDraft.value)
-    apiKeyDraft.value = imported.userProvider.apiKey
+    void imported
+    apiKeyDraft.value = ''
     configImportMessage.value = '已应用配置文件。'
   } catch (error) {
     configImportMessage.value = `导入失败：${error instanceof Error ? error.message : '配置文件无法解析。'}`
@@ -740,6 +785,40 @@ function applyConfigText() {
   }
 }
 
+.workspace-settings-panel__provider-profile-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 16px;
+}
+
+.workspace-settings-panel__provider-profile {
+  margin-top: 0;
+}
+
+.workspace-settings-panel__secondary-button {
+  height: 38px;
+  padding: 0 13px;
+  border: 1px solid var(--editor-border, #dbe3ee);
+  border-radius: 11px;
+  background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
+  color: var(--editor-text-secondary, #334155);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  &.is-danger:not(:disabled) {
+    border-color: color-mix(in srgb, #ef4444 36%, var(--editor-border, #dbe3ee));
+    color: #dc2626;
+  }
+}
+
 .workspace-settings-panel__provider-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -747,43 +826,13 @@ function applyConfigText() {
   margin-top: 16px;
 }
 
-.workspace-settings-panel__provider-presets {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 8px;
+.workspace-settings-panel__provider-select {
   margin-top: 16px;
 
-  button {
-    min-height: 72px;
-    padding: 10px 11px;
-    border: 1px solid var(--editor-border, #dbe3ee);
-    border-radius: 12px;
-    background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
-    color: var(--editor-text-secondary, #334155);
-    display: grid;
-    gap: 5px;
-    text-align: left;
+  small {
     font-size: 12px;
-    cursor: pointer;
-
-    strong {
-      color: var(--editor-text-primary, #0f172a);
-      font-size: 13px;
-    }
-
-    span {
-      color: var(--editor-text-muted, #64748b);
-      line-height: 1.45;
-    }
-
-    &.is-active {
-      border-color: color-mix(in srgb, var(--editor-accent, #2563eb) 58%, var(--editor-border, #dbe3ee));
-      background: color-mix(in srgb, var(--editor-accent-soft, #dbeafe) 52%, var(--editor-layer-panel, #ffffff));
-
-      strong {
-        color: var(--editor-accent-strong, #1d4ed8);
-      }
-    }
+    line-height: 1.5;
+    color: var(--editor-text-muted, #64748b);
   }
 }
 
