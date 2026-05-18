@@ -61,6 +61,14 @@ Windows 下也可以直接在 `Qingyu-Editor` 目录执行：
 dev-wails.cmd
 ```
 
+## 文档
+
+- 用户使用指南：`docs/user-guide.md`
+- 开发者指南：`docs/developer-guide.md`
+- 体验回归清单：`docs/ux-regression-checklist.md`
+- v0.1.0-beta 发布回归：`docs/regression-v0.1.0-beta.md`
+- v0.1.0-beta 发布说明：`docs/release-notes-v0.1.0-beta.md`
+
 ## 状态
 
-当前为初始骨架阶段，详细设计文档见主仓库 `docs/plans/2026-04-06-qingyu-editor-standalone-design.md`。
+当前进入 v0.1.0-beta 发布收口阶段，重点是创作主流程、工具联动、AI provider、回归清单与工作台内置文档。

@@ -22,6 +22,10 @@ const createWrapper = () =>
           name: 'QyDialog',
           template: '<div class="qy-dialog-stub"><slot /></div>',
         },
+        Dialog: {
+          name: 'Dialog',
+          template: '<div class="qy-dialog-stub"><slot /></div>',
+        },
         QyIcon: true,
         WorkspaceSettingsPanel: true,
       },
@@ -97,5 +101,22 @@ describe('WorkspaceTopbar', () => {
 
     expect(wrapper.find('.topbar-overflow__menu').text()).not.toContain('快捷键设置')
     expect(findButtonByTitle(wrapper, '设置')).toBeTruthy()
+  })
+
+  it('opens integrated help docs from the overflow menu', async () => {
+    const wrapper = createWrapper()
+
+    await wrapper.get('.topbar-overflow .topbar-btn--icon').trigger('click')
+    const helpButton = wrapper
+      .findAll('.topbar-overflow__item')
+      .find((button) => button.text().includes('使用文档'))
+
+    expect(helpButton).toBeTruthy()
+    await helpButton!.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('.workspace-help-docs').exists()).toBe(true)
+    expect(wrapper.text()).toContain('推荐创作流程')
+    expect(wrapper.text()).toContain('docs/user-guide.md')
   })
 })

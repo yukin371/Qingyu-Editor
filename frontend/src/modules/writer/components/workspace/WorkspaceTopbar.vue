@@ -76,6 +76,13 @@
             <QyIcon name="Memo" :size="14" />
             <span>场景舞台</span>
           </button>
+          <button
+            class="topbar-overflow__item"
+            @click="showHelpDocs = true; overflowOpen = false"
+          >
+            <QyIcon name="QuestionFilled" :size="14" />
+            <span>使用文档</span>
+          </button>
           <div class="topbar-overflow__divider"></div>
           <div class="topbar-overflow__label">布局预设</div>
           <button
@@ -119,6 +126,41 @@
     >
       <WorkspaceSettingsPanel />
     </QyDialog>
+
+    <QyDialog
+      v-model:visible="showHelpDocs"
+      title="Qingyu-Editor 使用文档"
+      size="full"
+      :close-on-click-modal="true"
+      class="workspace-help-dialog"
+    >
+      <div class="workspace-help-docs">
+        <aside class="workspace-help-docs__nav" aria-label="文档目录">
+          <a
+            v-for="section in helpSections"
+            :key="section.id"
+            :href="`#${section.id}`"
+          >
+            {{ section.title }}
+          </a>
+        </aside>
+        <div class="workspace-help-docs__content">
+          <section
+            v-for="section in helpSections"
+            :id="section.id"
+            :key="section.id"
+            class="workspace-help-docs__section"
+          >
+            <p class="workspace-help-docs__eyebrow">{{ section.kicker }}</p>
+            <h3>{{ section.title }}</h3>
+            <p>{{ section.summary }}</p>
+            <ul>
+              <li v-for="item in section.items" :key="item">{{ item }}</li>
+            </ul>
+          </section>
+        </div>
+      </div>
+    </QyDialog>
   </header>
 </template>
 
@@ -150,6 +192,64 @@ defineEmits<{
 
 const overflowOpen = ref(false)
 const showWorkspaceSettings = ref(false)
+const showHelpDocs = ref(false)
+const helpSections = [
+  {
+    id: 'help-flow',
+    kicker: '用户指南',
+    title: '推荐创作流程',
+    summary: '先确定作品方向和基础骨架，再围绕当前场景写正文，最后用 AI 和工具回审。',
+    items: [
+      '新项目默认生成第一卷和第一章，创建后进入章节标题行。',
+      '大纲负责规划，当前场景负责当前剧情段承诺，章节负责正文保存。',
+      '结构舞台是默认聚合入口，右侧设定和下侧场景舞台服务日常写作。',
+    ],
+  },
+  {
+    id: 'help-assets',
+    kicker: '资产闭环',
+    title: '设定、资产与 @ 引用',
+    summary: '全局资产由作者创建和维护，本章/本卷资产由系统从正文引用自动检出。',
+    items: [
+      '正文中输入 @名称 可创建或引用角色、地点、物件、组织、概念。',
+      '右侧设定支持本章、本卷、全局视图；资产总览提供完整增删改查。',
+      '删除正文中的 @资产 只解除局部引用，不会删除全局资产。',
+    ],
+  },
+  {
+    id: 'help-ai',
+    kicker: 'AI 协作',
+    title: 'AI Provider 与正文 diff',
+    summary: 'AI 只辅助写作、审查和整理，正文修改必须进入可审阅 diff。',
+    items: [
+      '设置页支持系统服务和用户 API，用户 API 可保存多个 provider 配置槽。',
+      'API Key 不回显，导出配置不包含明文密钥；桌面端通过 secret store 保存。',
+      '改写、扩写、续写会挂正文 inline diff；总结、审校、整理只输出建议。',
+    ],
+  },
+  {
+    id: 'help-tools',
+    kicker: '工具分层',
+    title: '基础工具与高级工具',
+    summary: '基础工具保持简单，高级工具只在复杂作品需要时介入。',
+    items: [
+      '结构舞台、当前场景、设定是日常工具，建议优先使用。',
+      '关系图谱、时间线、故事分支适合复杂人物关系、多线叙事和互动作品。',
+      '长篇作品通过搜索、定位、窗口化和范围地图管理，不默认铺开全量节点。',
+    ],
+  },
+  {
+    id: 'help-dev',
+    kicker: '开发者',
+    title: '开发与回归入口',
+    summary: '完整文档位于 Qingyu-Editor/docs，发布前以 v0.1.0-beta 回归清单为准。',
+    items: [
+      '用户指南：docs/user-guide.md；开发者指南：docs/developer-guide.md。',
+      '回归清单：docs/ux-regression-checklist.md 与 docs/regression-v0.1.0-beta.md。',
+      '发布说明：docs/release-notes-v0.1.0-beta.md。',
+    ],
+  },
+]
 
 function closeOverflow() {
   overflowOpen.value = false
@@ -277,6 +377,85 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   color: var(--editor-text-secondary, #475569);
   font-size: 11px;
   font-weight: 600;
+}
+
+.workspace-help-docs {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 18px;
+  height: min(72vh, 760px);
+  color: var(--editor-text-primary, #0f172a);
+}
+
+.workspace-help-docs__nav {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 12px;
+  border-right: 1px solid var(--editor-border, #e2e8f0);
+
+  a {
+    padding: 9px 10px;
+    border-radius: 10px;
+    color: var(--editor-text-secondary, #475569);
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+
+    &:hover {
+      background: var(--editor-bg-elevated, #eef2f7);
+      color: var(--editor-text-primary, #0f172a);
+    }
+  }
+}
+
+.workspace-help-docs__content {
+  min-width: 0;
+  overflow: auto;
+  padding: 4px 8px 18px 0;
+}
+
+.workspace-help-docs__section {
+  padding: 18px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 70%, transparent);
+
+  &:first-child {
+    padding-top: 0;
+  }
+
+  h3 {
+    margin: 4px 0 8px;
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 20px;
+    line-height: 1.35;
+  }
+
+  p {
+    margin: 0;
+    color: var(--editor-text-secondary, #475569);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  ul {
+    display: grid;
+    gap: 8px;
+    margin: 12px 0 0;
+    padding-left: 18px;
+  }
+
+  li {
+    color: var(--editor-text-secondary, #475569);
+    font-size: 13px;
+    line-height: 1.65;
+  }
+}
+
+.workspace-help-docs__eyebrow {
+  color: var(--editor-accent-strong, #1d4ed8) !important;
+  font-size: 11px !important;
+  font-weight: 800;
+  letter-spacing: 0.08em;
 }
 
 .workspace-topbar__right {
