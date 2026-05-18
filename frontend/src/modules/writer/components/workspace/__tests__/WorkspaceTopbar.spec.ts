@@ -23,7 +23,6 @@ const createWrapper = () =>
           template: '<div class="qy-dialog-stub"><slot /></div>',
         },
         QyIcon: true,
-        ShortcutSettingsPanel: true,
         WorkspaceSettingsPanel: true,
       },
     },
@@ -89,5 +88,14 @@ describe('WorkspaceTopbar', () => {
 
     expect(wrapper.emitted('share')).toHaveLength(1)
     expect(wrapper.find('.topbar-overflow__menu').exists()).toBe(false)
+  })
+
+  it('keeps shortcut settings only in the workspace settings dialog', async () => {
+    const wrapper = createWrapper()
+
+    await wrapper.get('.topbar-overflow .topbar-btn--icon').trigger('click')
+
+    expect(wrapper.find('.topbar-overflow__menu').text()).not.toContain('快捷键设置')
+    expect(findButtonByTitle(wrapper, '设置')).toBeTruthy()
   })
 })

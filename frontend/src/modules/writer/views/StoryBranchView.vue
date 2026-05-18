@@ -335,10 +335,11 @@
         </div>
 
         <div v-else-if="!isLoading" class="interactive-branch-view__empty">
-          <Empty
-            description="还没有可分析的互动路线。先创建大纲或分支节点，再回来整理路径。"
-            iconSize="medium"
-          />
+          <div class="interactive-branch-view__empty-panel">
+            <span>Branch</span>
+            <strong>当前没有互动分支</strong>
+            <p>普通小说可以先不使用；需要多结局、选择点或路线草案时再打开。</p>
+          </div>
           <QyButton
             v-if="showDemoBranchEntry && !useDemoBranchData"
             variant="secondary"
@@ -561,7 +562,6 @@
 import { computed, ref, watch } from 'vue'
 import { QyButton } from '@/design-system/components'
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
-import { Empty } from '@/design-system/base'
 import type { OutlineNode } from '@/types/writer'
 import { useWriterStore } from '@/modules/writer/stores/writerStore'
 import ToolAssetSummaryChips from '@/modules/writer/components/workspace/tool-overlay/ToolAssetSummaryChips.vue'
@@ -2778,11 +2778,48 @@ watch(branchDraftScopeKey, () => {
 .interactive-branch-view__empty {
   flex: 1;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 12px;
-  align-items: center;
-  justify-content: center;
+  place-items: center;
+  align-content: center;
+  padding: 24px;
+}
+
+.interactive-branch-view__empty-panel {
+  width: min(480px, 100%);
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border: 1px dashed color-mix(in srgb, var(--editor-border, #d7dff0) 86%, var(--editor-accent, #2563eb));
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--editor-accent-soft, #eef4ff) 26%, transparent), transparent 44%),
+    color-mix(in srgb, var(--editor-layer-panel, #ffffff) 88%, transparent);
+  text-align: left;
+
+  span {
+    width: fit-content;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--editor-accent-soft, #eef4ff) 72%, transparent);
+    color: var(--editor-accent, #2563eb);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  strong {
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 14px;
+  }
+
+  p {
+    margin: 0;
+    color: var(--editor-text-muted, #64748b);
+    line-height: 1.7;
+    font-size: 12px;
+  }
 }
 
 @media (max-width: 1200px) {

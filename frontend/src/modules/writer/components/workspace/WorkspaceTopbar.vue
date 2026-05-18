@@ -76,13 +76,6 @@
             <QyIcon name="Memo" :size="14" />
             <span>场景舞台</span>
           </button>
-          <button
-            class="topbar-overflow__item"
-            @click="showShortcutSettings = true; overflowOpen = false"
-          >
-            <QyIcon name="SetUp" :size="14" />
-            <span>快捷键设置</span>
-          </button>
           <div class="topbar-overflow__divider"></div>
           <div class="topbar-overflow__label">布局预设</div>
           <button
@@ -118,16 +111,6 @@
     </div>
 
     <QyDialog
-      v-model:visible="showShortcutSettings"
-      title="快捷键设置"
-      size="lg"
-      :close-on-click-modal="true"
-      class="shortcut-settings-dialog"
-    >
-      <ShortcutSettingsPanel />
-    </QyDialog>
-
-    <QyDialog
       v-model:visible="showWorkspaceSettings"
       title="工作区设置"
       size="full"
@@ -143,7 +126,6 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { QyDialog } from '@/design-system/components'
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
-import ShortcutSettingsPanel from '../settings/ShortcutSettingsPanel.vue'
 import WorkspaceSettingsPanel from '../settings/WorkspaceSettingsPanel.vue'
 import type { WorkspaceLayoutPreset } from '@/modules/writer/types/workspaceLayout'
 
@@ -167,7 +149,6 @@ defineEmits<{
 }>()
 
 const overflowOpen = ref(false)
-const showShortcutSettings = ref(false)
 const showWorkspaceSettings = ref(false)
 
 function closeOverflow() {

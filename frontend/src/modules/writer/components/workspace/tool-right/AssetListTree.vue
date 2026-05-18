@@ -32,7 +32,16 @@
 
       <div v-if="activeCategory === category.id" class="asset-list-tree__group-body">
         <div v-if="loading" class="asset-list-tree__empty">正在加载设定…</div>
-        <div v-else-if="assets.length === 0" class="asset-list-tree__empty">{{ emptyMessage }}</div>
+        <div v-else-if="assets.length === 0" class="asset-list-tree__empty">
+          <span>{{ emptyMessage }}</span>
+          <button
+            v-if="allowCategoryCreate"
+            type="button"
+            @click.stop="$emit('create-category-asset', category.id)"
+          >
+            新建{{ category.label }}
+          </button>
+        </div>
         <div v-else class="asset-list-tree__items">
           <button
             v-for="asset in assets"
@@ -167,9 +176,28 @@ defineEmits<{
 }
 
 .asset-list-tree__empty {
+  margin: 4px 0;
   padding: 10px 8px;
+  border: 1px dashed var(--editor-border, #eceff3);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--editor-layer-soft, #f8fafc) 72%, transparent);
   color: var(--editor-text-muted, #6b7280);
   font-size: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.asset-list-tree__empty button {
+  width: fit-content;
+  min-height: 26px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, var(--editor-accent, #1d4ed8) 24%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--editor-accent-soft, #eaf2ff) 66%, transparent);
+  color: var(--editor-accent, #1d4ed8);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .asset-list-tree__items {

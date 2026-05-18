@@ -1,7 +1,18 @@
 <template>
   <section class="timeline-outline-view">
     <header class="timeline-outline-view__header">
-      <ToolAssetSummaryChips :items="visibleAssetSummaryItems" />
+      <div class="timeline-outline-view__masthead">
+        <p>Timeline</p>
+        <h2>{{ currentTimelineTitle }}</h2>
+      </div>
+      <div class="timeline-outline-view__context">
+        <ToolAssetSummaryChips :items="visibleAssetSummaryItems" />
+        <div class="timeline-outline-view__metrics" aria-label="时间线统计">
+          <span>{{ timelines.length }} 条时间线</span>
+          <span>{{ events.length }} 个事件</span>
+          <span>{{ highPriorityEvents }} 个关键点</span>
+        </div>
+      </div>
       <div class="timeline-outline-view__actions">
         <QyButton variant="secondary" size="sm" @click="handleRefresh">
           <QyIcon name="Refresh" :size="14" />
@@ -10,30 +21,9 @@
       </div>
     </header>
 
-    <div class="timeline-outline-view__stats">
-      <SystemStatCard
-        label="时间线数量"
-        :value="timelines.length"
-        hint="当前项目时间线容器"
-        tone="info"
-      />
-      <SystemStatCard
-        label="事件总数"
-        :value="events.length"
-        hint="已收录剧情节点"
-        tone="success"
-      />
-      <SystemStatCard
-        label="高优先级事件"
-        :value="highPriorityEvents"
-        hint="重要性 >= 8"
-        tone="warning"
-      />
-    </div>
-
     <div class="timeline-outline-view__body">
       <aside class="timeline-list">
-        <div class="timeline-list__title">时间线列表</div>
+        <div class="timeline-list__title">容器</div>
         <div class="timeline-list__content">
           <button
             v-for="timeline in timelines"
@@ -46,7 +36,13 @@
             <div class="timeline-list__name">{{ timeline.name }}</div>
             <div class="timeline-list__meta">{{ timeline.description || '暂无描述' }}</div>
           </button>
-          <Empty v-if="timelines.length === 0" description="暂无时间线" iconSize="medium" />
+          <div v-if="timelines.length === 0" class="timeline-list__empty">
+            <div class="timeline-empty-card">
+              <span class="timeline-empty-card__eyebrow">Timeline</span>
+              <strong>当前项目暂无时间线</strong>
+              <p>这里会显示主时间线、支线或事件容器。创建后可按章节窗口快速定位。</p>
+            </div>
+          </div>
         </div>
       </aside>
 
@@ -96,6 +92,7 @@
             :key="event.id"
             class="timeline-event"
             :class="{ 'is-selected': event.id === selectedEventId }"
+            @click="selectedEventId = event.id"
           >
             <div class="timeline-event__dot" />
             <div class="timeline-event__card">
@@ -127,13 +124,65 @@
               </div>
             </div>
           </article>
-          <Empty
-            v-if="timelineWindowEvents.length === 0"
-            description="当前时间线暂无事件"
-            iconSize="medium"
-          />
+          <div v-if="timelineWindowEvents.length === 0" class="timeline-events__empty">
+            <div class="timeline-empty-card timeline-empty-card--soft">
+              <span class="timeline-empty-card__eyebrow">Event Window</span>
+              <strong>当前窗口暂无事件</strong>
+              <p>
+                可以切换左侧时间线容器，或用定位器搜索事件标题、类型和时间来跳转到相邻区段。
+              </p>
+            </div>
+          </div>
         </div>
       </section>
+
+      <aside class="timeline-inspector">
+        <div class="timeline-inspector__title">
+          <span>检视</span>
+          <strong>{{ selectedEventIndexLabel }}</strong>
+        </div>
+        <div v-if="selectedEvent" class="timeline-inspector__body">
+          <QyTag
+            size="sm"
+            :type="
+              selectedEvent.importance >= 8
+                ? 'danger'
+                : selectedEvent.importance >= 5
+                  ? 'warning'
+                  : 'info'
+            "
+          >
+            P{{ selectedEvent.importance || 0 }}
+          </QyTag>
+          <h3>{{ selectedEvent.title }}</h3>
+          <p>{{ selectedEvent.description || '暂无描述' }}</p>
+          <dl>
+            <div>
+              <dt>故事时间</dt>
+              <dd>{{ formatStoryTime(selectedEvent.storyTime) }}</dd>
+            </div>
+            <div>
+              <dt>类型</dt>
+              <dd>{{ selectedEvent.eventType || 'plot' }}</dd>
+            </div>
+            <div>
+              <dt>关联章节</dt>
+              <dd>{{ selectedEventChapterLabel }}</dd>
+            </div>
+          </dl>
+          <QyButton
+            variant="secondary"
+            size="sm"
+            data-testid="timeline-inspector-send-to-ai"
+            @click="handleSendEventToAI(selectedEvent)"
+          >
+            交给 AI 分析
+          </QyButton>
+        </div>
+        <div v-else class="timeline-inspector__empty">
+          选择一个事件后查看时间、章节、类型和 AI 分析入口。
+        </div>
+      </aside>
     </div>
   </section>
 </template>
@@ -141,7 +190,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { QyButton, QyIcon, QyTag } from '@/design-system/components'
-import { Empty } from '@/design-system/base'
 import { useWriterStore } from '@/modules/writer/stores/writerStore'
 import ToolAssetSummaryChips from '@/modules/writer/components/workspace/tool-overlay/ToolAssetSummaryChips.vue'
 import type { ActiveEntitySummary } from '@/modules/writer/composables/useWorkflowContext'
@@ -154,7 +202,6 @@ import {
   resolveWriterWindowRange,
 } from '@/modules/writer/utils/longformLocate'
 import type { Timeline, TimelineEvent } from '@/types/writer'
-import SystemStatCard from '@/modules/writer/components/system-design/SystemStatCard.vue'
 import type {
   WriterWorkflowActionRequest,
   WriterWorkflowContext,
@@ -217,6 +264,7 @@ const effectiveProjectId = computed(() => props.projectId || writerStore.current
 const timelines = computed<Timeline[]>(() => writerStore.timeline.list || [])
 const events = computed<TimelineEvent[]>(() => writerStore.timeline.events || [])
 const currentTimelineId = computed(() => writerStore.timeline.currentTimeline?.id || '')
+const currentTimelineTitle = computed(() => writerStore.timeline.currentTimeline?.name || '主时间线')
 const { visibleAssetSummaryItems } = useWriterAssetSummary({
   projectId: effectiveProjectId,
   chapterId: computed(() => props.chapterId),
@@ -282,6 +330,18 @@ const activeEventSegment = computed(
 const selectedEventRow = computed(
   () => orderedEventRows.value.find((row) => row.event.id === selectedEventId.value) || null,
 )
+const selectedEvent = computed(() => selectedEventRow.value?.event || timelineWindowEvents.value[0] || null)
+const selectedEventIndexLabel = computed(() =>
+  selectedEventRow.value ? `#${selectedEventRow.value.index + 1}` : '未选择',
+)
+const selectedEventChapterLabel = computed(() => {
+  const ids = selectedEvent.value?.chapterIds || []
+  if (!ids.length) return '未绑定'
+  return ids
+    .slice(0, 3)
+    .map((id) => props.chapters.find((chapter) => chapter.id === id)?.title || id)
+    .join(' / ')
+})
 const currentChapterEventRow = computed(() =>
   props.chapterId
     ? orderedEventRows.value.find((row) => row.event.chapterIds?.includes(props.chapterId)) || null
@@ -474,18 +534,68 @@ watch(
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--editor-layer-soft, var(--editor-bg-surface, #f5f8ff));
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--editor-accent-soft, #ecfeff) 22%, transparent), transparent 36%),
+    linear-gradient(180deg, var(--editor-layer-soft, var(--editor-bg-surface, #f5f8ff)) 0%, color-mix(in srgb, var(--editor-layer-soft, #f5f8ff) 86%, var(--editor-bg-base, #ffffff)) 100%);
 }
 
 .timeline-outline-view__header {
-  padding: 14px 16px;
+  padding: 14px 16px 12px;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  align-items: start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
   border-bottom: 1px solid var(--editor-border, #d9e2f1);
   background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
+}
+
+.timeline-outline-view__masthead {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timeline-outline-view__masthead p {
+  margin: 0;
+  color: var(--editor-text-muted, #6f7f9b);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.timeline-outline-view__masthead h2 {
+  margin: 0;
+  color: var(--editor-text-primary, #21365c);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.timeline-outline-view__context {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.timeline-outline-view__metrics {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  color: var(--editor-text-muted, #6f7f9b);
+  font-size: 12px;
+}
+
+.timeline-outline-view__metrics span {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--editor-border, #dbe5f5);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 90%, transparent);
 }
 
 .timeline-outline-view__stats {
@@ -498,39 +608,41 @@ watch(
 .timeline-outline-view__body {
   flex: 1;
   min-height: 0;
-  padding: 0 16px 16px;
+  padding: 12px 16px 16px;
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: 220px minmax(0, 1fr) 280px;
   gap: 12px;
 }
 
 .timeline-list,
-.timeline-events {
+.timeline-events,
+.timeline-inspector {
   border: 1px solid var(--editor-border, #d6e1f3);
-  border-radius: var(--editor-radius-lg, 14px);
+  border-radius: 16px;
   background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
   min-height: 0;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--editor-shadow, #0f172a) 8%, transparent);
 }
 
 .timeline-list__title,
-.timeline-events__title {
+.timeline-events__title,
+.timeline-inspector__title {
   padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--editor-text-muted, #5f7090);
   border-bottom: 1px solid var(--editor-border, #e1e9f6);
 }
 
 .timeline-events__title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-
   strong {
     color: var(--editor-text-secondary, #475569);
     font-size: 11px;
@@ -543,16 +655,17 @@ watch(
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  padding: 10px 12px;
+  padding: 12px;
   border-bottom: 1px solid var(--editor-border, #e1e9f6);
 }
 
 .timeline-events__segment {
-  min-width: 136px;
-  padding: 9px 11px;
-  border-radius: 12px;
+  min-width: 144px;
+  padding: 10px 12px;
+  border-radius: 14px;
   border: 1px solid var(--editor-border, #dbe5f5);
-  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 92%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--editor-layer-panel, #ffffff) 96%, transparent), color-mix(in srgb, var(--editor-layer-soft, #f8fbff) 92%, transparent));
   color: var(--editor-text-secondary, #475569);
   text-align: left;
   cursor: pointer;
@@ -574,8 +687,10 @@ watch(
   }
 
   &.is-active {
-    border-color: color-mix(in srgb, var(--editor-accent, #06b6d4) 32%, transparent);
-    background: color-mix(in srgb, var(--editor-accent-soft, #ecfeff) 78%, transparent);
+    border-color: color-mix(in srgb, var(--editor-accent, #06b6d4) 34%, transparent);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--editor-accent-soft, #ecfeff) 86%, transparent), color-mix(in srgb, var(--editor-layer-panel, #ffffff) 88%, transparent));
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--editor-accent, #06b6d4) 10%, transparent);
   }
 }
 
@@ -584,7 +699,7 @@ watch(
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding: 10px 12px;
+  padding: 12px;
   border-bottom: 1px solid var(--editor-border, #e1e9f6);
 
   label {
@@ -592,9 +707,9 @@ watch(
     align-items: center;
     gap: 8px;
     flex: 1 1 240px;
-    min-height: 34px;
-    padding: 0 10px;
-    border-radius: 12px;
+    min-height: 36px;
+    padding: 0 12px;
+    border-radius: 999px;
     border: 1px solid var(--editor-border, #dbe5f5);
     background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
   }
@@ -610,7 +725,7 @@ watch(
 
   button {
     min-height: 32px;
-    padding: 0 10px;
+    padding: 0 12px;
     border-radius: 999px;
     border: 1px solid var(--editor-border, #dbe5f5);
     background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
@@ -628,28 +743,96 @@ watch(
 }
 
 .timeline-list__content,
-.timeline-events__content {
+.timeline-events__content,
+.timeline-inspector__body {
   flex: 1;
   min-height: 0;
   overflow: auto;
   padding: 10px;
 }
 
+.timeline-list__empty,
+.timeline-events__empty {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 10px;
+}
+
+.timeline-empty-card {
+  width: 100%;
+  min-height: 148px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  border: 1px dashed color-mix(in srgb, var(--editor-border, #dbe5f5) 88%, var(--editor-accent, #4f79d8));
+  border-radius: 16px;
+  padding: 18px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--editor-accent-soft, #ecfeff) 34%, transparent), transparent 42%),
+    color-mix(in srgb, var(--editor-layer-panel, #ffffff) 88%, transparent);
+  color: var(--editor-text-secondary, #5f7191);
+}
+
+.timeline-empty-card--soft {
+  max-width: 520px;
+  min-height: 180px;
+  text-align: center;
+  align-items: center;
+}
+
+.timeline-empty-card__eyebrow {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 4px 9px;
+  background: color-mix(in srgb, var(--editor-accent-soft, #ecfeff) 76%, transparent);
+  color: var(--editor-accent, #2563eb);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.timeline-empty-card strong {
+  color: var(--editor-text-primary, #21365c);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.timeline-empty-card p {
+  margin: 0;
+  color: var(--editor-text-muted, #7485a3);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
 .timeline-list__item {
   width: 100%;
   text-align: left;
-  border-radius: var(--editor-radius-md, 10px);
+  border-radius: 12px;
   border: 1px solid var(--editor-border, #dbe5f5);
-  background: var(--editor-bg-elevated, #f8fbff);
-  padding: 10px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--editor-layer-panel, #ffffff) 90%, transparent),
+    color-mix(in srgb, var(--editor-bg-elevated, #f8fbff) 92%, transparent)
+  );
+  padding: 11px 12px;
   margin-bottom: 8px;
   cursor: pointer;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    border-color 0.16s ease,
+    background 0.16s ease;
 }
 
 .timeline-list__item.active {
-  border-color: var(--editor-accent, #6690e8);
-  background: var(--editor-accent-soft, #edf4ff);
-  box-shadow: 0 8px 16px rgba(57, 101, 197, 0.12);
+  border-color: color-mix(in srgb, var(--editor-accent, #6690e8) 36%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--editor-accent-soft, #edf4ff) 88%, transparent), color-mix(in srgb, var(--editor-layer-panel, #ffffff) 90%, transparent));
+  box-shadow: 0 10px 20px color-mix(in srgb, var(--editor-accent, #6690e8) 12%, transparent);
+  transform: translateY(-1px);
 }
 
 .timeline-list__name {
@@ -669,8 +852,8 @@ watch(
 
 .timeline-event {
   position: relative;
-  padding-left: 20px;
-  margin-bottom: 10px;
+  padding-left: 22px;
+  margin-bottom: 12px;
 
   &.is-selected .timeline-event__card {
     border-color: color-mix(in srgb, var(--editor-accent, #06b6d4) 34%, transparent);
@@ -685,19 +868,29 @@ watch(
 .timeline-event__dot {
   position: absolute;
   left: 2px;
-  top: 16px;
-  width: 8px;
-  height: 8px;
+  top: 18px;
+  width: 10px;
+  height: 10px;
   border-radius: 999px;
   background: var(--editor-accent, #4f79d8);
-  box-shadow: 0 0 0 4px rgba(79, 121, 216, 0.15);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--editor-accent, #4f79d8) 16%, transparent);
 }
 
 .timeline-event__card {
   border: 1px solid var(--editor-border, #dbe5f5);
-  border-radius: var(--editor-radius-lg, 12px);
-  background: var(--editor-layer-soft, var(--editor-bg-elevated, #fbfdff));
-  padding: 10px 12px;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--editor-layer-panel, #ffffff) 96%, transparent), color-mix(in srgb, var(--editor-layer-soft, #fbfdff) 92%, transparent));
+  padding: 12px 14px;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.timeline-event:hover .timeline-event__card {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px color-mix(in srgb, var(--editor-shadow, #0f172a) 10%, transparent);
 }
 
 .timeline-event__head {
@@ -709,20 +902,20 @@ watch(
 
 .timeline-event__head h3 {
   margin: 0;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 800;
   color: var(--editor-text-primary, #21365c);
 }
 
 .timeline-event__desc {
-  margin: 8px 0 0;
+  margin: 7px 0 0;
   font-size: 12px;
-  line-height: 1.6;
+  line-height: 1.7;
   color: var(--editor-text-secondary, #5f7191);
 }
 
 .timeline-event__meta {
-  margin-top: 8px;
+  margin-top: 9px;
   display: flex;
   flex-wrap: wrap;
   gap: 8px 12px;
@@ -734,6 +927,68 @@ watch(
   margin-top: 10px;
   display: flex;
   justify-content: flex-end;
+}
+
+.timeline-inspector__title strong {
+  color: var(--editor-text-secondary, #475569);
+  font-size: 11px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.timeline-inspector__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.timeline-inspector__body h3 {
+  margin: 0;
+  color: var(--editor-text-primary, #21365c);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.timeline-inspector__body p {
+  margin: 0;
+  color: var(--editor-text-secondary, #5f7191);
+  line-height: 1.7;
+  font-size: 12px;
+}
+
+.timeline-inspector__body dl {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.timeline-inspector__body dl div {
+  padding: 10px 12px;
+  border: 1px solid var(--editor-border, #dbe5f5);
+  border-radius: 12px;
+  background: var(--editor-bg-elevated, #f8fbff);
+}
+
+.timeline-inspector__body dt {
+  margin: 0 0 4px;
+  color: var(--editor-text-muted, #7485a3);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.timeline-inspector__body dd {
+  margin: 0;
+  color: var(--editor-text-primary, #21365c);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.timeline-inspector__empty {
+  padding: 16px 14px;
+  color: var(--editor-text-muted, #7485a3);
+  font-size: 12px;
+  line-height: 1.7;
 }
 
 /* 非默认主题兼容层 */
@@ -749,12 +1004,14 @@ watch(
   }
 
   .timeline-list,
-  .timeline-events {
+  .timeline-events,
+  .timeline-inspector {
     background: var(--editor-bg-base);
   }
 
   .timeline-list__title,
-  .timeline-events__title {
+  .timeline-events__title,
+  .timeline-inspector__title {
     color: var(--editor-text-muted);
     border-bottom-color: var(--editor-border);
   }
@@ -796,15 +1053,29 @@ watch(
   .timeline-event__meta {
     color: var(--editor-text-muted);
   }
+
+  .timeline-inspector__body dl div {
+    background: var(--editor-bg-elevated);
+    border-color: var(--editor-border);
+  }
+
+  .timeline-empty-card {
+    background: var(--editor-bg-elevated);
+    border-color: var(--editor-border);
+  }
 }
 
 @media (max-width: 1100px) {
-  .timeline-outline-view__stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .timeline-outline-view__body {
     grid-template-columns: 1fr;
+  }
+
+  .timeline-outline-view__context {
+    align-items: flex-start;
+  }
+
+  .timeline-outline-view__metrics {
+    justify-content: flex-start;
   }
 }
 </style>

@@ -23,7 +23,9 @@
     </div>
 
     <div v-else class="asset-detail-panel__empty">
-      <span>选择一个设定后在这里查看。</span>
+      <span>设定详情</span>
+      <strong>选择左侧资产</strong>
+      <p>这里会显示摘要、引用章节和编辑入口。</p>
     </div>
   </div>
 </template>
@@ -85,10 +87,31 @@ watch(
 
 .asset-detail-panel__empty {
   flex: 1;
-  display: flex;
-  align-items: center;
+  display: grid;
+  align-content: center;
   justify-content: center;
+  gap: 6px;
+  padding: 20px;
+  text-align: center;
   color: var(--editor-text-muted, #6b7280);
   font-size: 12px;
+
+  span {
+    color: var(--editor-text-ghost, #9ca3af);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  strong {
+    color: var(--editor-text-primary, #111827);
+    font-size: 14px;
+  }
+
+  p {
+    margin: 0;
+    line-height: 1.6;
+  }
 }
 </style>

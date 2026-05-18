@@ -25,6 +25,7 @@
 
     <div v-if="notes.length === 0" class="inspiration-notes-panel__empty">
       <span>暂无灵感便签</span>
+      <small>上方写一句想法即可沉淀，不需要先整理成完整设定。</small>
     </div>
 
     <div v-else class="inspiration-notes-panel__list">
@@ -142,14 +143,18 @@ defineEmits<{
 }
 
 .inspiration-notes-panel__empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
+  display: grid;
+  gap: 4px;
   min-height: 72px;
+  padding: 12px 0;
   border-top: 1px solid var(--editor-border, #e2e8f0);
   color: var(--editor-text-secondary, #475569);
   font-size: 12px;
+
+  small {
+    color: var(--editor-text-ghost, #94a3b8);
+    line-height: 1.5;
+  }
 }
 
 .inspiration-notes-panel__list {

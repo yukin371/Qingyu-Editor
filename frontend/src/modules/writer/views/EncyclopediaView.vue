@@ -40,8 +40,26 @@
 
     <section class="assets-view__content" :class="{ 'has-detail': !!selectedAsset }">
       <div class="assets-view__list">
-        <div v-if="loading" class="assets-view__empty">正在加载资产数据…</div>
-        <div v-else-if="filteredAssets.length === 0" class="assets-view__empty">{{ emptyMessage }}</div>
+        <div v-if="loading" class="assets-view__empty assets-view__empty--loading">
+          正在加载资产数据…
+        </div>
+        <div v-else-if="filteredAssets.length === 0" class="assets-view__empty">
+          <div class="assets-view__empty-panel">
+            <span>{{ currentCategoryMeta.title }}</span>
+            <strong>{{ searchKeyword ? '没有匹配资产' : emptyMessage }}</strong>
+            <p>
+              {{
+                searchKeyword
+                  ? '换一个关键词，或直接新建全局资产。'
+                  : '手动新增会进入全局资产；章节内 @ 提及会自动形成局部引用。'
+              }}
+            </p>
+            <button type="button" class="assets-view__empty-action" @click="handleCreateAsset()">
+              <QyIcon name="Plus" :size="13" />
+              <span>添加{{ currentCategoryMeta.title.replace('总览', '') }}</span>
+            </button>
+          </div>
+        </div>
         <div v-else class="assets-view__rows">
           <button
             v-for="asset in filteredAssets"
@@ -519,9 +537,68 @@ watch(
 }
 
 .assets-view__empty {
-  padding: 18px 20px;
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  padding: 24px 20px;
   color: var(--editor-text-muted, #6b7280);
   font-size: 12px;
+}
+
+.assets-view__empty--loading {
+  place-items: start;
+  min-height: auto;
+  padding: 18px 20px;
+}
+
+.assets-view__empty-panel {
+  width: min(420px, 100%);
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border: 1px dashed color-mix(in srgb, var(--editor-border, #d9dee6) 86%, var(--editor-accent, #1d4ed8));
+  border-radius: 12px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--editor-accent-soft, #eaf2ff) 30%, transparent), transparent 46%),
+    color-mix(in srgb, var(--editor-layer-panel, #ffffff) 92%, transparent);
+
+  > span {
+    width: fit-content;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--editor-accent-soft, #eaf2ff) 76%, transparent);
+    color: var(--editor-accent, #1d4ed8);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  strong {
+    color: var(--editor-text-primary, #111827);
+    font-size: 14px;
+  }
+
+  p {
+    margin: 0;
+    color: var(--editor-text-muted, #6b7280);
+    line-height: 1.7;
+  }
+}
+
+.assets-view__empty-action {
+  width: fit-content;
+  min-height: 30px;
+  margin-top: 4px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--editor-accent, #1d4ed8) 26%, transparent);
+  border-radius: 6px;
+  background: var(--editor-accent, #1d4ed8);
+  color: var(--editor-accent-contrast, #ffffff);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .assets-view__detail {
