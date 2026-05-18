@@ -189,15 +189,9 @@ import { useWriterStore } from '../stores/writerStore'
 import { useEditorStore } from '../stores/editorStore'
 import type { Character, CharacterRelation, RelationType } from '@/types/writer'
 import type { Concept } from '../types/entity'
-import {
-  buildWriterWorkflowContextPrompt,
-  type WriterWorkflowActionRequest,
-  type WriterWorkflowContext,
-} from '@/modules/writer/types/workflow'
-import {
-  formatActiveEntitiesPrompt,
-  type ActiveEntitySummary,
-} from '@/modules/writer/composables/useWorkflowContext'
+import type { WriterWorkflowActionRequest, WriterWorkflowContext } from '@/modules/writer/types/workflow'
+import type { ActiveEntitySummary } from '@/modules/writer/composables/useWorkflowContext'
+import { buildWriterToolAIHandoff } from '@/modules/writer/utils/writerToolAIHandoff'
 import type {
   ChapterGraph,
   ChapterRelation,
@@ -1866,15 +1860,13 @@ const handleNodeClick = (nodeId: string) => {
     : null
 }
 
-const buildCharacterAIContextText = (character: Character): string => {
+const buildCharacterAIHandoff = (character: Character): WriterWorkflowActionRequest => {
   const lines = [
     `角色：${character.name}`,
     character.alias?.length ? `别名：${character.alias.join('、')}` : '',
     character.summary ? `简介：${character.summary}` : '',
     character.currentState ? `当前状态：${character.currentState}` : '',
     character.traits?.length ? `性格特征：${character.traits.join('、')}` : '',
-    formatActiveEntitiesPrompt(props.activeEntities),
-    buildWriterWorkflowContextPrompt(props.workflowContext),
   ].filter(Boolean)
 
   const relationSummary = getCharacterRelations(character.id)
@@ -1888,7 +1880,15 @@ const buildCharacterAIContextText = (character: Character): string => {
     lines.push(`当前关系：${relationSummary.join('；')}`)
   }
 
-  return lines.join('\n')
+  return buildWriterToolAIHandoff({
+    toolLabel: '角色图谱',
+    title: `图谱角色分析：${character.name}`,
+    focusLines: lines,
+    workflowContext: props.workflowContext,
+    activeEntities: props.activeEntities,
+    instructions:
+      '请结合这位角色在当前图谱中的状态与关系，给出可执行的写作建议，优先关注动机、冲突和后续推进。',
+  })
 }
 
 const sendSelectedCharacterToAI = () => {
@@ -1897,14 +1897,7 @@ const sendSelectedCharacterToAI = () => {
     return
   }
 
-  emit('trigger-ai-action', {
-    source: 'workspace',
-    action: 'add_to_chat',
-    title: `图谱角色分析：${character.name}`,
-    text: buildCharacterAIContextText(character),
-    instructions:
-      '请结合这位角色在当前图谱中的状态与关系，给出可执行的写作建议，优先关注动机、冲突和后续推进。',
-  })
+  emit('trigger-ai-action', buildCharacterAIHandoff(character))
 }
 
 // 处理节点删除事件

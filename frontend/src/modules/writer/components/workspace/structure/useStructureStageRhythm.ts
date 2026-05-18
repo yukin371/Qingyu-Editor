@@ -50,6 +50,7 @@ export interface RhythmRow {
 interface UseStructureStageRhythmOptions {
   currentChapterId: Ref<string>
   currentChapterTitle: Ref<string>
+  chapterEntries?: ComputedRef<SidebarChapterSummary[]>
   chapterOptions: ComputedRef<SidebarChapterSummary[]>
   rootNodes: ComputedRef<OutlineNode[]>
   flattenedNodes: ComputedRef<OutlineNode[]>
@@ -83,9 +84,13 @@ export function useStructureStageRhythm(options: UseStructureStageRhythmOptions)
     { value: 'completed', label: '已完成' },
   ]
 
+  const chapterEntries = computed(() =>
+    options.chapterEntries?.value?.length ? options.chapterEntries.value : options.chapterOptions.value,
+  )
+
   const volumeTitleById = computed(() => {
     const map: Record<string, string> = {}
-    for (const chapter of options.chapterOptions.value) {
+    for (const chapter of chapterEntries.value) {
       if (chapter.nodeType === 'directory') {
         map[chapter.id] = chapter.title || '未命名卷'
       }
@@ -96,8 +101,20 @@ export function useStructureStageRhythm(options: UseStructureStageRhythmOptions)
   const hasVolumeSegments = computed(() => Object.keys(volumeTitleById.value).length > 0)
 
   const chapterRows = computed(() =>
-    options.chapterOptions.value.filter((chapter) => chapter.nodeType !== 'directory'),
+    chapterEntries.value.filter((chapter) => chapter.nodeType !== 'directory'),
   )
+
+  const chapterVolumeIndexById = computed(() => {
+    const counters = new Map<string, number>()
+    const map: Record<string, number> = {}
+    for (const chapter of chapterRows.value) {
+      const volumeId = chapter.parentId || 'ungrouped'
+      const nextIndex = (counters.get(volumeId) || 0) + 1
+      counters.set(volumeId, nextIndex)
+      map[chapter.id] = nextIndex
+    }
+    return map
+  })
 
   const chapterById = computed(() => {
     const map: Record<string, SidebarChapterSummary> = {}
@@ -148,9 +165,15 @@ export function useStructureStageRhythm(options: UseStructureStageRhythmOptions)
           : chapter.wordCount > 0
             ? 'writing'
             : 'draft'
+      const volumeId = chapter.parentId || 'ungrouped'
+      const volumeTitle = chapter.parentId ? volumeTitleById.value[chapter.parentId] : ''
+      const volumeChapterIndex = chapterVolumeIndexById.value[chapter.id] || index + 1
       const segmentId = hasVolumeSegments.value
-        ? `volume:${chapter.parentId || 'ungrouped'}`
+        ? `volume:${volumeId}`
         : `segment:${Math.floor(index / RHYTHM_SEGMENT_SIZE) + 1}`
+      const orderLabel = hasVolumeSegments.value
+        ? `${volumeTitle || '未归卷'} · 第 ${volumeChapterIndex} 章`
+        : chapter.chapterNum ? `第 ${chapter.chapterNum} 章` : `章节 ${index + 1}`
 
       return {
         id: node.id,
@@ -160,7 +183,7 @@ export function useStructureStageRhythm(options: UseStructureStageRhythmOptions)
         description: linkedStructureNode?.description || '',
         hasStructurePlan: !!linkedStructureNode,
         chapterId: chapter.id,
-        orderLabel: chapter.chapterNum ? `第 ${chapter.chapterNum} 章` : `章节 ${index + 1}`,
+        orderLabel,
         segmentId,
         statusTone,
         statusLabel,
@@ -272,15 +295,15 @@ export function useStructureStageRhythm(options: UseStructureStageRhythmOptions)
 
     if (rhythmFilterMode.value === 'nearby') {
       const anchor =
-        selectedRhythmRow.value?.segmentId === activeSegmentId.value
+        currentChapterRhythmRow.value?.segmentId === activeSegmentId.value
           ? {
-              ...selectedRhythmRow.value,
-              order: selectedRhythmRow.value.index,
+              ...currentChapterRhythmRow.value,
+              order: currentChapterRhythmRow.value.index,
             }
-          : currentChapterRhythmRow.value?.segmentId === activeSegmentId.value
+          : selectedRhythmRow.value?.segmentId === activeSegmentId.value
             ? {
-                ...currentChapterRhythmRow.value,
-                order: currentChapterRhythmRow.value.index,
+                ...selectedRhythmRow.value,
+                order: selectedRhythmRow.value.index,
               }
             : null
       const windowRange = resolveWriterWindowRange(
@@ -340,10 +363,13 @@ export function useStructureStageRhythm(options: UseStructureStageRhythmOptions)
         ...row,
         order: row.index,
         chapterNumber: row.chapterId
-          ? options.chapterOptions.value.find((item) => item.id === row.chapterId)?.chapterNum
+          ? chapterEntries.value.find((item) => item.id === row.chapterId)?.chapterNum
           : undefined,
         chapterTitle: row.chapterId
-          ? options.chapterOptions.value.find((item) => item.id === row.chapterId)?.title
+          ? [
+              chapterEntries.value.find((item) => item.id === row.chapterId)?.title,
+              row.orderLabel,
+            ].filter(Boolean).join(' ')
           : undefined,
       })),
       rhythmLocatorQuery.value,
@@ -367,6 +393,7 @@ export function useStructureStageRhythm(options: UseStructureStageRhythmOptions)
     options.selectNode(located.candidate.node)
   }
 
+  let lastCurrentChapterId = ''
   watch(
     () => [
       rhythmSegments.value.map((segment) => segment.id).join('|'),
@@ -374,6 +401,17 @@ export function useStructureStageRhythm(options: UseStructureStageRhythmOptions)
       options.selectedNodeId.value,
     ],
     () => {
+      const currentChapterChanged = options.currentChapterId.value !== lastCurrentChapterId
+      lastCurrentChapterId = options.currentChapterId.value
+      if (
+        currentChapterChanged &&
+        currentChapterRhythmRow.value?.segmentId &&
+        currentChapterRhythmRow.value.segmentId !== activeSegmentId.value
+      ) {
+        activeSegmentId.value = currentChapterRhythmRow.value.segmentId
+        return
+      }
+
       if (
         activeSegmentId.value &&
         rhythmSegments.value.some((segment) => segment.id === activeSegmentId.value)

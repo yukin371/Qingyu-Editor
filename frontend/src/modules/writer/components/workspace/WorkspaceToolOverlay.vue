@@ -52,6 +52,7 @@
                 :chapters="chapters"
                 :workflow-context="workflowContext"
                 :active-entities="activeEntities"
+                :scene-stage="sceneStage"
                 v-bind="currentToolExtraProps"
                 @update:active-category="
                   (category: EncyclopediaCategory) => handleAssetsCategoryChange(category)
@@ -83,10 +84,15 @@ import type { EncyclopediaCategory, GraphFocusTarget } from '@/modules/writer/co
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 import {
   buildActiveEntityTypeSummary,
-  formatActiveEntitiesPrompt,
   type ActiveEntitySummary,
 } from '@/modules/writer/composables/useWorkflowContext'
-import type { WriterStructurePlanPayload, WriterWorkflowContext } from '@/modules/writer/types/workflow'
+import type {
+  WriterStructurePlanPayload,
+  WriterWorkflowActionRequest,
+  WriterWorkflowContext,
+} from '@/modules/writer/types/workflow'
+import { buildWriterToolAIHandoff } from '@/modules/writer/utils/writerToolAIHandoff'
+import type { WriterSceneStageState } from '@/modules/writer/types/sceneStage'
 
 const createAsyncToolView = (loader: () => Promise<Component>) =>
   defineAsyncComponent({
@@ -134,6 +140,8 @@ interface Props {
   workflowContext?: WriterWorkflowContext
   /** 活跃实体列表（可选） */
   activeEntities?: ActiveEntitySummary[]
+  /** 当前场景/节拍摘要，只读透传给聚合工具 */
+  sceneStage?: WriterSceneStageState | null
 }
 
 const props = defineProps<Props>()
@@ -148,16 +156,7 @@ const emit = defineEmits<{
   (e: 'open-graph', chapterId: string): void
   (e: 'jump-to-chapter', chapterId: string): void
   (e: 'create-structure-plan', payload: WriterStructurePlanPayload): void
-  (
-    e: 'trigger-ai-action',
-    payload: {
-      source: string
-      action: string
-      title: string
-      text: string
-      instructions?: string
-    },
-  ): void
+  (e: 'trigger-ai-action', payload: WriterWorkflowActionRequest): void
 }>()
 
 // =======================
@@ -181,6 +180,13 @@ const contextSummaryParts = computed(() => {
   if (props.workflowContext?.scopeLabel) {
     parts.push(`场景：${props.workflowContext.scopeLabel}`)
   }
+  if (props.sceneStage?.coverageLabel || props.sceneStage?.beatTitle || props.sceneStage?.goal) {
+    const sceneSummary = [
+      props.sceneStage.beatTitle ? `节拍：${props.sceneStage.beatTitle}` : '',
+      props.sceneStage.coverageLabel ? `覆盖：${props.sceneStage.coverageLabel}` : '',
+    ].filter(Boolean).join(' · ')
+    parts.push(sceneSummary || '节拍：待填写')
+  }
   if (activeEntityTypeSummary.value.total > 0) {
     const entitySummary = activeEntityTypeSummary.value.items
       .map((item) => `${item.typeLabel}${item.count}`)
@@ -193,6 +199,9 @@ const hasWorkflowContextSummary = computed(() =>
   Boolean(
     effectiveChapterTitle.value ||
     props.workflowContext?.scopeLabel ||
+    props.sceneStage?.coverageLabel ||
+    props.sceneStage?.beatTitle ||
+    props.sceneStage?.goal ||
     activeEntityTypeSummary.value.total,
   ),
 )
@@ -248,20 +257,18 @@ const handleGraphFocusConsumed = () => {
 }
 
 const handleSendContextToAI = () => {
-  const lines = [
-    `当前工具：${currentToolName.value}`,
-    effectiveChapterTitle.value ? `当前章节：${effectiveChapterTitle.value}` : '',
-    props.workflowContext?.scopeLabel ? `当前场景：${props.workflowContext.scopeLabel}` : '',
-    formatActiveEntitiesPrompt(props.activeEntities, 6),
-  ].filter(Boolean)
-
-  emit('trigger-ai-action', {
-    source: 'workspace_tool_overlay',
-    action: 'add_to_chat',
+  emit('trigger-ai-action', buildWriterToolAIHandoff({
+    toolLabel: currentToolName.value,
     title: `${currentToolName.value}上下文`,
-    text: lines.join('\n'),
+    focusLines: [
+      props.sceneStage?.beatTitle ? `当前拍：${props.sceneStage.beatTitle}` : '',
+      props.sceneStage?.goal ? `节拍目标：${props.sceneStage.goal}` : '',
+      props.sceneStage?.doneCondition ? `完成条件：${props.sceneStage.doneCondition}` : '',
+    ],
+    workflowContext: props.workflowContext,
+    activeEntities: props.activeEntities,
     instructions: '基于当前章节、场景和设定摘要给出当前工具相关建议，只指出最值得处理的一项。',
-  })
+  }))
 }
 
 watch(

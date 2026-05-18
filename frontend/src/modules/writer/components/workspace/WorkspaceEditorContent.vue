@@ -50,6 +50,7 @@
     :chapters="chapters"
     :workflow-context="workflowContext"
     :active-entities="activeEntities"
+    :scene-stage="sceneStage"
     @close="toolOverlay.close"
     @tool-change="toolOverlay.switchTool"
     @status-change="emit('status-change', $event)"
@@ -82,6 +83,7 @@ import type {
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 import type { ActiveEntitySummary } from '@/modules/writer/composables/useWorkflowContext'
 import type { WriterWorkflowContext } from '@/modules/writer/types/workflow'
+import type { WriterSceneStageState } from '@/modules/writer/types/sceneStage'
 
 const props = defineProps<{
   projectId: string
@@ -103,6 +105,7 @@ const props = defineProps<{
   changeRequests?: StoryHarnessChangeRequestPreview[]
   workflowContext?: WriterWorkflowContext
   activeEntities?: ActiveEntitySummary[]
+  sceneStage?: WriterSceneStageState | null
   handleChangeRequestDecision?: (
     requestId: string,
     decision: StoryHarnessChangeRequestDecision,
@@ -181,14 +184,8 @@ const handleTitleEscape = async () => {
 const overlayChapterId = computed(() => props.toolOverlayChapterId ?? props.chapterId)
 const overlayChapterTitle = computed(() => props.toolOverlayChapterTitle ?? props.chapterTitle)
 
-const handleOverlayTriggerAIAction = (payload: {
-  source: string
-  action: string
-  title: string
-  text: string
-  instructions?: string
-}) => {
-  emit('trigger-ai-action', payload as WriterWorkflowActionRequest)
+const handleOverlayTriggerAIAction = (payload: WriterWorkflowActionRequest) => {
+  emit('trigger-ai-action', payload)
 }
 
 const toolOverlay = useToolOverlay()

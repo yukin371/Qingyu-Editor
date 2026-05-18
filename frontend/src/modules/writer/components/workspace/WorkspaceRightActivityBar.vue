@@ -1,25 +1,28 @@
 <template>
   <nav class="workspace-activity-bar" aria-label="右侧工具栏">
-    <button
-      v-for="toolId in toolOrder"
-      :key="toolId"
-      class="workspace-activity-bar__item"
-      :class="{ active: activeTool === toolId && visible && !collapsed }"
-      :title="getToolLabel(toolId)"
-      type="button"
-      @click="$emit('select-tool', toolId)"
-    >
-      <span class="workspace-activity-bar__glyph">
-        <QyIcon :name="RIGHT_TOOL_CONFIG[toolId].icon" :size="18" />
-      </span>
-      <span class="workspace-activity-bar__label">{{ getToolLabel(toolId) }}</span>
-    </button>
+    <div v-for="group in toolGroups" :key="group.id" class="workspace-activity-bar__group">
+      <div class="workspace-activity-bar__group-label">{{ group.label }}</div>
+      <button
+        v-for="toolId in group.tools"
+        :key="toolId"
+        class="workspace-activity-bar__item"
+        :class="{ active: activeTool === toolId && visible && !collapsed }"
+        :title="getToolLabel(toolId)"
+        type="button"
+        @click="$emit('select-tool', toolId)"
+      >
+        <span class="workspace-activity-bar__glyph">
+          <QyIcon :name="RIGHT_TOOL_CONFIG[toolId].icon" :size="18" />
+        </span>
+        <span class="workspace-activity-bar__label">{{ getToolLabel(toolId) }}</span>
+      </button>
+    </div>
   </nav>
 </template>
 
 <script setup lang="ts">
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
-import { RIGHT_TOOL_CONFIG, RIGHT_TOOL_ORDER } from '@/modules/writer/config/workspacePanels'
+import { RIGHT_TOOL_CONFIG, RIGHT_TOOL_GROUPS } from '@/modules/writer/config/workspacePanels'
 import type { RightToolType } from '@/modules/writer/types/workspaceLayout'
 
 defineProps<{
@@ -32,7 +35,7 @@ defineEmits<{
   (e: 'select-tool', toolId: RightToolType): void
 }>()
 
-const toolOrder = RIGHT_TOOL_ORDER
+const toolGroups = RIGHT_TOOL_GROUPS
 
 function getToolLabel(toolId: RightToolType) {
   return RIGHT_TOOL_CONFIG[toolId].label
@@ -53,8 +56,23 @@ function getToolLabel(toolId: RightToolType) {
     color-mix(in srgb, var(--editor-layer-soft, rgba(244, 247, 251, 0.98)) 98%, transparent)
   );
   border-left: 1px solid var(--editor-border, #e2e8f0);
-  gap: 6px;
+  gap: 10px;
   box-shadow: inset 1px 0 0 color-mix(in srgb, var(--editor-bg-elevated, #fff) 72%, transparent);
+
+  &__group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__group-label {
+    font-size: 9px;
+    line-height: 1;
+    font-weight: 700;
+    color: var(--editor-text-muted, #94a3b8);
+    text-align: center;
+    letter-spacing: 0.06em;
+  }
 
   &__item {
     display: flex;
@@ -63,8 +81,8 @@ function getToolLabel(toolId: RightToolType) {
     justify-content: center;
     gap: 3px;
     width: 44px;
-    min-height: 48px;
-    padding: 6px 0;
+    min-height: 44px;
+    padding: 5px 0;
     border-radius: 12px;
     border: 1px solid transparent;
     background: color-mix(in srgb, var(--editor-layer-glass, rgba(255, 255, 255, 0.56)) 84%, transparent);
@@ -106,7 +124,7 @@ function getToolLabel(toolId: RightToolType) {
   }
 
   &__label {
-    font-size: 10px;
+    font-size: 9px;
     line-height: 1;
     font-weight: 600;
     letter-spacing: 0.02em;

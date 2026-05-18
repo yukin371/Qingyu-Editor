@@ -84,6 +84,7 @@
 - **普通聊天历史由 plan 显式携带**：`WriterAIPlan.history` 只保留已存在的 user/assistant 往返，不包含当前发送内容；这样既能走统一 facade，又不会把当前 prompt 重复塞进 provider history。
 - **AI 上下文包 owner 是 `utils/writerAIContext.ts`**：右栏聊天、Workbench 工具、资产摘要和结构/时间线/分支简化摘要都应先构造成 `WriterAIContextPacket`，再进入 prompt 或 `modules/ai/api` facade；不要在组件内各自拼全量 prompt。
 - **AI 默认只消费简化上下文**：上下文包默认包含当前章节正文、选区/候选稿、目标条、资产简表、创作蓝图/节奏摘要和证据卡，并受字符预算截断；禁止默认把全书全文或深度资产详情塞进 prompt。
+- **工具交给 AI 的上下文要复用共享 handoff**：角色图谱、时间线、分支、结构节点与全屏工具顶部的 `add_to_chat` 文本应优先走共享 handoff 组装器，不要让每个工具各自拼一套 prompt 文案和指令。
 - **场景舞台只进入 AI 摘要上下文**：底栏当前场景与当前拍仍由 `useWriterSceneStage` 本地 sidecar 持有；当前草稿以项目级 `activeSceneId + scenes` 结构持续保存，覆盖章节会随当前工作章节自动累积，点击“新场景”才归档当前场景并切到新场景。AI 只能通过 `WriterAISceneStageSummary` 消费场景、覆盖章节、目标、冲突、完成条件、下一拍和在场资产摘要，不得把场景舞台状态复制成 AI store 或让 AI 静默推进节拍。
 - **AI 创作辅助采用“双节拍”入口**：右栏快捷入口按“写 / 审 / 整理”组织；写作冲刺入口可进入当前章节/选区 diff，回审和整理入口只输出分析、任务卡或资产候选，不静默改剧情、不批量改章。
 - **本章任务卡只进入上下文包，不成为新持久化 owner**：`WriterChapterTaskCard` 用于约束创作冲刺与质量回审，可从阶段摘要或显式上下文推导；持久化仍归结构舞台、章节/工作流 sidecar 或后续明确 owner。
@@ -94,6 +95,7 @@
 - **`/doc` 命令桥只做轻量演示接入**：`AIPanel` 内的 `/doc list/read/search/patch` 目前是面向当前 writer 工作区的本地命令桥。`list/read/search` 可直接返回文本结果；`patch` 必须统一转换成 `applyGeneratedText -> ProjectWorkspace.handleAIApplyGeneratedText` 的正文 diff。若目标不是当前章节，只允许先读取目标章节内容、生成预览，再通过 `targetDocumentId/targetDocumentTitle` 让宿主切章后挂起 diff，不允许绕过编辑器直接静默保存。
 - **会话操作应并入工具栏，不再回到独立头部**：清空当前对话、重命名、新建会话等动作统一放在 `AIConversationToolbar`，不要为了单个会话动作再长回额外标题栏。
 - **右栏是“双模式速查”宿主，不再只挂 AI/Harness**：`WorkspaceRightPanel` 现在承接 `AI / 设定 / 审查 / 校对 / 灵感` 五种常驻工具；设定采用“列表 + 详情”双栏，审查/AI/校对/灵感采用单栏。不要再把轻量查阅能力做回全屏覆盖层或主编辑区切页。
+- **工具入口必须分层但不加负担**：右侧常驻工具按 `日常 / 回审` 分组，overlay 工具按 `主流程 / 高级工具` 分组；分组只服务快速识别，不允许增加步骤说明、空态教程或新的必填流程。
 - **阶段 1 创作流元数据已改为 Wails-first owner**：`题材模板 / 目标读者 / 核心承诺 / 节奏合约 / 黄金三章` 当前由 `services/creativeWorkflow.service.ts` 优先通过 `wailsWriterBridge.creativeWorkflow` 落到本地 SQLite；`localStorage` 只保留无 bridge 的浏览器 fallback，不得再把这批字段写回旧在线 REST schema，也不要在页面里各自维护第二套 sidecar。
 - **模板目录和详情已改为本地 API owner**：作者工作台、模板中心消费的模板列表/详情统一走 `wailsWriterBridge.template`，由 Go `TemplateService` 提供稳定结构；前端静态模板数据只允许作为无 Wails 的开发 fallback，不再是默认运行态真相，且统一收口到 `services/templateCatalog.fallback.ts`，不要在页面或其他 service 再复制第三份模板定义。
 - **灵感笔记已改为本地 API owner**：`InspirationPanel` 的笔记列表、创建、删除统一走 `wailsWriterBridge.inspiration`；本地缓存只作为浏览器 fallback 和读失败兜底，不允许再直接在组件里操作 `localStorage`。
@@ -102,6 +104,7 @@
 - **黄金三章导入必须复用现有结构草案链**：从阶段 3 接力卡导入黄金三章时，只能发 `create-structure-plan` 交给 `ProjectWorkspace.handleCreateStructurePlan` 统一创建章节与 outline 节点；不要在 `StructureStageView` 里直接写文档或大纲。
 - **黄金三章导入控制项仍由宿主兜底**：阶段 3 接力卡可以补 `导入位置（当前卷 / 项目根目录）` 与 `重复策略（跳过 / 允许重复）`，但最终 parent 解析、同名跳过与成功提示都必须落在 `ProjectWorkspace.handleCreateStructurePlan`，不要在结构舞台局部自行分叉创建逻辑。
 - **结构舞台默认层是章节级全局管理视图**：`StructureStageView` 默认只展示章节范围、附近章节卡片、字数、入纲状态和写作 handoff；结构节点、资产、图谱、时间线、分支等深层信息只在检视面板或专业 overlay 中展开，不允许把默认层重新做成长表格或第二套深度编辑 owner。
+- **结构舞台默认层是基本工具聚合入口**：结构舞台作为默认 overlay 工具时，应先呈现当前章节、当前大纲绑定、当前节拍、设定入口、AI 整理和附近章节窗口；节拍/章节/大纲/设定只在这里形成可操作摘要，不在默认层复制各工具的完整编辑面。当前节拍信息只读来自底栏 `sceneStage`，结构舞台不直接编辑节拍草稿。
 - **长篇结构舞台必须用范围地图和附近窗口承载**：几百章以上的作品不得默认铺开完整顺序列表；`StructureStageView` 应按卷或固定章节范围展示全局地图，并只渲染当前/定位章节附近的少量章节卡片，章节号/标题定位和问题筛选只改变当前窗口，不改变章节原始顺序。
 - **长篇深度工具也必须按区段定位**：`TimelineOutlineView` 和 `StoryBranchView` 不得默认渲染全量事件/全量分支节点；时间线应按事件窗口工作，互动分支应优先展示路线列表、当前章节附近节点和定位窗口，避免几千章作品在辅助工具中重新变成长列表或全量画布。
 - **右栏不再伪装成通用 layout area**：布局 store 里的通用区域只剩 `left / bottom / overlay`，右侧常驻工具单独归 `rightToolArea` owner。不要再往 `workspaceLayoutStore.areas` 恢复历史 `right` 区域状态。

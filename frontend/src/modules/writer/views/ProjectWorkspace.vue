@@ -67,6 +67,7 @@
             :change-requests="storyHarnessChangeRequests"
             :workflow-context="workflowContext"
             :active-entities="activeEntities"
+            :scene-stage="sceneStage"
             :handle-change-request-decision="handleChangeRequestDecision"
             :handle-trigger-index="handleStoryHarnessTriggerIndex"
             :is-triggering-index="isStoryHarnessTriggering"

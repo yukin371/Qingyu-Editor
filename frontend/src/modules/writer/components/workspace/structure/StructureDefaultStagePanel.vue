@@ -1,5 +1,35 @@
 <template>
   <section class="structure-stage-view__default-stage" data-testid="structure-stage-default">
+    <section class="structure-stage-view__hub" data-testid="structure-stage-hub">
+      <div class="structure-stage-view__hub-main">
+        <span>当前写作</span>
+        <strong>{{ currentChapterTitle || '未选择章节' }}</strong>
+        <em>{{ currentChapterHint }}</em>
+      </div>
+      <div class="structure-stage-view__hub-main">
+        <span>当前大纲</span>
+        <strong>{{ selectedNodeTitle || '未绑定大纲' }}</strong>
+        <em>{{ boundChapter ? `绑定 ${boundChapter.title}` : '可从章节卡片或检视区绑定' }}</em>
+      </div>
+      <div class="structure-stage-view__hub-main">
+        <span>节拍承诺</span>
+        <strong>{{ sceneBeatTitle }}</strong>
+        <em>{{ sceneBeatHint }}</em>
+        <small>{{ sceneBeatOwnerHint }}</small>
+      </div>
+      <div class="structure-stage-view__hub-actions">
+        <button
+          type="button"
+          :disabled="!currentChapterId"
+          @click="currentChapterId && emit('jump-to-chapter', currentChapterId)"
+        >
+          写当前章
+        </button>
+        <button type="button" @click="emit('switch-tool', 'assets')">查看设定</button>
+        <button type="button" @click="emit('send-current-to-ai')">交给 AI 整理</button>
+      </div>
+    </section>
+
     <section class="structure-stage-view__rhythm-board" data-testid="structure-rhythm-board">
       <div class="structure-stage-view__rhythm-head">
         <div class="structure-stage-view__rhythm-title-block">
@@ -150,6 +180,7 @@ import { computed } from 'vue'
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 import type { ToolType } from '@/modules/writer/composables/useToolOverlay'
+import type { WriterSceneStageState } from '@/modules/writer/types/sceneStage'
 import type { WriterStructureDuplicateStrategy, WriterStructureImportTarget } from '@/modules/writer/types/workflow'
 import type { OutlineNode } from '@/types/writer'
 import type {
@@ -164,12 +195,14 @@ const props = withDefaults(
   defineProps<{
     chapterCount: number
     currentChapterId: string
+    currentChapterTitle: string
     currentVolumeDirectory?: string
     isOutlineLoading: boolean
     selectedNodeId: string
     selectedNode: OutlineNode | null
     selectedNodeTitle?: string
     boundChapter?: SidebarChapterSummary | null
+    sceneStage?: WriterSceneStageState | null
     defaultStagePrimaryHint: string
     activeSegmentId: string
     activeRhythmSegmentTitle?: string
@@ -196,6 +229,7 @@ const props = withDefaults(
     selectedNode: null,
     selectedNodeTitle: '',
     boundChapter: null,
+    sceneStage: null,
     activeRhythmSegmentTitle: '',
     creativeWorkflowTemplateName: '',
     creativeWorkflowPitch: '',
@@ -218,6 +252,7 @@ const emit = defineEmits<{
   (e: 'open-advanced'): void
   (e: 'import-blueprint'): void
   (e: 'send-blueprint-to-ai'): void
+  (e: 'send-current-to-ai'): void
 }>()
 
 const visibleRhythmFilterOptions = computed(() =>
@@ -232,7 +267,7 @@ const visibleChapterCards = computed(() => {
   if (rows.length <= MAX_VISIBLE_CHAPTER_CARDS) return rows
 
   const anchorIndex = rows.findIndex(
-    (row) => row.id === props.selectedNodeId || row.chapterId === props.currentChapterId,
+    (row) => row.chapterId === props.currentChapterId || row.id === props.selectedNodeId,
   )
   const safeAnchor = anchorIndex >= 0 ? anchorIndex : 0
   const before = Math.floor(MAX_VISIBLE_CHAPTER_CARDS / 2)
@@ -246,6 +281,35 @@ const visibleChapterCards = computed(() => {
 const hiddenChapterCount = computed(() =>
   Math.max(0, props.rhythmWindowRows.length - visibleChapterCards.value.length),
 )
+
+const currentChapterHint = computed(() => {
+  const row = props.rhythmWindowRows.find((item) => item.chapterId === props.currentChapterId)
+  if (!row) return props.rhythmWindowRangeLabel || '等待章节进入结构窗口'
+  return `${row.hasStructurePlan ? '已入纲' : '未入纲'} · ${row.wordCountLabel}`
+})
+
+const sceneBeatTitle = computed(() => {
+  if (!props.sceneStage || props.sceneStage.isEmpty) return '未设置承诺'
+  return props.sceneStage.beatTitle || props.sceneStage.sceneTitle || '当前拍'
+})
+
+const sceneBeatHint = computed(() => {
+  if (!props.sceneStage || props.sceneStage.isEmpty) return '覆盖章节：未设置'
+  return [
+    props.sceneStage.coverageLabel ? `覆盖章节：${props.sceneStage.coverageLabel}` : '',
+    props.sceneStage.goal ? `目标：${props.sceneStage.goal}` : '',
+  ].filter(Boolean).join(' · ') || '覆盖章节：待从场景栏设置'
+})
+
+const sceneBeatOwnerHint = computed(() => {
+  if (!props.sceneStage || props.sceneStage.isEmpty) {
+    return '卷只定位窗口，节拍在下侧场景栏编辑'
+  }
+  return [
+    '卷只定位窗口，节拍可跨卷覆盖连续章节',
+    props.sceneStage.doneCondition ? `完成条件：${props.sceneStage.doneCondition}` : '',
+  ].filter(Boolean).join(' · ')
+})
 </script>
 
 <style scoped lang="scss">
@@ -255,6 +319,99 @@ const hiddenChapterCount = computed(() =>
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.structure-stage-view__hub {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: var(--editor-radius-lg, 8px);
+  border: 1px solid var(--editor-border, #e2e8f0);
+  background: var(--editor-bg-elevated, #fff);
+}
+
+.structure-stage-view__hub-main {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  padding-left: 10px;
+  border-left: 2px solid color-mix(in srgb, var(--editor-border, #94a3b8) 46%, transparent);
+
+  &:nth-child(3) {
+    border-left-color: color-mix(in srgb, var(--editor-accent, #0f766e) 72%, transparent);
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--editor-accent-soft, #ecfeff) 42%, transparent),
+      transparent 72%
+    );
+    border-radius: 8px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  span {
+    color: var(--editor-text-muted, #64748b);
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  strong,
+  em,
+  small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  strong {
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  em {
+    color: var(--editor-text-secondary, #475569);
+    font-size: 12px;
+    font-style: normal;
+  }
+
+  small {
+    color: var(--editor-text-muted, #64748b);
+    font-size: 11px;
+    line-height: 1.2;
+  }
+}
+
+.structure-stage-view__hub-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+
+  button {
+    min-height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--editor-border, #94a3b8) 42%, transparent);
+    background: var(--editor-bg-surface, #f8fafc);
+    color: var(--editor-text-secondary, #475569);
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      border-color: var(--editor-accent, #0f766e);
+      color: var(--editor-accent, #0f766e);
+      background: var(--editor-accent-soft, #ecfeff);
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+  }
 }
 
 .structure-stage-view__rhythm-board {
@@ -676,6 +833,15 @@ const hiddenChapterCount = computed(() =>
 }
 
 @media (max-width: 1024px) {
+  .structure-stage-view__hub {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .structure-stage-view__hub-actions {
+    justify-content: flex-start;
+  }
+
   .structure-stage-view__blueprint-head {
     flex-direction: column;
   }

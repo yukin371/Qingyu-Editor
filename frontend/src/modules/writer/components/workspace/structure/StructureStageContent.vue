@@ -4,12 +4,14 @@
       v-if="!showAdvancedControls"
       :chapter-count="chapterCount"
       :current-chapter-id="currentChapterId"
+      :current-chapter-title="currentChapterTitle"
       :current-volume-directory="currentVolumeDirectory"
       :is-outline-loading="isOutlineLoading"
       :selected-node-id="selectedNodeId"
       :selected-node="selectedNode"
       :selected-node-title="selectedNodeTitle"
       :bound-chapter="boundChapter"
+      :scene-stage="sceneStage"
       :default-stage-primary-hint="defaultStagePrimaryHint"
       :active-segment-id="activeSegmentId"
       :active-rhythm-segment-title="activeRhythmSegmentTitle"
@@ -45,6 +47,7 @@
       @open-advanced="emit('open-advanced')"
       @import-blueprint="emit('import-blueprint')"
       @send-blueprint-to-ai="emit('send-blueprint-to-ai')"
+      @send-current-to-ai="emit('send-current-to-ai')"
     />
 
     <template v-else>
@@ -138,6 +141,7 @@ import type {
 } from '@/modules/writer/types/workflow'
 import type { WriterAssetSummary } from '@/modules/writer/utils/writerAssetRefs'
 import type { OutlineNode } from '@/types/writer'
+import type { WriterSceneStageState } from '@/modules/writer/types/sceneStage'
 import BeatBoardPanel from './BeatBoardPanel.vue'
 import CanvasOutlineBoard from './CanvasOutlineBoard.vue'
 import FishboneOutlineBoard from './FishboneOutlineBoard.vue'
@@ -161,12 +165,14 @@ defineProps<{
   chapterCount: number
   chapterOptions: SidebarChapterSummary[]
   currentChapterId: string
+  currentChapterTitle: string
   currentVolumeDirectory: string
   isOutlineLoading: boolean
   selectedNodeId: string
   selectedNode: OutlineNode | null
   selectedNodeTitle: string
   boundChapter: SidebarChapterSummary | null
+  sceneStage?: WriterSceneStageState | null
   defaultStagePrimaryHint: string
   activeSegmentId: string
   activeRhythmSegmentTitle: string
@@ -210,6 +216,7 @@ const emit = defineEmits<{
   (e: 'open-advanced'): void
   (e: 'import-blueprint'): void
   (e: 'send-blueprint-to-ai'): void
+  (e: 'send-current-to-ai'): void
   (e: 'edit-node', node: OutlineNode): void
   (e: 'move-up', node: OutlineNode): void
   (e: 'move-down', node: OutlineNode): void

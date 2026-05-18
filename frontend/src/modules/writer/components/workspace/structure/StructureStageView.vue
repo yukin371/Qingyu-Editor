@@ -34,12 +34,14 @@
           :chapter-count="chapterOptions.length"
           :chapter-options="chapterOptions"
           :current-chapter-id="currentChapterId"
+          :current-chapter-title="currentChapterTitle"
           :current-volume-directory="currentVolumeDirectory"
           :is-outline-loading="isOutlineLoading"
           :selected-node-id="selectedNodeId"
           :selected-node="selectedNode"
           :selected-node-title="selectedNode?.title || ''"
           :bound-chapter="boundChapter"
+          :scene-stage="sceneStage"
           :default-stage-primary-hint="defaultStagePrimaryHint"
           :active-segment-id="activeSegmentId"
           :active-rhythm-segment-title="activeRhythmSegment?.title || ''"
@@ -80,6 +82,7 @@
           @open-advanced="showAdvancedControls = true"
           @import-blueprint="emitCreativeWorkflowStructurePlan"
           @send-blueprint-to-ai="emitCreativeWorkflowToAI"
+          @send-current-to-ai="emitStructureHubToAI"
           @edit-node="openEditNode"
           @move-up="moveNodeUp"
           @move-down="moveNodeDown"
@@ -97,9 +100,10 @@
         :selected-node="selectedNode"
         :chapters="chapterOptions"
         :chapter-graphs="chapterGraphs"
-        :workflow-context="workflowContext"
-        :active-entities="activeEntities"
-        :current-chapter-id="currentChapterId"
+          :workflow-context="workflowContext"
+          :active-entities="activeEntities"
+          :scene-stage="sceneStage"
+          :current-chapter-id="currentChapterId"
         :current-chapter-title="currentChapterTitle"
         :draft-binding-chapter-id="draftBindingChapterId"
         :bound-chapter="boundChapter"
@@ -154,6 +158,8 @@ import { useStructureStageRhythm } from './useStructureStageRhythm'
 import type { StageViewMode, StructureFilterMode } from './structureStage.types'
 import type { ToolType } from '@/modules/writer/composables/useToolOverlay'
 import { getBoundChapterId } from './structureNodeTypes'
+import { buildWriterToolAIHandoff } from '@/modules/writer/utils/writerToolAIHandoff'
+import type { WriterSceneStageState } from '@/modules/writer/types/sceneStage'
 
 type TreeDropPosition = 'before' | 'after'
 
@@ -165,6 +171,7 @@ const props = withDefaults(
     currentChapterTitle?: string
     workflowContext?: WriterWorkflowContext
     activeEntities?: ActiveEntitySummary[]
+    sceneStage?: WriterSceneStageState | null
   }>(),
   {
     projectId: '',
@@ -173,6 +180,7 @@ const props = withDefaults(
     currentChapterTitle: '',
     workflowContext: undefined,
     activeEntities: () => [],
+    sceneStage: null,
   },
 )
 
@@ -228,6 +236,7 @@ const emit = defineEmits<{
 
 const effectiveProjectId = computed(() => props.projectId || writerStore.currentProjectId || '')
 const isOutlineLoading = computed(() => writerStore.outline.loading)
+const chapterEntries = computed(() => props.chapters)
 const chapterOptions = computed(() =>
   props.chapters.filter((chapter) => chapter.nodeType !== 'directory'),
 )
@@ -281,6 +290,7 @@ const {
 } = useStructureStageRhythm({
   currentChapterId: computed(() => props.currentChapterId),
   currentChapterTitle: computed(() => props.currentChapterTitle),
+  chapterEntries,
   chapterOptions,
   rootNodes,
   flattenedNodes,
@@ -317,6 +327,29 @@ function emitCreativeWorkflowToAI() {
   const payload = buildCreativeWorkflowToAIRequest()
   if (!payload) return
   emit('trigger-ai-action', payload)
+}
+
+function emitStructureHubToAI() {
+  emit('trigger-ai-action', buildWriterToolAIHandoff({
+    toolLabel: '结构舞台',
+    title: '结构舞台：当前写作整理',
+    focusLines: [
+      props.currentChapterTitle ? `当前章节：${props.currentChapterTitle}` : '',
+      activeRhythmSegment.value?.title ? `当前节奏段：${activeRhythmSegment.value.title}` : '',
+      rhythmWindowRangeLabel.value ? `章节窗口：${rhythmWindowRangeLabel.value}` : '',
+      props.sceneStage?.beatTitle ? `当前拍：${props.sceneStage.beatTitle}` : '',
+      props.sceneStage?.coverageLabel ? `节拍覆盖：${props.sceneStage.coverageLabel}` : '',
+      props.sceneStage?.goal ? `节拍目标：${props.sceneStage.goal}` : '',
+      props.sceneStage?.doneCondition ? `完成条件：${props.sceneStage.doneCondition}` : '',
+      selectedNode.value?.title ? `当前大纲节点：${selectedNode.value.title}` : '',
+      selectedNode.value?.description ? `节点说明：${selectedNode.value.description}` : '',
+      boundChapter.value?.title ? `绑定章节：${boundChapter.value.title}` : '',
+    ],
+    workflowContext: props.workflowContext,
+    activeEntities: props.activeEntities,
+    instructions:
+      '请把当前章节、节拍窗口、大纲节点和设定摘要压缩成下一步写作建议，只给最重要的 1-3 项。',
+  }))
 }
 
 function emitCreativeWorkflowStructurePlan() {

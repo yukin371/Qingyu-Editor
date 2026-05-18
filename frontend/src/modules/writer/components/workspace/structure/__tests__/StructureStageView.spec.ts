@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import StructureStageView from '../StructureStageView.vue'
 
@@ -230,11 +231,29 @@ describe('StructureStageView', () => {
     expect(wrapper.text()).not.toContain('首次打脸')
     expect(wrapper.text()).toContain('写作')
     expect(wrapper.find('[data-testid="structure-stage-default"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="structure-stage-hub"]').text()).toContain('当前写作')
+    expect(wrapper.get('[data-testid="structure-stage-hub"]').text()).toContain('第一章')
+    expect(wrapper.get('[data-testid="structure-stage-hub"]').text()).toContain('当前大纲')
+    expect(wrapper.get('[data-testid="structure-stage-hub"]').text()).toContain('主线冲突')
+    expect(wrapper.get('[data-testid="structure-stage-hub"]').text()).toContain('节拍承诺')
+    expect(wrapper.get('[data-testid="structure-stage-hub"]').text()).toContain('卷只定位窗口')
     expect(wrapper.find('[data-testid="structure-rhythm-board"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="structure-stage-default-list"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="structure-stage-advanced"]').exists()).toBe(false)
     expect(wrapper.find('.structure-search__input').exists()).toBe(false)
     expect(wrapper.find('.structure-stage-view__rhythm-action.is-primary').text()).toContain('写作')
+
+    const hubAiButton = wrapper
+      .findAll('.structure-stage-view__hub-actions button')
+      .find((button) => button.text().includes('交给 AI 整理'))
+    expect(hubAiButton).toBeTruthy()
+    await hubAiButton!.trigger('click')
+    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0]).toMatchObject({
+      source: 'workspace',
+      action: 'add_to_chat',
+      title: '结构舞台：当前写作整理',
+    })
+    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain('当前大纲节点：主线冲突')
 
     await wrapper.get('.stage-secondary-action').trigger('click')
 
@@ -409,6 +428,105 @@ describe('StructureStageView', () => {
       importTarget: 'current-volume',
       duplicateStrategy: 'skip_existing',
     })
+  })
+
+  it('多卷结构应按当前章节所在卷展示卷内章节序号', async () => {
+    mockWriterStore.outline.tree = [
+      {
+        id: 'node-1',
+        title: '第一卷开局',
+        level: 1,
+        order: 0,
+        status: 'planned',
+        description: '',
+        documentId: 'chapter-1',
+        children: [],
+      },
+      {
+        id: 'node-2',
+        title: '第二卷开局',
+        level: 1,
+        order: 1,
+        status: 'planned',
+        description: '',
+        documentId: 'chapter-2',
+        children: [],
+      },
+    ]
+
+    const wrapper = mount(StructureStageView, {
+      props: {
+        projectId: 'project-1',
+        currentChapterId: 'chapter-2',
+        currentChapterTitle: '第一章',
+        chapters: [
+          {
+            id: 'volume-1',
+            projectId: 'project-1',
+            chapterNum: 0,
+            title: '第一卷',
+            nodeType: 'directory',
+            wordCount: 0,
+            updatedAt: '2026-04-13T00:00:00.000Z',
+            status: 'draft',
+          },
+          {
+            id: 'chapter-1',
+            projectId: 'project-1',
+            parentId: 'volume-1',
+            chapterNum: 1,
+            title: '第一章',
+            nodeType: 'chapter',
+            wordCount: 1000,
+            updatedAt: '2026-04-13T00:00:00.000Z',
+            status: 'draft',
+          },
+          {
+            id: 'volume-2',
+            projectId: 'project-1',
+            chapterNum: 0,
+            title: '第二卷',
+            nodeType: 'directory',
+            wordCount: 0,
+            updatedAt: '2026-04-13T00:00:00.000Z',
+            status: 'draft',
+          },
+          {
+            id: 'chapter-2',
+            projectId: 'project-1',
+            parentId: 'volume-2',
+            chapterNum: 2,
+            title: '第一章',
+            nodeType: 'chapter',
+            wordCount: 0,
+            updatedAt: '2026-04-13T00:00:00.000Z',
+            status: 'draft',
+          },
+        ],
+      },
+      global: {
+        stubs: {
+          QyIcon: { template: '<span />' },
+          FishboneOutlineBoard: { template: '<div />' },
+          CanvasOutlineBoard: { template: '<div />' },
+          BeatBoardPanel: { template: '<div />' },
+          StructureInspectorPanel: { template: '<div />' },
+          StructureNodeEditorDialog: { template: '<div />' },
+        },
+      },
+    })
+
+    await flushPromises()
+    await nextTick()
+
+    expect(wrapper.find('.structure-stage-view__segment-node.is-active').text()).toContain('第二卷')
+    expect(wrapper.find('.structure-stage-view__window-range').text()).toContain(
+      '第二卷 · 第 1 章',
+    )
+    expect(wrapper.find('.structure-stage-view__rhythm-order').text()).toContain(
+      '第二卷 · 第 1 章',
+    )
+    expect(wrapper.find('.structure-stage-view__rhythm-order').text()).not.toContain('第 2 章')
   })
 
   it('当前章节已入纲时，表格写作动作应跳转到写作章节', async () => {
@@ -634,6 +752,121 @@ describe('StructureStageView', () => {
       expect.stringContaining('第二章'),
       expect.stringContaining('第三章'),
     ])
+  })
+
+  it('点击章节卡只切换检视节点，不应重算当前章节附近窗口', async () => {
+    mockWriterStore.outline.tree = Array.from({ length: 24 }, (_, index) => ({
+      id: `node-${index + 1}`,
+      projectId: 'project-1',
+      title: `第${index + 1}章节点`,
+      level: 1,
+      order: index,
+      status: 'planned',
+      description: `第${index + 1}章节奏`,
+      documentId: `chapter-${index + 1}`,
+      children: [],
+    }))
+
+    const wrapper = mount(StructureStageView, {
+      props: {
+        projectId: 'project-1',
+        currentChapterId: 'chapter-12',
+        currentChapterTitle: '第12章',
+        chapters: Array.from({ length: 24 }, (_, index) => ({
+          id: `chapter-${index + 1}`,
+          projectId: 'project-1',
+          chapterNum: index + 1,
+          title: `第${index + 1}章`,
+          nodeType: 'chapter' as const,
+          wordCount: 1000,
+          updatedAt: '2026-04-13T00:00:00.000Z',
+          status: 'draft' as const,
+        })),
+      },
+      global: {
+        stubs: {
+          QyIcon: { template: '<span />' },
+          FishboneOutlineBoard: { template: '<div />' },
+          CanvasOutlineBoard: { template: '<div />' },
+          BeatBoardPanel: { template: '<div />' },
+          StructureInspectorPanel: { template: '<div />' },
+          StructureNodeEditorDialog: { template: '<div />' },
+        },
+      },
+    })
+
+    await flushPromises()
+
+    const beforeTitles = wrapper.findAll('.structure-stage-view__rhythm-title').map((node) => node.text())
+    await wrapper.findAll('.structure-stage-view__rhythm-row')[0].trigger('click')
+
+    expect(wrapper.findAll('.structure-stage-view__rhythm-title').map((node) => node.text())).toEqual(
+      beforeTitles,
+    )
+  })
+
+  it('结构舞台应明确节拍覆盖范围独立于卷窗口', async () => {
+    const wrapper = mount(StructureStageView, {
+      props: {
+        projectId: 'project-1',
+        currentChapterId: 'chapter-2',
+        currentChapterTitle: '第二章',
+        sceneStage: {
+          projectId: 'project-1',
+          sceneId: 'scene-1',
+          beatId: 'beat-1',
+          chapterId: 'chapter-2',
+          chapterTitle: '第二章',
+          chapterIds: ['chapter-1', 'chapter-2'],
+          chapterCount: 2,
+          coverageLabel: '第一卷 第 28 章 - 第二卷 第 1 章',
+          coverageChapterCount: 2,
+          coverageOptions: [],
+          currentChapterLinked: true,
+          sceneTitle: '黑市脱身',
+          beatTitle: '黑市脱身',
+          goal: '完成跨卷逃脱与新地图承诺',
+          conflict: '',
+          beatStatus: 'active',
+          doneCondition: '主角带着关键线索离开旧地图',
+          assets: [],
+          evidence: [],
+          summaryLine: '黑市脱身',
+          isEmpty: false,
+          draft: {},
+        },
+        chapters: [
+          {
+            id: 'chapter-2',
+            projectId: 'project-1',
+            chapterNum: 2,
+            title: '第二章',
+            nodeType: 'chapter',
+            wordCount: 0,
+            updatedAt: '2026-04-13T00:00:00.000Z',
+            status: 'draft',
+          },
+        ],
+      },
+      global: {
+        stubs: {
+          QyIcon: { template: '<span />' },
+          FishboneOutlineBoard: { template: '<div />' },
+          CanvasOutlineBoard: { template: '<div />' },
+          BeatBoardPanel: { template: '<div />' },
+          StructureInspectorPanel: { template: '<div />' },
+          StructureNodeEditorDialog: { template: '<div />' },
+        },
+      },
+    })
+
+    await flushPromises()
+
+    const hubText = wrapper.get('[data-testid="structure-stage-hub"]').text()
+    expect(hubText).toContain('黑市脱身')
+    expect(hubText).toContain('覆盖章节：第一卷 第 28 章 - 第二卷 第 1 章')
+    expect(hubText).toContain('卷只定位窗口，节拍可跨卷覆盖连续章节')
+    expect(hubText).toContain('完成条件：主角带着关键线索离开旧地图')
   })
 
   it('长篇默认按 50 章分段，并只展示当前章节附近窗口', async () => {

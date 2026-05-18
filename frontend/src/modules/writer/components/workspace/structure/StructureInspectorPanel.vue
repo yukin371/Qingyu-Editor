@@ -130,15 +130,9 @@ import type { ToolType } from '@/modules/writer/composables/useToolOverlay'
 import type { OutlineNode } from '@/types/writer'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 import type { ChapterGraph } from '@/modules/writer/types/character'
-import {
-  formatActiveEntitiesPrompt,
-  type ActiveEntitySummary,
-} from '@/modules/writer/composables/useWorkflowContext'
-import {
-  buildWriterWorkflowContextPrompt,
-  type WriterWorkflowActionRequest,
-  type WriterWorkflowContext,
-} from '@/modules/writer/types/workflow'
+import type { ActiveEntitySummary } from '@/modules/writer/composables/useWorkflowContext'
+import type { WriterWorkflowActionRequest, WriterWorkflowContext } from '@/modules/writer/types/workflow'
+import { buildWriterToolAIHandoff } from '@/modules/writer/utils/writerToolAIHandoff'
 import {
   getStructureNodeBindingState,
   getStructureNodeGraphState,
@@ -182,8 +176,6 @@ const chapterOptions = computed(() =>
 function emitStructureNodeToAI() {
   if (!props.selectedNode) return
 
-  const workflowPrompt = buildWriterWorkflowContextPrompt(props.workflowContext)
-  const activeEntitiesPrompt = formatActiveEntitiesPrompt(props.activeEntities)
   const lines = [
     `结构节点：${props.selectedNode.title || '未命名节点'}`,
     props.boundChapter ? `已绑定章节：${props.boundChapter.title}` : '已绑定章节：未绑定',
@@ -191,18 +183,17 @@ function emitStructureNodeToAI() {
     `节点状态：${statusText.value}`,
     `子节点数：${childCount.value}`,
     props.selectedNode.description ? `节点描述：${props.selectedNode.description}` : '',
-    activeEntitiesPrompt,
-    workflowPrompt,
   ].filter(Boolean)
 
-  emit('trigger-ai-action', {
-    source: 'workspace',
-    action: 'add_to_chat',
+  emit('trigger-ai-action', buildWriterToolAIHandoff({
+    toolLabel: '结构舞台',
     title: `结构节点分析：${props.selectedNode.title || '未命名节点'}`,
-    text: lines.join('\n'),
+    focusLines: lines,
+    workflowContext: props.workflowContext,
+    activeEntities: props.activeEntities,
     instructions:
       '请结合当前结构节点与章节映射，分析它在叙事推进中的作用，并优先给出可执行的细纲补强与正文落地建议。',
-  })
+  }))
 }
 </script>
 

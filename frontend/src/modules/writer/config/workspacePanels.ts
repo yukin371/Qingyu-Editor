@@ -170,7 +170,7 @@ export const OVERLAY_TOOL_GROUPS: Array<{
   }>
 }> = OVERLAY_GROUP_ORDER.map((groupId) => ({
   id: groupId,
-  label: groupId === 'primary' ? '主辅助' : '专业',
+  label: groupId === 'primary' ? '主流程' : '高级工具',
   tools: workspacePanelRegistry
     .filter((panel) => panel.tabGroup === 'overlay' && panel.overlayGroup === groupId)
     .map((panel) => ({
@@ -187,6 +187,7 @@ export const RIGHT_TOOL_CONFIG: Record<
     hasListPanel: boolean
     label: string
     icon: string
+    group: 'daily' | 'review'
   }
 > = {
   ai: {
@@ -194,31 +195,53 @@ export const RIGHT_TOOL_CONFIG: Record<
     hasListPanel: false,
     label: 'AI',
     icon: 'MagicStick',
+    group: 'daily',
   },
   assets: {
     mode: 'dual',
     hasListPanel: true,
     label: '设定',
     icon: 'Collection',
-  },
-  harness: {
-    mode: 'single',
-    hasListPanel: false,
-    label: '审查',
-    icon: 'DocumentChecked',
-  },
-  proofread: {
-    mode: 'single',
-    hasListPanel: false,
-    label: '校对',
-    icon: 'DocumentChecked',
+    group: 'daily',
   },
   inspiration: {
     mode: 'single',
     hasListPanel: false,
     label: '灵感',
     icon: 'Lightbulb',
+    group: 'daily',
+  },
+  harness: {
+    mode: 'single',
+    hasListPanel: false,
+    label: '审查',
+    icon: 'DocumentChecked',
+    group: 'review',
+  },
+  proofread: {
+    mode: 'single',
+    hasListPanel: false,
+    label: '校对',
+    icon: 'DocumentChecked',
+    group: 'review',
   },
 }
 
 export const RIGHT_TOOL_ORDER = Object.keys(RIGHT_TOOL_CONFIG) as RightToolType[]
+
+export const RIGHT_TOOL_GROUPS: Array<{
+  id: 'daily' | 'review'
+  label: string
+  tools: RightToolType[]
+}> = [
+  {
+    id: 'daily',
+    label: '日常',
+    tools: RIGHT_TOOL_ORDER.filter((toolId) => RIGHT_TOOL_CONFIG[toolId].group === 'daily'),
+  },
+  {
+    id: 'review',
+    label: '回审',
+    tools: RIGHT_TOOL_ORDER.filter((toolId) => RIGHT_TOOL_CONFIG[toolId].group === 'review'),
+  },
+]

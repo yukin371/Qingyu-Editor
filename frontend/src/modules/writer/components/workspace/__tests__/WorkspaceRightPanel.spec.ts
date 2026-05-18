@@ -52,6 +52,8 @@ describe('WorkspaceRightPanel', () => {
     const wrapper = mountPanel()
 
     expect(wrapper.findAll('.workspace-activity-bar__item')).toHaveLength(5)
+    expect(wrapper.text()).toContain('日常')
+    expect(wrapper.text()).toContain('回审')
   })
 
   it('switches active tool and keeps body visible when selecting a different tool', async () => {
@@ -88,7 +90,12 @@ describe('WorkspaceRightPanel', () => {
     panelStore.setRightCollapsed(true)
     layoutStore.setRightToolVisible(false)
 
-    await wrapper.findAll('.workspace-activity-bar__item')[3].trigger('click')
+    const proofreadButton = wrapper
+      .findAll('.workspace-activity-bar__item')
+      .find((button) => button.text().includes('校对'))
+    expect(proofreadButton).toBeTruthy()
+
+    await proofreadButton!.trigger('click')
 
     expect(panelStore.rightCollapsed).toBe(false)
     expect(layoutStore.rightToolArea.visible).toBe(true)

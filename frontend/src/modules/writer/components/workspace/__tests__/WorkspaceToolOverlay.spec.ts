@@ -96,12 +96,12 @@ describe('WorkspaceToolOverlay', () => {
     await contextBar.get('button').trigger('click')
 
     expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0]).toMatchObject({
-      source: 'workspace_tool_overlay',
+      source: 'workspace',
       action: 'add_to_chat',
       title: '时间线上下文',
     })
     expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain('当前章节：第一章')
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain('当前场景：第一幕 / 港口追踪')
+    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain('场景作用域：第一幕 / 港口追踪')
     expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain('角色：林舟')
   })
 

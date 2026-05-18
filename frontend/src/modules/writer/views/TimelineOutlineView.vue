@@ -144,12 +144,10 @@ import { QyButton, QyIcon, QyTag } from '@/design-system/components'
 import { Empty } from '@/design-system/base'
 import { useWriterStore } from '@/modules/writer/stores/writerStore'
 import ToolAssetSummaryChips from '@/modules/writer/components/workspace/tool-overlay/ToolAssetSummaryChips.vue'
-import {
-  formatActiveEntitiesPrompt,
-  type ActiveEntitySummary,
-} from '@/modules/writer/composables/useWorkflowContext'
+import type { ActiveEntitySummary } from '@/modules/writer/composables/useWorkflowContext'
 import { useWriterAssetSummary } from '@/modules/writer/composables/useWriterAssetSummary'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
+import { buildWriterToolAIHandoff } from '@/modules/writer/utils/writerToolAIHandoff'
 import {
   locateWriterCandidate,
   resolveStableWriterSegmentId,
@@ -359,33 +357,31 @@ const formatStoryTime = (storyTime?: TimelineStoryTime) => {
   return text || fallback
 }
 
-const buildEventAIContextText = (event: TimelineEvent) => {
+const buildEventAIHandoff = (event: TimelineEvent): WriterWorkflowActionRequest => {
   const currentTimeline = timelines.value.find(
     (timeline) => timeline.id === currentTimelineId.value,
   )
   const lines = [
     `时间线事件：${event.title}`,
     currentTimeline?.name ? `所属时间线：${currentTimeline.name}` : '',
-    props.chapterTitle ? `当前章节：${props.chapterTitle}` : '',
-    props.workflowContext?.scopeLabel ? `场景作用域：${props.workflowContext.scopeLabel}` : '',
-    formatActiveEntitiesPrompt(props.activeEntities),
     event.description ? `事件描述：${event.description}` : '',
     event.eventType ? `事件类型：${event.eventType}` : '',
     `故事时间：${formatStoryTime(event.storyTime)}`,
   ].filter(Boolean)
 
-  return lines.join('\n')
-}
-
-const handleSendEventToAI = (event: TimelineEvent) => {
-  emit('trigger-ai-action', {
-    source: 'workspace',
-    action: 'add_to_chat',
+  return buildWriterToolAIHandoff({
+    toolLabel: '时间线',
     title: `时间线事件分析：${event.title}`,
-    text: buildEventAIContextText(event),
+    focusLines: lines,
+    workflowContext: props.workflowContext,
+    activeEntities: props.activeEntities,
     instructions:
       '请基于这条时间线事件分析它对当前章节推进的影响，优先给出冲突升级、节奏衔接和后续伏笔建议。',
   })
+}
+
+const handleSendEventToAI = (event: TimelineEvent) => {
+  emit('trigger-ai-action', buildEventAIHandoff(event))
 }
 
 const activateEventSegment = (segmentId: string) => {

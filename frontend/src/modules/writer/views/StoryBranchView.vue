@@ -566,13 +566,11 @@ import type { OutlineNode } from '@/types/writer'
 import { useWriterStore } from '@/modules/writer/stores/writerStore'
 import ToolAssetSummaryChips from '@/modules/writer/components/workspace/tool-overlay/ToolAssetSummaryChips.vue'
 import { createInteractiveBranchDemoTree } from '@/modules/writer/mock/workspaceMock'
-import {
-  formatActiveEntitiesPrompt,
-  type ActiveEntitySummary,
-} from '@/modules/writer/composables/useWorkflowContext'
+import type { ActiveEntitySummary } from '@/modules/writer/composables/useWorkflowContext'
 import { useWriterAssetSummary } from '@/modules/writer/composables/useWriterAssetSummary'
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 import { locateWriterCandidate } from '@/modules/writer/utils/longformLocate'
+import { buildWriterToolAIHandoff } from '@/modules/writer/utils/writerToolAIHandoff'
 import type {
   WriterWorkflowActionRequest,
   WriterWorkflowContext,
@@ -1756,12 +1754,9 @@ function handleBranchLocate() {
   writerStore.setCurrentOutlineNode(matchedNode.outlineNode)
 }
 
-function buildSelectedNodeAIContextText(node: InteractiveNodeViewModel): string {
+function buildSelectedNodeAIHandoff(node: InteractiveNodeViewModel): WriterWorkflowActionRequest {
   const lines = [
     `互动分支节点：${node.title}`,
-    props.chapterTitle ? `当前章节：${props.chapterTitle}` : '',
-    props.workflowContext?.scopeLabel ? `场景作用域：${props.workflowContext.scopeLabel}` : '',
-    formatActiveEntitiesPrompt(props.activeEntities),
     `节点类型：${getNodeTypeLabel(node.nodeType)}`,
     `所属路线：${node.routeHint}`,
     `节点状态：${statusText(node.status)}`,
@@ -1769,21 +1764,22 @@ function buildSelectedNodeAIContextText(node: InteractiveNodeViewModel): string 
     `后续出口：${node.childCount}`,
   ].filter(Boolean)
 
-  return lines.join('\n')
+  return buildWriterToolAIHandoff({
+    toolLabel: '互动分支',
+    title: `互动分支分析：${node.title}`,
+    focusLines: lines,
+    workflowContext: props.workflowContext,
+    activeEntities: props.activeEntities,
+    instructions:
+      '请分析这个互动分支节点的选择动机、条件约束、后续路线差异，以及是否需要补强铺垫或回收。',
+  })
 }
 
 function sendSelectedNodeToAI() {
   const node = selectedNode.value
   if (!node) return
 
-  emit('trigger-ai-action', {
-    source: 'workspace',
-    action: 'add_to_chat',
-    title: `互动分支分析：${node.title}`,
-    text: buildSelectedNodeAIContextText(node),
-    instructions:
-      '请分析这个互动分支节点的选择动机、条件约束、后续路线差异，以及是否需要补强铺垫或回收。',
-  })
+  emit('trigger-ai-action', buildSelectedNodeAIHandoff(node))
 }
 
 function jumpToNodeChapter(nodeId: string) {
