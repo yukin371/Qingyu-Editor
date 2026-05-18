@@ -5,8 +5,16 @@ import type { WriterSceneStageState } from '@/modules/writer/types/sceneStage'
 
 const sceneStage: WriterSceneStageState = {
   projectId: 'project-1',
+  sceneId: 'scene-1',
+  beatId: 'beat-1',
   chapterId: 'chapter-1',
   chapterTitle: '第一章',
+  chapterIds: ['chapter-1'],
+  chapterCount: 1,
+  coverageLabel: '第一章',
+  coverageChapterCount: 1,
+  coverageOptions: [{ value: 1, label: '仅 第一章', chapterIds: ['chapter-1'] }],
+  currentChapterLinked: true,
   sceneTitle: '雨夜祠堂',
   beatStatus: 'active',
   assets: [],

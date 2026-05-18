@@ -45,9 +45,13 @@ export interface WriterAIAssetSummary {
 }
 
 export interface WriterAISceneStageSummary {
+  sceneId?: string
+  beatId?: string
   sceneTitle?: string
   beatTitle?: string
   beatStatus?: 'planned' | 'active' | 'done'
+  coverageLabel?: string
+  chapterCount?: number
   goal?: string
   conflict?: string
   rangeLabel?: string
@@ -217,6 +221,7 @@ function formatSceneStageLines(sceneStage: WriterAISceneStageSummary | null | un
     sceneStage.sceneTitle ? `- 场景：${sceneStage.sceneTitle}` : '',
     sceneStage.beatTitle ? `- 当前拍：${sceneStage.beatTitle}` : '',
     sceneStage.beatStatus ? `- 状态：${formatBeatStatus(sceneStage.beatStatus)}` : '',
+    sceneStage.coverageLabel ? `- 覆盖章节：${sceneStage.coverageLabel}` : '',
     sceneStage.rangeLabel ? `- 范围：${sceneStage.rangeLabel}` : '',
     sceneStage.locationName ? `- 地点：${sceneStage.locationName}` : '',
     sceneStage.povCharacterName ? `- 视角：${sceneStage.povCharacterName}` : '',

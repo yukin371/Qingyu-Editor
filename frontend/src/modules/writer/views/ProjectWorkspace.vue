@@ -136,6 +136,7 @@
           @resize="workspaceLayoutStore.updateBottomPanelHeight"
           @update-draft="updateSceneStageDraft"
           @advance-beat="advanceSceneStageBeat"
+          @start-scene="startNewSceneStage"
           @close="toggleBottomPanel"
         />
         <WorkspaceStatusbar
@@ -519,7 +520,7 @@ const { workflowContext, activeEntities } = useWorkflowContext({
 
 const safeCurrentProjectId = computed(() => currentProjectId.value || '')
 
-const { sceneStage, updateSceneStageDraft, advanceSceneStageBeat } = useWriterSceneStage({
+const { sceneStage, updateSceneStageDraft, advanceSceneStageBeat, startNewSceneStage } = useWriterSceneStage({
   projectId: safeCurrentProjectId,
   chapterId: displayChapterId,
   chapterTitle: displayChapterTitle,
@@ -527,6 +528,7 @@ const { sceneStage, updateSceneStageDraft, advanceSceneStageBeat } = useWriterSc
   workflowContext,
   activeEntities,
   changeRequests: storyHarnessChangeRequests,
+  chapters: flatChapters,
 })
 
 const unwrapConceptList = <T,>(payload: unknown): T => {

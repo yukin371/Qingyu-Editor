@@ -25,7 +25,12 @@ export interface WriterSceneStageEvidence {
 }
 
 export interface WriterSceneStageDraft {
+  sceneId?: string
+  beatId?: string
+  chapterIds?: string[]
+  coverageChapterCount?: number
   sceneTitle?: string
+  manualSceneTitle?: boolean
   beatTitle?: string
   goal?: string
   conflict?: string
@@ -38,8 +43,16 @@ export interface WriterSceneStageDraft {
 
 export interface WriterSceneStageState {
   projectId: string
+  sceneId: string
+  beatId: string
   chapterId: string
   chapterTitle: string
+  chapterIds: string[]
+  chapterCount: number
+  coverageLabel: string
+  coverageChapterCount: number
+  coverageOptions: WriterSceneStageCoverageOption[]
+  currentChapterLinked: boolean
   sceneTitle: string
   beatTitle?: string
   locationName?: string
@@ -57,15 +70,25 @@ export interface WriterSceneStageState {
   draft: WriterSceneStageDraft
 }
 
+export interface WriterSceneStageCoverageOption {
+  value: number
+  label: string
+  chapterIds: string[]
+}
+
 export function buildWriterSceneStagePrompt(sceneStage: WriterSceneStageState): string {
   const lines = [
     `场景：${sceneStage.sceneTitle}`,
-    sceneStage.chapterTitle ? `章节：${sceneStage.chapterTitle}` : '',
+    sceneStage.beatTitle ? `当前进度：${sceneStage.beatTitle}` : '',
+    sceneStage.coverageLabel ? `覆盖章节：${sceneStage.coverageLabel}` : '',
+    sceneStage.chapterTitle ? `当前章节：${sceneStage.chapterTitle}` : '',
     sceneStage.locationName ? `地点：${sceneStage.locationName}` : '',
     sceneStage.povCharacterName ? `视角：${sceneStage.povCharacterName}` : '',
     sceneStage.goal ? `目标：${sceneStage.goal}` : '',
     sceneStage.conflict ? `冲突：${sceneStage.conflict}` : '',
-    sceneStage.rangeLabel ? `范围：${sceneStage.rangeLabel}` : '',
+    sceneStage.rangeLabel && sceneStage.rangeLabel !== sceneStage.coverageLabel
+      ? `手动范围：${sceneStage.rangeLabel}`
+      : '',
     sceneStage.doneCondition ? `完成条件：${sceneStage.doneCondition}` : '',
     sceneStage.nextBeatTitle ? `下一拍预告：${sceneStage.nextBeatTitle}` : '',
     sceneStage.assets.length > 0

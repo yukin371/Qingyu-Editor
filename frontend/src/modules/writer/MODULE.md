@@ -84,7 +84,7 @@
 - **普通聊天历史由 plan 显式携带**：`WriterAIPlan.history` 只保留已存在的 user/assistant 往返，不包含当前发送内容；这样既能走统一 facade，又不会把当前 prompt 重复塞进 provider history。
 - **AI 上下文包 owner 是 `utils/writerAIContext.ts`**：右栏聊天、Workbench 工具、资产摘要和结构/时间线/分支简化摘要都应先构造成 `WriterAIContextPacket`，再进入 prompt 或 `modules/ai/api` facade；不要在组件内各自拼全量 prompt。
 - **AI 默认只消费简化上下文**：上下文包默认包含当前章节正文、选区/候选稿、目标条、资产简表、创作蓝图/节奏摘要和证据卡，并受字符预算截断；禁止默认把全书全文或深度资产详情塞进 prompt。
-- **场景舞台只进入 AI 摘要上下文**：底栏当前场景与当前拍仍由 `useWriterSceneStage` 本地 sidecar 持有；AI 只能通过 `WriterAISceneStageSummary` 消费场景、目标、冲突、完成条件、下一拍和在场资产摘要，不得把场景舞台状态复制成 AI store 或让 AI 静默推进节拍。
+- **场景舞台只进入 AI 摘要上下文**：底栏当前场景与当前拍仍由 `useWriterSceneStage` 本地 sidecar 持有；当前草稿以项目级 `activeSceneId + scenes` 结构持续保存，覆盖章节会随当前工作章节自动累积，点击“新场景”才归档当前场景并切到新场景。AI 只能通过 `WriterAISceneStageSummary` 消费场景、覆盖章节、目标、冲突、完成条件、下一拍和在场资产摘要，不得把场景舞台状态复制成 AI store 或让 AI 静默推进节拍。
 - **AI 创作辅助采用“双节拍”入口**：右栏快捷入口按“写 / 审 / 整理”组织；写作冲刺入口可进入当前章节/选区 diff，回审和整理入口只输出分析、任务卡或资产候选，不静默改剧情、不批量改章。
 - **本章任务卡只进入上下文包，不成为新持久化 owner**：`WriterChapterTaskCard` 用于约束创作冲刺与质量回审，可从阶段摘要或显式上下文推导；持久化仍归结构舞台、章节/工作流 sidecar 或后续明确 owner。
 - **跨章节 resolved target 必须覆盖当前章节上下文**：当 `writerDocumentAgent` 已解析到目标章节时，AI prompt 和结果证据条必须使用目标章节标题与正文；不要继续把当前打开章节误作为主要正文上下文。
@@ -107,7 +107,7 @@
 - **右栏不再伪装成通用 layout area**：布局 store 里的通用区域只剩 `left / bottom / overlay`，右侧常驻工具单独归 `rightToolArea` owner。不要再往 `workspaceLayoutStore.areas` 恢复历史 `right` 区域状态。
 - **Overlay 继续承接深度工具，不回流常驻右栏**：`structure / assets-fullscreen / relations / timeline / branches` 仍由 `WorkspaceToolOverlay` owner 管理；右栏只负责快速查阅和“展开全屏 →” handoff，不要复制第二套全屏宿主状态。
 - **Story Harness 已切到右侧常驻工具**：右侧 activity bar 现在提供 `审查` 入口，`StoryHarnessPanel` 直接作为右侧工具展开；若未来要再回到其他宿主，必须先补对应 plan 和交互边界。
-- **底栏只做可编辑场景舞台**：底部区域现在只承接当前场景、在场资产和当前拍管理；状态栏保留显性的“场景舞台”入口，状态 / 上下文 / 审查等旧底栏内容不得再作为默认面板扩张，深度审查和资产整理继续放在右侧工具或 overlay。底栏高度由 `workspaceLayoutStore.bottomPanel.height` 持久化，拖拽把手只调整场景舞台高度，不引入新的底栏工具宿主。场景舞台必须被限制在底栏自身高度内，内容过长时只允许面板内部滚动，不得覆盖或挤占正文区域。当前拍可跨越多个章节，字段包括当前拍、范围、状态、目标、冲突、完成条件和下一拍预告；只有用户点击“进入下一拍”才推进，不按章节自动切换。节拍草稿由 `useWriterSceneStage` 按项目/章节保存为本地 sidecar，不写正文、不接管结构舞台。
+- **底栏只做可编辑场景舞台**：底部区域现在只承接当前场景、在场资产和当前拍管理；状态栏保留显性的“场景舞台”入口，状态 / 上下文 / 审查等旧底栏内容不得再作为默认面板扩张，深度审查和资产整理继续放在右侧工具或 overlay。底栏高度由 `workspaceLayoutStore.bottomPanel.height` 持久化，拖拽把手只调整场景舞台高度，不引入新的底栏工具宿主。场景舞台默认展示当前章节、系统覆盖、纳入状态和动作按钮，核心编辑字段常驻三栏区域，不要求作者先点“编辑”；三栏是结构分区，外层不滚动，每列自己滚动，不用卡片套卡片。场景名只有作者手动填写才成立，章节名只能出现在“当前章节 / 系统覆盖”里，不得被当成默认场景名。当前拍可跨越多个章节，覆盖范围只能从当前章节向前选择连续倒数窗口（如 `第三章`、`第二章 - 第三章`），不得由切章历史累积出断档范围。字段包括当前拍、覆盖章节、状态、目标、冲突、完成条件和下一拍预告；只有用户点击“进入下一拍”才推进节拍，点击“新场景”才切换叙事段，不按章节自动切换。节拍草稿由 `useWriterSceneStage` 作为项目级本地 sidecar 保存，不写正文、不接管结构舞台。
 - **Review Packet 预览只做前端只读聚合**：`StoryHarnessReviewPacketDrawer` 当前只聚合章节正文、Context Lens、活跃实体/关系、Change Request 和轻量 gate 摘要，服务人类审查，不写后端、不导入外部 Story Canvas 文件，也不替代后续后端正式 review packet owner。
 - **Workflow Gate Panel 只做可见审查门槛**：`StoryHarnessWorkflowGatePanel` 复用 `storyHarnessWorkflowGates.ts` 的章节级判断，展示写前目标、写后正文、修后建议、卷级审查状态；它只负责打开审查包、建议队列或触发已有索引入口，不持久化 gate decision，不引入自动 runner，也不阻塞作者继续写作。
 - **互动分支是特殊叙事工具，不是通用章节树**：`StoryBranchView` 主要服务视觉小说、互动小说和叙事游戏，默认应以“路线列表 + 分支流 + 节点检视”展示 `剧情 / 选择 / 条件 / 汇合 / 结局`；普通小说只把它当多结局/平行线草案工具，不要再做回泛用大纲组织图。

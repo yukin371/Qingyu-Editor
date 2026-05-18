@@ -88,8 +88,19 @@ describe('useWriterAISummaryContext', () => {
         chapters: computed(() => []),
         sceneStage: computed(() => ({
           projectId: 'project-1',
+          sceneId: 'scene-1',
+          beatId: 'beat-1',
           chapterId: 'chapter-1',
           chapterTitle: '第一章',
+          chapterIds: ['chapter-1', 'chapter-2', 'chapter-3'],
+          chapterCount: 3,
+          coverageLabel: '第一章到第三章',
+          coverageChapterCount: 3,
+          coverageOptions: [
+            { value: 1, label: '仅 第三章', chapterIds: ['chapter-3'] },
+            { value: 3, label: '第一章到第三章', chapterIds: ['chapter-1', 'chapter-2', 'chapter-3'] },
+          ],
+          currentChapterLinked: true,
           sceneTitle: '雨夜祠堂',
           beatTitle: '主角放弃钥匙救人',
           goal: '建立线人信任',
@@ -123,7 +134,7 @@ describe('useWriterAISummaryContext', () => {
       assetNames: ['林舟'],
     })
     expect(aiSummaryContextLines.value).toContain(
-      '当前场景舞台：雨夜祠堂；当前拍：主角放弃钥匙救人；目标：建立线人信任；冲突：追兵逼近；下一拍：黑市脱身',
+      '当前场景舞台：雨夜祠堂；当前拍：主角放弃钥匙救人；覆盖：第一章到第三章；目标：建立线人信任；冲突：追兵逼近；下一拍：黑市脱身',
     )
     expect(aiSummaryContextText.value).toContain('当前场景舞台：雨夜祠堂')
   })

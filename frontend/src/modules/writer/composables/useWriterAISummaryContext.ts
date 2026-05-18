@@ -101,9 +101,13 @@ export function useWriterAISummaryContext(options: {
     if (!sceneStage || sceneStage.isEmpty) return undefined
 
     return {
+      sceneId: sceneStage.sceneId,
+      beatId: sceneStage.beatId,
       sceneTitle: sceneStage.sceneTitle,
       beatTitle: sceneStage.beatTitle,
       beatStatus: sceneStage.beatStatus,
+      coverageLabel: sceneStage.coverageLabel,
+      chapterCount: sceneStage.chapterCount,
       goal: sceneStage.goal,
       conflict: sceneStage.conflict,
       rangeLabel: sceneStage.rangeLabel,
@@ -125,6 +129,7 @@ export function useWriterAISummaryContext(options: {
     const parts = [
       sceneStage.sceneTitle,
       sceneStage.beatTitle ? `当前拍：${sceneStage.beatTitle}` : '',
+      sceneStage.coverageLabel ? `覆盖：${sceneStage.coverageLabel}` : '',
       sceneStage.goal ? `目标：${sceneStage.goal}` : '',
       sceneStage.conflict ? `冲突：${sceneStage.conflict}` : '',
       sceneStage.nextBeatTitle ? `下一拍：${sceneStage.nextBeatTitle}` : '',

@@ -15,8 +15,14 @@
     ></div>
 
     <div class="workspace-bottom-panel__header">
-      <strong>场景舞台</strong>
+      <strong>当前场景</strong>
       <span>{{ sceneStage.sceneTitle || '未命名场景' }}</span>
+      <small v-if="sceneStage.chapterTitle">
+        当前章节：{{ sceneStage.chapterTitle }}
+      </small>
+      <small v-if="sceneStage.coverageLabel && sceneStage.coverageLabel !== sceneStage.sceneTitle">
+        系统覆盖：{{ sceneStage.coverageLabel }}
+      </small>
       <button type="button" class="workspace-bottom-panel__close" @click="$emit('close')">
         收起
       </button>
@@ -27,6 +33,7 @@
       :scene-stage="sceneStage"
       @update-draft="$emit('update-draft', $event)"
       @advance-beat="$emit('advance-beat')"
+      @start-scene="$emit('start-scene')"
       @open-assets="$emit('open-assets')"
       @send-to-ai="$emit('send-to-ai')"
     />
@@ -59,8 +66,9 @@ const emit = defineEmits<{
   (e: 'open-assets'): void
   (e: 'send-to-ai'): void
   (e: 'resize', height: number): void
-  (e: 'update-draft', patch: WriterSceneStageDraft): void
+  (e: 'update-draft', patch: Partial<WriterSceneStageDraft>): void
   (e: 'advance-beat'): void
+  (e: 'start-scene'): void
 }>()
 
 const isResizing = ref(false)
@@ -164,6 +172,16 @@ onBeforeUnmount(stopResize)
     overflow: hidden;
     color: var(--editor-text-muted, #64748b);
     font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  small {
+    min-width: 0;
+    color: var(--editor-text-ghost, #94a3b8);
+    font-size: 11px;
+    font-weight: 700;
+    overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
