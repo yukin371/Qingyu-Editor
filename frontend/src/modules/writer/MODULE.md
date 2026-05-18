@@ -126,6 +126,7 @@
 - **右栏设定速查与 overlay 资产总览共用同一套资产聚合口径**：右栏 `AssetListPanel / AssetDetailPanel` 与 `EncyclopediaView` 必须继续复用统一资产数据来源和分类口径；不要让右栏为了方便再维护一套单独的资产 store 或分类枚举。
 - **右栏设定区与项目资产共用同一口径**：`ToolRightPanel` 的设定列表、详情和快速 CRUD 必须继续复用 `useWriterAssetCatalog` 与现有本地资产 API；允许做当前分类下的新建 / 编辑 / 删除，但不得在右栏再维护第二套资产 store、分类枚举或脱离项目资产的表单协议。
 - **资产总览与右栏 CRUD 共用同一套能力**：`EncyclopediaView` 的全局资产增删改查必须继续复用 `useWriterAssetCatalog`、`AssetQuickEditorDialog` 与统一确认流程；overlay 只是在更大视图里消费同一套 owner，不得再分裂出第二套资产编辑协议。
+- **资产新建入口只允许流程差异，不允许 owner 差异**：资产总览顶部“添加资产”是先打开弹窗再选择 `角色 / 地点 / 物件 / 组织 / 概念`；右栏设定分组右侧 `+` 是先进入分类再新建当前分类。两者都必须走同一个 `AssetQuickEditorDialog -> useWriterAssetCatalog.createAsset` 全局资产创建链，不得创建局部资产或第二套表单。
 - **`@资产` 是正文内的统一轻量引用格式**：`QyTipTapEditor` 的自动补全、创建实体、章节资产自动检测都必须优先支持统一 `@名称`，并能覆盖 `角色 / 地点 / 物件 / 组织 / 概念`；`#地点`、`%物件` 只作为兼容输入保留，不能再成为默认主路径。
 - **编辑器外观偏好 owner 是 `editorAppearanceStore`**：字号、行距、版心、字体族与紧凑工具栏都应统一走 `editorAppearanceStore` 本地偏好；`TipTapEditorView` 只负责输出 CSS variables，`QyTipTapEditor` 只消费 `toolbarPreset`，不要再在组件内各自维护一份主题/排版状态。
 - **颜色主题 owner 已收口到 design-system**：writer 工作区的 `WorkspaceSettingsPanel`、`WorkspaceShell` 与 overlay/tool 视图只消费 `src/design-system/tokens/theme.ts` 的统一主题；`editorThemeStore` 只做设置面板状态接线，不再定义第二套 `light/sepia/dark/focus` 独立主题真相。

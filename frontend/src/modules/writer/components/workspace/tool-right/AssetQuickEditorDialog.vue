@@ -6,6 +6,23 @@
     @update:visible="handleVisibilityChange"
   >
     <form :id="formId" class="space-y-4" @submit.prevent="handleSubmit">
+      <label v-if="showCategorySelect" class="block space-y-2">
+        <span class="text-sm font-medium text-slate-700">类型</span>
+        <select
+          v-model="selectedCategory"
+          class="asset-quick-editor-dialog__category-select"
+          aria-label="资产类型"
+        >
+          <option
+            v-for="option in categoryOptions"
+            :key="option.id"
+            :value="option.id"
+          >
+            {{ option.label }}
+          </option>
+        </select>
+      </label>
+
       <label class="block space-y-2">
         <span class="text-sm font-medium text-slate-700">名称</span>
         <QyInput v-model="form.name" :maxlength="80" :placeholder="template.name" />
@@ -27,7 +44,7 @@
         <QyInput v-model="form.alias" :maxlength="160" :placeholder="template.alias" />
       </label>
 
-      <template v-if="category === 'characters'">
+      <template v-if="effectiveCategory === 'characters'">
         <label class="block space-y-2">
           <span class="text-sm font-medium text-slate-700">性格特征</span>
           <QyInput v-model="form.traits" :maxlength="160" :placeholder="template.traits" />
@@ -44,7 +61,7 @@
         </label>
       </template>
 
-      <template v-else-if="category === 'locations'">
+      <template v-else-if="effectiveCategory === 'locations'">
         <div class="grid gap-4 md:grid-cols-2">
           <label class="block space-y-2">
             <span class="text-sm font-medium text-slate-700">气候</span>
@@ -65,7 +82,7 @@
         </div>
       </template>
 
-      <label v-else-if="category === 'concepts'" class="block space-y-2">
+      <label v-else-if="effectiveCategory === 'concepts'" class="block space-y-2">
         <span class="text-sm font-medium text-slate-700">分类</span>
         <QyInput v-model="form.conceptCategory" :maxlength="60" :placeholder="template.conceptCategory" />
       </label>
@@ -87,7 +104,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { QyButton, QyInput, QyModal, QyTextarea } from '@/design-system/components'
 import type { EncyclopediaCategory } from '@/modules/writer/composables/types'
 import type {
@@ -102,10 +119,12 @@ const props = withDefaults(
     category: EncyclopediaCategory
     asset?: WriterAssetListItem | null
     submitting?: boolean
+    allowCategorySelect?: boolean
   }>(),
   {
     asset: null,
     submitting: false,
+    allowCategorySelect: false,
   },
 )
 
@@ -115,6 +134,15 @@ const emit = defineEmits<{
 }>()
 
 const formId = `asset-quick-editor-form-${Math.random().toString(36).slice(2)}`
+const selectedCategory = ref<EncyclopediaCategory>(props.category)
+
+const categoryOptions: Array<{ id: EncyclopediaCategory; label: string }> = [
+  { id: 'characters', label: '角色' },
+  { id: 'locations', label: '地点' },
+  { id: 'items', label: '物件' },
+  { id: 'organizations', label: '组织' },
+  { id: 'concepts', label: '概念' },
+]
 
 const form = reactive({
   name: '',
@@ -129,29 +157,39 @@ const form = reactive({
   conceptCategory: '',
 })
 
+const showCategorySelect = computed(() => props.mode === 'create' && props.allowCategorySelect)
+
+const effectiveCategory = computed(() =>
+  props.mode === 'create' ? selectedCategory.value : props.category,
+)
+
 const categoryLabel = computed(() => {
-  if (props.category === 'characters') return '角色'
-  if (props.category === 'locations') return '地点'
-  if (props.category === 'items') return '物件'
-  if (props.category === 'organizations') return '组织'
+  if (effectiveCategory.value === 'characters') return '角色'
+  if (effectiveCategory.value === 'locations') return '地点'
+  if (effectiveCategory.value === 'items') return '物件'
+  if (effectiveCategory.value === 'organizations') return '组织'
   return '概念'
 })
 
 const dialogTitle = computed(() =>
-  props.mode === 'create' ? `新建${categoryLabel.value}` : `编辑${categoryLabel.value}`,
+  props.mode === 'create' && props.allowCategorySelect
+    ? '添加资产'
+    : props.mode === 'create'
+      ? `新建${categoryLabel.value}`
+      : `编辑${categoryLabel.value}`,
 )
 
 const submitText = computed(() => (props.mode === 'create' ? '创建' : '保存'))
 
 const showAliasField = computed(
   () =>
-    props.category === 'characters' ||
-    props.category === 'items' ||
-    props.category === 'organizations' ||
-    props.category === 'concepts',
+    effectiveCategory.value === 'characters' ||
+    effectiveCategory.value === 'items' ||
+    effectiveCategory.value === 'organizations' ||
+    effectiveCategory.value === 'concepts',
 )
 
-const summaryLabel = computed(() => (props.category === 'locations' ? '描述' : '摘要'))
+const summaryLabel = computed(() => (effectiveCategory.value === 'locations' ? '描述' : '摘要'))
 
 const templates: Record<
   EncyclopediaCategory,
@@ -190,7 +228,7 @@ const templates: Record<
   },
 }
 
-const template = computed(() => templates[props.category])
+const template = computed(() => templates[effectiveCategory.value])
 
 function normalizeCsv(value: string) {
   return value
@@ -240,6 +278,7 @@ watch(
   () => [props.visible, props.asset?.id, props.category, props.mode] as const,
   ([visible]) => {
     if (!visible) return
+    selectedCategory.value = props.category
     resetForm()
   },
   { immediate: true },
@@ -254,11 +293,11 @@ function handleSubmit() {
   if (!name || props.submitting) return
 
   emit('submit', {
-    category: props.category,
+    category: effectiveCategory.value,
     name,
     summary: form.summary.trim(),
     alias: showAliasField.value ? normalizeCsv(form.alias) : [],
-    traits: props.category === 'characters' ? normalizeCsv(form.traits) : [],
+    traits: effectiveCategory.value === 'characters' ? normalizeCsv(form.traits) : [],
     background: form.background.trim(),
     climate: form.climate.trim(),
     culture: form.culture.trim(),
@@ -292,5 +331,22 @@ function handleSubmit() {
 .asset-quick-editor-dialog__submit:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+.asset-quick-editor-dialog__category-select {
+  width: 100%;
+  min-height: 2.5rem;
+  border: 1px solid var(--editor-border, #d9dee6);
+  border-radius: 0.75rem;
+  padding: 0 0.75rem;
+  background: var(--editor-layer-panel, #ffffff);
+  color: var(--editor-text-primary, #111827);
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.asset-quick-editor-dialog__category-select:focus {
+  border-color: color-mix(in srgb, var(--editor-accent, #1d4ed8) 55%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--editor-accent, #1d4ed8) 16%, transparent);
 }
 </style>

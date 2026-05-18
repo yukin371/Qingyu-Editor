@@ -15,7 +15,7 @@
       </label>
       <button type="button" class="assets-view__primary-action" @click="handleCreateAsset()">
         <QyIcon name="Plus" :size="14" />
-        <span>新建{{ currentCategoryCreateLabel }}</span>
+        <span>添加资产</span>
       </button>
       <div class="assets-view__categories">
         <button
@@ -154,6 +154,7 @@
       v-model:visible="assetEditorVisible"
       :mode="assetEditorMode"
       :category="assetEditorCategory"
+      allow-category-select
       :asset="assetEditorMode === 'edit' ? selectedAsset : null"
       :submitting="assetEditorSubmitting"
       @submit="handleAssetEditorSubmit"
@@ -224,14 +225,6 @@ const assetEditorVisible = ref(false)
 const assetEditorMode = ref<'create' | 'edit'>('create')
 const assetEditorSubmitting = ref(false)
 const assetEditorCategory = ref<EncyclopediaCategory>(activeCategory.value)
-
-const currentCategoryCreateLabel = computed(() => {
-  if (activeCategory.value === 'characters') return '角色'
-  if (activeCategory.value === 'locations') return '地点'
-  if (activeCategory.value === 'items') return '物件'
-  if (activeCategory.value === 'organizations') return '组织'
-  return '概念'
-})
 
 const canMutateSelectedAsset = computed(
   () => Boolean(selectedAsset.value) && !selectedAsset.value?.unresolved,

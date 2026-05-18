@@ -70,4 +70,34 @@ describe('AssetQuickEditorDialog', () => {
       }),
     )
   })
+
+  it('allows overview add flow to choose a category before creating', async () => {
+    const wrapper = mount(AssetQuickEditorDialog, {
+      props: {
+        visible: true,
+        mode: 'create',
+        category: 'characters',
+        allowCategorySelect: true,
+      },
+      global: {
+        stubs: {
+          QyModal: QyModalStub,
+          QyInput: QyInputStub,
+          QyTextarea: QyTextareaStub,
+          QyButton: { template: '<button type="button"><slot /></button>' },
+        },
+      },
+    })
+
+    await wrapper.get('select[aria-label="资产类型"]').setValue('locations')
+    await wrapper.find('input[placeholder="如：旧码头"]').setValue('新地点')
+    await wrapper.find('button[type="submit"]').trigger('click')
+
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toEqual(
+      expect.objectContaining({
+        category: 'locations',
+        name: '新地点',
+      }),
+    )
+  })
 })
