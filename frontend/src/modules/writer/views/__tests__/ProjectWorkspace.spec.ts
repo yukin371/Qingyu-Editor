@@ -568,6 +568,17 @@ const EntityScanEditorContentStub = defineComponent({
   },
 })
 
+const EmptyEntityScanEditorContentStub = defineComponent({
+  emits: ['entity-scan'],
+  setup(_, { emit }) {
+    return () =>
+      h('button', {
+        'data-testid': 'emit-empty-entity-scan',
+        onClick: () => emit('entity-scan', []),
+      })
+  },
+})
+
 const openFullscreenToolSpy = vi.fn()
 const closeFullscreenSpy = vi.fn()
 const focusTitleInputMock = vi.fn().mockResolvedValue(undefined)
@@ -827,6 +838,31 @@ describe('ProjectWorkspace Refactor', () => {
         ],
       }),
     )
+  })
+
+  it('扫描结果为空时应清空章节局部资产投影而不影响全局资产加载', async () => {
+    writerStoreState.characters.list = [{ id: 'char-1', name: '林舟' }]
+    writerStoreState.locations.list = [{ id: 'loc-1', name: '云城' }]
+    const wrapper = mountProjectWorkspace({
+      WorkspaceEditorContent: EmptyEntityScanEditorContentStub,
+    })
+
+    await wrapper.find('[data-testid="emit-empty-entity-scan"]').trigger('click')
+    await Promise.resolve()
+    await nextTick()
+
+    expect(loadCharacters).toHaveBeenCalledWith('project-1')
+    expect(listEntitiesMock).toHaveBeenCalledWith('project-1', 'item')
+    expect(listEntitiesMock).toHaveBeenCalledWith('project-1', 'organization')
+    expect(conceptListMock).toHaveBeenCalledWith('project-1')
+    expect(replaceScopeAssetRefsMock).toHaveBeenCalledWith({
+      projectId: 'project-1',
+      scopeType: 'chapter',
+      scopeId: 'chapter-1',
+      candidates: [],
+    })
+    expect(writerStoreState.characters.list).toEqual([{ id: 'char-1', name: '林舟' }])
+    expect(writerStoreState.locations.list).toEqual([{ id: 'loc-1', name: '云城' }])
   })
 
   it('在第二卷新增章节时应压栈追加到该卷末尾', async () => {

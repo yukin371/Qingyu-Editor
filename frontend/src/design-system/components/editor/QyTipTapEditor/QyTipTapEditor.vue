@@ -397,6 +397,7 @@ const entityCreateDialog = reactive({
 const entityCreateRange = reactive({ from: 0, to: 0 })
 
 let completionTimer: ReturnType<typeof setTimeout> | undefined
+let entityScanTimer: ReturnType<typeof setTimeout> | undefined
 
 const editor = useEditor({
   editable: !props.readonly,
@@ -474,6 +475,7 @@ const editor = useEditor({
     // 清理内容去除开头空格，避免与 text-indent 冲突
     const cleanedJson = cleanParagraphLeadingSpaces(json)
     emit('update:modelValue', JSON.stringify(cleanedJson))
+    scheduleEntityScan(cleanedJson)
     scheduleCompletionUpdate(currentEditor)
   },
   onBlur({ editor: currentEditor }: { editor: CoreEditor }) {
@@ -809,6 +811,16 @@ function extractParagraphs(doc: unknown): ParagraphContent[] {
   ]
 }
 
+function scheduleEntityScan(doc: unknown) {
+  if (entityScanTimer) {
+    clearTimeout(entityScanTimer)
+  }
+
+  entityScanTimer = setTimeout(() => {
+    void scanAndNotifyEntities(doc)
+  }, 300)
+}
+
 async function scanAndNotifyEntities(doc: unknown) {
   try {
     const refs = extractEntitiesFromTipTapContent(doc)
@@ -963,6 +975,7 @@ function insertEntityMark(name: string, type: string, id?: string) {
 
 onBeforeUnmount(() => {
   if (completionTimer) clearTimeout(completionTimer)
+  if (entityScanTimer) clearTimeout(entityScanTimer)
   editor.value?.destroy()
 })
 </script>

@@ -54,6 +54,8 @@ cd ..
 git diff --check
 ```
 
+发布评审时，手工冒烟一律以 [regression-v0.1.0-beta.md](/E:/Github/Qingyu/Qingyu-Editor/docs/regression-v0.1.0-beta.md:1) 为准，不再只靠口头检查。
+
 ## 4. 模块边界
 
 ### 4.1 Go / Wails
@@ -100,7 +102,8 @@ git diff --check
 
 - 用户指南：`docs/user-guide.md`
 - 开发者指南：`docs/developer-guide.md`
-- 回归清单：`docs/ux-regression-checklist.md`、`docs/regression-v0.1.0-beta.md`
+- 回归清单：`docs/ux-regression-checklist.md`
+- 发布冒烟手册：`docs/regression-v0.1.0-beta.md`
 - 发布说明：`docs/release-notes-v0.1.0-beta.md`
 
 如果修改 owner、工具入口、AI provider、正文 diff、场景舞台或资产闭环，必须同步 `frontend/src/modules/writer/MODULE.md` 或 `frontend/src/modules/ai/MODULE.md`。

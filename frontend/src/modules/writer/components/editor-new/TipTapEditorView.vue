@@ -399,14 +399,8 @@ function handleIgnoreEntity(entity: ScannedEntity) {
 
 function handleEntityScan(refs: Array<{ id?: string; name: string; type: string }>) {
   emit('entity-scan', refs)
-  // 更新引用摘要 - 使用扫描结果刷新右侧面板
-  // refs 是从 entityParser 解析出的实体引用列表
-  // 直接更新 scannedEntities 或 referenceSummary
-  if (refs.length > 0) {
-    // 触发侧边栏更新
-    // 调用已有的 scheduleScan 刷新
-    scheduleScan(plainTextContent.value)
-  }
+  // 统一按当前正文重扫一次，确保删除引用后也能清空局部投影
+  scheduleScan(plainTextContent.value)
 }
 </script>
 
