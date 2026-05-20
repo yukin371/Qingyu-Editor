@@ -46,7 +46,7 @@ describe('WorkbenchShell', () => {
     const activeLink = navLinks.find((link) => link.text().includes('项目'))
     const inactiveLink = navLinks.find((link) => link.text().includes('工作台'))
 
-    expect(activeLink?.classes()).toContain('bg-white')
-    expect(inactiveLink?.classes()).toContain('text-slate-700')
+    expect(activeLink?.classes()).toContain('is-active')
+    expect(inactiveLink?.classes()).not.toContain('is-active')
   })
 })
