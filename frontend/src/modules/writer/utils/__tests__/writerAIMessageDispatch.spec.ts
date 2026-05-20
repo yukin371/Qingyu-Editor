@@ -8,6 +8,7 @@ describe('writerAIMessageDispatch', () => {
       selectedContext: {
         kind: 'selection',
         text: '她沉默地看向窗外',
+        addedAt: Date.now(),
       },
       interactionMode: 'chat',
       canEditDirectly: true,

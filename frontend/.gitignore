@@ -9,7 +9,9 @@ lerna-debug.log*
 
 # Dependencies
 node_modules
-dist
+dist/*
+!dist/
+!dist/.gitkeep
 dist-ssr
 *.local
 .npm-cache
@@ -31,7 +33,9 @@ dist-ssr
 .env.*.local
 
 # Build
-dist/
+dist/*
+!dist/
+!dist/.gitkeep
 build/
 storybook-static/
 
@@ -44,6 +48,7 @@ playwright-report/
 tests/e2e/screenshots/
 coverage/
 html/
+.tmp-*
 .serena/
 
 # Test output files

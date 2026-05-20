@@ -3,6 +3,8 @@ import { defineComponent } from 'vue'
 import { mount } from '@vue/test-utils'
 import AIChatPanel from '../AIChatPanel.vue'
 
+const AIChatPanelUnderTest = AIChatPanel as any
+
 describe('AIChatPanel', () => {
   it('passes ai summary context through to AIWorkbench', () => {
     const AIWorkbenchStub = defineComponent({
@@ -11,7 +13,7 @@ describe('AIChatPanel', () => {
         '<div><div data-testid="ai-workbench-summary-context">{{ aiSummaryContextText }}</div><div data-testid="ai-workbench-scene-stage">{{ aiSceneStageSummary?.beatTitle }}</div><div data-testid="ai-workbench-source-text">{{ sourceText }}</div><div data-testid="ai-workbench-chapters">{{ chapters.length }}</div></div>',
     })
 
-    const wrapper = mount(AIChatPanel, {
+    const wrapper = mount(AIChatPanelUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',

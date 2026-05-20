@@ -30,8 +30,8 @@ describe('BaseBadge', () => {
       })
 
       const badge = container.querySelector('.inline-flex')
-      expect(badge).toHaveClass('bg-slate-100')
-      expect(badge).toHaveClass('text-slate-700')
+      expect(badge).toHaveClass('text-slate-600')
+      expect(badge).toHaveClass('ring-slate-200/85')
     })
   })
 

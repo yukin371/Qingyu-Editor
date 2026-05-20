@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import AssetListPanel from '../AssetListPanel.vue'
 
+const AssetListPanelUnderTest = AssetListPanel as any
+
 const baseProps = {
   loading: false,
   searchKeyword: '',
@@ -43,7 +45,7 @@ const baseProps = {
 
 describe('AssetListPanel', () => {
   it('renders assets as compact file-list rows without inline summaries', () => {
-    const wrapper = mount(AssetListPanel, {
+    const wrapper = mount(AssetListPanelUnderTest, {
       props: baseProps,
       global: {
         stubs: {
@@ -64,7 +66,7 @@ describe('AssetListPanel', () => {
   })
 
   it('emits category selection from the explorer tree', async () => {
-    const wrapper = mount(AssetListPanel, {
+    const wrapper = mount(AssetListPanelUnderTest, {
       props: baseProps,
       global: {
         stubs: {
@@ -79,7 +81,7 @@ describe('AssetListPanel', () => {
   })
 
   it('emits create-asset from the compact toolbar', async () => {
-    const wrapper = mount(AssetListPanel, {
+    const wrapper = mount(AssetListPanelUnderTest, {
       props: baseProps,
       global: {
         stubs: {
@@ -94,7 +96,7 @@ describe('AssetListPanel', () => {
   })
 
   it('renders scope tabs from local to global and emits category quick-create', async () => {
-    const wrapper = mount(AssetListPanel, {
+    const wrapper = mount(AssetListPanelUnderTest, {
       props: baseProps,
       global: {
         stubs: {
@@ -115,7 +117,7 @@ describe('AssetListPanel', () => {
   })
 
   it('does not render category quick-create in local scope views', () => {
-    const wrapper = mount(AssetListPanel, {
+    const wrapper = mount(AssetListPanelUnderTest, {
       props: {
         ...baseProps,
         scopeView: 'chapter',
@@ -131,7 +133,7 @@ describe('AssetListPanel', () => {
   })
 
   it('emits scope selection and renders local projection badges', async () => {
-    const wrapper = mount(AssetListPanel, {
+    const wrapper = mount(AssetListPanelUnderTest, {
       props: {
         ...baseProps,
         scopeView: 'chapter',

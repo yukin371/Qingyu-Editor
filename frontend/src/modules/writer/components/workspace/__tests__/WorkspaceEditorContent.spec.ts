@@ -3,6 +3,8 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import WorkspaceEditorContent from '../WorkspaceEditorContent.vue'
 
+const WorkspaceEditorContentUnderTest = WorkspaceEditorContent as any
+
 vi.mock('@/modules/writer/composables/useWorkspaceShortcuts', () => ({
   useWorkspaceShortcuts: () => ({
     shortcutsEnabled: { value: true },
@@ -15,7 +17,7 @@ describe('WorkspaceEditorContent', () => {
   })
 
   it('在写作模式下应渲染写作面', () => {
-    const wrapper = mount(WorkspaceEditorContent, {
+    const wrapper = mount(WorkspaceEditorContentUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -64,7 +66,7 @@ describe('WorkspaceEditorContent', () => {
   })
 
   it('旧百科路由态下仍应保留写作面，不再让工具页接管主编辑区', () => {
-    const wrapper = mount(WorkspaceEditorContent, {
+    const wrapper = mount(WorkspaceEditorContentUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -93,7 +95,7 @@ describe('WorkspaceEditorContent', () => {
         "<button data-testid=\"graph-send-to-ai\" @click=\"$emit('trigger-ai-action', { source: 'workspace', action: 'add_to_chat', title: '图谱角色分析：林舟', text: '角色：林舟' })\">send</button>",
     }
 
-    const wrapper = mount(WorkspaceEditorContent, {
+    const wrapper = mount(WorkspaceEditorContentUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -112,7 +114,7 @@ describe('WorkspaceEditorContent', () => {
 
     await wrapper.get('[data-testid="graph-send-to-ai"]').trigger('click')
 
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0]).toMatchObject({
+    expect((wrapper.emitted('trigger-ai-action') as unknown[][] | undefined)?.[0]?.[0]).toMatchObject({
       source: 'workspace',
       action: 'add_to_chat',
       title: '图谱角色分析：林舟',
@@ -120,7 +122,7 @@ describe('WorkspaceEditorContent', () => {
   })
 
   it('未选择章节时应显示空状态', () => {
-    const wrapper = mount(WorkspaceEditorContent, {
+    const wrapper = mount(WorkspaceEditorContentUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: '',
@@ -156,7 +158,7 @@ describe('WorkspaceEditorContent', () => {
       `,
     }
 
-    const wrapper = mount(WorkspaceEditorContent, {
+    const wrapper = mount(WorkspaceEditorContentUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -206,7 +208,7 @@ describe('WorkspaceEditorContent', () => {
       `,
     }
 
-    const wrapper = mount(WorkspaceEditorContent, {
+    const wrapper = mount(WorkspaceEditorContentUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -238,7 +240,7 @@ describe('WorkspaceEditorContent', () => {
         "<button data-testid=\"structure-send-to-ai\" @click=\"$emit('trigger-ai-action', { source: 'workspace', action: 'add_to_chat', title: '结构节点分析：主线冲突', text: '结构节点：主线冲突' })\">send</button>",
     }
 
-    const wrapper = mount(WorkspaceEditorContent, {
+    const wrapper = mount(WorkspaceEditorContentUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -257,7 +259,7 @@ describe('WorkspaceEditorContent', () => {
 
     await wrapper.get('[data-testid="structure-send-to-ai"]').trigger('click')
 
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0]).toMatchObject({
+    expect((wrapper.emitted('trigger-ai-action') as unknown[][] | undefined)?.[0]?.[0]).toMatchObject({
       source: 'workspace',
       action: 'add_to_chat',
       title: '结构节点分析：主线冲突',
@@ -271,7 +273,7 @@ describe('WorkspaceEditorContent', () => {
         "<button data-testid=\"structure-create-plan\" @click=\"$emit('create-structure-plan', { mode: 'chapter', prompt: '导入黄金三章', summary: '生成三章草案', importTarget: 'current-volume', duplicateStrategy: 'skip_existing', items: [{ title: '屈辱现场' }, { title: '身份初显' }, { title: '首次打脸' }] })\">plan</button>",
     }
 
-    const wrapper = mount(WorkspaceEditorContent, {
+    const wrapper = mount(WorkspaceEditorContentUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -290,12 +292,13 @@ describe('WorkspaceEditorContent', () => {
 
     await wrapper.get('[data-testid="structure-create-plan"]').trigger('click')
 
-    expect(wrapper.emitted('create-structure-plan')?.[0]?.[0]).toMatchObject({
+    const createEvents = wrapper.emitted('create-structure-plan') as unknown[][] | undefined
+    expect(createEvents?.[0]?.[0]).toMatchObject({
       mode: 'chapter',
       prompt: '导入黄金三章',
       importTarget: 'current-volume',
       duplicateStrategy: 'skip_existing',
     })
-    expect(wrapper.emitted('create-structure-plan')?.[0]?.[0].items).toHaveLength(3)
+    expect((createEvents?.[0]?.[0] as { items?: unknown[] } | undefined)?.items).toHaveLength(3)
   })
 })

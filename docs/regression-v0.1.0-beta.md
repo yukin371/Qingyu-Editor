@@ -2,6 +2,25 @@
 
 > 目标：在发布前用最小成本确认 `Qingyu-Editor` 的核心创作闭环可用，避免“能启动但不能正常写作”的假通过。
 
+## 0. 本轮自动化基线
+
+最近一次发布前自动化回归结果：
+
+- `npm run type-check`：通过
+- `npm run type-check:full`：通过
+- `npm run test:ci`：83 项通过
+- `npm run test:e2e`：24 项通过，覆盖 Chromium 与 Mobile Chrome
+- `npm run lint:styles`：通过
+- `npm run build`：通过
+- `npm audit --audit-level=high`：0 vulnerabilities
+- `wails build`：通过，生成 `build/bin/Qingyu-Editor.exe`
+- `go test ./...`：通过，`frontend/dist/.gitkeep` 提供 Go embed 占位，清理构建产物后仍可直接测试
+- Wails exe 启动存活检查：通过，构建产物启动后 8 秒仍存活
+- `.\scripts\release-check.ps1 -Profile quick`：通过，已验证脚本化 quick 闸门可执行
+- `git diff --check`：通过，仅提示既有文档 LF/CRLF 工作区换行警告
+
+未自动化验证：Wails GUI 内真实点击创建项目、provider key 保存后重启、系统远程服务不可用提示仍需人工执行；本轮仅确认构建、Go 包测试和 exe 可启动。
+
 ## 1. 适用范围
 
 - 版本：`v0.1.0-beta`
@@ -40,6 +59,9 @@
   - 浏览器 fallback
   - 系统服务 provider 模式
   - 用户 API provider 模式
+  - Mobile Chrome 响应式入口检查
+
+说明：`v0.1.0-beta` 发布目标仍以 Windows 桌面端和桌面浏览器 fallback 为准。Mobile Chrome 可用于提前发现响应式风险，但不作为本版本发布阻断；若全量 `npm run test:e2e` 中仅 Mobile Chrome 失败，需在发布记录中标注失败范围和截图路径。
 
 ### 3.2 测试数据
 
@@ -61,6 +83,32 @@
 
 先跑自动化，再做手工冒烟。自动化失败时，不建议继续手工确认“是否可发布”。
 
+推荐入口：
+
+```powershell
+cd E:\Github\Qingyu\Qingyu-Editor
+.\scripts\release-check.ps1 -Profile quick
+```
+
+完整发布前检查：
+
+```powershell
+cd E:\Github\Qingyu\Qingyu-Editor
+.\scripts\release-check.ps1 -Profile full
+```
+
+说明：
+
+- `quick` 会清理临时产物、保留 `frontend/dist/.gitkeep`，并执行 Go 测试、前端主类型检查、定向 Vitest、桌面 Chromium E2E 与 `git diff --check`。
+- `full` 会在 `quick` 基础上补完整类型检查、样式 lint、前端构建、依赖高危审计、完整 Playwright、Wails 构建与 exe 启动存活检查。
+- 可先执行 `.\scripts\release-check.ps1 -Profile full -PlanOnly` 预览将要执行的检查项，不实际运行命令。
+- 需要发布前深挖隐藏风险时，可追加 `-IncludeDeepChecks`，额外执行 `go vet ./...`、`go test -race ./...` 与 `wails doctor`。
+- 需要归档自动化结果时，可追加 `-ReportPath .tmp-release-check.json` 输出 JSON 报告，或使用 `.md` 扩展名输出 Markdown 摘要；这类 `.tmp-*` 报告属于临时产物，不应提交。
+- 无 GUI 或 CI 环境可临时追加 `-SkipExeSmoke`，但发布记录必须标注未做桌面可启动验证。
+- 若只需要清理测试报告和构建临时产物，可执行 `.\scripts\release-check.ps1 -CleanOnly`。
+
+手工拆解命令：
+
 ```powershell
 cd E:\Github\Qingyu\Qingyu-Editor\frontend
 npm run type-check
@@ -78,6 +126,7 @@ git diff --check
 - 所有命令返回成功
 - 无 `git diff --check` 空白错误
 - E2E 至少覆盖新建项目、使用文档、provider、资产快建、场景舞台这条核心链
+- `test:e2e:core` 只覆盖 Desktop Chromium。发布前可额外执行 `npm run test:e2e` 暴露 Mobile Chrome 风险，但 Mobile 失败需单独归类，不能覆盖桌面通过结论。
 
 当前 `writer-workflow.spec.ts` 已自动覆盖的 smoke 子集：
 
@@ -92,6 +141,27 @@ git diff --check
 - `SMOKE-20` 石墨主题暗色切换
 - 额外覆盖：左侧边栏隐藏/显示后章节目录仍可访问、使用文档入口可正常打开
 - 额外覆盖：工作台最近项目可继续创作并回到最近章节、第二卷新增章节可压栈到第二卷末尾
+
+### 4.1 深度检查项
+
+下面命令不替代核心发布闸门，但用于发布前发现隐藏风险：
+
+```powershell
+cd E:\Github\Qingyu\Qingyu-Editor\frontend
+npm run type-check:full
+npm audit --audit-level=high
+npm audit fix --dry-run
+cd ..
+go vet ./...
+go test -race ./...
+wails doctor
+```
+
+当前已知结论：
+
+- `npm run type-check:full` 会检查 stories 与测试文件；若失败，先按“测试类型债 / Storybook 类型债 / 业务类型债”归类，不等同于 `tsconfig.app.json` 主应用类型失败。
+- `npm audit --audit-level=high` 若命中直接运行时依赖高危，不建议对外发布正式包；内部 beta 可在发布记录中明确依赖风险后继续试用。
+- `npm audit fix --dry-run` 当前可能被 Storybook 与 Vite peer 关系阻塞，依赖治理需单独开任务，不建议使用 `--force` 直接改锁文件。
 
 ## 5. 手工冒烟主链路
 

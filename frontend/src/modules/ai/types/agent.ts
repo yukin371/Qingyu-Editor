@@ -44,6 +44,7 @@ export interface AIChapterTaskContext {
 export interface AISceneStageContext {
   sceneTitle?: string
   beatTitle?: string
+  beatStatus?: 'planned' | 'active' | 'done'
   goal?: string
   conflict?: string
   doneCondition?: string

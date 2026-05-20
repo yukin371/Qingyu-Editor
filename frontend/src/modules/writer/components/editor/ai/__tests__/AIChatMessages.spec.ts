@@ -6,6 +6,8 @@ import { mount } from '@vue/test-utils'
 import AIChatMessages from '../AIChatMessages.vue'
 import type { ChatMessage } from '../types'
 
+const AIChatMessagesUnderTest = AIChatMessages as any
+
 vi.mock('marked', () => ({
   marked: (content: string) => `<p>${content}</p>`,
 }))
@@ -31,7 +33,7 @@ vi.mock('@/composables/useI18n', () => ({
 
 describe('AIChatMessages', () => {
   const buildWrapper = (props: Record<string, unknown>) =>
-    mount(AIChatMessages, {
+    mount(AIChatMessagesUnderTest, {
       props,
       global: {
         directives: {
@@ -157,7 +159,7 @@ describe('AIChatMessages', () => {
 
     await wrapper.find('.message-target-candidate').trigger('click')
 
-    expect(wrapper.emitted('select-document-target')?.[0]?.[0]).toEqual({
+    expect((wrapper.emitted('select-document-target') as unknown[][] | undefined)?.[0]?.[0]).toEqual({
       instruction: '找到提到玉佩的章节，并补强伏笔',
       route: 'edit',
       documentId: 'chapter-2',

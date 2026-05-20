@@ -121,7 +121,7 @@ const treeData = [
 const createWrapper = () =>
   mount(DocumentTree, {
     props: {
-      treeData,
+      treeData: treeData as any,
       projectId: 'project-1',
       currentDocumentId: 'chap-1',
     },

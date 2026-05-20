@@ -18,7 +18,7 @@ describe('BaseSkeleton', () => {
   describe('基础渲染', () => {
     it('正确渲染骨架屏容器', () => {
       const { container } = render(BaseSkeleton)
-      const skeleton = container.querySelector('.animate-pulse')
+      const skeleton = container.querySelector('.qy-skeleton--animated')
 
       expect(skeleton).toBeInTheDocument()
     })
@@ -28,7 +28,7 @@ describe('BaseSkeleton', () => {
       const skeleton = container.firstChild
 
       expect(skeleton).toHaveClass('h-5', 'w-24')
-      expect(skeleton).toHaveClass('rounded-sm')
+      expect(skeleton).toHaveClass('rounded-full')
     })
   })
 
@@ -39,7 +39,7 @@ describe('BaseSkeleton', () => {
       })
       const skeleton = container.firstChild
 
-      expect(skeleton).toHaveClass('rounded-sm')
+      expect(skeleton).toHaveClass('rounded-full')
     })
 
     it('支持 circle 变体', () => {
@@ -57,7 +57,7 @@ describe('BaseSkeleton', () => {
       })
       const skeleton = container.firstChild
 
-      expect(skeleton).toHaveClass('rounded-md')
+      expect(skeleton).toHaveClass('rounded-2xl')
     })
   })
 
@@ -93,7 +93,7 @@ describe('BaseSkeleton', () => {
   describe('动画效果', () => {
     it('默认有脉冲动画', () => {
       const { container } = render(BaseSkeleton)
-      const skeleton = container.querySelector('.animate-pulse')
+      const skeleton = container.querySelector('.qy-skeleton--animated')
 
       expect(skeleton).toBeTruthy()
     })
@@ -102,7 +102,7 @@ describe('BaseSkeleton', () => {
       const { container } = render(BaseSkeleton, {
         props: { animated: false },
       })
-      const skeleton = container.querySelector('.animate-pulse')
+      const skeleton = container.querySelector('.qy-skeleton--animated')
 
       expect(skeleton).toBeFalsy()
     })
@@ -113,14 +113,14 @@ describe('BaseSkeleton', () => {
       const { container } = render(BaseSkeleton)
       const skeleton = container.firstChild
 
-      expect(skeleton).toHaveClass('bg-slate-200')
+      expect(skeleton).toHaveClass('bg-slate-100/90')
     })
 
     it('支持深色模式', () => {
       const { container } = render(BaseSkeleton)
       const skeleton = container.firstChild
 
-      expect(skeleton).toHaveClass('dark:bg-slate-700')
+      expect(skeleton).toHaveClass('dark:bg-slate-800/60')
     })
   })
 
@@ -140,7 +140,7 @@ describe('BaseSkeleton', () => {
       })
       const skeleton = container.firstChild
 
-      expect(skeleton).toHaveClass('bg-slate-200')
+      expect(skeleton).toHaveClass('bg-slate-100/90')
       expect(skeleton).toHaveClass('custom-class')
     })
   })
@@ -158,7 +158,7 @@ describe('BaseSkeleton', () => {
         components: { BaseSkeleton },
       })
 
-      const skeletons = container.querySelectorAll('.animate-pulse')
+      const skeletons = container.querySelectorAll('.qy-skeleton--animated')
       expect(skeletons.length).toBe(3)
     })
   })

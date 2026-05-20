@@ -283,9 +283,9 @@ describe('AIPanel', () => {
           mutationMode: plan.mutationMode,
           message: '已生成单章候选正文，请交由编辑器 diff 确认。',
           generatedText:
-            (response as Record<string, string>).generated_text ||
-            (response as Record<string, string>).expanded_text ||
-            (response as Record<string, string>).rewritten_text ||
+            (response as unknown as Record<string, string>).generated_text ||
+            (response as unknown as Record<string, string>).expanded_text ||
+            (response as unknown as Record<string, string>).rewritten_text ||
             '',
           requiresConfirmation: true,
           evidence: plan.context.evidence,
@@ -299,7 +299,7 @@ describe('AIPanel', () => {
         return {
           route: plan.route,
           mutationMode: plan.mutationMode,
-          message: (response as Record<string, string>).summary || '',
+          message: (response as unknown as Record<string, string>).summary || '',
           requiresConfirmation: false,
           evidence: plan.context.evidence,
         }

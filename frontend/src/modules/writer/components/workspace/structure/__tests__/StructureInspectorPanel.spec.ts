@@ -70,19 +70,21 @@ describe('StructureInspectorPanel', () => {
     expect(wrapper.text()).not.toContain('下一步')
     expect(wrapper.text()).not.toContain('Inspector')
     expect(wrapper.text()).not.toContain('结构建议')
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0]).toMatchObject({
+    const aiEvents = wrapper.emitted('trigger-ai-action') as unknown[][] | undefined
+    const aiPayload = aiEvents?.[0]?.[0] as { text?: string } | undefined
+    expect(aiPayload).toMatchObject({
       source: 'workspace',
       action: 'add_to_chat',
       title: '结构节点分析：主线冲突',
     })
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain('已绑定章节：第一章')
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain(
+    expect(aiPayload?.text).toContain('已绑定章节：第一章')
+    expect(aiPayload?.text).toContain(
       '当前活跃实体：角色：林舟（警惕）；物品：巡夜令牌',
     )
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain(
+    expect(aiPayload?.text).toContain(
       '场景作用域：第一章 / 夜巡冲突',
     )
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain(
+    expect(aiPayload?.text).toContain(
       '节点描述：主角第一次与反派正面交锋',
     )
   })

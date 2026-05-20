@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import AssetDetailPanel from '../AssetDetailPanel.vue'
 
+const AssetDetailPanelUnderTest = AssetDetailPanel as any
+
 const baseProps = {
   asset: {
     id: 'asset-1',
@@ -30,7 +32,7 @@ const baseProps = {
 
 describe('AssetDetailPanel', () => {
   it('switches to mention tab and shows chapter reference info', async () => {
-    const wrapper = mount(AssetDetailPanel, {
+    const wrapper = mount(AssetDetailPanelUnderTest, {
       props: baseProps,
       global: {
         stubs: {
@@ -47,7 +49,7 @@ describe('AssetDetailPanel', () => {
   })
 
   it('emits quick edit and delete actions from the header', async () => {
-    const wrapper = mount(AssetDetailPanel, {
+    const wrapper = mount(AssetDetailPanelUnderTest, {
       props: baseProps,
       global: {
         stubs: {
@@ -65,7 +67,7 @@ describe('AssetDetailPanel', () => {
   })
 
   it('renders unresolved local references as read-only', () => {
-    const wrapper = mount(AssetDetailPanel, {
+    const wrapper = mount(AssetDetailPanelUnderTest, {
       props: {
         ...baseProps,
         asset: {

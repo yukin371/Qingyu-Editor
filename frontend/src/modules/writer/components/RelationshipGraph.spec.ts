@@ -161,15 +161,16 @@ describe('RelationshipGraph - P0 Fix: D3直接DOM操作', () => {
 
     await flushGraphRender(wrapper)
 
-    const circles = Array.from(wrapper.element.querySelectorAll('.node circle'))
-    const labels = Array.from(wrapper.element.querySelectorAll('.node text')).map((node) =>
+    const root = wrapper.element as Element
+    const circles = Array.from(root.querySelectorAll<SVGCircleElement>('.node circle'))
+    const labels = Array.from(root.querySelectorAll<SVGTextElement>('.node text')).map((node) =>
       node.textContent?.trim(),
     )
 
     expect(circles).toHaveLength(3)
-    expect(circles[0]?.getAttribute('fill')).toBe('#5b8cff')
-    expect(circles[1]?.getAttribute('fill')).toBe('#52c41a')
-    expect(circles[2]?.getAttribute('fill')).toBe('#fa8c16')
+    expect((circles[0] as SVGCircleElement | undefined)?.getAttribute('fill')).toBe('#5b8cff')
+    expect((circles[1] as SVGCircleElement | undefined)?.getAttribute('fill')).toBe('#52c41a')
+    expect((circles[2] as SVGCircleElement | undefined)?.getAttribute('fill')).toBe('#fa8c16')
     expect(labels).toContain('角')
     expect(labels).toContain('地')
     expect(labels).toContain('物')

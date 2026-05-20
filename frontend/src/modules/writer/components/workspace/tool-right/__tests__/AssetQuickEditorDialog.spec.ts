@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import AssetQuickEditorDialog from '../AssetQuickEditorDialog.vue'
 
+const submittedPayload = (wrapper: ReturnType<typeof mount>) =>
+  (wrapper.emitted('submit') as unknown[][] | undefined)?.[0]?.[0]
+
 const QyModalStub = {
   props: ['visible', 'title'],
   template: '<div v-if="visible" data-testid="modal"><slot /><slot name="footer" /></div>',
@@ -63,7 +66,7 @@ describe('AssetQuickEditorDialog', () => {
     await wrapper.find('input[placeholder="如：林舟"]').setValue('新角色')
     await wrapper.find('button[type="submit"]').trigger('click')
 
-    expect(wrapper.emitted('submit')?.[0]?.[0]).toEqual(
+    expect(submittedPayload(wrapper)).toEqual(
       expect.objectContaining({
         category: 'characters',
         name: '新角色',
@@ -93,7 +96,7 @@ describe('AssetQuickEditorDialog', () => {
     await wrapper.find('input[placeholder="如：旧码头"]').setValue('新地点')
     await wrapper.find('button[type="submit"]').trigger('click')
 
-    expect(wrapper.emitted('submit')?.[0]?.[0]).toEqual(
+    expect(submittedPayload(wrapper)).toEqual(
       expect.objectContaining({
         category: 'locations',
         name: '新地点',

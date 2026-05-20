@@ -8,8 +8,8 @@ const memoryStorage = new Map<string, unknown>()
 
 vi.mock('@/utils/storage', () => {
   const storage: Partial<Storage> = {
-    get(key: string, defaultValue?: unknown) {
-      return memoryStorage.has(key) ? structuredClone(memoryStorage.get(key)) : (defaultValue ?? null)
+    get<T = any>(key: string, defaultValue?: T) {
+      return memoryStorage.has(key) ? (structuredClone(memoryStorage.get(key)) as T) : (defaultValue ?? null)
     },
     set(key: string, value: unknown) {
       memoryStorage.set(key, structuredClone(value))

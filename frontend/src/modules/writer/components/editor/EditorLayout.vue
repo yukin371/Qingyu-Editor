@@ -280,6 +280,10 @@ function handleContentTouchEnd(event: TouchEvent) {
     }, 1000)
   }
 }
+
+defineExpose({
+  switchTab,
+})
 </script>
 
 <style scoped lang="scss">

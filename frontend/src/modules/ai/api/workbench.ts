@@ -13,8 +13,11 @@ interface WorkbenchAssetSummary {
 interface WorkbenchSceneStageSummary {
   sceneTitle?: string
   beatTitle?: string
+  beatStatus?: 'planned' | 'active' | 'done'
   goal?: string
   conflict?: string
+  doneCondition?: string
+  nextBeatTitle?: string
   assetNames?: string[]
 }
 

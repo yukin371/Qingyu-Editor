@@ -46,7 +46,7 @@ describe('BaseImage', () => {
         props: { src: 'https://example.com/image.jpg' }
       })
 
-      const skeleton = container.querySelector('.animate-pulse')
+      const skeleton = container.querySelector('.qy-skeleton--animated')
       expect(skeleton).toBeTruthy()
     })
 
@@ -61,7 +61,7 @@ describe('BaseImage', () => {
       }
 
       await waitFor(() => {
-        const skeleton = container.querySelector('.animate-pulse')
+        const skeleton = container.querySelector('.qy-skeleton--animated')
         expect(skeleton).toBeFalsy()
       })
     })
@@ -83,18 +83,20 @@ describe('BaseImage', () => {
       }
 
       await waitFor(() => {
-        const errorState = container.querySelector('.text-red-500')
+        const errorState = container.querySelector('.text-slate-400')
         expect(errorState).toBeTruthy()
         expect(onError).toHaveBeenCalled()
       })
     })
 
-    it('支持自定义错误提示', async () => {
+    it('支持自定义错误插槽', async () => {
       const { container } = render(BaseImage, {
         props: {
           src: 'https://example.com/not-found.jpg',
-          errorText: 'Image failed to load'
-        }
+        },
+        slots: {
+          error: '<span class="custom-error">Image failed to load</span>',
+        },
       })
 
       const img = container.querySelector('img')
@@ -103,7 +105,7 @@ describe('BaseImage', () => {
       }
 
       await waitFor(() => {
-        const errorText = container.querySelector('.text-red-500')
+        const errorText = container.querySelector('.custom-error')
         expect(errorText).toHaveTextContent('Image failed to load')
       })
     })
@@ -166,11 +168,11 @@ describe('BaseImage', () => {
       const { container } = render(BaseImage, {
         props: {
           src: 'https://example.com/image.jpg',
-          rounded: true
+          shape: 'rounded'
         }
       })
 
-      const wrapper = container.querySelector('.rounded-lg')
+      const wrapper = container.querySelector('.rounded-xl')
       expect(wrapper).toBeTruthy()
     })
 
@@ -178,7 +180,7 @@ describe('BaseImage', () => {
       const { container } = render(BaseImage, {
         props: {
           src: 'https://example.com/image.jpg',
-          circle: true
+          shape: 'circle'
         }
       })
 
@@ -188,34 +190,31 @@ describe('BaseImage', () => {
   })
 
   describe('预览功能', () => {
-    it('支持点击预览', async () => {
-      const onPreview = vi.fn()
+    it('点击图片容器会触发 click 事件', async () => {
+      const onClick = vi.fn()
       const { container } = render(BaseImage, {
         props: {
           src: 'https://example.com/image.jpg',
-          preview: true,
-          onPreview
+          onClick
         }
       })
 
       const wrapper = container.firstChild
       await fireEvent.click(wrapper!)
 
-      // 预览功能应该在点击时触发
-      expect(onPreview).toHaveBeenCalled()
+      expect(onClick).toHaveBeenCalled()
     })
   })
 
   describe('占位符', () => {
-    it('支持占位符颜色', () => {
+    it('加载中使用主题化占位背景', () => {
       const { container } = render(BaseImage, {
         props: {
           src: 'https://example.com/image.jpg',
-          placeholder: 'bg-slate-100'
         }
       })
 
-      const placeholder = container.querySelector('.bg-slate-100')
+      const placeholder = container.querySelector('.bg-slate-50')
       expect(placeholder).toBeTruthy()
     })
   })
@@ -248,13 +247,13 @@ describe('BaseImage', () => {
   })
 
   describe('可访问性', () => {
-    it('默认 alt 为空字符串', () => {
+    it('默认 alt 未设置时保持空属性语义', () => {
       const { container } = render(BaseImage, {
         props: { src: 'https://example.com/image.jpg' }
       })
 
       const img = container.querySelector('img')
-      expect(img).toHaveAttribute('alt', '')
+      expect(img).toHaveAttribute('alt')
     })
 
     it('支持自定义 alt 文本', () => {

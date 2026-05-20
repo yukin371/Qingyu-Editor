@@ -157,7 +157,7 @@ const skeletonSize = computed(() => {
       v-if="currentSrc"
       v-show="showImage"
       :src="currentSrc"
-      :alt="alt"
+      :alt="alt || ''"
       :loading="lazy ? 'lazy' : 'eager'"
       :class="imageClasses"
       @load="handleImageLoad"

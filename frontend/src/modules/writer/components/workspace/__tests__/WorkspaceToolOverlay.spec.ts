@@ -3,6 +3,8 @@ import { defineComponent } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import WorkspaceToolOverlay from '../WorkspaceToolOverlay.vue'
 
+const WorkspaceToolOverlayUnderTest = WorkspaceToolOverlay as any
+
 const settleAsyncToolView = async () => {
   await vi.dynamicImportSettled()
   await flushPromises()
@@ -49,7 +51,7 @@ vi.mock('@/modules/writer/components/workspace/structure/StructureStageView.vue'
 
 describe('WorkspaceToolOverlay', () => {
   it('应在工具层显示共享上下文摘要', async () => {
-    const wrapper = mount(WorkspaceToolOverlay, {
+    const wrapper = mount(WorkspaceToolOverlayUnderTest, {
       props: {
         visible: true,
         activeTool: 'timeline',
@@ -95,18 +97,20 @@ describe('WorkspaceToolOverlay', () => {
 
     await contextBar.get('button').trigger('click')
 
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0]).toMatchObject({
+    const aiEvents = wrapper.emitted('trigger-ai-action') as unknown[][] | undefined
+    const aiPayload = aiEvents?.[0]?.[0] as { text?: string } | undefined
+    expect(aiPayload).toMatchObject({
       source: 'workspace',
       action: 'add_to_chat',
       title: '时间线上下文',
     })
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain('当前章节：第一章')
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain('场景作用域：第一幕 / 港口追踪')
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain('角色：林舟')
+    expect(aiPayload?.text).toContain('当前章节：第一章')
+    expect(aiPayload?.text).toContain('场景作用域：第一幕 / 港口追踪')
+    expect(aiPayload?.text).toContain('角色：林舟')
   })
 
   it('应以结构舞台作为默认主辅助工具之外提供资产总览工具', async () => {
-    const wrapper = mount(WorkspaceToolOverlay, {
+    const wrapper = mount(WorkspaceToolOverlayUnderTest, {
       props: {
         visible: true,
         activeTool: 'assets',
@@ -134,7 +138,7 @@ describe('WorkspaceToolOverlay', () => {
   })
 
   it('应接管资产总览发出的图谱聚焦参数并透传给关系图谱', async () => {
-    const wrapper = mount(WorkspaceToolOverlay, {
+    const wrapper = mount(WorkspaceToolOverlayUnderTest, {
       props: {
         visible: true,
         activeTool: 'assets',
@@ -163,7 +167,8 @@ describe('WorkspaceToolOverlay', () => {
     })
     await assetsView.vm.$emit('switch-tool', 'relations')
 
-    expect(wrapper.emitted('tool-change')?.at(-1)).toEqual(['relations'])
+    const toolChangeEvents = wrapper.emitted('tool-change') as unknown[][] | undefined
+    expect(toolChangeEvents?.[toolChangeEvents.length - 1]).toEqual(['relations'])
 
     await wrapper.setProps({ activeTool: 'relations' })
     await settleAsyncToolView()
@@ -174,7 +179,7 @@ describe('WorkspaceToolOverlay', () => {
   })
 
   it('应透传资产总览发出的前往章节事件', async () => {
-    const wrapper = mount(WorkspaceToolOverlay, {
+    const wrapper = mount(WorkspaceToolOverlayUnderTest, {
       props: {
         visible: true,
         activeTool: 'assets',
@@ -197,11 +202,12 @@ describe('WorkspaceToolOverlay', () => {
     const assetsView = wrapper.getComponent({ name: 'EncyclopediaViewStub' })
     await assetsView.vm.$emit('jump-to-chapter', 'chapter-2')
 
-    expect(wrapper.emitted('jump-to-chapter')?.at(-1)).toEqual(['chapter-2'])
+    const jumpEvents = wrapper.emitted('jump-to-chapter') as unknown[][] | undefined
+    expect(jumpEvents?.[jumpEvents.length - 1]).toEqual(['chapter-2'])
   })
 
   it('应透传结构舞台发出的创建结构草案事件', async () => {
-    const wrapper = mount(WorkspaceToolOverlay, {
+    const wrapper = mount(WorkspaceToolOverlayUnderTest, {
       props: {
         visible: true,
         activeTool: 'structure',
@@ -231,7 +237,8 @@ describe('WorkspaceToolOverlay', () => {
       items: [{ title: '屈辱现场' }],
     })
 
-    expect(wrapper.emitted('create-structure-plan')?.at(-1)?.[0]).toMatchObject({
+    const createEvents = wrapper.emitted('create-structure-plan') as unknown[][] | undefined
+    expect(createEvents?.[createEvents.length - 1]?.[0]).toMatchObject({
       mode: 'chapter',
       prompt: '导入黄金三章',
       importTarget: 'current-volume',

@@ -52,7 +52,7 @@ type Story = StoryObj<typeof meta>
 
 // 默认故事
 interface CheckboxArgs {
-  modelValue?: boolean
+  modelValue?: boolean | string[]
   label?: string
   size?: 'sm' | 'md' | 'lg'
   color?: 'primary' | 'success' | 'warning' | 'danger'

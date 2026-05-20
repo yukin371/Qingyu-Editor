@@ -22,7 +22,7 @@
     </template>
 
     <template #body>
-      <EditorLayout class="workspace-editor-layout">
+      <EditorLayout ref="editorLayoutRef" class="workspace-editor-layout">
         <!-- 左侧面板插槽 -->
         <template #left-panel>
           <WorkspaceLeftPanel
@@ -369,18 +369,23 @@ const toggleBottomPanel = () => {
   workspaceLayoutStore.setAreaVisibility('bottom', !workspaceLayoutStore.areas.bottom.visible)
 }
 
-const handleOpenRightTool = (tool: 'ai' | 'assets' | 'harness' | 'proofread' | 'inspiration') => {
-  if (panelStore.rightCollapsed) {
-    panelStore.setRightCollapsed(false)
-    workspaceLayoutStore.setRightToolActive(tool)
-    return
+const switchEditorLayoutTab = (tab: 'left' | 'editor' | 'right') => {
+  const switchTab = editorLayoutRef.value?.switchTab
+  if (typeof switchTab === 'function') {
+    switchTab(tab)
   }
-  workspaceLayoutStore.toggleRightTool(tool)
+}
+
+const handleOpenRightTool = (tool: 'ai' | 'assets' | 'harness' | 'proofread' | 'inspiration') => {
+  panelStore.setRightCollapsed(false)
+  workspaceLayoutStore.setRightToolActive(tool)
+  switchEditorLayoutTab('right')
 }
 
 const handleOpenRightToolExclusive = (tool: RightToolType) => {
   panelStore.setRightCollapsed(false)
   workspaceLayoutStore.setRightToolActive(tool)
+  switchEditorLayoutTab('right')
 }
 
 const isRightToolType = (tool: string): tool is RightToolType =>
@@ -662,6 +667,7 @@ const buildDefaultChapterDraft = (parentId?: string) => {
 }
 
 const focusCurrentTitleInput = async () => {
+  switchEditorLayoutTab('editor')
   await nextTick()
   await workspaceEditorContentRef.value?.focusTitleInput?.()
 }
@@ -1143,6 +1149,7 @@ const loadOutlineTree = async () => {
 
 // 处理打开全屏工具
 const workspaceEditorContentRef = ref<InstanceType<typeof WorkspaceEditorContent> | null>(null)
+const editorLayoutRef = ref<InstanceType<typeof EditorLayout> | null>(null)
 const toolOverlayChapterId = ref<string | undefined>(undefined)
 const toolOverlayChapterTitle = ref<string | undefined>(undefined)
 

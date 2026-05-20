@@ -7,6 +7,12 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/vue'
 import Notification from '../Notification.vue'
 import notification from '../useNotification'
 
+function getAlert(container: Element) {
+  const alert = container.querySelector('[role="alert"]')
+  expect(alert).toBeInTheDocument()
+  return alert as HTMLElement
+}
+
 describe('Notification 组件', () => {
   beforeEach(() => {
     // 清理通知容器
@@ -44,8 +50,7 @@ describe('Notification 组件', () => {
       })
 
       await waitFor(() => {
-        const element = container.querySelector('.border-info-200')
-        expect(element).toBeInTheDocument()
+        expect(getAlert(container).className).toContain('ring-sky-200/60')
       })
     })
 
@@ -92,8 +97,7 @@ describe('Notification 组件', () => {
       })
 
       await waitFor(() => {
-        const element = container.querySelector('.border-emerald-200')
-        expect(element).toBeInTheDocument()
+        expect(getAlert(container).className).toContain('ring-emerald-200/60')
       })
     })
 
@@ -107,8 +111,7 @@ describe('Notification 组件', () => {
       })
 
       await waitFor(() => {
-        const element = container.querySelector('.border-info-200')
-        expect(element).toBeInTheDocument()
+        expect(getAlert(container).className).toContain('ring-sky-200/60')
       })
     })
 
@@ -122,8 +125,7 @@ describe('Notification 组件', () => {
       })
 
       await waitFor(() => {
-        const element = container.querySelector('.border-amber-200')
-        expect(element).toBeInTheDocument()
+        expect(getAlert(container).className).toContain('ring-amber-200/60')
       })
     })
 
@@ -137,8 +139,7 @@ describe('Notification 组件', () => {
       })
 
       await waitFor(() => {
-        const element = container.querySelector('.border-red-200')
-        expect(element).toBeInTheDocument()
+        expect(getAlert(container).className).toContain('ring-red-200/60')
       })
     })
 
@@ -167,7 +168,7 @@ describe('Notification 组件', () => {
       })
 
       await waitFor(() => {
-        const icon = container.querySelector('.text-info-500')
+        const icon = container.querySelector('.text-sky-500')
         expect(icon).toBeInTheDocument()
       })
     })
@@ -421,8 +422,8 @@ describe('Notification 组件', () => {
       })
 
       await waitFor(() => {
-        const element = container.querySelector('.dark\\:bg-emerald-950')
-        expect(element).toBeInTheDocument()
+        expect(getAlert(container).className).toContain('dark:bg-slate-800/95')
+        expect(getAlert(container).className).toContain('dark:ring-emerald-700/40')
       })
     })
 
@@ -436,8 +437,8 @@ describe('Notification 组件', () => {
       })
 
       await waitFor(() => {
-        const element = container.querySelector('.dark\\:bg-info-950')
-        expect(element).toBeInTheDocument()
+        expect(getAlert(container).className).toContain('dark:bg-slate-800/95')
+        expect(getAlert(container).className).toContain('dark:ring-sky-700/40')
       })
     })
   })

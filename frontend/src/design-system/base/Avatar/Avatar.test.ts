@@ -112,11 +112,11 @@ describe('BaseAvatar', () => {
   describe('形状变体', () => {
     it('支持方形头像', () => {
       const { container } = render(BaseAvatar, {
-        props: { shape: 'square' } as any
+        props: { variant: 'square' } as any
       })
 
       const avatar = container.firstChild as Element
-      expect(avatar).toHaveClass('rounded-md')
+      expect(avatar).toHaveClass('rounded-[1.1rem]')
     })
 
     it('支持圆形头像（默认）', () => {
@@ -151,13 +151,13 @@ describe('BaseAvatar', () => {
       expect(avatar).toBeTruthy()
     })
 
-    it('支持自定义背景色', () => {
+    it('备用头像使用确定性的色板样式', () => {
       const { container } = render(BaseAvatar, {
-        props: { color: 'primary' } as any
+        props: { alt: 'User Name' } as any
       })
 
-      const avatar = container.firstChild as Element
-      expect(avatar).toHaveClass('bg-primary-500')
+      const fallback = container.querySelector('[style*="linear-gradient"]')
+      expect(fallback).toBeTruthy()
     })
   })
 

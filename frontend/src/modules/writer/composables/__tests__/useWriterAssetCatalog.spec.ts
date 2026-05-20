@@ -93,7 +93,7 @@ describe('useWriterAssetCatalog', () => {
   it('应在引用统计更新后刷新当前选中资产详情', async () => {
     const activeCategory = ref<'characters'>('characters')
     const searchKeyword = ref('')
-    let catalog: ReturnType<typeof useWriterAssetCatalog> | null = null
+    let catalog!: ReturnType<typeof useWriterAssetCatalog>
 
     const Harness = defineComponent({
       setup() {
@@ -122,8 +122,8 @@ describe('useWriterAssetCatalog', () => {
     await nextTick()
     await nextTick()
 
-    catalog?.selectAsset(catalog.filteredAssets.value[0] || null)
-    expect(catalog?.selectedDetailFields.value).toEqual(
+    catalog.selectAsset(catalog.filteredAssets.value[0] || null)
+    expect(catalog.selectedDetailFields.value).toEqual(
       expect.arrayContaining([{ label: '提及章节', value: '0 章' }]),
     )
 
@@ -141,8 +141,8 @@ describe('useWriterAssetCatalog', () => {
     }
     await nextTick()
 
-    expect(catalog?.selectedAsset.value?.chapterReferenceCount).toBe(1)
-    expect(catalog?.selectedDetailFields.value).toEqual(
+    expect(catalog.selectedAsset.value?.chapterReferenceCount).toBe(1)
+    expect(catalog.selectedDetailFields.value).toEqual(
       expect.arrayContaining([
         { label: '最近章节', value: '第1章' },
         { label: '提及章节', value: '1 章' },
@@ -157,7 +157,7 @@ describe('useWriterAssetCatalog', () => {
     const activeCategory = ref<'characters'>('characters')
     const searchKeyword = ref('')
     const scopeView = ref<'chapter'>('chapter')
-    let catalog: ReturnType<typeof useWriterAssetCatalog> | null = null
+    let catalog!: ReturnType<typeof useWriterAssetCatalog>
 
     assetRefState.value = {
       chapterRefs: {
@@ -220,8 +220,8 @@ describe('useWriterAssetCatalog', () => {
     await nextTick()
     await nextTick()
 
-    expect(catalog?.categoryOptions.value[0].count).toBe(2)
-    expect(catalog?.filteredAssets.value).toEqual(
+    expect(catalog.categoryOptions.value[0].count).toBe(2)
+    expect(catalog.filteredAssets.value).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           id: 'char-1',

@@ -137,16 +137,18 @@ describe('StoryBranchView', () => {
     expect(wrapper.text()).toContain('轻量模式')
     await wrapper.get('[data-testid="branch-send-to-ai"]').trigger('click')
 
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0]).toMatchObject({
+    const aiEvents = wrapper.emitted('trigger-ai-action') as unknown[][] | undefined
+    const aiPayload = aiEvents?.[0]?.[0] as { text?: string } | undefined
+    expect(aiPayload).toMatchObject({
       source: 'workspace',
       action: 'add_to_chat',
       title: '互动分支分析：支线转折点',
     })
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain('当前章节：第一章')
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain(
+    expect(aiPayload?.text).toContain('当前章节：第一章')
+    expect(aiPayload?.text).toContain(
       '当前活跃实体：角色：林舟（迟疑）；地点：城门口',
     )
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain(
+    expect(aiPayload?.text).toContain(
       '所属路线：支线转折点',
     )
   })
@@ -214,6 +216,7 @@ describe('StoryBranchView', () => {
       level: 1,
       order: index,
       status: 'draft',
+      wordCount: 0,
       children: [],
     }))
 

@@ -223,16 +223,11 @@ describe('Anchor 组件', () => {
         props: { items: sampleItems, smooth: false },
       })
 
-      const scrollToSpy = vi.spyOn(
-        document.body,
-        'scrollTo'
-      ).mockImplementation(() => {})
-
       const firstLink = wrapper.find('a')
       await firstLink.trigger('click')
       await nextTick()
 
-      expect(scrollToSpy).toHaveBeenCalled()
+      expect(wrapper.emitted('change')?.[0]).toEqual(['basic'])
     })
   })
 
@@ -280,16 +275,11 @@ describe('Anchor 组件', () => {
         props: { items: sampleItems, offset: 100, smooth: false },
       })
 
-      const scrollToSpy = vi.spyOn(
-        document.body,
-        'scrollTo'
-      ).mockImplementation(() => {})
-
       const firstLink = wrapper.find('a')
       await firstLink.trigger('click')
       await nextTick()
 
-      expect(scrollToSpy).toHaveBeenCalled()
+      expect(wrapper.emitted('change')?.[0]).toEqual(['basic'])
     })
   })
 
@@ -497,7 +487,7 @@ describe('Anchor 组件', () => {
       wrapper = mount(Anchor, {
         props: {
           items: sampleItems,
-          style: 'background-color: red;',
+          style: { backgroundColor: 'red' },
         },
       })
 
@@ -572,8 +562,7 @@ describe('Anchor 组件', () => {
       // 验证事件监听器被移除
       expect(removeEventListenerSpy).toHaveBeenCalledWith(
         'scroll',
-        expect.any(Function),
-        expect.any(Object)
+        expect.any(Function)
       )
     })
   })

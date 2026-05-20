@@ -312,8 +312,10 @@ describe('Message 组件', () => {
       })
 
       await waitFor(() => {
-        const el = successContainer.querySelector('.bg-emerald-50')
+        const el = successContainer.querySelector('.ring-emerald-200\\/50')
         expect(el).toBeInTheDocument()
+        expect(el?.className).toContain('text-emerald-800')
+        expect(el?.className).toContain('dark:bg-slate-800/96')
       })
 
       const { container: errorContainer } = render(Message, {
@@ -325,8 +327,10 @@ describe('Message 组件', () => {
       })
 
       await waitFor(() => {
-        const el = errorContainer.querySelector('.bg-red-50')
+        const el = errorContainer.querySelector('.ring-red-200\\/50')
         expect(el).toBeInTheDocument()
+        expect(el?.className).toContain('text-red-800')
+        expect(el?.className).toContain('dark:bg-slate-800/96')
       })
     })
 

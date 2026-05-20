@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { defineComponent, h, nextTick, reactive, ref } from 'vue'
+import { defineComponent, h, nextTick, reactive } from 'vue'
 import { createPinia } from 'pinia'
 
 const routeState = reactive({
@@ -84,7 +84,7 @@ const baseFlatDocs = [
     type: 'chapter',
     projectId: 'project-1',
   },
-]
+] as any[]
 const mockFlatDocs = [...baseFlatDocs]
 
 vi.mock('vue-router', () => ({
@@ -272,11 +272,11 @@ const loadTimelineEvents = vi.fn().mockResolvedValue(undefined)
 
 const writerStoreState = {
   characters: {
-    list: [],
+    list: [] as Array<{ id: string; name: string }>,
     relations: [],
     loading: false,
   },
-  locations: { list: [] },
+  locations: { list: [] as Array<{ id: string; name: string }> },
   loadCharacters,
   loadCharacterRelations,
   loadLocations,

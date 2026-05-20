@@ -23,8 +23,8 @@ vi.mock('@/core/services/http.service', () => ({
 
 vi.mock('@/utils/storage', () => {
   const storage: Partial<Storage> = {
-    get(key: string, defaultValue?: unknown) {
-      return memoryStorage.has(key) ? structuredClone(memoryStorage.get(key)) : (defaultValue ?? null)
+    get<T = any>(key: string, defaultValue?: T) {
+      return memoryStorage.has(key) ? (structuredClone(memoryStorage.get(key)) as T) : (defaultValue ?? null)
     },
     set(key: string, value: unknown) {
       memoryStorage.set(key, structuredClone(value))
@@ -132,11 +132,11 @@ describe('writer desktop api fallback', () => {
   it('uses local concept owner in desktop runtime', async () => {
     ;(window as Window & { go?: unknown }).go = { main: { App: {} } }
 
-    const created = await conceptApi.create('project-1', {
+    const created = (await conceptApi.create('project-1', {
       projectId: 'project-1',
       name: '灵脉潮汐',
       summary: '世界规则',
-    })
+    })) as any
     await expect(conceptApi.list('project-1')).resolves.toEqual([
       expect.objectContaining({ id: created.id, name: '灵脉潮汐' }),
     ])
@@ -146,15 +146,15 @@ describe('writer desktop api fallback', () => {
   })
 
   it('uses local timeline owner in desktop runtime', async () => {
-    const [timeline] = await timelineApi.list('project-1')
+    const [timeline] = (await timelineApi.list('project-1')) as any[]
     expect(timeline).toEqual(expect.objectContaining({ name: '主时间线' }))
 
-    const event = await timelineApi.createEvent(timeline.id, 'project-1', {
+    const event = (await timelineApi.createEvent(timeline.id, 'project-1', {
         timelineId: timeline.id,
         title: '转折点',
         eventType: 'plot',
         importance: 8,
-      } as any)
+      } as any)) as any
     await expect(timelineApi.listEvents(timeline.id)).resolves.toEqual([
       expect.objectContaining({ id: event.id, title: '转折点' }),
     ])
@@ -339,10 +339,10 @@ describe('writer desktop api fallback', () => {
   })
 
   it('uses local document duplicate and reorder owner in browser standalone runtime', async () => {
-    const project = await projectApi.create({
+    const project = (await projectApi.create({
       title: '本地文档项目',
       summary: '用于复制与重排',
-    })
+    })) as any
     const projectId = project.id
 
     const volume = await documentApi.create(projectId, {
@@ -378,8 +378,8 @@ describe('writer desktop api fallback', () => {
     const duplicatedContent = await editorApi.getContent(duplicated.documentId)
     expect(duplicatedContent).toEqual(expect.objectContaining({ content: '风起云涌' }))
 
-    const treeAfterDuplicate = await documentApi.getTree(projectId)
-    expect(treeAfterDuplicate[0]?.children?.map((item) => item.title)).toEqual([
+    const treeAfterDuplicate = (await documentApi.getTree(projectId)) as any[]
+    expect(treeAfterDuplicate[0]?.children?.map((item: any) => item.title)).toEqual([
       '第一章',
       '第一章（副本）',
       '第二章',
@@ -390,8 +390,8 @@ describe('writer desktop api fallback', () => {
       documentIds: [chapterB.id, duplicated.documentId, chapterA.id],
     })
 
-    const treeAfterReorder = await documentApi.getTree(projectId)
-    expect(treeAfterReorder[0]?.children?.map((item) => item.id)).toEqual([
+    const treeAfterReorder = (await documentApi.getTree(projectId)) as any[]
+    expect(treeAfterReorder[0]?.children?.map((item: any) => item.id)).toEqual([
       chapterB.id,
       duplicated.documentId,
       chapterA.id,
@@ -414,10 +414,10 @@ describe('writer desktop api fallback', () => {
   })
 
   it('uses local keyword search with text and pinyin in browser standalone runtime', async () => {
-    const project = await projectApi.create({
+    const project = (await projectApi.create({
       title: '检索项目',
       summary: '',
-    })
+    })) as any
     const projectId = project.id
 
     await characterApi.create(projectId, {
@@ -432,7 +432,7 @@ describe('writer desktop api fallback', () => {
       order: 0,
     } as any)
 
-    const textMatch = await searchProjectKeywords(projectId, '起风', 10)
+    const textMatch = (await searchProjectKeywords(projectId, '起风', 10)) as any
     expect(textMatch.suggestions).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -443,7 +443,7 @@ describe('writer desktop api fallback', () => {
       ]),
     )
 
-    const pinyinMatch = await searchProjectKeywords(projectId, 'lz', 10)
+    const pinyinMatch = (await searchProjectKeywords(projectId, 'lz', 10)) as any
     expect(pinyinMatch.suggestions).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -454,7 +454,7 @@ describe('writer desktop api fallback', () => {
       ]),
     )
 
-    const atMentionMatch = await searchProjectKeywords(projectId, '@林', 10)
+    const atMentionMatch = (await searchProjectKeywords(projectId, '@林', 10)) as any
     expect(atMentionMatch.suggestions).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

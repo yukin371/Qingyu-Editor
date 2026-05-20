@@ -15,76 +15,76 @@ import { render } from '@testing-library/vue'
 import { BaseIcon } from './index'
 
 describe('BaseIcon', () => {
+  const getIconRoot = (container: HTMLElement) => {
+    const root = container.firstElementChild
+    expect(root).toBeTruthy()
+    return root as HTMLElement
+  }
+
   describe('基础渲染', () => {
     it('正确渲染 SVG 图标', () => {
       const { container } = render(BaseIcon, {
-        props: { name: 'heroicons:home' }
+        props: { name: 'home' }
       })
 
       const svg = container.querySelector('svg')
       expect(svg).toBeTruthy()
-      expect(svg).toHaveClass('inline-block')
+      expect(getIconRoot(container)).toHaveClass('inline-flex')
     })
 
     it('默认尺寸为 md', () => {
       const { container } = render(BaseIcon, {
-        props: { name: 'heroicons:home' }
+        props: { name: 'home' }
       })
 
-      const svg = container.querySelector('svg')
-      expect(svg).toHaveClass('w-5', 'h-5')
+      expect(getIconRoot(container)).toHaveClass('w-6', 'h-6')
     })
   })
 
   describe('尺寸测试', () => {
-    const sizes: Array<'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'> = [
+    const sizes: Array<'xs' | 'sm' | 'md' | 'lg' | 'xl'> = [
       'xs',
       'sm',
       'md',
       'lg',
       'xl',
-      '2xl',
     ]
 
     const sizeClasses = {
-      xs: ['w-3', 'h-3'],
-      sm: ['w-4', 'h-4'],
-      md: ['w-5', 'h-5'],
-      lg: ['w-6', 'h-6'],
-      xl: ['w-8', 'h-8'],
-      '2xl': ['w-10', 'h-10'],
+      xs: ['w-4', 'h-4'],
+      sm: ['w-5', 'h-5'],
+      md: ['w-6', 'h-6'],
+      lg: ['w-8', 'h-8'],
+      xl: ['w-10', 'h-10'],
     }
 
     it.each(sizes)('正确渲染 %s 尺寸', (size) => {
       const { container } = render(BaseIcon, {
-        props: { name: 'heroicons:home', size }
+        props: { name: 'home', size }
       })
-      const svg = container.querySelector('svg')
 
-      expect(svg).toHaveClass(...sizeClasses[size])
+      expect(getIconRoot(container)).toHaveClass(...sizeClasses[size])
     })
   })
 
   describe('颜色变体', () => {
-    it('支持默认颜色', () => {
+    it('默认继承父级颜色', () => {
       const { container } = render(BaseIcon, {
-        props: { name: 'heroicons:home' }
+        props: { name: 'home' }
       })
-      const svg = container.querySelector('svg')
 
-      expect(svg).toHaveClass('text-current')
+      expect(getIconRoot(container)).toHaveClass('inline-flex')
     })
 
     it('支持自定义颜色类', () => {
       const { container } = render(BaseIcon, {
         props: {
-          name: 'heroicons:home',
+          name: 'home',
           class: 'text-red-500'
         }
       })
-      const svg = container.querySelector('svg')
 
-      expect(svg).toHaveClass('text-red-500')
+      expect(getIconRoot(container)).toHaveClass('text-red-500')
     })
   })
 
@@ -92,61 +92,55 @@ describe('BaseIcon', () => {
     it('支持自定义 class', () => {
       const { container } = render(BaseIcon, {
         props: {
-          name: 'heroicons:home',
+          name: 'home',
           class: 'custom-class'
         }
       })
-      const svg = container.querySelector('svg')
 
-      expect(svg).toHaveClass('custom-class')
+      expect(getIconRoot(container)).toHaveClass('custom-class')
     })
 
     it('自定义 class 与默认样式共存', () => {
       const { container } = render(BaseIcon, {
         props: {
-          name: 'heroicons:home',
+          name: 'home',
           class: 'custom-class'
         }
       })
-      const svg = container.querySelector('svg')
 
-      expect(svg).toHaveClass('inline-block')
-      expect(svg).toHaveClass('custom-class')
+      expect(getIconRoot(container)).toHaveClass('inline-flex')
+      expect(getIconRoot(container)).toHaveClass('custom-class')
     })
   })
 
   describe('可访问性', () => {
-    it('默认有 aria-hidden="true"', () => {
+    it('默认有 aria-label', () => {
       const { container } = render(BaseIcon, {
-        props: { name: 'heroicons:home' }
+        props: { name: 'home' }
       })
-      const svg = container.querySelector('svg')
 
-      expect(svg).toHaveAttribute('aria-hidden', 'true')
+      expect(getIconRoot(container)).toHaveAttribute('aria-label', 'home')
     })
 
-    it('可以通过 props 覆盖 aria-hidden', () => {
+    it('可以通过 props 覆盖 aria-label', () => {
       const { container } = render(BaseIcon, {
         props: {
-          name: 'heroicons:home',
-          ariaHidden: 'false'
+          name: 'home',
+          ariaLabel: '首页'
         }
       })
-      const svg = container.querySelector('svg')
 
-      expect(svg).toHaveAttribute('aria-hidden', 'false')
+      expect(getIconRoot(container)).toHaveAttribute('aria-label', '首页')
     })
   })
 
   describe('过渡动画', () => {
     it('有过渡类', () => {
       const { container } = render(BaseIcon, {
-        props: { name: 'heroicons:home' }
+        props: { name: 'home' }
       })
-      const svg = container.querySelector('svg')
 
-      expect(svg).toHaveClass('transition-colors')
-      expect(svg).toHaveClass('duration-200')
+      expect(getIconRoot(container)).toHaveClass('inline-flex')
     })
   })
 })

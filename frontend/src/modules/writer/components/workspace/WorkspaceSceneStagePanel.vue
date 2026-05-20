@@ -318,17 +318,19 @@ const handleDraftInput = (field: keyof WriterSceneStageDraft, event: Event) => {
 }
 
 @media (max-width: 760px) {
-  .workspace-scene-stage__actions {
-    flex-wrap: wrap;
+  .workspace-scene-stage__editor-row {
+    overflow-x: auto;
+    overflow-y: hidden;
   }
 
   .workspace-scene-stage__edit-grid {
-    grid-template-columns: 1fr;
+    min-width: 720px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .workspace-scene-stage__edit-zone + .workspace-scene-stage__edit-zone {
-    border-top: 2px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 92%, transparent);
-    border-left: none;
+    border-top: none;
+    border-left: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 88%, transparent);
   }
 
   .workspace-scene-stage__edit-zone--stakes {

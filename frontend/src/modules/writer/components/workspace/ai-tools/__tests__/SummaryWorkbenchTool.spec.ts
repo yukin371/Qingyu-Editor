@@ -3,6 +3,8 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import SummaryWorkbenchTool from '../SummaryWorkbenchTool.vue'
 
+const SummaryWorkbenchToolUnderTest = SummaryWorkbenchTool as any
+
 const summarizeSelection = vi.fn()
 const summarizeChapter = vi.fn()
 const generateStructurePlan = vi.fn()
@@ -44,7 +46,7 @@ describe('SummaryWorkbenchTool', () => {
   })
 
   it('emits a summary result candidate for selection summaries', async () => {
-    const wrapper = mount(SummaryWorkbenchTool, {
+    const wrapper = mount(SummaryWorkbenchToolUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -57,16 +59,17 @@ describe('SummaryWorkbenchTool', () => {
     await wrapper.get('.tool-panel__secondary').trigger('click')
 
     expect(summarizeSelection).toHaveBeenCalledTimes(1)
-    expect(wrapper.emitted('resultCandidate')?.[0]?.[0]).toMatchObject({
+    const resultEvents = wrapper.emitted('resultCandidate') as unknown[][] | undefined
+    expect(resultEvents?.[0]?.[0]).toMatchObject({
       source: 'summary',
       action: 'summary',
       title: '片段摘要结果',
     })
-    expect(wrapper.emitted('resultCandidate')?.[0]?.[0]?.generatedText).toContain('核心要点：')
+    expect((resultEvents?.[0]?.[0] as { generatedText?: string } | undefined)?.generatedText).toContain('核心要点：')
   })
 
   it('emits a chapter-direction candidate for chapter summaries', async () => {
-    const wrapper = mount(SummaryWorkbenchTool, {
+    const wrapper = mount(SummaryWorkbenchToolUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -79,13 +82,14 @@ describe('SummaryWorkbenchTool', () => {
     await wrapper.get('.tool-panel__primary').trigger('click')
 
     expect(summarizeChapter).toHaveBeenCalledTimes(1)
-    expect(wrapper.emitted('resultCandidate')?.[0]?.[0]).toMatchObject({
+    const resultEvents = wrapper.emitted('resultCandidate') as unknown[][] | undefined
+    expect(resultEvents?.[0]?.[0]).toMatchObject({
       source: 'summary',
       action: 'summarize_chapter',
       title: '章节方向提案',
       sourceText: '第一章',
     })
-    expect(wrapper.emitted('resultCandidate')?.[0]?.[0]?.generatedText).toContain(
+    expect((resultEvents?.[0]?.[0] as { generatedText?: string } | undefined)?.generatedText).toContain(
       '本章应聚焦双方试探升级。',
     )
   })
@@ -99,7 +103,7 @@ describe('SummaryWorkbenchTool', () => {
         }),
     )
 
-    const wrapper = mount(SummaryWorkbenchTool, {
+    const wrapper = mount(SummaryWorkbenchToolUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -125,14 +129,15 @@ describe('SummaryWorkbenchTool', () => {
   })
 
   it('shows synced status copy when summary action is injected before execution', () => {
-    const wrapper = mount(SummaryWorkbenchTool, {
+    const wrapper = mount(SummaryWorkbenchToolUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
         chapterTitle: '第一章',
         seedText: '',
         actionTrigger: {
-          source: 'summary',
+          source: 'workspace',
+          id: 1,
           action: 'summary',
           text: '',
         },
@@ -144,7 +149,7 @@ describe('SummaryWorkbenchTool', () => {
   })
 
   it('auto-executes chapter summary when summarize_chapter trigger arrives', async () => {
-    const wrapper = mount(SummaryWorkbenchTool, {
+    const wrapper = mount(SummaryWorkbenchToolUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -156,7 +161,7 @@ describe('SummaryWorkbenchTool', () => {
 
     await wrapper.setProps({
       actionTrigger: {
-        id: 'trigger-chapter-1',
+          id: 1,
         action: 'summarize_chapter',
         text: '整章内容概要',
       },
@@ -175,7 +180,8 @@ describe('SummaryWorkbenchTool', () => {
     )
 
     // Should emit a chapter-direction result candidate
-    expect(wrapper.emitted('resultCandidate')?.[0]?.[0]).toMatchObject({
+    const resultEvents = wrapper.emitted('resultCandidate') as unknown[][] | undefined
+    expect(resultEvents?.[0]?.[0]).toMatchObject({
       source: 'summary',
       action: 'summarize_chapter',
       title: '章节方向提案',
@@ -183,7 +189,7 @@ describe('SummaryWorkbenchTool', () => {
   })
 
   it('generates structure plans and emits applyStructurePlan payloads', async () => {
-    const wrapper = mount(SummaryWorkbenchTool, {
+    const wrapper = mount(SummaryWorkbenchToolUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -223,17 +229,18 @@ describe('SummaryWorkbenchTool', () => {
 
     await wrapper.get('.result-card__action--primary').trigger('click')
 
-    expect(wrapper.emitted('applyStructurePlan')?.[0]?.[0]).toMatchObject({
+    const planEvents = wrapper.emitted('applyStructurePlan') as unknown[][] | undefined
+    expect(planEvents?.[0]?.[0]).toMatchObject({
       mode: 'chapter',
       summary: '建议补 2 个后续章节。',
     })
-    expect(wrapper.emitted('applyStructurePlan')?.[0]?.[0].items).toHaveLength(2)
+    expect((planEvents?.[0]?.[0] as { items?: unknown[] } | undefined)?.items).toHaveLength(2)
   })
 
   it('shows unified offline message when chapter summary service is unavailable', async () => {
     summarizeChapter.mockRejectedValue({ message: 'Network Error' })
 
-    const wrapper = mount(SummaryWorkbenchTool, {
+    const wrapper = mount(SummaryWorkbenchToolUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -260,7 +267,7 @@ describe('SummaryWorkbenchTool', () => {
       keyPoints: ['继续沿用当前正文上下文'],
     })
 
-    const wrapper = mount(SummaryWorkbenchTool, {
+    const wrapper = mount(SummaryWorkbenchToolUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -286,7 +293,8 @@ describe('SummaryWorkbenchTool', () => {
     })
     expect(wrapper.text()).toContain('改为基于正文片段提炼出的章节摘要。')
     expect(wrapper.find('.tool-state-card--error').exists()).toBe(false)
-    expect(wrapper.emitted('resultCandidate')?.[0]?.[0]).toMatchObject({
+    const resultEvents = wrapper.emitted('resultCandidate') as unknown[][] | undefined
+    expect(resultEvents?.[0]?.[0]).toMatchObject({
       action: 'summarize_chapter',
       title: '章节方向提案',
     })

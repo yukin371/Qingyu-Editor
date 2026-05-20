@@ -30,7 +30,8 @@ describe('BaseTag', () => {
       })
 
       const tag = container.querySelector('.inline-flex')
-      expect(tag).toHaveClass('bg-slate-100', 'text-slate-700')
+      expect(tag).toHaveClass('text-slate-700')
+      expect(tag).toHaveClass('border-slate-200/75')
     })
   })
 
@@ -70,33 +71,34 @@ describe('BaseTag', () => {
   })
 
   describe('可关闭功能', () => {
-    it('closable 为 true 时显示关闭按钮', () => {
+    it('removable 为 true 时显示关闭按钮', () => {
       const { container } = render(BaseTag, {
-        props: { closable: true },
+        props: { removable: true },
         slots: { default: 'Tag' }
       })
 
-      const closeBtn = container.querySelector('.close-button')
+      const closeBtn = container.querySelector('[aria-label="关闭标签"]')
       expect(closeBtn).toBeTruthy()
     })
 
-    it('closable 为 false 时不显示关闭按钮', () => {
+    it('removable 为 false 时不显示关闭按钮', () => {
       const { container } = render(BaseTag, {
-        props: { closable: false },
+        props: { removable: false },
         slots: { default: 'Tag' }
       })
 
-      const closeBtn = container.querySelector('.close-button')
+      const closeBtn = container.querySelector('[aria-label="关闭标签"]')
       expect(closeBtn).toBeFalsy()
     })
 
     it('点击关闭按钮触发 close 事件', async () => {
       const onClose = vi.fn()
       const { container } = render(BaseTag, {
-        props: { closable: true, onClose }
+        props: { removable: true, onClose },
+        slots: { default: 'Tag' },
       })
 
-      const closeBtn = container.querySelector('.close-button')
+      const closeBtn = container.querySelector('[aria-label="关闭标签"]')
       await fireEvent.click(closeBtn!)
 
       expect(onClose).toHaveBeenCalledTimes(1)

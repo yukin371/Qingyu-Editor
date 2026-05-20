@@ -331,7 +331,7 @@ apiClient.interceptors.response.use(
  * 清除本地存储并跳转到登录页
  */
 export function buildAuthRedirectPath(pathname: string, search = ''): string {
-  if (pathname === '/auth' || pathname === '/' || pathname.startsWith('/writer')) {
+  if (pathname === '/auth' || pathname === '/' || pathname === '/writer') {
     return '/writer'
   }
 

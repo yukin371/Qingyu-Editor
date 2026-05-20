@@ -459,7 +459,8 @@ describe('EncyclopediaView', () => {
 
     expect(wrapper.text()).toContain('组织总览')
     expect(wrapper.text()).toContain('巡夜司')
-    expect(wrapper.emitted('update:activeCategory')?.at(-1)).toEqual(['organizations'])
+    const events = wrapper.emitted('update:activeCategory') as unknown[][] | undefined
+    expect(events?.[events.length - 1]).toEqual(['organizations'])
   })
 
   it('从资产详情可以跳到关系图谱和最近章节', async () => {

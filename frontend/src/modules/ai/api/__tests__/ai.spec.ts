@@ -60,6 +60,31 @@ vi.mock('../../config/provider', () => ({
       apiKey: '',
       temperature: 0.7,
     },
+    roleModels: {
+      writing: '',
+      review: '',
+      organize: '',
+    },
+    activeProviderProfileId: 'default',
+    providerProfiles: [
+      {
+        id: 'default',
+        label: '默认配置',
+        userProvider: {
+          providerType: 'openai-compatible',
+          baseURL: '',
+          endpointPath: '/v1/chat/completions',
+          model: '',
+          apiKey: '',
+          temperature: 0.7,
+        },
+        roleModels: {
+          writing: '',
+          review: '',
+          organize: '',
+        },
+      },
+    ],
   })),
 }))
 
@@ -88,6 +113,41 @@ import {
   updateSceneState,
 } from '../ai'
 
+function providerSettings(
+  mode: 'system_remote' | 'user_api',
+  userProvider: {
+    providerType: 'openai-compatible'
+    baseURL: string
+    endpointPath: string
+    model: string
+    apiKey: string
+    temperature: number
+  },
+) {
+  return {
+    mode,
+    userProvider,
+    roleModels: {
+      writing: '',
+      review: '',
+      organize: '',
+    },
+    activeProviderProfileId: 'default',
+    providerProfiles: [
+      {
+        id: 'default',
+        label: '默认配置',
+        userProvider,
+        roleModels: {
+          writing: '',
+          review: '',
+          organize: '',
+        },
+      },
+    ],
+  }
+}
+
 describe('ai api facade', () => {
   beforeEach(() => {
     isUserProviderModeEnabled.mockReset()
@@ -112,17 +172,16 @@ describe('ai api facade', () => {
   it('checks system remote provider health through the shared ai request helper', async () => {
     getAIRequest.mockResolvedValue({ status: 'ok' })
 
-    const health = await checkAIProviderHealth({
-      mode: 'system_remote',
-      userProvider: {
+    const health = await checkAIProviderHealth(
+      providerSettings('system_remote', {
         providerType: 'openai-compatible',
         baseURL: '',
         endpointPath: '/v1/chat/completions',
         model: '',
         apiKey: '',
         temperature: 0.7,
-      },
-    })
+      }),
+    )
 
     expect(getAIRequest).toHaveBeenCalledWith('/api/v1/ai/health')
     expect(health.ok).toBe(true)
@@ -133,17 +192,16 @@ describe('ai api facade', () => {
     userAIProviderApi.chat.mockResolvedValue({ reply: 'OK' })
     hasSessionApiKey.mockReturnValue(true)
 
-    const health = await checkAIProviderHealth({
-      mode: 'user_api',
-      userProvider: {
+    const health = await checkAIProviderHealth(
+      providerSettings('user_api', {
         providerType: 'openai-compatible',
         baseURL: 'http://127.0.0.1:11434',
         endpointPath: '/v1/chat/completions',
         model: 'local-model',
         apiKey: 'sk-****...****',
         temperature: 0.7,
-      },
-    })
+      }),
+    )
 
     expect(userAIProviderApi.chat).toHaveBeenCalledWith('请只回复 OK，用于连接测试。', [])
     expect(health.ok).toBe(true)
@@ -154,17 +212,16 @@ describe('ai api facade', () => {
     userAIProviderApi.chat.mockResolvedValue({ reply: 'OK' })
     hasSessionApiKey.mockReturnValue(false)
 
-    const health = await checkAIProviderHealth({
-      mode: 'user_api',
-      userProvider: {
+    const health = await checkAIProviderHealth(
+      providerSettings('user_api', {
         providerType: 'openai-compatible',
         baseURL: 'http://127.0.0.1:11434',
         endpointPath: '/v1/chat/completions',
         model: 'local-model',
         apiKey: 'sk-****...****',
         temperature: 0.7,
-      },
-    })
+      }),
+    )
 
     expect(userAIProviderApi.chat).toHaveBeenCalledWith('请只回复 OK，用于连接测试。', [])
     expect(health.ok).toBe(true)

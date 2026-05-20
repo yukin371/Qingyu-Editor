@@ -253,16 +253,18 @@ describe('StoryHarnessPanel', () => {
 
     await wrapper.get('[data-testid="story-harness-send-primary-to-ai"]').trigger('click')
 
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0]).toMatchObject({
+    const aiEvents = wrapper.emitted('trigger-ai-action') as unknown[][] | undefined
+    const aiPayload = aiEvents?.[0]?.[0] as { text?: string } | undefined
+    expect(aiPayload).toMatchObject({
       source: 'story_harness',
       action: 'add_to_chat',
       title: '角色状态可能需要更新：张三',
       instructions: expect.stringContaining('Change Request'),
     })
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0]?.text).toContain(
+    expect(aiPayload?.text).toContain(
       '变更建议：角色状态可能需要更新：张三',
     )
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0]?.text).toContain(
+    expect(aiPayload?.text).toContain(
       '证据：张三开始怀疑李四。',
     )
   })
@@ -356,7 +358,7 @@ describe('StoryHarnessPanel', () => {
       chapterId: 'chapter-1',
       chapterTitle: '第一章',
       count: 3,
-      committedAt: new Date('2026-04-08T14:30:00'),
+      committedAt: new Date('2026-04-08T14:30:00').getTime(),
     }
 
     const wrapper = mount(StoryHarnessPanel, {

@@ -3,6 +3,8 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import RewriteWorkbenchTool from '../RewriteWorkbenchTool.vue'
 
+const RewriteWorkbenchToolUnderTest = RewriteWorkbenchTool as any
+
 const rewriteWithWorkbench = vi.fn()
 
 vi.mock('@/modules/ai/api/workbench', () => ({
@@ -16,7 +18,7 @@ describe('RewriteWorkbenchTool', () => {
   })
 
   it('merges workflow context prompt into rewrite instructions', async () => {
-    const wrapper = mount(RewriteWorkbenchTool, {
+    const wrapper = mount(RewriteWorkbenchToolUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -63,7 +65,7 @@ describe('RewriteWorkbenchTool', () => {
   })
 
   it('keeps chapter id empty while passing compact context evidence', async () => {
-    const wrapper = mount(RewriteWorkbenchTool, {
+    const wrapper = mount(RewriteWorkbenchToolUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: '',
@@ -95,7 +97,7 @@ describe('RewriteWorkbenchTool', () => {
         }),
     )
 
-    const wrapper = mount(RewriteWorkbenchTool, {
+    const wrapper = mount(RewriteWorkbenchToolUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -119,13 +121,14 @@ describe('RewriteWorkbenchTool', () => {
   })
 
   it('shows synced status copy when action trigger is present before execution', () => {
-    const wrapper = mount(RewriteWorkbenchTool, {
+    const wrapper = mount(RewriteWorkbenchToolUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
         chapterTitle: '第一章',
         seedText: '',
         actionTrigger: {
+          id: 1,
           action: 'rewrite',
           text: '',
           applyMode: 'replace_selection',
@@ -139,7 +142,7 @@ describe('RewriteWorkbenchTool', () => {
   })
 
   it('auto-executes rewrite when action trigger with text arrives', async () => {
-    const wrapper = mount(RewriteWorkbenchTool, {
+    const wrapper = mount(RewriteWorkbenchToolUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -152,7 +155,7 @@ describe('RewriteWorkbenchTool', () => {
 
     await wrapper.setProps({
       actionTrigger: {
-        id: 'trigger-auto-1',
+        id: 2,
         action: 'rewrite',
         text: '这段文字需要润色。',
         applyMode: 'replace_selection' as const,
@@ -180,7 +183,7 @@ describe('RewriteWorkbenchTool', () => {
   it('shows unified offline message when ai service is unavailable', async () => {
     rewriteWithWorkbench.mockRejectedValue({ message: 'Network Error' })
 
-    const wrapper = mount(RewriteWorkbenchTool, {
+    const wrapper = mount(RewriteWorkbenchToolUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',

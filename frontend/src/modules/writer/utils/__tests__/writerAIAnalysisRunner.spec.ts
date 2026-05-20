@@ -19,8 +19,8 @@ describe('writerAIAnalysisRunner', () => {
       instruction: '检查本章问题',
       intent: {
         action: 'proofread',
-        scope: 'document',
-        label: '审校',
+        confidence: 0.9,
+        kind: 'analysis',
       },
       resolvedTarget: target,
       currentDocumentId: 'chapter-1',
@@ -51,8 +51,8 @@ describe('writerAIAnalysisRunner', () => {
       instruction: '总结这章',
       intent: {
         action: 'summarize',
-        scope: 'document',
-        label: '总结',
+        confidence: 0.9,
+        kind: 'analysis',
       },
       resolvedTarget: {
         ...target,

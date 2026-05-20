@@ -166,14 +166,16 @@ describe('TimelineOutlineView', () => {
     expect(wrapper.text()).toContain('物品 1')
     await wrapper.get('[data-testid="timeline-send-to-ai"]').trigger('click')
 
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0]).toMatchObject({
+    const aiEvents = wrapper.emitted('trigger-ai-action') as unknown[][] | undefined
+    const aiPayload = aiEvents?.[0]?.[0] as { text?: string } | undefined
+    expect(aiPayload).toMatchObject({
       source: 'workspace',
       action: 'add_to_chat',
       title: '时间线事件分析：亚伯收到劝退任务',
     })
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain('所属时间线：主线')
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain('当前章节：第一章')
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain(
+    expect(aiPayload?.text).toContain('所属时间线：主线')
+    expect(aiPayload?.text).toContain('当前章节：第一章')
+    expect(aiPayload?.text).toContain(
       '当前活跃实体：角色：亚伯（犹豫）；物品：劝退任务书',
     )
   })

@@ -449,17 +449,19 @@ describe('CharacterGraphView asset candidates', () => {
 
     await sendToAIButton!.trigger('click')
 
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0]).toMatchObject({
+    const aiEvents = wrapper.emitted('trigger-ai-action') as unknown[][] | undefined
+    const aiPayload = aiEvents?.[0]?.[0] as { text?: string } | undefined
+    expect(aiPayload).toMatchObject({
       source: 'workspace',
       action: 'add_to_chat',
       title: '图谱角色分析：林舟',
     })
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0]?.text).toContain('角色：林舟')
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0]?.text).toContain('简介：主角')
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0]?.text).toContain(
+    expect(aiPayload?.text).toContain('角色：林舟')
+    expect(aiPayload?.text).toContain('简介：主角')
+    expect(aiPayload?.text).toContain(
       '当前活跃实体：角色：林舟（戒备）；地点：云港',
     )
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0]?.text).toContain(
+    expect(aiPayload?.text).toContain(
       '场景作用域：第一幕 / 港口追踪',
     )
   })

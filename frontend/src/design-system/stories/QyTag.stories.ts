@@ -60,9 +60,9 @@ export default meta
 type Story = StoryObj<typeof QyTag>
 
 interface QyTagArgs {
-  type?: 'primary' | 'success' | 'warning' | 'danger' | 'info'
-  size?: 'sm' | 'md' | 'lg'
-  effect?: 'light' | 'dark' | 'plain'
+  type?: 'primary' | 'success' | 'warning' | 'danger' | 'info' | null
+  size?: 'sm' | 'md' | 'lg' | null
+  effect?: 'light' | 'dark' | 'plain' | null
   round?: boolean
   hit?: boolean
   closable?: boolean

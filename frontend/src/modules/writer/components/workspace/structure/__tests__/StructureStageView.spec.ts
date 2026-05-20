@@ -4,6 +4,9 @@ import { nextTick } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import StructureStageView from '../StructureStageView.vue'
 
+const emittedPayload = (wrapper: ReturnType<typeof mount>, eventName: string, index = 0) =>
+  (wrapper.emitted(eventName) as unknown[][] | undefined)?.[index]?.[0]
+
 const mockWriterStore = {
   currentProjectId: 'project-1',
   error: '',
@@ -248,12 +251,13 @@ describe('StructureStageView', () => {
       .find((button) => button.text().includes('交给 AI 整理'))
     expect(hubAiButton).toBeTruthy()
     await hubAiButton!.trigger('click')
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0]).toMatchObject({
+    const aiPayload = emittedPayload(wrapper, 'trigger-ai-action') as { text?: string } | undefined
+    expect(aiPayload).toMatchObject({
       source: 'workspace',
       action: 'add_to_chat',
       title: '结构舞台：当前写作整理',
     })
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain('当前大纲节点：主线冲突')
+    expect(aiPayload?.text).toContain('当前大纲节点：主线冲突')
 
     await wrapper.get('.stage-secondary-action').trigger('click')
 
@@ -318,15 +322,16 @@ describe('StructureStageView', () => {
     expect(aiActionButton).toBeTruthy()
     await aiActionButton!.trigger('click')
 
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0]).toMatchObject({
+    const aiPayload = emittedPayload(wrapper, 'trigger-ai-action') as { text?: string } | undefined
+    expect(aiPayload).toMatchObject({
       source: 'workspace',
       action: 'add_to_chat',
       title: '蓝图接力：逆袭打脸',
     })
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain(
+    expect(aiPayload?.text).toContain(
       '核心承诺：第三章先打脸一次',
     )
-    expect(wrapper.emitted('trigger-ai-action')?.[0]?.[0].text).toContain('第3章：首次打脸')
+    expect(aiPayload?.text).toContain('第3章：首次打脸')
   })
 
   it('阶段 3 接力卡应能导入黄金三章为章节草案', async () => {
@@ -363,14 +368,15 @@ describe('StructureStageView', () => {
     await flushPromises()
     await wrapper.get('[data-testid="structure-blueprint-import"]').trigger('click')
 
-    expect(wrapper.emitted('create-structure-plan')?.[0]?.[0]).toMatchObject({
+    const planPayload = emittedPayload(wrapper, 'create-structure-plan') as { items?: unknown[] } | undefined
+    expect(planPayload).toMatchObject({
       mode: 'chapter',
       prompt: '基于 逆袭打脸 导入黄金三章',
       importTarget: 'project-root',
       duplicateStrategy: 'skip_existing',
     })
-    expect(wrapper.emitted('create-structure-plan')?.[0]?.[0].items).toHaveLength(3)
-    expect(wrapper.emitted('create-structure-plan')?.[0]?.[0].items[0]).toMatchObject({
+    expect(planPayload?.items).toHaveLength(3)
+    expect(planPayload?.items?.[0]).toMatchObject({
       title: '屈辱现场',
       summary: '先建立读者共情和压制关系。',
     })
@@ -424,7 +430,7 @@ describe('StructureStageView', () => {
 
     await wrapper.get('[data-testid="structure-blueprint-import"]').trigger('click')
 
-    expect(wrapper.emitted('create-structure-plan')?.[0]?.[0]).toMatchObject({
+    expect(emittedPayload(wrapper, 'create-structure-plan')).toMatchObject({
       importTarget: 'current-volume',
       duplicateStrategy: 'skip_existing',
     })

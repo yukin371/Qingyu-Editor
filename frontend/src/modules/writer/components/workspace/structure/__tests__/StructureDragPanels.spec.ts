@@ -185,7 +185,7 @@ describe('Structure drag panels', () => {
           },
         ],
         assetSummaryByChapterId: {
-          'chapter-1': { total: 3, characters: 2, locations: 1, items: 0 },
+          'chapter-1': { total: 3, characters: 2, locations: 1, items: 0, organizations: 0, concepts: 0 },
         },
         currentChapterId: '',
       },
@@ -454,7 +454,7 @@ describe('Structure drag panels', () => {
           },
         ],
         assetSummaryByChapterId: {
-          'chapter-1': { total: 4, characters: 2, locations: 1, items: 1 },
+          'chapter-1': { total: 4, characters: 2, locations: 1, items: 1, organizations: 0, concepts: 0 },
         },
         currentChapterId: '',
       },

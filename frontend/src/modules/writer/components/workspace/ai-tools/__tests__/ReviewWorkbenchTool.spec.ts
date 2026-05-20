@@ -3,6 +3,8 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import ReviewWorkbenchTool from '../ReviewWorkbenchTool.vue'
 
+const ReviewWorkbenchToolUnderTest = ReviewWorkbenchTool as any
+
 const proofreadContent = vi.fn()
 const auditSensitiveWords = vi.fn()
 
@@ -41,7 +43,7 @@ describe('ReviewWorkbenchTool', () => {
   })
 
   it('emits a review result candidate for proofread results', async () => {
-    const wrapper = mount(ReviewWorkbenchTool, {
+    const wrapper = mount(ReviewWorkbenchToolUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -54,18 +56,19 @@ describe('ReviewWorkbenchTool', () => {
     await wrapper.get('.tool-panel__secondary').trigger('click')
 
     expect(proofreadContent).toHaveBeenCalledTimes(1)
-    expect(wrapper.emitted('resultCandidate')?.[0]?.[0]).toMatchObject({
+    const resultEvents = wrapper.emitted('resultCandidate') as unknown[][] | undefined
+    expect(resultEvents?.[0]?.[0]).toMatchObject({
       source: 'review',
       action: 'proofread',
       title: '审校建议提案',
     })
-    expect(wrapper.emitted('resultCandidate')?.[0]?.[0]?.generatedText).toContain(
+    expect((resultEvents?.[0]?.[0] as { generatedText?: string } | undefined)?.generatedText).toContain(
       '建议调整语序以减少歧义',
     )
   })
 
   it('emits a review result candidate for audit results', async () => {
-    const wrapper = mount(ReviewWorkbenchTool, {
+    const wrapper = mount(ReviewWorkbenchToolUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -78,12 +81,13 @@ describe('ReviewWorkbenchTool', () => {
     await wrapper.get('.tool-panel__primary').trigger('click')
 
     expect(auditSensitiveWords).toHaveBeenCalledTimes(1)
-    expect(wrapper.emitted('resultCandidate')?.[0]?.[0]).toMatchObject({
+    const resultEvents = wrapper.emitted('resultCandidate') as unknown[][] | undefined
+    expect(resultEvents?.[0]?.[0]).toMatchObject({
       source: 'review',
       action: 'audit',
       title: '风险复核提案',
     })
-    expect(wrapper.emitted('resultCandidate')?.[0]?.[0]?.generatedText).toContain('极端措辞')
+    expect((resultEvents?.[0]?.[0] as { generatedText?: string } | undefined)?.generatedText).toContain('极端措辞')
   })
 
   it('shows unified running and ready status copy for proofread lifecycle', async () => {
@@ -95,7 +99,7 @@ describe('ReviewWorkbenchTool', () => {
         }),
     )
 
-    const wrapper = mount(ReviewWorkbenchTool, {
+    const wrapper = mount(ReviewWorkbenchToolUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -127,14 +131,15 @@ describe('ReviewWorkbenchTool', () => {
   })
 
   it('shows synced status copy when review action is injected before execution', () => {
-    const wrapper = mount(ReviewWorkbenchTool, {
+    const wrapper = mount(ReviewWorkbenchToolUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
         chapterTitle: '第一章',
         seedText: '',
         actionTrigger: {
-          source: 'review',
+          source: 'workspace',
+          id: 1,
           action: 'proofread',
           text: '',
         },
@@ -148,7 +153,7 @@ describe('ReviewWorkbenchTool', () => {
   it('shows unified offline message when audit service is unavailable', async () => {
     auditSensitiveWords.mockRejectedValue({ message: 'Network Error' })
 
-    const wrapper = mount(ReviewWorkbenchTool, {
+    const wrapper = mount(ReviewWorkbenchToolUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',

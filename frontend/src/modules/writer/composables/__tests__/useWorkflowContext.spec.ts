@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import {
   buildActiveEntityPreview,
   buildActiveEntityTypeSummary,
@@ -27,8 +27,24 @@ describe('useWorkflowContext', () => {
       { id: 'rel-1', fromName: '张三', toName: '李四', type: '朋友', strength: 5 },
     ]),
     changeRequests: computed(() => [
-      { id: 'cr-1', title: '更新张三的恐惧值', summary: '...', type: 'state' as const },
-      { id: 'cr-2', title: '关系变更', summary: '...', type: 'relation' as const },
+      {
+        id: 'cr-1',
+        title: '更新张三的恐惧值',
+        summary: '...',
+        type: 'state' as const,
+        source: 'live' as const,
+        reason: '测试变更',
+        severity: 'focus' as const,
+      },
+      {
+        id: 'cr-2',
+        title: '关系变更',
+        summary: '...',
+        type: 'relation' as const,
+        source: 'live' as const,
+        reason: '测试变更',
+        severity: 'focus' as const,
+      },
     ]),
     entityReferences: computed(() => [
       { id: 'char-1', name: '张三', type: 'character' as const, position: { start: 0, end: 0 } },

@@ -3,6 +3,10 @@ import { mount, type VueWrapper } from '@vue/test-utils'
 import { defineComponent, nextTick } from 'vue'
 import AIWorkbench from '../AIWorkbench.vue'
 
+const AIWorkbenchUnderTest = AIWorkbench as any
+const emittedPayload = (wrapper: VueWrapper<any>, eventName: string, index = 0) =>
+  (wrapper.emitted(eventName) as unknown[][] | undefined)?.[index]?.[0]
+
 describe('AIWorkbench', () => {
   const findStateRail = (wrapper: VueWrapper<any>) => {
     const primary = wrapper.find('[data-testid="workflow-state-rail"]')
@@ -42,7 +46,7 @@ describe('AIWorkbench', () => {
   }
 
   it('uses the tab row as the only visible workbench header', () => {
-    const wrapper = mount(AIWorkbench, {
+    const wrapper = mount(AIWorkbenchUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -99,7 +103,7 @@ describe('AIWorkbench', () => {
       template: '<div data-testid="rewrite-tool">{{ workflowContext?.chapterTitle }}</div>',
     })
 
-    const wrapper = mount(AIWorkbench, {
+    const wrapper = mount(AIWorkbenchUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -162,7 +166,7 @@ describe('AIWorkbench', () => {
         '<div><div data-testid="ai-panel-source-text">{{ sourceText }}</div><div data-testid="ai-panel-summary-context">{{ aiSummaryContextText }}</div><div data-testid="ai-panel-scene-stage">{{ aiSceneStageSummary?.beatTitle }}</div></div>',
     })
 
-    const wrapper = mount(AIWorkbench, {
+    const wrapper = mount(AIWorkbenchUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -213,7 +217,7 @@ describe('AIWorkbench', () => {
         "<button data-testid=\"emit-result\" @click=\"$emit('result-candidate', { source: 'chat', action: 'chat', title: 'AI 对话结果', summary: '生成了一条新方向', generatedText: '新的剧情方向', sourceText: '继续推进冲突' })\">emit</button>",
     })
 
-    const wrapper = mount(AIWorkbench, {
+    const wrapper = mount(AIWorkbenchUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -252,7 +256,7 @@ describe('AIWorkbench', () => {
     expect(promoteButton.exists()).toBe(true)
     await promoteButton.trigger('click')
 
-    expect(wrapper.emitted('proposalDraft')?.[0]?.[0]).toMatchObject({
+    expect(emittedPayload(wrapper, 'proposalDraft')).toMatchObject({
       source: 'chat',
       action: 'chat',
       generatedText: '新的剧情方向',
@@ -266,7 +270,7 @@ describe('AIWorkbench', () => {
         "<button data-testid=\"emit-trigger-reset-result\" @click=\"$emit('result-candidate', { source: 'chat', action: 'chat', title: 'AI 对话结果', summary: '生成了一条新方向', generatedText: '新的剧情方向', sourceText: '继续推进冲突' })\">emit</button>",
     })
 
-    const wrapper = mount(AIWorkbench, {
+    const wrapper = mount(AIWorkbenchUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -319,7 +323,7 @@ describe('AIWorkbench', () => {
         "<button data-testid=\"emit-chapter-reset-result\" @click=\"$emit('result-candidate', { source: 'chat', action: 'chat', title: 'AI 对话结果', summary: '生成了一条新方向', generatedText: '新的剧情方向', sourceText: '继续推进冲突' })\">emit</button>",
     })
 
-    const wrapper = mount(AIWorkbench, {
+    const wrapper = mount(AIWorkbenchUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -382,7 +386,7 @@ describe('AIWorkbench', () => {
         "<button data-testid=\"emit-result\" @click=\"$emit('result-candidate', { source: 'chat', action: 'chat', title: 'AI 对话结果', summary: '生成了一条新方向', generatedText: '新的剧情方向', sourceText: '继续推进冲突' })\">emit</button>",
     })
 
-    const wrapper = mount(AIWorkbench, {
+    const wrapper = mount(AIWorkbenchUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -456,7 +460,7 @@ describe('AIWorkbench', () => {
     expect(rail.get('.proposal-card__action').text()).toBe('定为方向')
 
     await rail.find('[data-testid="workflow-result-action"]').trigger('click')
-    expect(wrapper.emitted('proposalDraft')?.[0]?.[0]).toMatchObject({
+    expect(emittedPayload(wrapper, 'proposalDraft')).toMatchObject({
       source: 'chat',
       action: 'chat',
       generatedText: '新的剧情方向',
@@ -470,7 +474,7 @@ describe('AIWorkbench', () => {
         "<button data-testid=\"emit-direct-edit-result\" @click=\"$emit('result-candidate', { source: 'rewrite', action: 'direct_edit', title: 'AI 直接改写结果', summary: '已生成新的正文版本。', generatedText: '重写后的第一段\\n第二段更紧张。', sourceText: '原始第一段\\n第二段。' }); $emit('apply-generated-text', { action: 'direct_edit', sourceText: '原始第一段\\n第二段。', generatedText: '重写后的第一段\\n第二段更紧张。', applyMode: 'replace_document' })\">emit</button>",
     })
 
-    const wrapper = mount(AIWorkbench, {
+    const wrapper = mount(AIWorkbenchUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -526,7 +530,7 @@ describe('AIWorkbench', () => {
         "<button data-testid=\"emit-apply-generated-text\" @click=\"$emit('apply-generated-text', { action: 'rewrite', sourceText: '原文', generatedText: '新文', applyMode: 'replace_document' })\">emit</button>",
     })
 
-    const wrapper = mount(AIWorkbench, {
+    const wrapper = mount(AIWorkbenchUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -559,7 +563,7 @@ describe('AIWorkbench', () => {
 
     await wrapper.find('[data-testid="emit-apply-generated-text"]').trigger('click')
 
-    const applyPayload = wrapper.emitted('applyGeneratedText')?.[0]?.[0]
+    const applyPayload = emittedPayload(wrapper, 'applyGeneratedText')
     expect(applyPayload).toMatchObject({
       action: 'rewrite',
       sourceText: '原文',
@@ -581,7 +585,7 @@ describe('AIWorkbench', () => {
         "<div><button data-testid=\"emit-apply-generated-text\" @click=\"$emit('apply-generated-text', { action: 'rewrite', sourceText: '原文', generatedText: '新文', applyMode: 'replace_document' })\">emit</button><div data-testid=\"revision-seed-text\">{{ revisionSeed?.text || \"empty\" }}</div></div>",
     })
 
-    const wrapper = mount(AIWorkbench, {
+    const wrapper = mount(AIWorkbenchUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -626,7 +630,7 @@ describe('AIWorkbench', () => {
         "<button data-testid=\"emit-edit-with-hidden-result\" @click=\"$emit('result-candidate', { source: 'rewrite', action: 'rewrite', title: 'AI 改写候选', summary: '新的正文版本', generatedText: '新文', sourceText: '原文' }); $emit('apply-generated-text', { action: 'rewrite', sourceText: '原文', generatedText: '新文', applyMode: 'replace_document' })\">emit</button>",
     })
 
-    const wrapper = mount(AIWorkbench, {
+    const wrapper = mount(AIWorkbenchUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -685,7 +689,7 @@ describe('AIWorkbench', () => {
         "<button data-testid=\"emit-state-result\" @click=\"$emit('result-candidate', { source: 'chat', action: 'chat', title: 'AI 对话结果', summary: '新状态流结果', generatedText: '新的剧情方向', sourceText: '上次选区' })\">emit</button>",
     })
 
-    const wrapper = mount(AIWorkbench, {
+    const wrapper = mount(AIWorkbenchUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -750,14 +754,14 @@ describe('AIWorkbench', () => {
     expect(promoteButton.exists()).toBe(true)
 
     await promoteButton.trigger('click')
-    expect(wrapper.emitted('proposalDraft')?.[0]?.[0]).toMatchObject({
+    expect(emittedPayload(wrapper, 'proposalDraft')).toMatchObject({
       source: 'chat',
       action: 'chat',
     })
   })
 
   it('keeps selected proposal lifecycle feedback quiet once the retained card is visible', () => {
-    const wrapper = mount(AIWorkbench, {
+    const wrapper = mount(AIWorkbenchUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -814,7 +818,7 @@ describe('AIWorkbench', () => {
         "<button data-testid=\"emit-result-on-selected\" @click=\"$emit('result-candidate', { source: 'chat', action: 'chat', title: 'AI 对话结果', summary: '新的处理建议', generatedText: '新的剧情方向', sourceText: '继续推进冲突' })\">emit</button>",
     })
 
-    const wrapper = mount(AIWorkbench, {
+    const wrapper = mount(AIWorkbenchUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -879,7 +883,7 @@ describe('AIWorkbench', () => {
         "<button data-testid=\"emit-result-on-selected-with-apply\" @click=\"$emit('result-candidate', { source: 'chat', action: 'chat', title: 'AI 对话结果', summary: '新的处理建议', generatedText: '新的剧情方向', sourceText: '继续推进冲突' })\">emit</button>",
     })
 
-    const wrapper = mount(AIWorkbench, {
+    const wrapper = mount(AIWorkbenchUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -942,7 +946,7 @@ describe('AIWorkbench', () => {
 
   it('prioritizes selected proposal over draft when choosing primary proposal card', () => {
     const now = Date.now()
-    const wrapper = mount(AIWorkbench, {
+    const wrapper = mount(AIWorkbenchUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -1005,7 +1009,7 @@ describe('AIWorkbench', () => {
   })
 
   it('hides discarded-only proposals while keeping discard feedback inside the rail', () => {
-    const wrapper = mount(AIWorkbench, {
+    const wrapper = mount(AIWorkbenchUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -1066,7 +1070,7 @@ describe('AIWorkbench', () => {
         "<button data-testid=\"emit-result-after-discard\" @click=\"$emit('result-candidate', { source: 'chat', action: 'chat', title: 'AI 对话结果', summary: '新的处理建议', generatedText: '新的剧情方向', sourceText: '继续推进冲突' })\">emit</button>",
     })
 
-    const wrapper = mount(AIWorkbench, {
+    const wrapper = mount(AIWorkbenchUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -1120,7 +1124,7 @@ describe('AIWorkbench', () => {
   })
 
   it('routes add_to_chat actions to chat tab via shared workflow resolver', async () => {
-    const wrapper = mount(AIWorkbench, {
+    const wrapper = mount(AIWorkbenchUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -1170,7 +1174,7 @@ describe('AIWorkbench', () => {
         "<button data-testid=\"emit-summary\" @click=\"$emit('result-candidate', { source: 'summary', action: 'summarize_chapter', title: '章节方向提案', summary: '本章应聚焦冲突升级', generatedText: '本章应聚焦冲突升级\\n\\n核心要点：\\n- 张三主动试探\\n- 李四暂不表态', sourceText: '第一章' })\">emit-summary</button>",
     })
 
-    const wrapper = mount(AIWorkbench, {
+    const wrapper = mount(AIWorkbenchUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -1221,7 +1225,7 @@ describe('AIWorkbench', () => {
     expect(wrapper.get('[data-testid="workflow-result-action"]').text()).toBe('存为正文')
 
     await wrapper.find('.workflow-result-card__action').trigger('click')
-    expect(wrapper.emitted('proposalDraft')?.[0]?.[0]).toMatchObject({
+    expect(emittedPayload(wrapper, 'proposalDraft')).toMatchObject({
       source: 'summary',
       action: 'summarize_chapter',
       title: '章节方向提案',
@@ -1235,7 +1239,7 @@ describe('AIWorkbench', () => {
         "<button data-testid=\"emit-structure-plan\" @click=\"$emit('apply-structure-plan', { mode: 'chapter', prompt: '补两个后续章节', summary: '建议补 2 个后续章节。', items: [{ title: '夜探旧仓库', summary: '主角第一次确认线索方向。' }] })\">emit-structure-plan</button>",
     })
 
-    const wrapper = mount(AIWorkbench, {
+    const wrapper = mount(AIWorkbenchUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -1276,7 +1280,7 @@ describe('AIWorkbench', () => {
     await nextTick()
     await wrapper.find('[data-testid="emit-structure-plan"]').trigger('click')
 
-    expect(wrapper.emitted('applyStructurePlan')?.[0]?.[0]).toMatchObject({
+    expect(emittedPayload(wrapper, 'applyStructurePlan')).toMatchObject({
       mode: 'chapter',
       summary: '建议补 2 个后续章节。',
     })
@@ -1289,7 +1293,7 @@ describe('AIWorkbench', () => {
         "<button data-testid=\"emit-review\" @click=\"$emit('result-candidate', { source: 'review', action: 'proofread', title: '审校建议提案', summary: '检测到 2 条语言问题', generatedText: '审校评分：8.5\\n1. 语法：建议调整句式', sourceText: '第一章正文' })\">emit-review</button>",
     })
 
-    const wrapper = mount(AIWorkbench, {
+    const wrapper = mount(AIWorkbenchUnderTest, {
       props: {
         projectId: 'project-1',
         chapterId: 'chapter-1',
@@ -1341,7 +1345,7 @@ describe('AIWorkbench', () => {
     expect(wrapper.get('[data-testid="workflow-result-action"]').text()).toBe('存为正文')
 
     await wrapper.find('.workflow-result-card__action').trigger('click')
-    expect(wrapper.emitted('proposalDraft')?.[0]?.[0]).toMatchObject({
+    expect(emittedPayload(wrapper, 'proposalDraft')).toMatchObject({
       source: 'review',
       action: 'proofread',
       title: '审校建议提案',

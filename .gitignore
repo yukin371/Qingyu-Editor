@@ -1,7 +1,9 @@
 build/bin
 build/release/
 node_modules
-frontend/dist
+frontend/dist/*
+!frontend/dist/
+!frontend/dist/.gitkeep
 frontend/playwright-report/
 frontend/test-results/
 *.exe
@@ -23,6 +25,7 @@ Thumbs.db
 .codex-logs/
 .serena/
 .tmp/
+.tmp-*
 frontend/.cleanup-backups/
 frontend-dev.log
 frontend-dev.err.log

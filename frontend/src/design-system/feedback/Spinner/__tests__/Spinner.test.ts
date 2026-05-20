@@ -12,6 +12,12 @@ function expectInlineColor(style: string | null, color: string) {
   expect(normalized).toContain(`color:${color.toLowerCase()};`)
 }
 
+function expectInlineAnimation(element: Element | undefined, name: string) {
+  expect(element).toBeTruthy()
+  const normalized = element?.getAttribute('style')?.replace(/\s+/g, '').toLowerCase()
+  expect(normalized).toContain(`animation:${name}`)
+}
+
 describe('Spinner 组件', () => {
   describe('基础渲染', () => {
     it('应该正确渲染默认的 Spinner', () => {
@@ -119,8 +125,8 @@ describe('Spinner 组件', () => {
       })
       const dots = container.querySelectorAll('.rounded-full')
       if (dots.length > 0) {
-        expect(dots[0].classList.contains('w-1.5')).toBe(true)
-        expect(dots[0].classList.contains('h-1.5')).toBe(true)
+        expect(dots[0].classList.contains('w-1')).toBe(true)
+        expect(dots[0].classList.contains('h-1')).toBe(true)
       }
     })
 
@@ -130,8 +136,8 @@ describe('Spinner 组件', () => {
       })
       const dots = container.querySelectorAll('.rounded-full')
       if (dots.length > 0) {
-        expect(dots[0].classList.contains('w-2.5')).toBe(true)
-        expect(dots[0].classList.contains('h-2.5')).toBe(true)
+        expect(dots[0].classList.contains('w-1')).toBe(true)
+        expect(dots[0].classList.contains('h-2')).toBe(true)
       }
     })
   })
@@ -279,7 +285,7 @@ describe('Spinner 组件', () => {
       })
       const dots = container.querySelectorAll('.rounded-full')
       if (dots.length > 0) {
-        expect(dots[0].classList.contains('animate-bounce')).toBe(true)
+        expectInlineAnimation(dots[0], 'sp-dot')
       }
     })
 
@@ -289,21 +295,17 @@ describe('Spinner 组件', () => {
       })
       const bars = container.querySelectorAll('.rounded-full')
       if (bars.length > 0) {
-        expect(bars[0].classList.contains('animate-pulse')).toBe(true)
+        expectInlineAnimation(bars[0], 'sp-bar')
       }
     })
 
-    it('wave 类型应该有自定义动画类', () => {
+    it('wave 类型应该有自定义动画样式', () => {
       const { container } = render(Spinner, {
         props: { type: 'wave' },
       })
       const waves = container.querySelectorAll('.rounded-full')
       if (waves.length > 0) {
-        // wave 使用自定义动画，检查是否有动画类
-        const hasAnimation = Array.from(waves[0].classList).some((cls) =>
-          cls.startsWith('animate-'),
-        )
-        expect(hasAnimation).toBe(true)
+        expectInlineAnimation(waves[0], 'sp-wave')
       }
     })
   })

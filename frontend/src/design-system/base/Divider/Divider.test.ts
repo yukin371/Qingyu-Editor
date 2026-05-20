@@ -15,19 +15,25 @@ import { render } from '@testing-library/vue'
 import { BaseDivider } from './index'
 
 describe('BaseDivider', () => {
+  const getLine = (container: HTMLElement) => {
+    const line = container.querySelector('[aria-hidden="true"]')
+    expect(line).toBeInTheDocument()
+    return line as HTMLElement
+  }
+
   describe('基础渲染', () => {
     it('正确渲染水平分割线', () => {
       const { container } = render(BaseDivider)
-      const divider = container.querySelector('.border-t')
+      const divider = getLine(container)
 
       expect(divider).toHaveClass('w-full', 'h-px')
     })
 
     it('默认为水平方向', () => {
       const { container } = render(BaseDivider)
-      const divider = container.querySelector('.border-t')
+      const divider = getLine(container)
 
-      expect(divider).toHaveClass('border-t')
+      expect(divider).toHaveClass('bg-gradient-to-r')
     })
   })
 
@@ -36,18 +42,18 @@ describe('BaseDivider', () => {
       const { container } = render(BaseDivider, {
         props: { direction: 'vertical' },
       })
-      const divider = container.querySelector('.border-l')
+      const divider = getLine(container)
 
-      expect(divider).toHaveClass('h-full', 'w-px', 'border-l')
+      expect(divider).toHaveClass('h-full', 'w-px', 'bg-gradient-to-b')
     })
 
     it('支持水平方向', () => {
       const { container } = render(BaseDivider, {
         props: { direction: 'horizontal' },
       })
-      const divider = container.querySelector('.border-t')
+      const divider = getLine(container)
 
-      expect(divider).toHaveClass('w-full', 'h-px', 'border-t')
+      expect(divider).toHaveClass('w-full', 'h-px', 'bg-gradient-to-r')
     })
   })
 
@@ -84,32 +90,32 @@ describe('BaseDivider', () => {
       const { container } = render(BaseDivider, {
         props: { variant: 'dashed' },
       })
-      const divider = container.querySelector('.border-t')
+      const divider = getLine(container)
 
       expect(divider).toHaveClass('border-dashed')
     })
 
     it('默认为实线样式', () => {
       const { container } = render(BaseDivider)
-      const divider = container.querySelector('.border-t')
+      const divider = getLine(container)
 
-      expect(divider).toHaveClass('border-solid')
+      expect(divider).toHaveClass('bg-gradient-to-r')
     })
   })
 
   describe('颜色主题', () => {
     it('支持默认颜色', () => {
       const { container } = render(BaseDivider)
-      const divider = container.querySelector('.border-t')
+      const divider = getLine(container)
 
-      expect(divider).toHaveClass('border-slate-200')
+      expect(divider).toHaveClass('via-slate-300/70')
     })
 
     it('支持深色主题', () => {
       const { container } = render(BaseDivider)
-      const divider = container.querySelector('.border-t')
+      const divider = getLine(container)
 
-      expect(divider).toHaveClass('dark:border-slate-700')
+      expect(divider).toHaveClass('from-slate-200/0')
     })
   })
 

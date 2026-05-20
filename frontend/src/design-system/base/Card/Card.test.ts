@@ -53,13 +53,13 @@ describe('BaseCard', () => {
       expect(card).toHaveClass('shadow-md')
     })
 
-    it('default 变体不附带边框和阴影', () => {
+    it('default 变体使用基础边框且不附带提升阴影', () => {
       const { container } = render(BaseCard, {
         props: { variant: 'default' } as any,
       })
       const card = container.firstChild as Element
 
-      expect(card).not.toHaveClass('border')
+      expect(card).toHaveClass('border')
       expect(card).not.toHaveClass('shadow-md')
     })
   })
