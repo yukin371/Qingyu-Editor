@@ -170,6 +170,7 @@
 import { reactive, ref, watch, onBeforeUnmount } from 'vue'
 import { EditorContent, useEditor } from '@tiptap/vue-3'
 import type { Editor as CoreEditor } from '@tiptap/core'
+import type { EditorView } from '@tiptap/pm/view'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import CharacterCount from '@tiptap/extension-character-count'
@@ -187,6 +188,14 @@ import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
 import { SmartKeyword, type KeywordInfo } from '../QySmartKeyword/extensions/SmartKeyword'
 import { ParagraphWithId } from '../QySmartKeyword/extensions/ParagraphWithId'
 import { AiDiffExtension } from '../QySmartKeyword/extensions/AiDiffExtension'
+import {
+  clearProofreadHighlights,
+  focusProofreadHighlight,
+  ProofreadHighlightExtension,
+  setFocusedProofreadHighlight,
+  setProofreadHighlights,
+  type ProofreadHighlightRange,
+} from '../QySmartKeyword/extensions/ProofreadHighlightExtension'
 import { searchProjectKeywords, type ParagraphContent } from '@/modules/writer/api/wrapper'
 import { characterApi } from '@/modules/writer/api/character'
 import { conceptApi } from '@/modules/writer/api/concept'
@@ -204,12 +213,16 @@ const props = withDefaults(
     documentId?: string
     placeholder?: string
     toolbarPreset?: 'default' | 'writer'
+    proofreadHighlights?: ProofreadHighlightRange[]
+    focusedProofreadIssueId?: string
   }>(),
   {
     readonly: false,
     documentId: '',
     placeholder: '开始写作，输入 @ 触发实体补全…',
     toolbarPreset: 'default',
+    proofreadHighlights: () => [],
+    focusedProofreadIssueId: '',
   },
 )
 
@@ -240,6 +253,10 @@ type ToolbarCommand =
   | 'insertImage'
   | 'undo'
   | 'redo'
+
+type EditorViewOwner = {
+  view: EditorView
+}
 
 // 图片上传相关
 const imageInputRef = ref<HTMLInputElement | null>(null)
@@ -409,6 +426,7 @@ const editor = useEditor({
     Placeholder.configure({ placeholder: props.placeholder }),
     ParagraphWithId,
     AiDiffExtension,
+    ProofreadHighlightExtension,
     SmartKeyword.configure({ projectId: props.projectId }),
   ],
   editorProps: {
@@ -469,6 +487,7 @@ const editor = useEditor({
     }, 100)
 
     emit('ready', currentEditor)
+    syncProofreadHighlights(currentEditor)
   },
   onUpdate({ editor: currentEditor }: { editor: CoreEditor }) {
     const json = currentEditor.getJSON()
@@ -559,6 +578,21 @@ watch(
   () => props.readonly,
   (val) => {
     editor.value?.setEditable(!val)
+  },
+)
+
+watch(
+  () => props.proofreadHighlights,
+  () => {
+    syncProofreadHighlights()
+  },
+  { deep: true },
+)
+
+watch(
+  () => props.focusedProofreadIssueId,
+  (issueId) => {
+    focusProofreadIssue(issueId || '')
   },
 )
 
@@ -795,6 +829,26 @@ function emitSelectionChange(currentEditor: CoreEditor) {
   })
 }
 
+function syncProofreadHighlights(targetEditor: EditorViewOwner | null | undefined = editor.value) {
+  setProofreadHighlights(props.proofreadHighlights || [], targetEditor?.view)
+  if (props.focusedProofreadIssueId) {
+    focusProofreadIssue(props.focusedProofreadIssueId, targetEditor)
+  }
+}
+
+function focusProofreadIssue(issueId: string, targetEditor: EditorViewOwner | null | undefined = editor.value) {
+  if (!targetEditor) return
+  if (!issueId) {
+    setFocusedProofreadHighlight('', targetEditor.view)
+    return
+  }
+
+  const focused = focusProofreadHighlight(issueId, targetEditor.view)
+  if (!focused) {
+    setFocusedProofreadHighlight('', targetEditor.view)
+  }
+}
+
 function extractParagraphs(doc: unknown): ParagraphContent[] {
   // 清理内容，去除段落开头的多余空格，让 CSS text-indent 统一处理首行缩进
   const cleanedDoc = cleanParagraphLeadingSpaces(doc)
@@ -976,6 +1030,7 @@ function insertEntityMark(name: string, type: string, id?: string) {
 onBeforeUnmount(() => {
   if (completionTimer) clearTimeout(completionTimer)
   if (entityScanTimer) clearTimeout(entityScanTimer)
+  clearProofreadHighlights(editor.value?.view)
   editor.value?.destroy()
 })
 </script>
@@ -1101,5 +1156,26 @@ onBeforeUnmount(() => {
 :deep(.qy-smart-keyword--item) {
   border-bottom-color: #f59e0b;
   color: #b45309;
+}
+:deep(.proofread-highlight) {
+  border-radius: 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+:deep(.proofread-highlight--error) {
+  background: rgba(239, 68, 68, 0.14);
+  box-shadow: inset 0 -2px 0 rgba(220, 38, 38, 0.72);
+}
+:deep(.proofread-highlight--warning) {
+  background: rgba(245, 158, 11, 0.16);
+  box-shadow: inset 0 -2px 0 rgba(217, 119, 6, 0.68);
+}
+:deep(.proofread-highlight--suggestion) {
+  background: rgba(14, 165, 233, 0.12);
+  box-shadow: inset 0 -2px 0 rgba(2, 132, 199, 0.55);
+}
+:deep(.proofread-highlight--focused) {
+  outline: 2px solid rgba(14, 165, 233, 0.42);
+  outline-offset: 2px;
 }
 </style>

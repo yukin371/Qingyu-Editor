@@ -1,202 +1,136 @@
-# Qingyu Component Library
+# Qingyu Design System
 
-青羽风格组件库 - 基于 Vue 3 + TypeScript + Tailwind CSS
+编辑器前端的基础 UI owner。这里维护通用组件、设计令牌、主题、交互服务以及 Storybook 基线，供 `writer` 和 `ai` 模块复用。
 
-## 特性
+如果你要修页面样式、补新控件、统一交互行为，先从这里找现有 owner，不要直接在业务页面里复制一套按钮、弹窗、输入框或主题变量。
 
-- 🎨 **青蓝渐变主题** - 采用 cyan-blue 品牌色系
-- 🪟 **玻璃拟态设计** - Glassmorphism 效果带来现代感
-- 📱 **响应式布局** - 完美适配移动端和桌面端
-- ⚡️ **高性能** - 轻量级组件,快速渲染
-- 🔒 **完整的 TypeScript 类型** - 类型安全,开发体验优秀
-- 🎯 **简单易用** - 清晰的 API 和丰富的文档
+## 它拥有的东西
 
-## 设计理念
+- `tokens/`：颜色、排版、间距、主题真相源
+- `themes/`：编辑器主题与主题样式
+- `components/`：当前推荐优先复用的 `Qy*` 组件库
+- `base/`、`form/`、`data/`、`feedback/`、`navigation/`、`layout/`、`other/`：兼容层与低层原语
+- `stories/` 与各组件目录下的 `*.stories.ts`：Storybook 展示与验收基线
+- `services/`、`utils/`：与基础交互相关的共享辅助能力
 
-Qingyu 组件库遵循以下设计原则:
+## 目录结构
 
-1. **青蓝美学** - 采用 cyan-600 到 blue-600 的渐变作为品牌色
-2. **玻璃拟态** - 使用 `bg-white/60 backdrop-blur-xl` 创造现代感
-3. **大圆角** - 使用 `rounded-xl/2xl/3xl` 营造柔和视觉
-4. **流畅动画** - `duration-300/500` 过渡动画,交互自然
-5. **品牌阴影** - `shadow-cyan-500/20` 彩色投影增强品牌感
+```text
+src/design-system/
+├── tokens/                 设计令牌与主题真相
+├── themes/                 编辑器主题样式
+├── components/             推荐优先使用的 Qy 组件库
+├── base/                   基础原语
+├── form/                   表单控件
+├── data/                   数据展示控件
+├── feedback/               提示、弹窗、通知、加载等
+├── navigation/             导航类组件
+├── layout/                 栅格与布局容器
+├── other/                  其他通用控件
+├── services/               与基础交互相关的服务能力
+├── stories/                统一 stories
+├── utils/                  工具函数
+└── index.ts                统一导出入口
+```
 
-## 安装
+## 使用优先级
 
-组件库已集成到项目中,无需额外安装:
+### 1. 优先使用 `Qy*` 组件
+
+当前推荐的公共消费面是 `components/` 下的 `Qy*` 组件：
+
+```ts
+import { QyButton, QyInput, QyDialog } from '@/design-system/components'
+```
+
+适用场景：
+
+- 新页面或新功能的基础 UI
+- 需要稳定 API 和更清晰业务组合边界的地方
+- 计划长期维护的工作台组件
+
+### 2. 兼容层只在必要时使用
+
+`base/`、`form/`、`data/` 等目录仍然保留，是为了：
+
+- 兼容历史页面
+- 承接尚未完全迁移到 `Qy*` 的能力
+- 提供更低层的基础原语
+
+如果你新增的是长期公共能力，优先考虑落在 `components/`；如果你只是补一个迁移期过渡点，再考虑兼容层。
+
+### 3. 业务语义不要塞进 design-system
+
+design-system 不应拥有：
+
+- writer/ai 的业务字段语义
+- 接口流程、权限规则、默认文案真相
+- 页面级状态管理
+
+这些应继续留在 `src/modules/*`。
+
+## 常见工作流
+
+### 新增一个基础组件
+
+建议至少补齐以下内容：
+
+1. 组件实现
+2. 类型定义
+3. `index.ts` 导出
+4. `README.md`
+5. `*.stories.ts`
+6. 必要测试
+
+### 修复一个跨页面的交互问题
+
+优先判断问题属于哪一层：
+
+- 视觉/交互基线问题：收口到 design-system
+- 业务页面编排问题：收口到对应模块组件
+- 主题变量漂移：收口到 `tokens/` 或 `themes/`
+
+### 调整主题或令牌
+
+先看：
+
+- [tokens/README.md](./tokens/README.md)
+- [MODULE.md](./MODULE.md)
+- `tokens/theme.ts`
+- `tokens/theme.css`
+
+避免在业务页面通过大量局部覆盖来“临时修好”主题问题。
+
+## Storybook 与验证
+
+当设计系统发生变更时，常用验证方式包括：
 
 ```bash
-# 组件已存在于 src/design-system 目录
-# 直接导入使用即可
+# 启动 Storybook
+npm run storybook
+
+# 构建 Storybook
+npm run build-storybook
+
+# 前端单测
+npm run test:vitest:run
+
+# 类型检查
+npm run type-check
 ```
 
-## 快速开始
+如果改动影响多个页面，但你没有同步 story 或测试，这通常说明改动还没有真正收口到基础层。
 
-### 导入组件
+## 你改这里时要记住
 
-```vue
-<template>
-  <div class="p-6 space-y-4">
-    <QyButton variant="primary">点击我</QyButton>
-    
-    <QyCard hoverable>
-      <template #title>卡片标题</template>
-      <p>这是卡片内容</p>
-    </QyCard>
-    
-    <QyInput v-model="text" placeholder="输入内容..." />
-  </div>
-</template>
+- `src/design-system` 是基础 UI owner，不是业务页面拼装区
+- 新能力先查现有导出面，避免造第二套 `Button` / `Dialog` / `Select`
+- 兼容层不是长期扩张目标，长期复用能力优先回收到 `Qy*` 组件面
+- `shared/components` 不是新的基础控件 owner
 
-<script setup lang="ts">
-import { ref } from 'vue'
-import { QyButton, QyCard, QyInput } from '@/design-system/components'
+## 相关文档
 
-const text = ref('')
-</script>
-```
-
-### 按需导入
-
-```typescript
-// 导入单个组件
-import { QyButton } from '@/design-system/components/basic/QyButton'
-import { QyCard } from '@/design-system/components/basic/QyCard'
-
-// 或导入所有基础组件
-import { QyButton, QyCard, QyInput, QyBadge, QyAvatar } from '@/design-system/components'
-
-// 导入类型
-import type { QyButtonProps, QyCardProps } from '@/design-system/components'
-```
-
-## 组件列表
-
-### 基础组件 (Phase 1)
-
-| 组件 | 说明 | 状态 |
-|------|------|------|
-| [QyButton](./components/basic/QyButton/README.md) | 按钮 - 多种变体和尺寸 | ✅ 完成 |
-| [QyCard](./components/basic/QyCard/README.md) | 卡片 - 玻璃拟态效果 | ✅ 完成 |
-| [QyInput](./components/basic/QyInput/README.md) | 输入框 - 支持文本/搜索/多行 | ✅ 完成 |
-| [QyBadge](./components/basic/QyBadge/README.md) | 徽章 - 计数/状态/圆点 | ✅ 完成 |
-| [QyAvatar](./components/basic/QyAvatar/README.md) | 头像 - 图片/文本/群组 | ✅ 完成 |
-
-### 导航组件 (Phase 2)
-
-| 组件 | 说明 | 状态 |
-|------|------|------|
-| [QyTopNav](./components/navigation/QyTopNav/README.md) | 顶部导航 - 响应式设计 | ✅ 完成 |
-| [QyBottomDock](./components/navigation/QyBottomDock/README.md) | 底部 Dock - 浮动效果 | ✅ 完成 |
-| [QyTabBar](./components/navigation/QyTabBar/README.md) | 标签栏 - 移动端优化 | ✅ 完成 |
-
-### 其他组件 (开发中)
-
-以下组件正在开发中,计划在 Phase 3 完成:
-
-- **反馈组件**: QyModal, QyLoading, QyEmpty, QyAlert
-- **表单组件**: QyForm, QySelect, QySwitch, QySlider, QyDatePicker
-- **数据展示**: QyTable, QyList, QyPagination, QyTabs
-- **布局组件**: QyContainer, QyRow, QyCol
-- **其他**: QyDivider, QySkeleton, QyTag
-
-## 设计规范
-
-### 色彩系统
-
-```css
-/* 品牌色 - 青蓝渐变 */
---brand-primary: from-cyan-600 to-blue-600
---brand-light: from-cyan-400 to-blue-500
-
-/* 状态色 */
---color-success: green-500
---color-danger: red-500
---color-warning: yellow-500
---color-info: blue-500
-```
-
-### 玻璃拟态
-
-```css
-/* 轻量级 */
-bg-white/40 backdrop-blur-sm
-
-/* 标准级 */
-bg-white/60 backdrop-blur-md
-
-/* 重量级 */
-bg-white/80 backdrop-blur-xl
-
-/* 边框 */
-border border-white/50
-```
-
-### 圆角系统
-
-```css
-rounded-xl    /* 12px - 按钮、输入框 */
-rounded-2xl   /* 16px - 卡片 */
-rounded-3xl   /* 24px - 大容器 */
-rounded-full  /* 圆形 - 徽章、头像 */
-```
-
-### 阴影系统
-
-```css
-/* 品牌阴影 */
-shadow-cyan-500/20    /* 轻量 */
-shadow-cyan-500/30    /* 标准 */
-
-/* 悬停阴影 */
-hover:shadow-xl hover:shadow-cyan-500/10
-
-/* 自定义阴影 */
-shadow-[0_8px_32px_rgba(0,0,0,0.12)]
-```
-
-### 动画标准
-
-```css
-/* 过渡时长 */
-duration-300  /* 快速 - 按钮悬停 */
-duration-500  /* 慢速 - 卡片动画 */
-
-/* 缓动函数 */
-ease-out      /* 标准缓动 */
-cubic-bezier(0.25, 1, 0.5, 1)  /* iOS 风格 */
-
-/* 悬停效果 */
-hover:-translate-y-1    /* 上浮 */
-hover:scale-105         /* 放大 */
-```
-
-## 文档
-
-- 📖 [快速开始](../../docs/guides/qingyu-components-quickstart.md)
-- 📚 [API 参考](../../docs/api/qingyu-components-api.md)
-- 🔄 [迁移指南](../../docs/guides/qingyu-migration-guide.md)
-- 🎨 [设计系统](../../docs/design-system/qingyu-design-system.md)
-
-## 浏览器支持
-
-- Chrome >= 90
-- Firefox >= 88
-- Safari >= 14
-- Edge >= 90
-- iOS Safari >= 14
-- Android Chrome >= 90
-
-## 贡献
-
-欢迎贡献代码、报告问题或提出建议!
-
-## 许可证
-
-MIT License
-
----
-
-**版本**: v1.0.0  
-**更新日期**: 2026-01-25  
-**状态**: Phase 1 & 2 完成, Phase 3 开发中
+- [MODULE.md](./MODULE.md)
+- [tokens/README.md](./tokens/README.md)
+- [../../README.md](../../README.md)
+- [../../../docs/developer-guide.md](../../../docs/developer-guide.md)

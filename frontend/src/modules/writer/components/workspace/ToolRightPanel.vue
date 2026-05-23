@@ -84,7 +84,16 @@
           @trigger-ai-action="(payload) => $emit('trigger-ai-action', payload)"
         />
 
-        <ProofreadPanel v-else-if="activeTool === 'proofread'" :source-text="sourceText" />
+        <ProofreadPanel
+          v-else-if="activeTool === 'proofread'"
+          :project-id="projectId"
+          :chapter-id="chapterId"
+          :source-text="sourceText"
+          :ignored-terms="proofreadIgnoredTerms"
+          @issues-change="(payload) => $emit('proofread-issues-change', payload)"
+          @locate="(payload) => $emit('proofread-locate', payload)"
+          @apply="(payload) => $emit('proofread-apply', payload)"
+        />
 
         <InspirationPanel
           v-else
@@ -116,6 +125,7 @@ import AssetListPanel from '@/modules/writer/components/workspace/tool-right/Ass
 import AssetQuickEditorDialog from '@/modules/writer/components/workspace/tool-right/AssetQuickEditorDialog.vue'
 import InspirationPanel from '@/modules/writer/components/workspace/tool-right/InspirationPanel.vue'
 import ProofreadPanel from '@/modules/writer/components/workspace/tool-right/ProofreadPanel.vue'
+import type { ProofreadIssue } from '@/modules/writer/composables/useProofreadPanel'
 import StoryHarnessPanel from '@/modules/writer/components/v3/story-harness/StoryHarnessPanel.vue'
 import { useWriterAISummaryContext } from '@/modules/writer/composables/useWriterAISummaryContext'
 import { useToolOverlay } from '@/modules/writer/composables/useToolOverlay'
@@ -149,6 +159,7 @@ const props = defineProps<{
   chapterTitle: string
   chapters: SidebarChapterSummary[]
   sourceText: string
+  proofreadIgnoredTerms?: string[]
   aiActionTrigger: WriterAIActionTrigger | null
   aiApplyFeedback: WriterAIApplyFeedback | null
   workflowContext: WriterWorkflowContext
@@ -189,6 +200,9 @@ defineEmits<{
   (e: 'create-structure-plan', payload: WriterStructurePlanPayload): void
   (e: 'jump-to-chapter', chapterId: string): void
   (e: 'trigger-ai-action', payload: WriterWorkflowActionRequest): void
+  (e: 'proofread-issues-change', issues: ProofreadIssue[]): void
+  (e: 'proofread-locate', issue: ProofreadIssue): void
+  (e: 'proofread-apply', issue: ProofreadIssue): void
   (e: 'close'): void
 }>()
 

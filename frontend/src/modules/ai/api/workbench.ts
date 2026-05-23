@@ -107,6 +107,21 @@ export interface ReviewIssue {
   severity?: string
   message?: string
   suggestions?: string[]
+  suggestionDetails?: Array<{
+    text: string
+    reason?: string
+    confidence?: number
+  }>
+  position?: {
+    start: number
+    end: number
+    line?: number
+    column?: number
+    length?: number
+  }
+  originalText?: string
+  category?: string
+  rule?: string
 }
 
 export interface ReviewToolResult {

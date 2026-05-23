@@ -61,6 +61,21 @@ export interface AIProofreadIssue {
   severity?: string
   message?: string
   suggestions?: string[]
+  suggestionDetails?: Array<{
+    text: string
+    reason?: string
+    confidence?: number
+  }>
+  position?: {
+    start: number
+    end: number
+    line?: number
+    column?: number
+    length?: number
+  }
+  originalText?: string
+  category?: string
+  rule?: string
 }
 
 export interface AIProofreadResponse {
@@ -120,6 +135,152 @@ export interface WriterAIResult {
   usage?: unknown
   requiresConfirmation: boolean
   evidence?: AIPlanEvidence[]
+}
+
+function asFiniteNumber(value: unknown): number | undefined {
+  const numberValue = Number(value)
+  return Number.isFinite(numberValue) ? numberValue : undefined
+}
+
+function codePointOffsetToStringIndex(value: string, offset: number): number | undefined {
+  if (!Number.isInteger(offset) || offset < 0) {
+    return undefined
+  }
+
+  const codePoints = Array.from(value)
+  if (offset > codePoints.length) {
+    return undefined
+  }
+
+  return codePoints.slice(0, offset).join('').length
+}
+
+function findClosestOriginalTextPosition(
+  content: string,
+  originalText: string,
+  preferredStart?: number,
+): number | undefined {
+  if (!originalText) {
+    return undefined
+  }
+
+  const positions: number[] = []
+  let cursor = content.indexOf(originalText)
+  while (cursor >= 0) {
+    positions.push(cursor)
+    cursor = content.indexOf(originalText, cursor + Math.max(originalText.length, 1))
+  }
+  if (positions.length === 0) {
+    return undefined
+  }
+  if (typeof preferredStart !== 'number') {
+    return positions[0]
+  }
+
+  return positions.reduce((best, current) =>
+    Math.abs(current - preferredStart) < Math.abs(best - preferredStart) ? current : best,
+  )
+}
+
+function normalizeProofreadPosition(
+  content: string,
+  record: Record<string, any>,
+  originalText: string,
+): AIProofreadIssue['position'] | undefined {
+  const position = record.position && typeof record.position === 'object' ? record.position : record
+  const rawStart = asFiniteNumber(position.start ?? position.from)
+  const rawEnd = asFiniteNumber(position.end ?? position.to)
+  if (rawStart === undefined || rawEnd === undefined || rawStart < 0 || rawEnd <= rawStart) {
+    return undefined
+  }
+
+  const toPosition = (start: number, end: number) => ({
+    start,
+    end,
+    line: asFiniteNumber(position.line),
+    column: asFiniteNumber(position.column),
+    length: end - start,
+  })
+  const isValidStringRange = (start: number, end: number) =>
+    Number.isInteger(start) &&
+    Number.isInteger(end) &&
+    start >= 0 &&
+    end > start &&
+    end <= content.length
+
+  if (isValidStringRange(rawStart, rawEnd)) {
+    const currentText = content.slice(rawStart, rawEnd)
+    if (!originalText || currentText === originalText) {
+      return toPosition(rawStart, rawEnd)
+    }
+  }
+
+  const codePointStart = codePointOffsetToStringIndex(content, rawStart)
+  const codePointEnd = codePointOffsetToStringIndex(content, rawEnd)
+  if (
+    codePointStart !== undefined &&
+    codePointEnd !== undefined &&
+    isValidStringRange(codePointStart, codePointEnd)
+  ) {
+    const currentText = content.slice(codePointStart, codePointEnd)
+    if (!originalText || currentText === originalText) {
+      return toPosition(codePointStart, codePointEnd)
+    }
+  }
+
+  const matchedStart = findClosestOriginalTextPosition(content, originalText, codePointStart ?? rawStart)
+  if (matchedStart !== undefined) {
+    return toPosition(matchedStart, matchedStart + originalText.length)
+  }
+
+  return undefined
+}
+
+function normalizeProofreadIssueType(value: unknown) {
+  const raw = String(value || '').trim().toLowerCase()
+  const typeMap: Record<string, string> = {
+    spelling: 'typo',
+    typo: 'typo',
+    grammar: 'grammar',
+    punctuation: 'punctuation',
+    style: 'style',
+    readability: 'readability',
+    continuity: 'continuity',
+    logic: 'logic',
+    coherence: 'coherence',
+  }
+  return typeMap[raw] || String(value || 'style').trim() || 'style'
+}
+
+function normalizeProofreadSeverity(value: unknown) {
+  const raw = String(value || '').trim().toLowerCase()
+  if (['error', 'high', 'critical', '严重'].includes(raw)) return 'error'
+  if (['warning', 'medium', 'warn', '中等'].includes(raw)) return 'warning'
+  return 'suggestion'
+}
+
+function normalizeProofreadSuggestionDetails(rawSuggestions: unknown) {
+  if (!Array.isArray(rawSuggestions)) {
+    return []
+  }
+
+  return rawSuggestions
+    .map((suggestion) => {
+      if (suggestion && typeof suggestion === 'object') {
+        const record = suggestion as Record<string, unknown>
+        const textValue = String(record.text || record.value || record.suggestion || '').trim()
+        if (!textValue) return null
+        return {
+          text: textValue,
+          reason: String(record.reason || record.explanation || '').trim() || undefined,
+          confidence: Number.isFinite(Number(record.confidence)) ? Number(record.confidence) : undefined,
+        }
+      }
+
+      const textValue = String(suggestion || '').trim()
+      return textValue ? { text: textValue } : null
+    })
+    .filter((item): item is { text: string; reason?: string; confidence?: number } => !!item)
 }
 
 /**
@@ -450,16 +611,23 @@ export const proofreadText = async (
         if (!message) {
           return acc
         }
+        const suggestionDetails = normalizeProofreadSuggestionDetails(
+          record.suggestionDetails || record.suggestion_details || record.suggestions,
+        )
+        const originalText = String(record.originalText || record.original_text || record.original || '').trim()
+        const position = normalizeProofreadPosition(text, record, originalText)
+        const positionedOriginalText = position ? text.slice(position.start, position.end) : ''
         acc.push({
           id: String(record.id || `proofread-${index + 1}`),
-          type: String(record.type || record.category || '表达'),
-          severity: String(record.severity || record.level || 'medium'),
+          type: normalizeProofreadIssueType(record.type || record.category),
+          severity: normalizeProofreadSeverity(record.severity || record.level),
           message,
-          suggestions: Array.isArray(record.suggestions)
-            ? record.suggestions
-                .map((suggestion: unknown) => String(suggestion).trim())
-                .filter(Boolean)
-            : [],
+          suggestions: suggestionDetails.map((suggestion) => suggestion.text),
+          suggestionDetails,
+          position,
+          originalText: originalText || positionedOriginalText || undefined,
+          category: String(record.category || '').trim() || undefined,
+          rule: String(record.rule || '').trim() || undefined,
         })
         return acc
       }, [])

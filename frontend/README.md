@@ -1,358 +1,150 @@
-# Qingyu Editor Frontend
+# Qingyu-Editor Frontend
 
-> 一个基于 Vue 3 + TypeScript 的独立写作编辑器前端
+独立编辑器的 Vue 3 前端宿主。默认服务于 `writer` 工作区，并通过 `ai` 模块为创作过程提供配套辅助能力。
 
-## 项目简介
+## 模块定位
 
-当前前端用于独立编辑器桌面宿主，默认只服务 writer 工作区，并通过 AI 工具链为创作过程提供辅助能力。
+这一层的职责不是拥有业务真相，而是把桌面宿主中的交互、布局、状态与本地桥接组织起来：
 
-### 核心特性
+- `writer` 模块拥有写作工作区、结构辅助、正文编辑与右栏工具链
+- `ai` 模块拥有 provider 配置、请求 facade、工作台与辅助动作
+- `design-system` 提供可复用 UI 原语、主题令牌与 Storybook 基线
+- `core`、`router`、`stores` 负责宿主级基础设施
 
-- **Writer 工作区** - 项目、章节、结构舞台、正文编辑、自动保存
-- **AI 创作辅助** - 续写、润色、扩写、改写、结构规划、工作台工具
-- **桌面宿主适配** - Wails 桥接、本地数据回退、桌面运行态兼容
-- **设计系统** - 可复用组件、主题令牌、统一交互基线
+如果你想先建立边界感，推荐按以下顺序阅读：
+
+1. [MODULE.md](./MODULE.md)
+2. [src/design-system/README.md](./src/design-system/README.md)
+3. [src/composables/README.md](./src/composables/README.md)
+4. [src/modules/writer/docs/README.md](./src/modules/writer/docs/README.md)
 
 ## 技术栈
 
-- **框架**: Vue 3 (Composition API)
-- **语言**: TypeScript
-- **构建工具**: Vite 7.x
-- **状态管理**: Pinia
-- **路由**: Vue Router 4
-- **UI组件**: 自研 design-system + Tailwind CSS
-- **HTTP客户端**: Axios
-- **图表**: ECharts
-- **样式**: SCSS + Tailwind CSS
-- **Markdown**: Marked
+- Vue 3 + Composition API
+- TypeScript
+- Vite 7
+- Pinia
+- Vue Router 4
+- Tailwind CSS 4 + SCSS
+- TipTap / ProseMirror
+- Axios
+- Vitest + Playwright + Storybook
 
-## 项目结构
+## 目录地图
 
-```
-Qingyu-Editor/frontend/
+```text
+frontend/
 ├── src/
-│   ├── modules/              # 真实业务 owner
-│   │   ├── writer/           # 写作工作区、项目/章节/结构/正文链路
-│   │   └── ai/               # AI facade、workbench、请求适配
-│   ├── design-system/        # 基础组件与设计令牌
-│   ├── core/                 # 配置、HTTP 服务、运行时基础设施
-│   ├── router/               # 路由配置
-│   ├── stores/               # 宿主级轻量状态
-│   ├── utils/                # 通用工具
-│   ├── types/                # TypeScript类型定义
-│   ├── composables/          # 组合式函数
-│   ├── App.vue               # 根组件
-│   └── main.ts               # 入口文件
-├── scripts/                  # 工程脚本
-├── vite.config.ts            # Vite配置
-├── tsconfig.json             # TypeScript配置
-└── package.json              # 项目依赖
+│   ├── modules/             真实业务 owner（writer / ai）
+│   ├── design-system/       基础组件、Qy 组件库、主题与 stories
+│   ├── composables/         可复用有状态逻辑
+│   ├── core/                配置、HTTP、运行时基础设施
+│   ├── router/              路由入口与宿主编排
+│   ├── stores/              宿主级轻量状态
+│   ├── utils/               工具函数与运行时辅助
+│   ├── types/               全局类型
+│   ├── App.vue
+│   └── main.ts
+├── scripts/                 工程脚本
+├── package.json             前端命令入口
+├── vite.config.ts           构建与开发配置
+└── tsconfig*.json           TypeScript 配置
 ```
 
-## 快速开始
+## 本地开发
 
-> 💡 **首次使用？** 查看 [快速开始指南](./docs/QUICK_START.md) 获取详细步骤
-
-### 环境要求
-
-- **Node.js**: >= 18.0.0
-- **npm**: >= 9.0.0
-
-### 安装与启动
+### 安装
 
 ```bash
-# 1. 安装依赖
-npm install
+npm install --legacy-peer-deps
+```
 
-# 2. 启动开发服务器
+### 常用命令
+
+```bash
+# 开发
 npm run dev
 
-# 3. 访问应用
-# 前端: http://localhost:43127
-# 后端: http://localhost:8080 (需单独启动)
-```
-
-如需手动开启 `Vue DevTools` 插件链，可使用：
-
-```bash
-VITE_ENABLE_VUE_DEVTOOLS=true npm run dev
-```
-
-### 联调模式（独立编辑器前端 + 可选平台后端）
-
-```bash
-# 终端1: 启动后端
-cd Qingyu_backend
-go run cmd/server/main.go
-
-# 终端2: 启动独立编辑器前端
-cd Qingyu-Editor/frontend
-npm run dev
-```
-
-### 生产构建
-
-```bash
-# 开发环境
-npm run dev
-
-# 生产构建
+# 构建
 npm run build
-
-# 预览构建
-npm run preview
-```
-
----
-
-📚 **更多文档：**
-
-- [快速开始指南](./docs/QUICK_START.md) - 5分钟上手
-- [使用指南](./docs/USER_GUIDE.md) - 完整功能说明
-- [API连接配置](./docs/api-connection-guide.md) - 环境配置
-- [部署指南](./docs/deployment-guide.md) - 生产部署
-
----
-
-## 开发指南
-
-### 代码规范
-
-- 使用 TypeScript 类型注解
-- 遵循 Vue 3 Composition API 最佳实践
-- 组件命名采用 PascalCase
-- 文件命名采用 kebab-case 或 PascalCase（组件文件）
-
-### 路由配置
-
-路由按模块组织，每个模块有自己的路由配置文件：
-
-```typescript
-// src/modules/writer/routes.ts
-export default [
-  {
-    path: '/',
-    component: () => import('@/modules/writer/views/ProjectWorkspace.vue'),
-    meta: { requiresAuth: false, layout: 'editor' },
-  },
-]
-```
-
-### API调用
-
-使用统一的 `httpService` 进行 API 调用：
-
-```typescript
-import { httpService } from '@/core/services/http.service'
-
-export const getProjects = () => {
-  return httpService.get('/api/v1/projects')
-}
-
-export const saveDocument = (documentId: string, content: string) => {
-  return httpService.put(`/api/v1/documents/${documentId}/content`, { content })
-}
-```
-
-每个模块都有自己的API文件，位于 `src/modules/{module}/api/`：
-
-```typescript
-// 使用模块API
-import { getProjects, saveDocument } from '@writer/api/wrapper'
-import { polishText, storyGenerate } from '@ai/api'
-```
-
-### 状态管理
-
-使用 Pinia 进行状态管理：
-
-```typescript
-// src/modules/writer/stores/editorStore.ts
-import { defineStore } from 'pinia'
-
-export const useEditorStore = defineStore('editor', {
-  state: () => ({
-    currentProjectId: null as string | null,
-    currentChapterId: null as string | null,
-    content: '',
-  }),
-})
-```
-
-## 性能优化
-
-项目已实现以下优化措施：
-
-### 构建优化
-
-- **代码分割** - 手动配置 vendor chunks，分离 Vue、编辑器、图谱与 ECharts 等库
-- **路由懒加载** - 所有页面组件使用动态 import
-- **Tree Shaking** - 自动移除未使用的代码
-- **CSS 代码分割** - 每个组件的 CSS 独立打包
-- **Terser 压缩** - 生产环境自动移除 console 和 debugger
-
-### 运行时优化
-
-- **图片懒加载** - 使用 v-lazy 指令
-- **虚拟滚动** - 长列表使用虚拟滚动
-- **防抖节流** - 搜索、滚动等操作使用防抖节流
-- **组件缓存** - 使用 keep-alive 缓存页面
-- **性能监控** - 集成性能监控工具
-
-### 构建产物
-
-主 bundle 大小：
-
-- 未压缩: ~1,122 KB
-- Gzip: ~372 KB
-- 符合性能要求（< 500KB gzip）
-
-## 环境配置
-
-项目支持三种环境配置：
-
-- `.env.development` - 本地开发环境
-- `.env.staging` - 预发布/测试环境
-- `.env.production` - 生产环境
-
-### 开发环境配置
-
-开发环境使用 Vite Proxy 代理API请求，无需额外配置：
-
-```bash
-# .env.development（已配置）
-VITE_API_BASE_URL=/api/v1
-VITE_WS_BASE_URL=/ws
-```
-
-启动开发服务器：
-
-```bash
-npm run dev
-```
-
-### 生产环境配置
-
-根据部署平台修改 `.env.production`：
-
-**腾讯云 CloudBase：**
-
-```bash
-VITE_API_BASE_URL=https://your-env-id.service.tcloudbase.com/api/v1
-```
-
-**自有服务器：**
-
-```bash
-VITE_API_BASE_URL=https://yourdomain.com/api/v1
-```
-
-详细的配置说明请参考 [API连接配置指南](./docs/api-connection-guide.md)
-
-### 构建命令
-
-```bash
-# 开发环境
-npm run dev
-
-# 生产构建
-npm run build
-
-# 预发布构建
 npm run build:staging
+npm run build:prod
 
 # 类型检查
 npm run type-check
+npm run type-check:full
+
+# 单测
+npm run test:vitest:run
+npm run test:vitest:coverage
+
+# E2E
+npm run test:e2e
+npm run test:e2e:headed
+
+# Storybook
+npm run storybook
+npm run build-storybook
+
+# 样式检查
+npm run lint:styles
 ```
 
-## 浏览器支持
+### 联调方式
 
-- Chrome >= 90
-- Firefox >= 88
-- Safari >= 14
-- Edge >= 90
+有两种常见场景：
 
-## 模块功能说明
+1. 只调前端宿主与静态状态：直接 `npm run dev`
+2. 需要联动桌面或后端链路：
+   - 桌面宿主：从仓库根目录运行 `wails dev`
+   - 平台/远端接口：按对应链路单独启动后端或相关服务
 
-### Writer 模块
+如果你要看最接近真实产品的运行态，优先使用 `wails dev`，不要把纯 Vite 页面预览误当成完整桌面宿主行为。
 
-- 作品管理
-- 章节创作
-- 结构舞台与大纲编辑
-- 富文本编辑器与自动保存
-- 本地桌面桥接与回退链路
+## 设计与实现边界
 
-### AI 模块
+- `src/modules/writer` 是默认主业务面，不再回退到旧平台首页心智。
+- `src/modules/ai` 只作为 writer 的配角能力，不扩张成独立后台。
+- `src/design-system` 是基础 UI owner；业务模块应组合它，而不是复制它。
+- `src/api/generated` 已不是当前默认链路；业务 facade 以 `src/modules/*/api` 为准。
+- 本地优先与宿主桥接能力应在 `core` / `modules` 内收口，不要在页面中散落环境分支。
 
-- 聊天、续写、润色、扩写、改写
-- 结构规划与工作台工具
-- 与 writer 主链路协同的辅助能力
-- 仅作为写作工作区的配角能力，不独立长出平台后台
+## 改动时优先看哪里
 
-## 常见问题
+### 写作工作区
 
-### 开发相关
+- `src/modules/writer/views`
+- `src/modules/writer/components`
+- `src/modules/writer/stores`
+- `src/modules/writer/composables`
+- `src/modules/writer/data-bridge`
 
-**Q: 如何修改 API 地址？**
-A: 编辑对应环境的 `.env` 文件（如 `.env.development`），修改 `VITE_API_BASE_URL`
+### AI 工具链
 
-**Q: 开发环境跨域如何解决？**
-A: Vite 已配置代理，API请求会自动转发到后端。确保后端运行在 `localhost:8080`
+- `src/modules/ai/api`
+- `src/modules/ai/components`
+- `src/modules/ai/stores`
 
-**Q: 如何添加新模块？**
-A: 在 `src/modules` 下创建新模块目录，包含 api、views、components 等。详见[使用指南](./docs/USER_GUIDE.md)
+### 基础 UI
 
-**Q: 构建失败怎么办？**
-A:
+- `src/design-system/components`
+- `src/design-system/tokens`
+- `src/design-system/stories`
 
-1. 检查 Node.js 版本（>= 18.0.0）
-2. 删除 `node_modules` 和 `package-lock.json`
-3. 重新安装依赖：`npm install`
-4. 如果仍有问题，尝试使用 `npm run build` 跳过类型检查
+## 验证建议
 
-**Q: 如何启用 API 健康检查？**
-A: 开发环境自动启用，启动项目后查看控制台输出
+改动前端后，至少按改动范围执行一组最贴近的验证：
 
-### 部署相关
+- 交互/状态变更：`npm run test:vitest:run`
+- 桌面主链或关键工作流：`npm run test:e2e`
+- 类型与导出面：`npm run type-check`
+- 设计系统或组件行为：`npm run storybook` 或对应组件测试
 
-**Q: 如何部署到生产环境？**
-A: 参考 [API连接配置指南](./docs/api-connection-guide.md) 和 [部署指南](./docs/deployment-guide.md)
+## 相关文档
 
-**Q: 支持哪些部署平台？**
-A:
-
-- 腾讯云 CloudBase（推荐，国内访问快）
-- 阿里云 Serverless
-- Vercel（海外用户）
-- 自有服务器 + Nginx
-
-**Q: 如何配置环境变量？**
-A: 复制 `.env.example` 为 `.env.production`，修改其中的配置值
-
-## 项目文档
-
-- **[使用指南](./docs/USER_GUIDE.md)** - 开发者和用户完整使用指南
-- **[API连接配置](./docs/api-connection-guide.md)** - 环境配置和多平台部署
-- **[部署指南](./docs/deployment-guide.md)** - 生产环境部署详细说明
-- **[集成测试报告](./docs/integration-test-results.md)** - 功能测试验证
-- **[API迁移文档](./docs/api-migration.md)** - API架构迁移说明
-
-### 外部文档
-
-- [Vite 文档](https://vitejs.dev/)
-- [Vue 3 文档](https://vuejs.org/)
-- [Pinia 文档](https://pinia.vuejs.org/)
-- [TypeScript 文档](https://www.typescriptlang.org/)
-
-## License
-
-MIT
-
-## 贡献指南
-
-欢迎提交 Issue 和 Pull Request！
-
-## 联系方式
-
-- 项目地址: [GitHub](https://github.com/your-org/qingyu)
-- 问题反馈: [Issues](https://github.com/your-org/qingyu/issues)
+- [../docs/developer-guide.md](../docs/developer-guide.md)
+- [../docs/user-guide.md](../docs/user-guide.md)
+- [../docs/creative-workflow-design.md](../docs/creative-workflow-design.md)
+- [src/modules/writer/docs/README.md](./src/modules/writer/docs/README.md)
+- [src/design-system/README.md](./src/design-system/README.md)
+- [src/composables/README.md](./src/composables/README.md)

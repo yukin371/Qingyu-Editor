@@ -33,6 +33,8 @@
         :document-id="chapterId"
         :readonly="false"
         :show-reference-panel="false"
+        :proofread-highlights="proofreadHighlights"
+        :focused-proofread-issue-id="focusedProofreadIssueId"
         @selection-action="emit('trigger-ai-action', $event)"
         @entity-scan="emit('entity-scan', $event)"
         @save="(contents: unknown[]) => $emit('save', contents)"
@@ -84,6 +86,7 @@ import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 import type { ActiveEntitySummary } from '@/modules/writer/composables/useWorkflowContext'
 import type { WriterWorkflowContext } from '@/modules/writer/types/workflow'
 import type { WriterSceneStageState } from '@/modules/writer/types/sceneStage'
+import type { ProofreadHighlightRange } from '@/design-system/components/editor'
 
 const props = defineProps<{
   projectId: string
@@ -106,6 +109,8 @@ const props = defineProps<{
   workflowContext?: WriterWorkflowContext
   activeEntities?: ActiveEntitySummary[]
   sceneStage?: WriterSceneStageState | null
+  proofreadHighlights?: ProofreadHighlightRange[]
+  focusedProofreadIssueId?: string
   handleChangeRequestDecision?: (
     requestId: string,
     decision: StoryHarnessChangeRequestDecision,

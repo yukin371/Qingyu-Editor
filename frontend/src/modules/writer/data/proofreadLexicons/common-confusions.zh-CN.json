@@ -1,0 +1,43 @@
+{
+  "id": "common-confusions.zh-CN",
+  "locale": "zh-CN",
+  "version": "2026.05.21-seed",
+  "description": "中文常见错词种子词库。文件格式用于承接外部词库导入，当前只保留少量高置信示例。",
+  "entries": [
+    {
+      "wrong": "既使",
+      "suggestions": ["即使"],
+      "category": "common_typo",
+      "severity": "error",
+      "message": "检测到常见错词“既使”，通常应写作“即使”。"
+    },
+    {
+      "wrong": "因该",
+      "suggestions": ["应该"],
+      "category": "common_typo",
+      "severity": "error",
+      "message": "检测到常见错词“因该”，通常应写作“应该”。"
+    },
+    {
+      "wrong": "必竞",
+      "suggestions": ["毕竟"],
+      "category": "common_typo",
+      "severity": "error",
+      "message": "检测到常见错词“必竞”，通常应写作“毕竟”。"
+    },
+    {
+      "wrong": "在接在厉",
+      "suggestions": ["再接再厉"],
+      "category": "idiom_typo",
+      "severity": "error",
+      "message": "检测到成语错写，通常应为“再接再厉”。"
+    },
+    {
+      "wrong": "迫不急待",
+      "suggestions": ["迫不及待"],
+      "category": "idiom_typo",
+      "severity": "error",
+      "message": "检测到成语错写，通常应为“迫不及待”。"
+    }
+  ]
+}

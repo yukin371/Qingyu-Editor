@@ -14,6 +14,7 @@
         :chapter-title="chapterTitle"
         :chapters="chapters"
         :source-text="sourceText"
+        :proofread-ignored-terms="proofreadIgnoredTerms"
         :ai-action-trigger="aiActionTrigger"
         :ai-apply-feedback="aiApplyFeedback"
         :workflow-context="workflowContext"
@@ -26,6 +27,9 @@
         @create-structure-plan="(payload) => $emit('create-structure-plan', payload)"
         @jump-to-chapter="(chapterId) => $emit('jump-to-chapter', chapterId)"
         @trigger-ai-action="(payload) => $emit('trigger-ai-action', payload)"
+        @proofread-issues-change="(payload) => $emit('proofread-issues-change', payload)"
+        @proofread-locate="(payload) => $emit('proofread-locate', payload)"
+        @proofread-apply="(payload) => $emit('proofread-apply', payload)"
         @close="handleCloseRightTool"
       />
     </div>
@@ -61,6 +65,7 @@ import type {
 import type { SidebarChapterSummary } from '@/modules/writer/composables/types'
 import type { RightToolType } from '@/modules/writer/types/workspaceLayout'
 import type { WriterSceneStageState } from '@/modules/writer/types/sceneStage'
+import type { ProofreadIssue } from '@/modules/writer/composables/useProofreadPanel'
 
 // =======================
 // Props & Emits
@@ -73,6 +78,7 @@ defineProps<{
   chapterTitle: string
   chapters: SidebarChapterSummary[]
   sourceText: string
+  proofreadIgnoredTerms?: string[]
   aiActionTrigger: import('@/modules/writer/types/workflow').WriterAIActionTrigger | null
   aiApplyFeedback: import('@/modules/writer/types/workflow').WriterAIApplyFeedback | null
   workflowContext: import('@/modules/writer/types/workflow').WriterWorkflowContext
@@ -113,6 +119,9 @@ defineEmits<{
   (e: 'create-structure-plan', payload: WriterStructurePlanPayload): void
   (e: 'jump-to-chapter', chapterId: string): void
   (e: 'trigger-ai-action', payload: WriterWorkflowActionRequest): void
+  (e: 'proofread-issues-change', issues: ProofreadIssue[]): void
+  (e: 'proofread-locate', issue: ProofreadIssue): void
+  (e: 'proofread-apply', issue: ProofreadIssue): void
 }>()
 
 const panelStore = usePanelStore()

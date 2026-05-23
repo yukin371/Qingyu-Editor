@@ -161,4 +161,30 @@ describe('ToolRightPanel', () => {
       '主角救下线人',
     )
   })
+
+  it('passes project proofread ignored terms down to proofread panel', () => {
+    const wrapper = mount(ToolRightPanel, {
+      props: {
+        ...baseProps,
+        activeTool: 'proofread',
+        proofreadIgnoredTerms: ['青羽城', '寒灯司'],
+      },
+      global: {
+        stubs: {
+          QyIcon: true,
+          AssetListPanel: { template: '<div data-testid="asset-list-panel" />' },
+          AssetDetailPanel: { template: '<div data-testid="asset-detail-panel" />' },
+          AssetQuickEditorDialog: { template: '<div data-testid="asset-quick-editor-dialog" />' },
+          AIChatPanel: true,
+          ProofreadPanel: {
+            props: ['ignoredTerms'],
+            template: '<div data-testid="proofread-panel">{{ ignoredTerms.join("|") }}</div>',
+          },
+          InspirationPanel: true,
+        },
+      },
+    })
+
+    expect(wrapper.get('[data-testid="proofread-panel"]').text()).toBe('青羽城|寒灯司')
+  })
 })

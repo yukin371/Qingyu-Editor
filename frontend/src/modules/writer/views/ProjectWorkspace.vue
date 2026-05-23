@@ -68,6 +68,8 @@
             :workflow-context="workflowContext"
             :active-entities="activeEntities"
             :scene-stage="sceneStage"
+            :proofread-highlights="proofreadHighlights"
+            :focused-proofread-issue-id="focusedProofreadIssueId"
             :handle-change-request-decision="handleChangeRequestDecision"
             :handle-trigger-index="handleStoryHarnessTriggerIndex"
             :is-triggering-index="isStoryHarnessTriggering"
@@ -94,6 +96,7 @@
             :chapter-title="displayChapterTitle"
             :chapters="flatChapters"
             :source-text="currentChapterPlainText"
+            :proofread-ignored-terms="proofreadIgnoredTerms"
             :ai-action-trigger="aiActionTrigger"
             :ai-apply-feedback="aiApplyFeedback"
             :workflow-context="workflowContext"
@@ -120,6 +123,9 @@
             @create-structure-plan="handleCreateStructurePlan"
             @jump-to-chapter="handleChapterIdUpdate"
             @trigger-ai-action="handleWorkflowAction"
+            @proofread-issues-change="handleProofreadIssuesChange"
+            @proofread-locate="handleProofreadLocate"
+            @proofread-apply="handleProofreadApply"
           />
         </template>
       </EditorLayout>
@@ -228,6 +234,7 @@ import {
   setDiffCallbacks,
   type PendingDiff,
 } from '@/design-system/components/editor/QySmartKeyword/extensions/AiDiffExtension'
+import { mapPlainTextRangeToDocPosition } from '@/design-system/components/editor/QySmartKeyword/extensions/ProofreadHighlightExtension'
 import {
   extractEntitiesFromTipTapContent,
   groupEntitiesByType,
@@ -258,6 +265,8 @@ import type {
 } from '@/modules/writer/types/workspaceLayout'
 import { buildWriterSceneStagePrompt } from '@/modules/writer/types/sceneStage'
 import { useWorkspaceLayoutStore } from '@/modules/writer/stores/workspaceLayoutStore'
+import type { ProofreadIssue } from '@/modules/writer/composables/useProofreadPanel'
+import type { ProofreadHighlightRange } from '@/design-system/components/editor'
 
 // =======================
 // Props 定义
@@ -292,6 +301,8 @@ const queryTool = computed(() => String(route.query.tool || ''))
 const queryRightTool = computed(() => String(route.query.rightTool || ''))
 const resolvedActiveTool = computed<ActiveTool>(() => editorStore.activeTool ?? 'writing')
 const workspaceExtraStatusChips = ref<string[]>([])
+const proofreadIssues = ref<ProofreadIssue[]>([])
+const focusedProofreadIssueId = ref('')
 const STANDALONE_LAST_PROJECT_KEY = 'qingyu-editor:last-project'
 
 // =======================
@@ -463,6 +474,71 @@ const currentChapterPlainText = computed(() =>
   extractPlainTextFromEditorContent(visibleTipTapContent.value),
 )
 
+const proofreadHighlights = computed<ProofreadHighlightRange[]>(() =>
+  proofreadIssues.value
+    .filter((issue) => issue.status === 'open' && issue.position)
+    .map((issue) => ({
+      id: issue.id,
+      start: issue.position?.start ?? 0,
+      end: issue.position?.end ?? 0,
+      severity: issue.severity,
+      originalText: issue.originalText,
+    })),
+)
+
+const handleProofreadIssuesChange = (issues: ProofreadIssue[]) => {
+  proofreadIssues.value = issues
+  if (!issues.some((issue) => issue.id === focusedProofreadIssueId.value && issue.status === 'open')) {
+    focusedProofreadIssueId.value = ''
+  }
+}
+
+const handleProofreadLocate = (issue: ProofreadIssue) => {
+  if (!issue.position || issue.status !== 'open') return
+  focusedProofreadIssueId.value = issue.id
+}
+
+const handleProofreadApply = (issue: ProofreadIssue) => {
+  const tiptapEditor = editorStore.tipTapEditor
+  const replacementText = issue.replacementText?.trim()
+
+  if (!tiptapEditor || !issue.position || issue.status !== 'open' || !replacementText) {
+    return
+  }
+
+  const mapped = mapPlainTextRangeToDocPosition(tiptapEditor.state.doc, {
+    id: issue.id,
+    start: issue.position.start,
+    end: issue.position.end,
+    severity: issue.severity,
+    originalText: issue.originalText,
+  })
+
+  if (!mapped) {
+    focusedProofreadIssueId.value = ''
+    message.warning('原文位置已变化，请重新校对后再应用建议')
+    return
+  }
+
+  focusedProofreadIssueId.value = issue.id
+  registerPendingDiff({
+    id: `proofread-diff-${issue.id}-${Date.now()}`,
+    from: mapped.from,
+    to: mapped.to,
+    oldText: tiptapEditor.state.doc.textBetween(mapped.from, mapped.to, ''),
+    newText: replacementText,
+    applyMode: 'replace_selection',
+  })
+  tiptapEditor.view.dispatch(tiptapEditor.state.tr.setMeta('aiDiff', { updated: true }))
+  setAIApplyFeedback(
+    'idle',
+    '校对建议已就绪',
+    '请在正文编辑器内接受或放弃这条校对修改。',
+    'replace_selection',
+  )
+  message.info('校对建议已显示在正文编辑器中，请直接接受或放弃')
+}
+
 const {
   currentScopeLabel,
   activeScopeCharacters,
@@ -522,6 +598,27 @@ const { workflowContext, activeEntities } = useWorkflowContext({
   changeRequests: storyHarnessChangeRequests,
   entityReferences: storyHarnessEntityReferences,
   entityStats: storyHarnessEntityStats,
+})
+
+const proofreadIgnoredTerms = computed(() => {
+  const terms = new Set<string>()
+  const addTerm = (term?: string) => {
+    const normalized = term?.trim()
+    if (normalized) terms.add(normalized)
+  }
+
+  for (const character of writerStore.characters.list || []) {
+    addTerm(character.name)
+    for (const alias of character.alias || []) addTerm(alias)
+  }
+  for (const location of writerStore.locations.list || []) {
+    addTerm(location.name)
+  }
+  for (const entity of activeEntities.value) {
+    addTerm(entity.name)
+  }
+
+  return Array.from(terms)
 })
 
 const safeCurrentProjectId = computed(() => currentProjectId.value || '')
@@ -1545,17 +1642,27 @@ setDiffCallbacks(
     const to = Math.max(diff.from, diff.to)
     if (from < 0 || to > docSize || from > to) return
 
-    const insertionDoc = JSON.parse(buildEditorContentFromPlainText(diff.newText)) as {
-      content?: unknown[]
-    }
-    const insertionContent =
-      insertionDoc.content && insertionDoc.content.length > 0
-        ? insertionDoc.content
-        : [{ type: 'paragraph' }]
-
     if (diff.applyMode === 'replace_selection') {
-      tiptapEditor.chain().focus().insertContentAt({ from, to }, insertionContent).run()
+      if (!diff.oldText.includes('\n') && !diff.newText.includes('\n')) {
+        tiptapEditor.chain().focus().insertContentAt({ from, to }, diff.newText).run()
+      } else {
+        const insertionDoc = JSON.parse(buildEditorContentFromPlainText(diff.newText)) as {
+          content?: unknown[]
+        }
+        const insertionContent =
+          insertionDoc.content && insertionDoc.content.length > 0
+            ? insertionDoc.content
+            : [{ type: 'paragraph' }]
+        tiptapEditor.chain().focus().insertContentAt({ from, to }, insertionContent).run()
+      }
     } else {
+      const insertionDoc = JSON.parse(buildEditorContentFromPlainText(diff.newText)) as {
+        content?: unknown[]
+      }
+      const insertionContent =
+        insertionDoc.content && insertionDoc.content.length > 0
+          ? insertionDoc.content
+          : [{ type: 'paragraph' }]
       tiptapEditor.chain().focus().insertContentAt(to, insertionContent).run()
     }
 
@@ -1890,6 +1997,20 @@ watch(
 
     resetWorkflowTransientState()
     writerStore.setSelectedText('')
+  },
+)
+
+watch(
+  [displayChapterId, currentChapterPlainText],
+  ([chapterId, text], [prevChapterId, prevText]) => {
+    if (chapterId === prevChapterId && text === prevText) {
+      return
+    }
+
+    focusedProofreadIssueId.value = ''
+    proofreadIssues.value = proofreadIssues.value.map((issue) =>
+      issue.status === 'open' ? { ...issue, status: 'stale' } : issue,
+    )
   },
 )
 

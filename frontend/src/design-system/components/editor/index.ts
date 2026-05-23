@@ -7,4 +7,6 @@ export { default as QyEntityScanPanel } from './QySmartKeyword/QyEntityScanPanel
 export { default as QyEntityCreateDialog } from './QySmartKeyword/QyEntityCreateDialog.vue'
 export { SmartKeyword } from './QySmartKeyword/extensions/SmartKeyword'
 export { ParagraphWithId } from './QySmartKeyword/extensions/ParagraphWithId'
+export { ProofreadHighlightExtension } from './QySmartKeyword/extensions/ProofreadHighlightExtension'
 export type { KeywordInfo, KeywordType } from './QySmartKeyword/extensions/SmartKeyword'
+export type { ProofreadHighlightRange } from './QySmartKeyword/extensions/ProofreadHighlightExtension'

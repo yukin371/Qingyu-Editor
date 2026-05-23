@@ -20,6 +20,8 @@
           :readonly="readonly"
           :placeholder="placeholder"
           :toolbar-preset="appearanceStore.compactToolbar ? 'writer' : 'default'"
+          :proofread-highlights="proofreadHighlights"
+          :focused-proofread-issue-id="focusedProofreadIssueId"
           @update:model-value="(val) => $emit('update:modelValue', val)"
           @save="handleSave"
           @keyword-click="(kw) => $emit('keyword-click', kw)"
@@ -126,6 +128,7 @@ import { computed, reactive, watch, ref, onUnmounted } from 'vue'
 import type { Editor } from '@tiptap/core'
 import { QyTipTapEditor } from '@/design-system/components/editor'
 import type { KeywordInfo } from '@/design-system/components/editor'
+import type { ProofreadHighlightRange } from '@/design-system/components/editor'
 import { QyEntityScanPanel } from '@/design-system/components/editor'
 import type { ScannedEntity } from '@/modules/writer/composables/useEntityScanner'
 import { useEntityScanner } from '@/modules/writer/composables/useEntityScanner'
@@ -145,6 +148,8 @@ const props = withDefaults(
     placeholder?: string
     showReferencePanel?: boolean
     showEntityScan?: boolean
+    proofreadHighlights?: ProofreadHighlightRange[]
+    focusedProofreadIssueId?: string
   }>(),
   {
     documentId: '',
@@ -152,6 +157,8 @@ const props = withDefaults(
     placeholder: '输入 @ 触发实体补全…',
     showReferencePanel: true,
     showEntityScan: true,
+    proofreadHighlights: () => [],
+    focusedProofreadIssueId: '',
   },
 )
 

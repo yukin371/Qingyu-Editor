@@ -68,15 +68,43 @@ function normalizeIssues(value: unknown): AIProofreadIssue[] {
       if (!message) {
         return null
       }
+      const rawSuggestions = record.suggestionDetails || record.suggestion_details || record.suggestions
+      const suggestionDetails = Array.isArray(rawSuggestions)
+        ? rawSuggestions
+            .map((suggestion: unknown) => {
+              if (suggestion && typeof suggestion === 'object') {
+                const suggestionRecord = suggestion as Record<string, unknown>
+                const text = String(
+                  suggestionRecord.text || suggestionRecord.value || suggestionRecord.suggestion || '',
+                ).trim()
+                if (!text) return null
+                return {
+                  text,
+                  reason: String(suggestionRecord.reason || suggestionRecord.explanation || '').trim() || undefined,
+                  confidence: Number.isFinite(Number(suggestionRecord.confidence))
+                    ? Number(suggestionRecord.confidence)
+                    : undefined,
+                }
+              }
+              const text = String(suggestion || '').trim()
+              return text ? { text } : null
+            })
+            .filter((suggestion): suggestion is { text: string; reason?: string; confidence?: number } =>
+              Boolean(suggestion),
+            )
+        : []
 
       return {
         id: String(record.id || `direct-issue-${index + 1}`),
         type: String(record.type || record.category || '表达'),
         severity: String(record.severity || record.level || 'medium'),
         message,
-        suggestions: Array.isArray(record.suggestions)
-          ? record.suggestions.map((suggestion) => String(suggestion).trim()).filter(Boolean)
-          : [],
+        suggestions: suggestionDetails.map((suggestion) => suggestion.text),
+        suggestionDetails,
+        position: record.position && typeof record.position === 'object' ? (record.position as any) : undefined,
+        originalText: String(record.originalText || record.original_text || record.original || '').trim() || undefined,
+        category: String(record.category || '').trim() || undefined,
+        rule: String(record.rule || '').trim() || undefined,
       } satisfies AIProofreadIssue
     })
   return issues.filter((item): item is AIProofreadIssue => item !== null)
@@ -263,7 +291,7 @@ export const aiDirectApi = {
             ? `以下上下文只用于判断措辞是否符合当前场景、人物和节拍，不要审校上下文本身：\n${options.contextPrompt.trim()}`
             : '',
           '请严格只输出 JSON，不要输出其他解释。',
-        '{"score":8.5,"issues":[{"type":"语法","severity":"medium","message":"问题描述","suggestions":["修改建议"]}]}',
+        '{"score":8.5,"issues":[{"type":"grammar","severity":"warning","message":"问题描述","originalText":"原文片段","position":{"start":0,"end":2},"suggestions":["修改建议"]}]}',
         '如果没有明显问题，issues 返回空数组。',
         '待审校内容：',
         text,
