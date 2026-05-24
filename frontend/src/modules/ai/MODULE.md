@@ -36,6 +36,8 @@
 - `requestWriterAI(plan)` 可携带 `intent` 与 `history`；`intent` 只用于选择续写/扩写/改写/总结/审校的生成路径，`history` 只用于普通聊天，不允许把当前发送内容重复写入历史。
 - `workflow / skillId / toolHintIds` 在 AI 层只是通用字符串元数据；真正的写作 skill、阶段提示词和工具说明由 writer orchestration 写入 `plan.orchestration`。
 - 分析类请求（总结、审校、风控）也必须通过 `orchestration.contextPrompt` 或 plan context 接收领域摘要；AI 层只格式化和转发，不成为领域事实 owner。
+- `api/ai-direct.ts` 只允许复用 `src/utils/runtimeHost.ts` 这类中立宿主 helper，不能为了判断桌面/远端运行态去依赖 `@/modules/writer/*`。
+- `api/ai-direct.ts` 在 Wails / 本地桌面宿主下默认优先本地 `Qingyu-Ai-Service`（缺省 `http://127.0.0.1:8000`）；只有显式 `?remote=true` 时才禁止这条本地直连兜底。
 - 用户 API 模式当前以 OpenAI 兼容接口为准，最小配置为 `服务地址 + 接口路径 + 模型`
 - 用户 API Provider 可通过预设快速填入常见 baseURL / endpoint / model，但预设只服务设置页体验，不改变请求 facade owner；模型必须继续允许手动输入。
 - 设置页现在还提供常见 provider 模板与“自定义”模板，用于快速切换 Qwen / DeepSeek / Kimi / GLM / Gemini / GPT / Claude / 本地兼容服务；模板只填充当前激活的 provider 配置槽，不改变请求 facade owner。

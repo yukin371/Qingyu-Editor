@@ -16,7 +16,7 @@ const createWrapper = (props = {}) =>
       chapterCount: 12,
       directoryCount: 2,
       activeToolLabel: '写作模式',
-      saveStatusLabel: '已保存',
+      saveStatusLabel: '已保存 20:15',
       isImmersiveMode: false,
       immersiveTimerText: '',
       ...props,
@@ -29,6 +29,13 @@ const createWrapper = (props = {}) =>
   })
 
 describe('WorkspaceStatusbar', () => {
+  it('keeps saved status styling when the label includes the save time', () => {
+    const wrapper = createWrapper()
+
+    expect(wrapper.find('.workspace-statusbar__state').classes()).toContain('status-saved')
+    expect(wrapper.text()).toContain('已保存 20:15')
+  })
+
   it('renders visible bottom workbench switches', () => {
     const wrapper = createWrapper({ sceneStageTitle: '第一场' })
 

@@ -172,6 +172,8 @@ describe('StoryHarnessPanel', () => {
       },
     })
 
+    expect(wrapper.text()).toContain('门槛')
+
     expect(wrapper.get('[data-testid="story-harness-workflow-gate-panel"]').text()).toContain(
       '需审查',
     )
@@ -343,10 +345,10 @@ describe('StoryHarnessPanel', () => {
 
     expect(wrapper.text()).toContain('角色 2')
     expect(wrapper.text()).toContain('地点 1')
-    expect(wrapper.text()).toContain('物品 1')
+    expect(wrapper.text()).toContain('物件 1')
     expect(wrapper.text()).toContain('概念 1')
     expect(wrapper.text()).toContain('关系 1')
-    expect(wrapper.text()).toContain('待处理 1')
+    expect(wrapper.text()).toContain('待 1')
   })
 
   it('renders compressed save batch receipt', () => {
@@ -390,7 +392,7 @@ describe('StoryHarnessPanel', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('已冻结 3 条建议')
+    expect(wrapper.text()).toContain('冻结 3 条')
     expect(wrapper.text()).not.toContain('保存回执')
   })
 
@@ -418,7 +420,7 @@ describe('StoryHarnessPanel', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('保存章节后自动生成')
+    expect(wrapper.text()).toContain('保存后自动生成')
     expect(wrapper.text()).not.toContain('当前还没有正式建议')
   })
 })

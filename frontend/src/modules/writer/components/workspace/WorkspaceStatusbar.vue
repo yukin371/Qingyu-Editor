@@ -7,7 +7,6 @@
 
       <span class="status-chip">{{ chapterCount }} 章节</span>
       <span class="status-chip">{{ directoryCount }} 目录</span>
-      <span v-if="activeToolLabel" class="status-chip">{{ activeToolLabel }}</span>
       <span
         v-for="chip in extraStatusChips"
         :key="chip"
@@ -104,9 +103,9 @@ const displayTotalWords = computed(() => {
 // 根据保存状态计算样式类
 const saveStatusClass = computed(() => {
   const label = props.saveStatusLabel
-  if (label === '已保存') return 'status-saved'
-  if (label === '保存中...') return 'status-saving'
-  if (label === '未保存') return 'status-unsaved'
+  if (label.startsWith('已保存')) return 'status-saved'
+  if (label.startsWith('保存中')) return 'status-saving'
+  if (label.startsWith('未保存')) return 'status-unsaved'
   return ''
 })
 
@@ -118,18 +117,18 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .workspace-statusbar {
-  height: 32px;
-  padding: 0 14px;
+  height: 28px;
+  padding: 0 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  background: var(--editor-bg-surface, #f8fafc);
+  gap: 10px;
+  background: color-mix(in srgb, var(--editor-bg-surface, #f8fafc) 76%, transparent);
   border-top: 1px solid var(--editor-border, #e2e8f0);
   color: var(--editor-text-ghost, #94a3b8);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   flex-shrink: 0;
 }
 
@@ -140,7 +139,7 @@ onMounted(() => {
 .workspace-statusbar__stats {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   overflow-x: auto;
   white-space: nowrap;
   flex: 1;
@@ -159,17 +158,17 @@ onMounted(() => {
 }
 
 .workspace-statusbar__stage-btn {
-  height: 26px;
+  height: 22px;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 12px;
-  border: 1px solid var(--editor-border, #e2e8f0);
-  border-radius: 999px;
-  background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
+  gap: 6px;
+  padding: 0 9px;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 74%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #fff)) 82%, transparent);
   color: var(--editor-text-muted, #64748b);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   white-space: nowrap;
 
@@ -180,7 +179,7 @@ onMounted(() => {
 
   &.is-active {
     color: var(--editor-accent, #2563eb);
-    background: var(--editor-accent-soft, #eff6ff);
+    background: color-mix(in srgb, var(--editor-accent-soft, #eff6ff) 68%, transparent);
   }
 }
 
@@ -189,18 +188,18 @@ onMounted(() => {
 }
 
 .workspace-statusbar__stage-title {
-  max-width: 18vw;
+  max-width: 16vw;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .status-chip {
-  padding: 1px 6px;
+  padding: 1px 5px;
   border-radius: var(--editor-radius-sm, 4px);
   background: var(--editor-bg-elevated, #f1f5f9);
   color: var(--editor-text-ghost, #94a3b8);
   border: 1px solid var(--editor-border, #e2e8f0);
-  font-size: 10px;
+  font-size: 9px;
   white-space: nowrap;
 }
 
@@ -219,7 +218,7 @@ onMounted(() => {
 .workspace-statusbar__state {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   flex-shrink: 0;
   color: var(--editor-text-ghost, #94a3b8);
   transition: color 0.3s ease;
@@ -238,11 +237,11 @@ onMounted(() => {
 }
 
 .workspace-statusbar__dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 999px;
   background: var(--color-success-400, #48e594);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success-400, #48e594) 22%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-success-400, #48e594) 18%, transparent);
   flex-shrink: 0;
 }
 

@@ -46,13 +46,13 @@ describe('AIQuickActions', () => {
     expect(labels[2].text()).toBe('摘要')
   })
 
-  it('should display compact group badges and descriptions', () => {
+  it('should keep quick actions free of extra group badges', () => {
     const wrapper = mount(AIQuickActions, {
       props: { actions: mockActions },
     })
 
-    expect(wrapper.findAll('.quick-action-group')[0].text()).toBe('写')
-    expect(wrapper.find('.quick-action-description').text()).toBe('沿着当前章节继续推进')
+    expect(wrapper.find('.quick-action-group').exists()).toBe(false)
+    expect(wrapper.find('.quick-action-description').exists()).toBe(false)
   })
 
   it('should emit select event with action when clicked', async () => {

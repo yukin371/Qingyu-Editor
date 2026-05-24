@@ -148,19 +148,19 @@ const vClickOutside = {
 
 <style scoped lang="scss">
 .workspace-left-tabs {
-  height: 44px;
-  padding: 0 10px;
+  height: 36px;
+  padding: 0 7px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   border-bottom: 1px solid var(--editor-border, #e2e8f0);
-  background: var(--editor-bg-surface, #f8fafc);
+  background: color-mix(in srgb, var(--editor-bg-surface, #f8fafc) 74%, transparent);
   flex-shrink: 0;
 }
 
 .tab-group {
   display: flex;
-  gap: 2px;
+  gap: 1px;
   flex: 1;
   min-width: 0;
 }
@@ -168,14 +168,14 @@ const vClickOutside = {
 .primary-tool-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 28px;
-  padding: 0 10px;
-  border: 1px solid rgba(50, 83, 106, 0.16);
-  border-radius: var(--editor-radius-md, 6px);
-  background: rgba(236, 254, 255, 0.72);
+  gap: 4px;
+  height: 24px;
+  padding: 0 7px;
+  border: 1px solid rgba(50, 83, 106, 0.12);
+  border-radius: 7px;
+  background: rgba(236, 254, 255, 0.42);
   color: var(--editor-accent, #06b6d4);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
   cursor: pointer;
   transition: all 120ms ease-out;
@@ -183,20 +183,20 @@ const vClickOutside = {
   white-space: nowrap;
 
   &:hover {
-    background: rgba(236, 254, 255, 0.96);
+    background: rgba(236, 254, 255, 0.82);
     color: var(--editor-text-primary, #0f172a);
-    border-color: rgba(50, 83, 106, 0.24);
+    border-color: rgba(50, 83, 106, 0.18);
   }
 }
 
 .tab-btn {
   flex: 1;
-  padding: 6px 10px;
+  padding: 4px 7px;
   border: none;
-  border-radius: var(--editor-radius-md, 6px);
+  border-radius: 7px;
   background: transparent;
   color: var(--editor-text-muted, #64748b);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: all 120ms ease-out;
@@ -208,7 +208,7 @@ const vClickOutside = {
   }
 
   &.active {
-    background: var(--editor-accent-soft, #ecfeff);
+    background: color-mix(in srgb, var(--editor-accent-soft, #ecfeff) 78%, transparent);
     color: var(--editor-accent, #06b6d4);
     font-weight: 600;
   }
@@ -221,13 +221,13 @@ const vClickOutside = {
 
 .more-btn {
   min-width: 40px;
-  height: 28px;
-  padding: 0 8px;
+  height: 24px;
+  padding: 0 7px;
   border: none;
-  border-radius: var(--editor-radius-md, 6px);
+  border-radius: 7px;
   background: transparent;
   color: var(--editor-text-muted, #64748b);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition: all 120ms ease-out;
@@ -248,7 +248,7 @@ const vClickOutside = {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  min-width: 156px;
+  min-width: 148px;
   background: var(--editor-layer-panel, var(--editor-bg-base, #ffffff));
   border: 1px solid var(--editor-border, #e2e8f0);
   border-radius: var(--editor-radius-lg, 8px);
@@ -263,14 +263,14 @@ const vClickOutside = {
 .dropdown-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   width: 100%;
-  padding: 8px 10px;
+  padding: 7px 9px;
   border: none;
   border-radius: var(--editor-radius-md, 6px);
   background: transparent;
   color: var(--editor-text-muted, #64748b);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   text-align: left;
@@ -292,20 +292,20 @@ const vClickOutside = {
 }
 
 .dropdown-section-label {
-  padding: 6px 10px 4px;
+  padding: 5px 9px 3px;
   color: var(--editor-text-muted, #64748b);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .collapse-btn {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: none;
-  border-radius: var(--editor-radius-md, 6px);
+  border-radius: 7px;
   background: transparent;
   color: var(--editor-text-muted, #64748b);
   cursor: pointer;
@@ -325,21 +325,21 @@ const vClickOutside = {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 8px 0;
-  gap: 4px;
+  padding: 5px 0;
+  gap: 3px;
   height: 100%;
   background: var(--editor-bg-actbar, #f1f5f9);
   border-right: 1px solid var(--editor-border, #e2e8f0);
 }
 
 .dock-item {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: var(--editor-radius-md, 6px);
+  border-radius: 8px;
   background: transparent;
   color: var(--editor-actbar-icon, #64748b);
   cursor: pointer;
@@ -372,10 +372,10 @@ const vClickOutside = {
 }
 
 .dock-divider {
-  width: 24px;
+  width: 20px;
   height: 1px;
   background: var(--editor-border, #e2e8f0);
-  margin: 4px 0;
+  margin: 3px 0;
 }
 
 @media (max-width: 1024px) {

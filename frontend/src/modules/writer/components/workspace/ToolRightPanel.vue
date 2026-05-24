@@ -21,6 +21,11 @@
             @select-category="handleAssetCategoryChange"
             @select-asset="handleAssetSelect"
             @create-asset="handleCreateAsset"
+            @extract-assets="handleExtractAssets"
+            @toggle-extracted-asset="handleToggleExtractedAsset"
+            @update-extracted-asset-field="handleUpdateExtractedAssetField"
+            @dismiss-extracted-asset="handleDismissExtractedAsset"
+            @create-selected-extracted-assets="handleCreateSelectedExtractedAssets"
           />
         </aside>
         <div
@@ -214,6 +219,11 @@ const {
   handleAssetSearchKeywordChange,
   handleAssetScopeViewChange,
   handleAssetCategoryChange,
+  handleExtractAssets,
+  handleToggleExtractedAsset,
+  handleUpdateExtractedAssetField,
+  handleDismissExtractedAsset,
+  handleCreateSelectedExtractedAssets,
   assetListPanelProps,
   assetDetailPanelProps,
   selectedAsset,
@@ -231,6 +241,8 @@ const {
 } = useToolRightAssets({
   projectId: computed(() => props.projectId),
   chapterId: computed(() => props.chapterId),
+  chapterTitle: computed(() => props.chapterTitle),
+  sourceText: computed(() => props.sourceText),
   chapters: computed(() => props.chapters),
 })
 const {
@@ -269,19 +281,20 @@ const handleOpenInspirationFullscreen = () => {
 }
 
 .tool-right-panel__topbar {
-  min-height: 40px;
+  min-height: 24px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 0 12px;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 0 8px;
   border-bottom: 1px solid var(--editor-border, #eceff3);
 }
 
 .tool-right-panel__icon-btn {
-  width: 26px;
-  height: 26px;
+  width: 20px;
+  height: 20px;
   border: none;
+  border-radius: 6px;
   background: transparent;
   color: var(--editor-text-muted, #6b7280);
   display: inline-flex;
@@ -304,6 +317,7 @@ const handleOpenInspirationFullscreen = () => {
   min-height: 0;
   flex: 1;
   display: flex;
+  background: color-mix(in srgb, var(--editor-layer-panel, #fff) 96%, transparent);
 }
 
 .tool-right-panel__list {
@@ -318,6 +332,7 @@ const handleOpenInspirationFullscreen = () => {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+  background: transparent;
 }
 
 .tool-right-panel__divider {

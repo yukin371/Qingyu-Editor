@@ -14,6 +14,9 @@ const createWrapper = () =>
       activeToolLabel: '写作',
       saveStatusLabel: '已保存',
       isImmersiveMode: false,
+      activeRightTool: 'ai',
+      isRightToolVisible: false,
+      isBottomPanelVisible: false,
     },
     global: {
       plugins: [createPinia()],
@@ -39,7 +42,39 @@ describe('WorkspaceTopbar', () => {
     expect(wrapper.find('.topbar-back-btn').text()).toContain('测试项目')
     expect(wrapper.find('.chapter-title').text()).toBe('第一章')
     expect(wrapper.find('.status-text').text()).toContain('已保存')
-    expect(wrapper.find('.tool-chip').text()).toBe('写作')
+    expect(wrapper.find('.tool-chip').exists()).toBe(false)
+  })
+
+  it('only shows mode chip for non-default editor modes', () => {
+    const wrapper = mount(WorkspaceTopbar, {
+      props: {
+        projectDisplayName: '测试项目',
+        currentChapterTitle: '第一章',
+        activeToolLabel: '沉浸',
+        saveStatusLabel: '已保存',
+        isImmersiveMode: true,
+        activeRightTool: 'ai',
+        isRightToolVisible: false,
+        isBottomPanelVisible: false,
+      },
+      global: {
+        plugins: [createPinia()],
+        stubs: {
+          QyDialog: {
+            name: 'QyDialog',
+            template: '<div class="qy-dialog-stub"><slot /></div>',
+          },
+          Dialog: {
+            name: 'Dialog',
+            template: '<div class="qy-dialog-stub"><slot /></div>',
+          },
+          QyIcon: true,
+          WorkspaceSettingsPanel: true,
+        },
+      },
+    })
+
+    expect(wrapper.find('.tool-chip').text()).toBe('沉浸')
   })
 
   it('emits back, save and export events from primary actions', async () => {
@@ -81,6 +116,44 @@ describe('WorkspaceTopbar', () => {
     ])
   })
 
+  it('shows active state for the currently visible right tool', () => {
+    const wrapper = mount(WorkspaceTopbar, {
+      props: {
+        projectDisplayName: '测试项目',
+        currentChapterTitle: '第一章',
+        activeToolLabel: '写作',
+        saveStatusLabel: '已保存',
+        isImmersiveMode: false,
+        activeRightTool: 'proofread',
+        isRightToolVisible: true,
+        isBottomPanelVisible: false,
+      },
+      global: {
+        plugins: [createPinia()],
+        stubs: {
+          QyDialog: {
+            name: 'QyDialog',
+            template: '<div class="qy-dialog-stub"><slot /></div>',
+          },
+          Dialog: {
+            name: 'Dialog',
+            template: '<div class="qy-dialog-stub"><slot /></div>',
+          },
+          QyIcon: true,
+          WorkspaceSettingsPanel: true,
+        },
+      },
+    })
+
+    const proofreadButton = findButtonByTitle(wrapper, '校对')
+    const aiButton = findButtonByTitle(wrapper, 'AI 助手')
+
+    expect(proofreadButton?.classes()).toContain('topbar-icon-btn--active')
+    expect(proofreadButton?.attributes('aria-pressed')).toBe('true')
+    expect(aiButton?.classes()).not.toContain('topbar-icon-btn--active')
+    expect(aiButton?.attributes('aria-pressed')).toBe('false')
+  })
+
   it('emits share from the overflow menu', async () => {
     const wrapper = createWrapper()
 
@@ -92,6 +165,46 @@ describe('WorkspaceTopbar', () => {
 
     expect(wrapper.emitted('share')).toHaveLength(1)
     expect(wrapper.find('.topbar-overflow__menu').exists()).toBe(false)
+  })
+
+  it('shows scene stage open state in the overflow menu', async () => {
+    const wrapper = mount(WorkspaceTopbar, {
+      props: {
+        projectDisplayName: '测试项目',
+        currentChapterTitle: '第一章',
+        activeToolLabel: '写作',
+        saveStatusLabel: '已保存',
+        isImmersiveMode: false,
+        activeRightTool: 'ai',
+        isRightToolVisible: false,
+        isBottomPanelVisible: true,
+      },
+      global: {
+        plugins: [createPinia()],
+        stubs: {
+          QyDialog: {
+            name: 'QyDialog',
+            template: '<div class="qy-dialog-stub"><slot /></div>',
+          },
+          Dialog: {
+            name: 'Dialog',
+            template: '<div class="qy-dialog-stub"><slot /></div>',
+          },
+          QyIcon: true,
+          WorkspaceSettingsPanel: true,
+        },
+      },
+    })
+
+    await wrapper.get('.topbar-overflow .topbar-btn--icon').trigger('click')
+
+    const sceneStageButton = wrapper
+      .findAll('.topbar-overflow__item')
+      .find((button) => button.text().includes('场景舞台'))
+
+    expect(sceneStageButton?.text()).toContain('收起场景舞台')
+    expect(sceneStageButton?.classes()).toContain('topbar-overflow__item--active')
+    expect(sceneStageButton?.attributes('aria-pressed')).toBe('true')
   })
 
   it('keeps shortcut settings only in the workspace settings dialog', async () => {

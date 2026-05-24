@@ -2,11 +2,7 @@
   <section class="tool-panel">
     <header class="tool-panel__header">
       <div class="tool-panel__header-copy">
-        <p class="tool-panel__eyebrow">改写</p>
-        <h3 class="tool-panel__title">正文改写台</h3>
-        <p class="tool-panel__lede">
-          直接生成可进入正文 diff 的版本，适合润色、扩写、缩写与续写衔接。
-        </p>
+        <h3 class="tool-panel__title">改写</h3>
       </div>
       <button
         type="button"
@@ -70,8 +66,7 @@
     </label>
 
     <div v-if="!resultText && !errorText" class="tool-panel__empty">
-      <strong>结果卡会显示在这里</strong>
-      <p>可处理当前选区，也可手动粘贴文本。</p>
+      <strong>等待结果</strong>
     </div>
 
     <article v-if="resultText" class="result-card">
@@ -173,13 +168,11 @@ const modeLabel = computed(() => {
   return '润色'
 })
 const applyModeLabel = computed(() => {
-  if (currentApplyMode.value === 'insert_after_selection') return '应用方式: 插入选区后'
-  return '应用方式: 替换当前选区'
+  if (currentApplyMode.value === 'insert_after_selection') return '插入选区后'
+  return '替换选区'
 })
 const applyModeDescription = computed(() =>
-  currentApplyMode.value === 'insert_after_selection'
-    ? '适合续写、扩写。AI 结果会追加到当前选中片段之后。'
-    : '适合润色、改写。AI 结果会覆盖当前选中的内容。',
+  currentApplyMode.value === 'insert_after_selection' ? '生成内容追加到选区后' : '生成内容替换选区',
 )
 const statusTitle = computed(() => {
   if (loading.value) return '处理中'
@@ -189,9 +182,9 @@ const statusTitle = computed(() => {
 })
 const statusDescription = computed(() => {
   if (loading.value) return '正在生成改写结果。'
-  if (resultText.value.trim()) return `可直接${applyModeLabel.value.replace('应用方式: ', '')}。`
-  if (props.actionTrigger) return '已注入选区与要求，可直接执行。'
-  return '输入内容后可执行改写。'
+  if (resultText.value.trim()) return `可${applyModeLabel.value}。`
+  if (props.actionTrigger) return '已带入选区。'
+  return '输入后执行。'
 })
 const effectiveWorkflowContext = computed(
   () => props.actionTrigger?.context ?? props.workflowContext ?? null,

@@ -137,7 +137,7 @@ import { useEditorAppearanceStore } from '@/modules/writer/stores/editorAppearan
 import { useEditorStore } from '@/modules/writer/stores/editorStore'
 import { extractPlainTextFromEditorContent } from '@/modules/writer/utils/editorContent'
 
-const AUTOSAVE_DEBOUNCE = 300 // 300ms debounce
+const AUTOSAVE_DEBOUNCE = 800 // 给连续输入留一点缓冲，避免过于频繁地自动保存
 
 const props = withDefaults(
   defineProps<{

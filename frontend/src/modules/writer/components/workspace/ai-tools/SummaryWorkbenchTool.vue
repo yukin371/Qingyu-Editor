@@ -2,9 +2,7 @@
   <section class="tool-panel">
     <header class="tool-panel__header">
       <div class="tool-panel__header-copy">
-        <p class="tool-panel__eyebrow">总结</p>
-        <h3 class="tool-panel__title">摘要与方向提炼</h3>
-        <p class="tool-panel__lede">统一输出片段摘要或章节方向提案，只生成候选，不直接覆盖正文。</p>
+        <h3 class="tool-panel__title">整理</h3>
       </div>
       <div class="tool-panel__actions">
         <button
@@ -46,9 +44,9 @@
     <section class="result-card result-card--planner">
       <div class="result-card__header">
         <div>
-          <strong>结构扩展</strong>
+          <strong>补结构</strong>
           <p class="result-card__caption">
-            先做最小可演示版：让 AI 直接补出卷/章节草案，并一键创建到项目。
+            生成卷/章节草案。
           </p>
         </div>
         <div class="tool-panel__actions">
@@ -134,7 +132,7 @@
         </div>
       </div>
       <p v-else-if="!plannerErrorText" class="tool-panel__empty-copy">
-        这里会生成可直接创建的卷/章节草案。
+        等待草案
       </p>
       <WorkbenchErrorState
         v-if="plannerErrorText"
@@ -145,8 +143,7 @@
     </section>
 
     <div v-if="!summary && !errorText" class="tool-panel__empty">
-      <strong>摘要结果会显示在这里</strong>
-      <p>可总结片段，也可直接总结当前章节。</p>
+      <strong>等待摘要</strong>
     </div>
 
     <article v-if="summary" class="result-card">
@@ -154,16 +151,12 @@
         <div>
           <strong>{{ mode === 'chapter' ? '章节摘要' : '片段摘要' }}</strong>
           <p class="result-card__caption">
-            {{
-              mode === 'chapter'
-                ? '针对当前章节生成结构化摘要。'
-                : '适合快速提炼当前片段的核心信息。'
-            }}
+            {{ mode === 'chapter' ? '当前章节' : '当前片段' }}
           </p>
         </div>
       </div>
       <div class="result-card__meta-row">
-        <span class="result-chip">{{ mode === 'chapter' ? '章节模式' : '片段模式' }}</span>
+        <span class="result-chip">{{ mode === 'chapter' ? '章节' : '片段' }}</span>
         <span v-if="keyPoints.length" class="result-chip result-chip--soft"
           >要点 {{ keyPoints.length }}</span
         >
@@ -254,11 +247,11 @@ const statusDescription = computed(() => {
   if (loading.value) return mode.value === 'chapter' ? '正在提炼章节摘要。' : '正在提炼片段摘要。'
   if (summary.value.trim()) {
     return keyPoints.value.length > 0
-      ? `已生成摘要与 ${keyPoints.value.length} 条要点。`
-      : '已生成摘要结果。'
+      ? `摘要 + ${keyPoints.value.length} 条要点。`
+      : '摘要已生成。'
   }
-  if (props.actionTrigger) return '已注入章节/片段上下文，可直接执行。'
-  return '可先输入片段，或直接总结章节。'
+  if (props.actionTrigger) return '已带入上下文。'
+  return '输入片段或总结章节。'
 })
 const planningStatusTitle = computed(() => {
   if (planning.value) return '正在规划'
@@ -273,10 +266,10 @@ const planningStatusDescription = computed(() => {
       : 'AI 正在补出新的章节结构。'
   }
   if (structurePlanItems.value.length > 0) {
-    return '可以直接创建到当前项目，后续再继续收敛为更完整的规划工作流。'
+    return '可创建到项目。'
   }
   if (plannerErrorText.value) return plannerErrorText.value
-  return '先写一句规划要求，再让 AI 给出卷/章节草案。'
+  return '写一句要求生成草案。'
 })
 const effectiveWorkflowContext = computed(
   () => props.actionTrigger?.context ?? props.workflowContext ?? null,

@@ -1,4 +1,4 @@
-import { requestWriterAI } from './ai'
+import { chatWithAI, requestWriterAI } from './ai'
 import { isUserProviderModeEnabled } from '../config/provider'
 import { postAIRequest } from './request'
 import { userAIProviderApi } from './ai-user-provider'
@@ -26,6 +26,37 @@ interface WorkbenchContextEvidence {
   label: string
   source: string
   detail?: string
+}
+
+export type WorkbenchExtractedAssetType =
+  | 'character'
+  | 'location'
+  | 'item'
+  | 'organization'
+  | 'concept'
+
+export interface WorkbenchExtractedAssetCandidate {
+  name: string
+  category: WorkbenchExtractedAssetType
+  summary?: string
+  evidence?: string
+  alias?: string[]
+}
+
+export interface AssetExtractionRequest {
+  content: string
+  projectId?: string
+  chapterId?: string
+  chapterTitle?: string
+  maxItems?: number
+  workflowContextPrompt?: string
+  existingAssets?: WorkbenchAssetSummary[]
+}
+
+export interface AssetExtractionResult {
+  summary: string
+  candidates: WorkbenchExtractedAssetCandidate[]
+  raw: Record<string, unknown>
 }
 
 export interface RewriteToolRequest {
@@ -291,6 +322,88 @@ function extractJsonObject(rawReply: string): Record<string, unknown> | null {
   }
 }
 
+function normalizeExtractedAssetCategory(value: unknown): WorkbenchExtractedAssetType | null {
+  const normalized = String(value || '')
+    .trim()
+    .toLowerCase()
+
+  if (!normalized) return null
+  if (normalized === 'character' || normalized === 'characters' || normalized === '角色') {
+    return 'character'
+  }
+  if (
+    normalized === 'location' ||
+    normalized === 'locations' ||
+    normalized === '地点' ||
+    normalized === '场景'
+  ) {
+    return 'location'
+  }
+  if (
+    normalized === 'item' ||
+    normalized === 'items' ||
+    normalized === '物件' ||
+    normalized === '物品' ||
+    normalized === '道具'
+  ) {
+    return 'item'
+  }
+  if (
+    normalized === 'organization' ||
+    normalized === 'organizations' ||
+    normalized === '组织' ||
+    normalized === '势力'
+  ) {
+    return 'organization'
+  }
+  if (normalized === 'concept' || normalized === 'concepts' || normalized === '概念' || normalized === '设定') {
+    return 'concept'
+  }
+  return null
+}
+
+function normalizeExtractedAssetCandidates(raw: unknown): WorkbenchExtractedAssetCandidate[] {
+  if (!Array.isArray(raw)) {
+    return []
+  }
+
+  const seen = new Set<string>()
+
+  return raw.reduce<WorkbenchExtractedAssetCandidate[]>((acc, item) => {
+    if (!item || typeof item !== 'object') {
+      return acc
+    }
+
+    const record = item as Record<string, unknown>
+    const name = String(record.name || record.assetName || '').trim()
+    const category = normalizeExtractedAssetCategory(record.category || record.type || record.assetType)
+
+    if (!name || !category) {
+      return acc
+    }
+
+    const key = `${category}:${name.toLocaleLowerCase()}`
+    if (seen.has(key)) {
+      return acc
+    }
+    seen.add(key)
+
+    acc.push({
+      name,
+      category,
+      summary: String(record.summary || record.description || '').trim() || undefined,
+      evidence: String(record.evidence || record.quote || record.reason || '').trim() || undefined,
+      alias: Array.isArray(record.alias)
+        ? record.alias
+            .map((alias) => String(alias || '').trim())
+            .filter(Boolean)
+            .slice(0, 5)
+        : undefined,
+    })
+    return acc
+  }, [])
+}
+
 function normalizeStructurePlanItems(raw: unknown): StructurePlanItem[] {
   if (!Array.isArray(raw)) {
     return []
@@ -412,6 +525,65 @@ export async function generateStructurePlan(
   return {
     summary: String(parsed?.summary || '').trim() || `已生成 ${items.length} 个${modeLabel}草案。`,
     items,
+    raw: {
+      reply: rawReply,
+      usage: response.usage,
+      parsed: parsed || null,
+    },
+  }
+}
+
+export async function extractAssetsWithWorkbench(
+  payload: AssetExtractionRequest,
+): Promise<AssetExtractionResult> {
+  const maxItems = Math.min(Math.max(payload.maxItems || 12, 1), 20)
+  const existingAssetsSummary = (payload.existingAssets || [])
+    .slice(0, 40)
+    .map((asset) => `${asset.assetName}${asset.assetType ? `（${asset.assetType}）` : ''}`)
+    .join('、')
+
+  const prompt = [
+    '你是中文小说编辑器里的资产提取助手。',
+    '请从当前章节正文中提取值得长期建档的资产候选，只保留对后续创作有持续价值的角色、地点、物件、组织、概念。',
+    '忽略路人、泛称、一次性普通名词，以及没有独立意义的修饰词。',
+    '请只输出 JSON，不要输出 Markdown 代码块或额外解释。',
+    'JSON schema:',
+    '{',
+    '  "summary": "一句话说明本次识别结果",',
+    '  "candidates": [',
+    '    {',
+    '      "name": "资产名称",',
+    '      "category": "character|location|item|organization|concept",',
+    '      "summary": "一句话概括为什么值得建档",',
+    '      "evidence": "正文中的极短证据片段",',
+    '      "alias": ["可选别名"]',
+    '    }',
+    '  ]',
+    '}',
+    `约束：candidates 数量 0-${maxItems}；name 要简短准确；summary/evidence 尽量简短；不要返回已经存在的资产。`,
+    payload.projectId ? `项目ID：${payload.projectId}` : '',
+    payload.chapterId ? `章节ID：${payload.chapterId}` : '',
+    payload.chapterTitle?.trim() ? `章节标题：${payload.chapterTitle.trim()}` : '',
+    payload.workflowContextPrompt?.trim()
+      ? `补充上下文：\n${payload.workflowContextPrompt.trim()}`
+      : '',
+    existingAssetsSummary ? `已存在资产：${existingAssetsSummary}` : '',
+    '当前章节正文：',
+    payload.content.trim(),
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+
+  const response = await chatWithAI(prompt, [])
+  const rawReply = String(response.reply || '').trim()
+  const parsed = extractJsonObject(rawReply)
+  const candidates = normalizeExtractedAssetCandidates(parsed?.candidates).slice(0, maxItems)
+
+  return {
+    summary:
+      String(parsed?.summary || '').trim() ||
+      (candidates.length > 0 ? `已识别 ${candidates.length} 个候选资产。` : '未识别到新的可建档资产。'),
+    candidates,
     raw: {
       reply: rawReply,
       usage: response.usage,

@@ -33,14 +33,7 @@
       <div v-if="activeCategory === category.id" class="asset-list-tree__group-body">
         <div v-if="loading" class="asset-list-tree__empty">正在加载设定…</div>
         <div v-else-if="assets.length === 0" class="asset-list-tree__empty">
-          <span>{{ emptyMessage }}</span>
-          <button
-            v-if="allowCategoryCreate"
-            type="button"
-            @click.stop="$emit('create-category-asset', category.id)"
-          >
-            新建{{ category.label }}
-          </button>
+          <span class="asset-list-tree__empty-copy">{{ emptyMessage }}</span>
         </div>
         <div v-else class="asset-list-tree__items">
           <button
@@ -99,24 +92,24 @@ defineEmits<{
   min-height: 0;
   flex: 1;
   overflow: auto;
-  padding: 0 6px 10px;
+  padding: 0 5px 8px;
 }
 
 .asset-list-tree__group + .asset-list-tree__group {
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 .asset-list-tree__folder {
   width: 100%;
   min-width: 0;
-  min-height: 28px;
+  min-height: 26px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   border: none;
   background: transparent;
   color: var(--editor-text-secondary, #374151);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   text-align: left;
 
@@ -130,12 +123,12 @@ defineEmits<{
 .asset-list-tree__folder-main {
   min-width: 0;
   flex: 1;
-  min-height: 28px;
+  min-height: 26px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  padding: 0 8px;
+  padding: 0 7px;
   border: none;
   background: transparent;
   color: inherit;
@@ -145,14 +138,14 @@ defineEmits<{
 }
 
 .asset-list-tree__folder-create {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   flex: 0 0 auto;
   border: 1px solid transparent;
   border-radius: 5px;
   background: transparent;
   color: var(--editor-text-muted, #6b7280);
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1;
   cursor: pointer;
 
@@ -165,39 +158,26 @@ defineEmits<{
 
 .asset-list-tree__folder-count {
   color: var(--editor-text-ghost, #9ca3af);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
 }
 
 .asset-list-tree__group-body {
-  padding: 4px 0 6px 10px;
+  padding: 3px 0 5px 8px;
   border-left: 1px solid var(--editor-border, #eceff3);
-  margin-left: 10px;
+  margin-left: 9px;
 }
 
 .asset-list-tree__empty {
-  margin: 4px 0;
-  padding: 10px 8px;
-  border: 1px dashed var(--editor-border, #eceff3);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--editor-layer-soft, #f8fafc) 72%, transparent);
+  margin: 3px 0;
+  padding: 4px 2px 1px;
   color: var(--editor-text-muted, #6b7280);
-  font-size: 12px;
-  display: grid;
-  gap: 8px;
+  font-size: 11px;
+  display: block;
 }
 
-.asset-list-tree__empty button {
-  width: fit-content;
-  min-height: 26px;
-  padding: 0 8px;
-  border: 1px solid color-mix(in srgb, var(--editor-accent, #1d4ed8) 24%, transparent);
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--editor-accent-soft, #eaf2ff) 66%, transparent);
-  color: var(--editor-accent, #1d4ed8);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
+.asset-list-tree__empty-copy {
+  min-width: 0;
 }
 
 .asset-list-tree__items {
@@ -206,13 +186,13 @@ defineEmits<{
 }
 
 .asset-list-tree__item {
-  min-height: 30px;
+  min-height: 27px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
-  padding: 0 8px;
+  padding: 0 7px;
   border: none;
   border-radius: 4px;
   background: transparent;
@@ -234,12 +214,12 @@ defineEmits<{
   min-width: 0;
   display: flex;
   align-items: baseline;
-  gap: 6px;
+  gap: 5px;
 }
 
 .asset-list-tree__item-name {
   min-width: 0;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -249,7 +229,7 @@ defineEmits<{
 .asset-list-tree__item-type,
 .asset-list-tree__item-badge {
   color: var(--editor-text-ghost, #9ca3af);
-  font-size: 11px;
+  font-size: 10px;
   white-space: nowrap;
 }
 

@@ -52,7 +52,7 @@ describe('AIChatMessages', () => {
   it('should show empty state when no messages', () => {
     const wrapper = buildWrapper({ messages: [] })
     expect(wrapper.find('.empty-state').exists()).toBe(true)
-    expect(wrapper.find('.empty-text').text()).toContain('开始与AI助手对话')
+    expect(wrapper.find('.empty-text').text()).toContain('向 AI 说明你的想法')
   })
 
   it('should render user message correctly', () => {
@@ -62,6 +62,25 @@ describe('AIChatMessages', () => {
     const wrapper = buildWrapper({ messages })
     expect(wrapper.find('.message-user').exists()).toBe(true)
     expect(wrapper.find('.message-user .message-content').text()).toBe('Hello')
+  })
+
+  it('should render workflow-style user prompt as a compact task card', () => {
+    const messages: ChatMessage[] = [
+      {
+        id: '1',
+        role: 'user',
+        content:
+          '[直接修改正文]\n目标：《第一章 云港》 全文\n修改要求：请根据当前内容续写一段话，保持当前视角、人物语气和章节节奏。',
+        timestamp: Date.now(),
+      },
+    ]
+
+    const wrapper = buildWrapper({ messages })
+
+    expect(wrapper.find('.message-user-task-card').exists()).toBe(true)
+    expect(wrapper.find('.message-user-task-card__badge').text()).toContain('直接修改正文')
+    expect(wrapper.find('.message-user-task-card__title').text()).toContain('第一章 云港')
+    expect(wrapper.find('.message-user-task-card__detail').text()).toContain('续写一段话')
   })
 
   it('should render AI message correctly', () => {
@@ -343,6 +362,38 @@ describe('AIChatMessages', () => {
     expect(wrapper.find('.message-context-evidence').text()).toContain('参考')
     expect(wrapper.find('.message-context-evidence').text()).toContain('第1章')
     expect(wrapper.find('.message-context-evidence').text()).toContain('林舟')
+  })
+
+  it('should collapse long assistant context echo by default and allow expanding', async () => {
+    const messages: ChatMessage[] = [
+      {
+        id: '1',
+        role: 'assistant',
+        content: '这是一段很长的上下文回显。'.repeat(30),
+        timestamp: Date.now(),
+        meta: {
+          kind: 'writer_context_evidence',
+          statusText: '上下文证据',
+          contextEvidence: [
+            {
+              label: '第一章',
+              detail: '当前正文',
+              source: 'current_document',
+            },
+          ],
+        },
+      },
+    ]
+
+    const wrapper = buildWrapper({ messages })
+
+    expect(wrapper.find('.message-content--collapsed').exists()).toBe(true)
+    expect(wrapper.find('.message-content-toggle').text()).toBe('展开')
+
+    await wrapper.find('.message-content-toggle').trigger('click')
+
+    expect(wrapper.find('.message-content--collapsed').exists()).toBe(false)
+    expect(wrapper.find('.message-content-toggle').text()).toBe('收起')
   })
 
   it('should show pending assistant bubble when panel is typing without persisted typing message', () => {

@@ -30,7 +30,7 @@
       </dl>
 
       <section v-if="stateFields.length" class="asset-detail-content__section">
-        <h4>状态字段</h4>
+        <h4>状态</h4>
         <div class="asset-detail-content__state-list">
           <div v-for="field in stateFields" :key="field.key" class="asset-detail-content__state-item">
             <strong>{{ field.label }}</strong>
@@ -45,8 +45,8 @@
         v-if="asset.latestChapterTitle || chapterReferenceText || volumeReferenceText"
         class="asset-detail-content__chapter-block"
       >
-        <p class="asset-detail-content__chapter-label">最近提及</p>
-        <strong>{{ asset.latestChapterTitle || '暂无最近章节' }}</strong>
+        <p class="asset-detail-content__chapter-label">最近</p>
+        <strong>{{ asset.latestChapterTitle || '暂无' }}</strong>
         <p v-if="chapterReferenceMetaText" class="asset-detail-content__chapter-meta">
           {{ chapterReferenceMetaText }}
         </p>
@@ -63,7 +63,7 @@
         </button>
       </section>
       <section v-else class="asset-detail-content__chapter-empty">
-        <span>当前资产还没有章节引用记录。</span>
+        <span>暂无引用</span>
       </section>
     </div>
   </div>
@@ -112,19 +112,19 @@ const chapterReferenceMetaText = computed(() =>
 .asset-detail-content {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 9px;
 }
 
 .asset-detail-content__tabs {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  min-height: 28px;
+  gap: 10px;
+  min-height: 25px;
   border-bottom: 1px solid var(--editor-border, #eceff3);
 }
 
 .asset-detail-content__tab {
-  height: 28px;
+  height: 25px;
   padding: 0;
   border: none;
   background: transparent;
@@ -141,7 +141,7 @@ const chapterReferenceMetaText = computed(() =>
 .asset-detail-content__body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 9px;
 }
 
 .asset-detail-content__summary {
@@ -154,11 +154,11 @@ const chapterReferenceMetaText = computed(() =>
   margin: 0;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px 16px;
+  gap: 8px 14px;
 }
 
 .asset-detail-content__row {
-  padding-bottom: 8px;
+  padding-bottom: 6px;
   border-bottom: 1px solid var(--editor-border-light, #f0f2f5);
 
   dt {
@@ -175,19 +175,19 @@ const chapterReferenceMetaText = computed(() =>
 }
 
 .asset-detail-content__section h4 {
-  margin: 0 0 8px;
-  font-size: 13px;
+  margin: 0 0 6px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--editor-text-primary, #111827);
 }
 
 .asset-detail-content__state-list {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .asset-detail-content__state-item {
-  padding-bottom: 8px;
+  padding-bottom: 6px;
   border-bottom: 1px solid var(--editor-border-light, #f0f2f5);
   display: flex;
   flex-direction: column;
@@ -206,7 +206,7 @@ const chapterReferenceMetaText = computed(() =>
 
 .asset-detail-content__chapter-block,
 .asset-detail-content__chapter-empty {
-  padding: 10px 0;
+  padding: 7px 0;
   border-bottom: 1px solid var(--editor-border-light, #f0f2f5);
 }
 
@@ -218,9 +218,9 @@ const chapterReferenceMetaText = computed(() =>
 }
 
 .asset-detail-content__chapter-action {
-  margin-top: 8px;
-  height: 28px;
-  padding: 0 10px;
+  margin-top: 7px;
+  height: 26px;
+  padding: 0 9px;
   border: 1px solid var(--editor-border, #d9dee6);
   border-radius: 4px;
   background: var(--editor-layer-panel, var(--editor-bg-base, #fff));

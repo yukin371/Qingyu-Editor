@@ -1,7 +1,7 @@
 <template>
   <section class="inspiration-gate-summary">
     <div class="inspiration-gate-summary__line" :class="`is-${status}`">
-      <strong>{{ status === 'ready' ? '阶段 1 已就绪' : '阶段 1 待补齐' }}</strong>
+      <strong>{{ status === 'ready' ? '阶段 1 就绪' : '阶段 1 待补' }}</strong>
       <span class="inspiration-gate-summary__pill">
         {{ items.filter((item) => item.done).length }}/{{ items.length }}
       </span>
@@ -15,7 +15,7 @@
         :class="{ 'is-done': item.done }"
       >
         <span>{{ item.label }}</span>
-        <strong>{{ item.done ? '完成' : '待补齐' }}</strong>
+        <strong>{{ item.done ? '已' : '待补' }}</strong>
       </div>
     </div>
   </section>
@@ -31,7 +31,7 @@ defineProps<{
 <style scoped lang="scss">
 .inspiration-gate-summary {
   display: grid;
-  gap: 10px;
+  gap: 6px;
 }
 
 .inspiration-gate-summary__line {
@@ -39,7 +39,7 @@ defineProps<{
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   color: var(--editor-text-primary, #0f172a);
 
   &.is-ready {
@@ -52,7 +52,7 @@ defineProps<{
 }
 
 .inspiration-gate-summary__pill {
-  padding: 3px 8px;
+  padding: 2px 7px;
   border-radius: 999px;
   background: var(--editor-bg-surface, #f8fafc);
   color: var(--editor-text-muted, #64748b);
@@ -63,14 +63,14 @@ defineProps<{
 .inspiration-gate-summary__items {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .inspiration-gate-summary__item {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 0;
+  gap: 5px;
+  padding: 2px 0;
   border-radius: 999px;
   color: var(--editor-text-secondary, #475569);
 
@@ -79,12 +79,12 @@ defineProps<{
   }
 
   span {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
   }
 
   strong {
-    font-size: 11px;
+    font-size: 10px;
     line-height: 1;
   }
 }

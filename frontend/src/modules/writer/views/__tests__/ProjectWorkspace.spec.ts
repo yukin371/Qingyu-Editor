@@ -323,7 +323,20 @@ vi.mock('@/modules/writer/composables/useWorkspaceShortcuts', () => ({
 vi.mock('@/modules/writer/components/workspace/WorkspaceStatusbar.vue', () => ({
   default: defineComponent({
     name: 'WorkspaceStatusbarStub',
-    template: '<div data-testid="workspace-statusbar-stub" />',
+    props: {
+      extraStatusChips: {
+        type: Array,
+        default: () => [],
+      },
+    },
+    setup(props) {
+      return () =>
+        h(
+          'div',
+          { 'data-testid': 'workspace-statusbar-stub' },
+          (props.extraStatusChips as string[]).join(' | '),
+        )
+    },
   }),
 }))
 
@@ -762,6 +775,7 @@ describe('ProjectWorkspace Refactor', () => {
   })
 
   it('切换章节时应通过路由保持写作模式', async () => {
+    vi.useFakeTimers()
     const wrapper = mountProjectWorkspace()
 
     await wrapper.find('[data-testid="change-chapter"]').trigger('click')
@@ -772,6 +786,15 @@ describe('ProjectWorkspace Refactor', () => {
         tool: 'writing',
       }),
     })
+    expect(wrapper.get('[data-testid="workspace-statusbar-stub"]').text()).toContain(
+      '已切换：第二章',
+    )
+
+    vi.advanceTimersByTime(2500)
+    await nextTick()
+
+    expect(wrapper.get('[data-testid="workspace-statusbar-stub"]').text()).toBe('')
+    vi.useRealTimers()
   })
 
   it('点击左侧栏折叠入口应切换左侧边栏显示状态', async () => {
@@ -1311,6 +1334,104 @@ describe('ProjectWorkspace Refactor', () => {
       }),
     })
     expect(focusTitleInputMock).toHaveBeenCalled()
+    expect(wrapper.get('[data-testid="workspace-statusbar-stub"]').text()).toContain(
+      '已创建：第三章（可直接改标题）',
+    )
+  })
+
+  it('新建项目首次进入工作区时应聚焦标题并消费进入标记', async () => {
+    routeState.query = {
+      chapterId: 'chapter-1',
+      tool: 'writing',
+      entry: 'created_project',
+    }
+
+    const FocusableWorkspaceEditorContentStub = defineComponent({
+      setup(_, { expose }) {
+        expose({
+          focusTitleInput: focusTitleInputMock,
+        })
+
+        return () => h('div', { 'data-testid': 'workspace-editor-content-focus-stub' })
+      },
+    })
+
+    const wrapper = mountProjectWorkspace({
+      WorkspaceEditorContent: FocusableWorkspaceEditorContentStub,
+    })
+
+    await Promise.resolve()
+    await nextTick()
+    await Promise.resolve()
+    await nextTick()
+    await Promise.resolve()
+    await nextTick()
+    await new Promise((resolve) => window.setTimeout(resolve, 0))
+    await nextTick()
+
+    expect(wrapper.get('[data-testid="workspace-statusbar-stub"]').text()).toContain(
+      '已打开：第一章（可直接改标题）',
+    )
+    expect(routerReplace).toHaveBeenCalledWith({
+      query: {
+        chapterId: 'chapter-1',
+        tool: 'writing',
+      },
+    })
+  })
+
+  it('继续创作进入工作区时应显示当前章节提示并消费进入标记', async () => {
+    routeState.query = {
+      chapterId: 'chapter-2',
+      tool: 'writing',
+      entry: 'continue_project',
+    }
+
+    const wrapper = mountProjectWorkspace()
+
+    await Promise.resolve()
+    await nextTick()
+    await Promise.resolve()
+    await nextTick()
+    await new Promise((resolve) => window.setTimeout(resolve, 0))
+    await nextTick()
+
+    expect(wrapper.get('[data-testid="workspace-statusbar-stub"]').text()).toContain(
+      '继续创作：第二章',
+    )
+    expect(routerReplace).toHaveBeenCalledWith({
+      query: {
+        chapterId: 'chapter-2',
+        tool: 'writing',
+      },
+    })
+  })
+
+  it('导入项目进入工作区时应显示导入提示并消费进入标记', async () => {
+    routeState.query = {
+      chapterId: 'chapter-1',
+      tool: 'writing',
+      entry: 'imported_project',
+    }
+
+    const wrapper = mountProjectWorkspace()
+
+    await Promise.resolve()
+    await nextTick()
+    await Promise.resolve()
+    await nextTick()
+    await new Promise((resolve) => window.setTimeout(resolve, 0))
+    await nextTick()
+
+    expect(wrapper.get('[data-testid="workspace-statusbar-stub"]').text()).toContain(
+      '已导入项目：当前章节 第一章',
+    )
+    expect(routerReplace).toHaveBeenCalledWith({
+      query: {
+        chapterId: 'chapter-1',
+        tool: 'writing',
+      },
+    })
   })
 
   it('跳过重复策略开启时应略过已有同名章节', async () => {

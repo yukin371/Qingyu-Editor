@@ -2,11 +2,8 @@
   <section class="tool-panel">
     <header class="tool-panel__header">
       <div class="tool-panel__header-copy">
-        <p class="tool-panel__eyebrow">审校</p>
-        <h3 class="tool-panel__title">文本审校与风险复核</h3>
-        <p class="tool-panel__lede">
-          沿用同一套候选卡结构，聚焦语言问题与风险表达，不直接进入正文 diff。
-        </p>
+        <h3 class="tool-panel__title">校对</h3>
+        <p class="tool-panel__lede">只返回建议，不直接改正文。</p>
       </div>
       <div class="tool-panel__actions">
         <button
@@ -33,7 +30,7 @@
       <textarea
         v-model="content"
         rows="7"
-        placeholder="输入需要检测的内容。后续可直接抓取当前章节正文。"
+        placeholder="输入要检测的内容"
       />
     </label>
 
@@ -50,21 +47,15 @@
     </div>
 
     <div v-if="!hasResult && !errorText" class="tool-panel__empty">
-      <strong>审校结果会显示在这里</strong>
-      <p>可执行文本校对或风险检查。</p>
+      <strong>等待结果</strong>
     </div>
 
     <article v-if="mode === 'proofread' && issues.length" class="result-card">
       <div class="result-card__header">
         <div>
           <strong>校对结果</strong>
-          <p class="result-card__caption">聚焦错别字、语法与标点问题，适合发布前清理。</p>
         </div>
         <span class="pill">评分 {{ scoreText }}</span>
-      </div>
-      <div class="result-card__meta-row">
-        <span class="result-chip">问题 {{ issues.length }}</span>
-        <span class="result-chip result-chip--soft">模式: 文本校对</span>
       </div>
       <ul class="review-issues">
         <li v-for="issue in issues" :key="issue.id || issue.message">
@@ -79,12 +70,8 @@
       <div class="result-card__header">
         <div>
           <strong>风险词结果</strong>
-          <p class="result-card__caption">标出敏感词与疑似风险表达，便于二次人工复核。</p>
         </div>
         <span class="pill pill--warn">命中 {{ auditWords.length }}</span>
-      </div>
-      <div class="result-card__meta-row">
-        <span class="result-chip result-chip--warn">{{ auditSummaryText }}</span>
       </div>
       <ul class="review-issues">
         <li v-for="word in auditWords" :key="String(word.id || word.word || word.context)">
@@ -162,7 +149,6 @@ const reviewContextPrompt = computed(() =>
 )
 
 const scoreText = computed(() => (typeof score.value === 'number' ? score.value.toFixed(1) : '--'))
-const auditSummaryText = computed(() => auditWords.value.length > 0 ? `待人工复核 ${auditWords.value.length} 项` : '未发现明显风险词')
 const hasResult = computed(() => issues.value.length > 0 || auditWords.value.length > 0)
 const statusTitle = computed(() => {
   if (loading.value) return '处理中'
@@ -174,13 +160,13 @@ const statusTitle = computed(() => {
 const statusDescription = computed(() => {
   if (loading.value) return mode.value === 'audit' ? '正在扫描风险表达。' : '正在执行文本校对。'
   if (mode.value === 'audit' && auditWords.value.length > 0) {
-    return `已识别 ${auditWords.value.length} 项，建议人工复核。`
+    return `命中 ${auditWords.value.length} 项。`
   }
   if (mode.value === 'proofread' && issues.value.length > 0) {
-    return `已识别 ${issues.value.length} 条问题，评分 ${scoreText.value}。`
+    return `${issues.value.length} 条问题，评分 ${scoreText.value}。`
   }
-  if (props.actionTrigger) return '已注入检测内容，可直接执行。'
-  return '输入内容后可执行审校。'
+  if (props.actionTrigger) return '已带入内容。'
+  return '输入后执行。'
 })
 
 watch(

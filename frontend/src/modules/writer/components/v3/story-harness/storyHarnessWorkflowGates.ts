@@ -78,21 +78,21 @@ export const buildStoryHarnessWorkflowGateState = (
 
   const nextAction = (() => {
     if (!input.chapterId) {
-      return '先绑定目标章节，再生成审查证据。'
+      return '先绑定章节'
     }
     if (!contentLength) {
-      return '先写入正文，gate 只做提醒，不阻塞作者继续创作。'
+      return '先写正文'
     }
     if (focusChangeRequests.length > 0) {
-      return `优先查看 ${focusChangeRequests.length} 条重点 Change Request。`
+      return `${focusChangeRequests.length} 条重点建议`
     }
     if (!contextReady) {
-      return '补齐角色或关系切片后，审查包会更可靠。'
+      return '缺角色 / 关系'
     }
     if (pendingChangeRequests.length > 0) {
-      return '可继续写作，也可以先处理轻量建议。'
+      return '可先处理轻建议'
     }
-    return '当前章节证据可进入审查包预览。'
+    return '可审查'
   })()
 
   return {
@@ -105,26 +105,26 @@ export const buildStoryHarnessWorkflowGateState = (
     gates: [
       {
         key: 'prewrite',
-        title: '写前目标',
+        title: '写前',
         status: input.chapterId ? (contextReady ? 'ready' : 'attention') : 'missing',
         text: input.chapterId
           ? contextReady
-            ? `已绑定 ${title}，并挂入当前上下文切片。`
-            : `已绑定 ${title}，但缺少角色或关系上下文。`
-          : '尚未绑定目标章节。',
+            ? `已绑定 ${title}`
+            : `已绑定 ${title}，缺上下文`
+          : '未绑定章节',
       },
       {
         key: 'postwrite',
-        title: '写后正文',
+        title: '正文',
         status: contentLength > 0 ? 'ready' : 'missing',
         text:
           contentLength > 0
-            ? `正文 ${contentLength} 字符，${paragraphCount} 段进入审查范围。`
-            : '正文为空，暂不具备写后审查证据。',
+            ? `${contentLength} 字符 · ${paragraphCount} 段`
+            : '正文为空',
       },
       {
         key: 'revision',
-        title: '修后建议',
+        title: '建议',
         status:
           focusChangeRequests.length > 0
             ? 'attention'
@@ -133,16 +133,16 @@ export const buildStoryHarnessWorkflowGateState = (
               : 'ready',
         text:
           focusChangeRequests.length > 0
-            ? `仍有 ${focusChangeRequests.length} 条重点建议等待处理。`
+            ? `${focusChangeRequests.length} 条重点建议`
             : pendingChangeRequests.length > 0
-              ? `还有 ${pendingChangeRequests.length} 条轻量建议可选处理。`
-              : '没有待处理的重点建议。',
+              ? `${pendingChangeRequests.length} 条轻建议`
+              : '无重点建议',
       },
       {
         key: 'volume',
-        title: '卷级审查',
+        title: '卷级',
         status: 'info',
-        text: '当前只展示章节级 gate；卷级聚合等待后端正式 owner 接入。',
+        text: '待接入',
       },
     ],
   }

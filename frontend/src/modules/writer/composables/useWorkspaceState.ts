@@ -333,8 +333,28 @@ export function useWorkspaceState(options: UseWorkspaceStateOptions): UseWorkspa
     return labels[currentTool] || '工作台'
   })
 
+  const formatLastSavedTime = (timestamp: number | null) => {
+    if (!timestamp) {
+      return ''
+    }
+
+    const date = new Date(timestamp)
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${hours}:${minutes}`
+  }
+
   /** 保存状态标签 */
-  const saveStatusLabel = computed(() => editorStore.saveStatusText || '系统就绪')
+  const saveStatusLabel = computed(() => {
+    const status = editorStore.saveStatusText || '系统就绪'
+
+    if (status !== '已保存') {
+      return status
+    }
+
+    const savedTime = formatLastSavedTime(editorStore.lastSavedAt)
+    return savedTime ? `已保存 ${savedTime}` : status
+  })
 
   // =======================
   // 编辑器内容绑定

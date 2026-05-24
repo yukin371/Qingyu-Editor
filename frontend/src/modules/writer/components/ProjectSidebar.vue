@@ -10,8 +10,13 @@
           :disabled="recentProjects.length <= 1"
           @select="handleProjectSwitch"
         >
-          <button type="button" class="recent-switch-btn" :disabled="recentProjects.length <= 1">
-            最近项目
+          <button
+            type="button"
+            class="recent-switch-btn"
+            :disabled="recentProjects.length <= 1"
+            title="切换项目"
+            aria-label="切换项目"
+          >
             <QyIcon name="ArrowDown" :size="12" class="recent-switch-caret" />
           </button>
         </QyDropdown>
@@ -67,63 +72,65 @@
       </div>
     </div>
 
-    <div class="sidebar-actions">
-      <button
-        type="button"
-        class="action-icon-btn action-icon-btn--primary"
-        title="新建章节"
-        aria-label="新建章节"
-        @click="$emit('add-doc')"
-      >
-        <QyIcon name="Plus" :size="14" />
-      </button>
-      <button
-        type="button"
-        class="action-icon-btn"
-        title="新建卷"
-        aria-label="新建卷"
-        @click="$emit('add-volume')"
-      >
-        <QyIcon name="Folder" :size="14" />
-      </button>
-    </div>
+    <div class="sidebar-toolbar">
+      <div class="sidebar-actions">
+        <button
+          type="button"
+          class="action-icon-btn action-icon-btn--primary"
+          title="新建章节"
+          aria-label="新建章节"
+          @click="$emit('add-doc')"
+        >
+          <QyIcon name="Plus" :size="14" />
+        </button>
+        <button
+          type="button"
+          class="action-icon-btn"
+          title="新建卷"
+          aria-label="新建卷"
+          @click="$emit('add-volume')"
+        >
+          <QyIcon name="Folder" :size="14" />
+        </button>
+      </div>
 
-    <div class="sidebar-tools">
-      <span class="sidebar-tools__hint">
-        {{ draftOnly ? '仅看草稿' : sortMode === 'updated' ? '最近更新' : '章节顺序' }}
-      </span>
-      <div class="tool-icons">
-        <button
-          type="button"
-          class="tool-icon-btn"
-          :class="{ 'is-active': draftOnly }"
-          title="仅看草稿"
-          aria-label="仅看草稿"
-          @click="draftOnly = !draftOnly"
-        >
-          <QyIcon name="EditPen" :size="14" />
-        </button>
-        <button
-          type="button"
-          class="tool-icon-btn"
-          :class="{ 'is-active': sortMode === 'updated' }"
-          title="按最近更新排序"
-          aria-label="按最近更新排序"
-          @click="sortMode = sortMode === 'updated' ? 'chapter' : 'updated'"
-        >
-          <QyIcon name="Filter" :size="14" />
-        </button>
-        <button type="button" class="tool-icon-btn" title="重置筛选" @click="resetFilters">
-          <QyIcon name="RefreshLeft" :size="14" />
-        </button>
-        <button
-          type="button"
-          class="tool-icon-btn"
-          :title="isTreeExpanded ? '收起目录' : '展开目录'"
-          @click="isTreeExpanded = !isTreeExpanded"
-        >
-          <QyIcon name="ArrowRight" :size="14" :class="chevronClass" />
-        </button>
+      <div class="sidebar-tools">
+        <span class="sidebar-tools__hint">
+          {{ draftOnly ? '草稿' : sortMode === 'updated' ? '最近更新' : '顺序' }}
+        </span>
+        <div class="tool-icons">
+          <button
+            type="button"
+            class="tool-icon-btn"
+            :class="{ 'is-active': draftOnly }"
+            title="仅看草稿"
+            aria-label="仅看草稿"
+            @click="draftOnly = !draftOnly"
+          >
+            <QyIcon name="EditPen" :size="14" />
+          </button>
+          <button
+            type="button"
+            class="tool-icon-btn"
+            :class="{ 'is-active': sortMode === 'updated' }"
+            title="按最近更新排序"
+            aria-label="按最近更新排序"
+            @click="sortMode = sortMode === 'updated' ? 'chapter' : 'updated'"
+          >
+            <QyIcon name="Filter" :size="14" />
+          </button>
+          <button type="button" class="tool-icon-btn" title="重置筛选" @click="resetFilters">
+            <QyIcon name="RefreshLeft" :size="14" />
+          </button>
+          <button
+            type="button"
+            class="tool-icon-btn"
+            :title="isTreeExpanded ? '收起目录' : '展开目录'"
+            @click="isTreeExpanded = !isTreeExpanded"
+          >
+            <QyIcon name="ArrowRight" :size="14" :class="chevronClass" />
+          </button>
+        </div>
       </div>
     </div>
 
@@ -132,7 +139,7 @@
         <span>章节</span>
         <span class="section-count">{{ displayChapters.length }}</span>
       </div>
-      <span class="explorer-caption">{{ draftOnly ? '仅看草稿' : '全部章节' }}</span>
+      <span v-if="explorerCaption" class="explorer-caption">{{ explorerCaption }}</span>
     </div>
 
     <div v-show="isTreeExpanded" class="sidebar-list">
@@ -178,12 +185,14 @@
             </div>
 
             <div class="item-meta" v-if="row.chapter.nodeType !== 'directory'">
-              <span>{{ formatCount(row.chapter.wordCount) }}字</span>
-              <span class="dot">·</span>
+              <template v-if="row.chapter.wordCount > 0">
+                <span>{{ formatCount(row.chapter.wordCount) }}字</span>
+                <span class="dot">·</span>
+              </template>
               <span>{{ fromNow(row.chapter.updatedAt) }}</span>
             </div>
             <div class="item-meta item-meta--directory" v-else>
-              <span>{{ row.childrenCount }} 个章节</span>
+              <span>{{ row.childrenCount }} 章</span>
             </div>
           </div>
         </button>
@@ -488,6 +497,19 @@ const isFilteringList = computed(
   () => Boolean(searchKeyword.value.trim()) || draftOnly.value || sortMode.value === 'updated',
 )
 
+const explorerCaption = computed(() => {
+  if (draftOnly.value) {
+    return '草稿'
+  }
+  if (sortMode.value === 'updated') {
+    return '最近更新'
+  }
+  if (searchKeyword.value.trim()) {
+    return '搜索结果'
+  }
+  return ''
+})
+
 const displayChapters = computed(() => {
   let list = [...projectChapters.value]
 
@@ -763,29 +785,28 @@ onBeforeUnmount(() => {
 
 .sidebar-header,
 .sidebar-search,
-.sidebar-actions,
-.sidebar-tools,
+.sidebar-toolbar,
 .explorer-header {
-  padding-left: 14px;
-  padding-right: 14px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 .sidebar-header {
-  padding-top: 12px;
-  padding-bottom: 10px;
+  padding-top: 6px;
+  padding-bottom: 5px;
   border-bottom: 1px solid var(--editor-border, #ebeff5);
 }
 
 .project-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .project-title {
   flex: 1;
   min-width: 0;
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--editor-text-primary, #111827);
   white-space: nowrap;
@@ -797,9 +818,11 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  height: 26px;
-  padding: 0 6px;
+  height: 22px;
+  width: 22px;
+  justify-content: center;
+  padding: 0;
+  border-radius: 7px;
   border: none;
   background: transparent;
   color: var(--editor-text-muted, #6b7280);
@@ -807,6 +830,7 @@ onBeforeUnmount(() => {
   cursor: pointer;
 
   &:hover:not(:disabled) {
+    background: var(--editor-bg-elevated, #f1f5f9);
     color: var(--editor-text-primary, #111827);
   }
 
@@ -817,8 +841,8 @@ onBeforeUnmount(() => {
 }
 
 .sidebar-search {
-  padding-top: 12px;
-  padding-bottom: 10px;
+  padding-top: 8px;
+  padding-bottom: 7px;
 }
 
 .search-combobox {
@@ -844,6 +868,7 @@ onBeforeUnmount(() => {
 
 .sidebar-search :deep(.qy-input-wrapper) {
   width: 100%;
+  min-height: 36px;
   background: color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #fff)) 92%, transparent) !important;
   border-color: color-mix(in srgb, var(--editor-border, #e2e8f0) 58%, transparent) !important;
   box-shadow: none !important;
@@ -851,7 +876,7 @@ onBeforeUnmount(() => {
 
 .sidebar-search :deep(input.search-input) {
   padding-left: 32px;
-  font-size: 13px;
+  font-size: 12px;
   background: var(--editor-layer-soft, var(--editor-bg-surface, #f8fafc)) !important;
   color: var(--editor-text-primary, #111827) !important;
   border-color: color-mix(in srgb, var(--editor-border, #e2e8f0) 58%, transparent) !important;
@@ -911,21 +936,28 @@ onBeforeUnmount(() => {
   backdrop-filter: blur(12px);
 }
 
+.sidebar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 6px;
+}
+
 .sidebar-actions {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding-bottom: 10px;
+  gap: 5px;
 }
 
 .action-icon-btn {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--editor-border, #d9dee6);
-  border-radius: 4px;
+  border-radius: 8px;
   background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
   color: var(--editor-text-secondary, #4b5563);
   cursor: pointer;
@@ -955,18 +987,20 @@ onBeforeUnmount(() => {
 .sidebar-tools {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding-bottom: 10px;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 0;
 }
 
 .sidebar-tools__hint {
-  min-width: 0;
-  color: var(--editor-text-ghost, #9ca3af);
-  font-size: 11px;
+  flex-shrink: 0;
+  color: var(--editor-text-muted, #64748b);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--editor-layer-soft, #f8fafc) 86%, transparent);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .tool-icon-btn {
@@ -976,7 +1010,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: 4px;
+  border-radius: 7px;
   background: transparent;
   color: var(--editor-text-muted, #6b7280);
   cursor: pointer;
@@ -995,11 +1029,11 @@ onBeforeUnmount(() => {
 .tool-icons {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
 }
 
 .explorer-header {
-  min-height: 30px;
+  min-height: 26px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1011,15 +1045,15 @@ onBeforeUnmount(() => {
 .explorer-title {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 5px;
+  font-size: 11px;
   font-weight: 600;
 }
 
 .section-count,
 .explorer-caption {
   color: var(--editor-text-ghost, #9ca3af);
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .tree-chevron {
@@ -1033,7 +1067,7 @@ onBeforeUnmount(() => {
 .sidebar-list {
   flex: 1;
   overflow-y: auto;
-  padding: 6px;
+  padding: 3px 5px 5px;
   background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
 
   &::-webkit-scrollbar {
@@ -1051,12 +1085,12 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: stretch;
   justify-content: space-between;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
   border-left: 2px solid transparent;
-  border-radius: 4px;
+  border-radius: 7px;
   background: transparent;
   transition: background-color 0.14s ease;
-  margin-left: calc(var(--tree-depth, 0) * 14px);
+  margin-left: calc(var(--tree-depth, 0) * 12px);
 
   &:hover {
     background: var(--editor-bg-surface, #f5f7fb);
@@ -1070,8 +1104,8 @@ onBeforeUnmount(() => {
   &.is-active {
     background: color-mix(
       in srgb,
-      var(--editor-accent, #2563eb) 14%,
-      var(--editor-layer-panel, var(--editor-bg-base, #fff)) 86%
+      var(--editor-accent, #2563eb) 8%,
+      var(--editor-layer-panel, var(--editor-bg-base, #fff)) 92%
     );
     border-left-color: var(--editor-accent, #2563eb);
 
@@ -1082,8 +1116,8 @@ onBeforeUnmount(() => {
   }
 
   &.is-directory {
-    background: color-mix(in srgb, var(--color-warning-50, #fff8e8) 88%, transparent);
-    border-left-color: var(--color-warning-400, #d4a72c);
+    background: color-mix(in srgb, var(--color-warning-50, #fff8e8) 56%, transparent);
+    border-left-color: color-mix(in srgb, var(--color-warning-400, #d4a72c) 72%, transparent);
 
     .item-title {
       color: var(--color-warning-700, #8a5a00);
@@ -1099,11 +1133,11 @@ onBeforeUnmount(() => {
 .chapter-main-zone {
   min-width: 0;
   flex: 1;
-  min-height: 32px;
+  min-height: 28px;
   display: flex;
   align-items: flex-start;
-  gap: 6px;
-  padding: 5px 6px;
+  gap: 5px;
+  padding: 4px 6px;
   border: none;
   background: transparent;
   text-align: left;
@@ -1122,9 +1156,9 @@ onBeforeUnmount(() => {
 }
 
 .item-title {
-  margin-bottom: 2px;
+  margin-bottom: 1px;
   color: var(--editor-text-primary, #111827);
-  font-size: 13px;
+  font-size: 11px;
   line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
@@ -1140,7 +1174,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 9px;
 }
 
 .item-meta--directory {
@@ -1165,15 +1199,15 @@ onBeforeUnmount(() => {
 }
 
 .item-actions {
-  opacity: 0.15;
+  opacity: 0.1;
   align-self: center;
   margin-left: 2px;
   transition: opacity 0.14s ease;
 }
 
 .action-menu-btn {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   display: inline-flex;
   align-items: center;
   justify-content: center;

@@ -59,6 +59,11 @@ import {
 } from '../../../../wailsjs/go/main/App'
 import { DocumentType } from '../types/document'
 import { calculateWritingWordCount } from '../utils/wordCount'
+import {
+  isExplicitRemoteRuntime,
+  isStandaloneBrowserRuntime,
+  isWailsRuntimeAvailable,
+} from '../../../utils/runtimeHost'
 
 type BridgeProject = {
   id: string
@@ -337,55 +342,17 @@ type BridgeStoryHarnessChapterContext = {
 }
 
 const documentIndex = new Map<string, BridgeDocumentNode>()
-const STANDALONE_EDITOR_PORTS = new Set(['34115', '43127'])
-
-function getCurrentWindowUrl(): URL | null {
-  if (typeof window === 'undefined') {
-    return null
-  }
-
-  try {
-    return new URL(window.location.href)
-  } catch {
-    return null
-  }
-}
 
 export function isWailsWriterAvailable(): boolean {
-  if (typeof window === 'undefined') {
-    return false
-  }
-  const candidate = window as typeof window & { go?: { main?: { App?: Record<string, unknown> } } }
-  return !!candidate.go?.main?.App
+  return isWailsRuntimeAvailable()
 }
 
 export function isRemoteWriterMode(): boolean {
-  const currentUrl = getCurrentWindowUrl()
-  return currentUrl?.searchParams.get('remote') === 'true'
+  return isExplicitRemoteRuntime()
 }
 
 export function isStandaloneWriterRuntime(): boolean {
-  if (typeof window === 'undefined') {
-    return false
-  }
-
-  if (isWailsWriterAvailable()) {
-    return true
-  }
-
-  if (isRemoteWriterMode()) {
-    return false
-  }
-
-  if (window.location.protocol === 'file:') {
-    return true
-  }
-
-  if (STANDALONE_EDITOR_PORTS.has(window.location.port)) {
-    return true
-  }
-
-  return window.location.protocol === 'http:' || window.location.protocol === 'https:'
+  return isStandaloneBrowserRuntime()
 }
 
 export function isStandaloneLocalWriterAvailable(): boolean {

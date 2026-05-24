@@ -68,7 +68,28 @@ describe('useWriterProjectEntryActions', () => {
       continueTarget,
     })
 
-    expect(routerPushMock).toHaveBeenCalledWith(continueTarget)
+    expect(routerPushMock).toHaveBeenCalledWith({
+      ...continueTarget,
+      query: {
+        chapterId: 'chapter-2',
+        entry: 'continue_project',
+      },
+    })
+  })
+
+  it('openCreatedProject 应附带首次进入反馈标记', async () => {
+    const { openCreatedProject } = useWriterProjectEntryActions()
+
+    await openCreatedProject({ id: 'project-2' }, { chapterId: 'chapter-9' })
+
+    expect(routerPushMock).toHaveBeenCalledWith({
+      name: 'writer-project',
+      params: { projectId: 'project-2' },
+      query: {
+        chapterId: 'chapter-9',
+        entry: 'created_project',
+      },
+    })
   })
 
   it('importProjectAndEnter 导入成功后刷新并进入项目', async () => {
@@ -87,6 +108,9 @@ describe('useWriterProjectEntryActions', () => {
     expect(routerPushMock).toHaveBeenCalledWith({
       name: 'writer-project',
       params: { projectId: 'imported-1' },
+      query: {
+        entry: 'imported_project',
+      },
     })
   })
 

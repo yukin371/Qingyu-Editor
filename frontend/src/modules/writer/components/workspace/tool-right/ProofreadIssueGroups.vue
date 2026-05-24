@@ -23,10 +23,10 @@
             </span>
           </div>
           <p>{{ issue.description }}</p>
-          <small v-if="issue.originalText">原文：{{ issue.originalText }}</small>
+          <small v-if="issue.originalText">原文 {{ issue.originalText }}</small>
           <small v-if="issue.suggestion">{{ issue.suggestion }}</small>
           <small class="proofread-issue-groups__source">
-            {{ issue.source === 'ai' ? 'AI 校对' : '本地规则' }}
+            {{ issue.source === 'ai' ? 'AI' : '本地' }}
           </small>
         </div>
         <div class="proofread-issue-groups__issue-actions">
@@ -83,9 +83,9 @@ defineEmits<{
 
 function severityText(severity: ProofreadIssue['severity']) {
   const labels: Record<ProofreadIssue['severity'], string> = {
-    error: '必须改',
-    warning: '建议改',
-    suggestion: '可参考',
+    error: '必改',
+    warning: '建议',
+    suggestion: '参考',
   }
   return labels[severity]
 }
@@ -116,7 +116,7 @@ function canIgnoreTerm(issue: ProofreadIssue) {
 .proofread-issue-groups {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
   min-height: 0;
   overflow: auto;
 }
@@ -124,7 +124,7 @@ function canIgnoreTerm(issue: ProofreadIssue) {
 .proofread-issue-groups__group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .proofread-issue-groups__group-head {
@@ -151,8 +151,8 @@ function canIgnoreTerm(issue: ProofreadIssue) {
   display: flex;
   align-items: start;
   justify-content: space-between;
-  gap: 14px;
-  padding: 10px 0;
+  gap: 8px;
+  padding: 7px 0;
   border-top: 1px solid var(--editor-border, #e2e8f0);
 }
 
@@ -163,7 +163,7 @@ function canIgnoreTerm(issue: ProofreadIssue) {
 
 .proofread-issue-groups__issue-copy {
   display: grid;
-  gap: 6px;
+  gap: 3px;
 
   strong,
   p,
@@ -187,7 +187,7 @@ function canIgnoreTerm(issue: ProofreadIssue) {
 
 .proofread-issue-groups__severity,
 .proofread-issue-groups__status {
-  padding: 2px 6px;
+  padding: 1px 5px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
@@ -215,17 +215,19 @@ function canIgnoreTerm(issue: ProofreadIssue) {
 
 .proofread-issue-groups__issue-actions {
   display: flex;
-  gap: 8px;
+  gap: 5px;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 
   button {
-    height: 32px;
-    padding: 0 12px;
-    border-radius: 8px;
+    height: 24px;
+    padding: 0 7px;
+    border-radius: 7px;
     border: 1px solid var(--editor-border, #d9dee6);
     background: transparent;
     color: var(--editor-text-secondary, #475569);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     cursor: pointer;
   }

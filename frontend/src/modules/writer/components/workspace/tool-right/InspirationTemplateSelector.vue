@@ -1,8 +1,7 @@
 <template>
   <section class="inspiration-template-selector">
     <div class="inspiration-template-selector__head">
-      <h4>题材模板</h4>
-      <span class="inspiration-template-selector__meta">{{ templates.length }} 类模板</span>
+      <span class="inspiration-template-selector__meta">{{ templates.length }} 类</span>
     </div>
 
     <div class="inspiration-template-selector__buttons">
@@ -56,14 +55,14 @@ defineEmits<{
 <style scoped lang="scss">
 .inspiration-template-selector {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .inspiration-template-selector__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
 
   h4,
   p,
@@ -86,7 +85,7 @@ defineEmits<{
 .inspiration-template-selector__buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
 }
 
 .inspiration-template-selector__button {
@@ -94,8 +93,8 @@ defineEmits<{
   align-items: center;
   justify-content: center;
   text-align: left;
-  min-height: 30px;
-  padding: 0 10px;
+  min-height: 27px;
+  padding: 0 9px;
   border-radius: 999px;
   border: 1px solid var(--editor-border, #d9dee6);
   background: transparent;
@@ -117,11 +116,11 @@ defineEmits<{
 }
 
 .inspiration-template-selector__brief {
-  padding-left: 10px;
+  padding-left: 8px;
   border-left: 2px solid var(--editor-border, #d9dee6);
   color: var(--editor-text-secondary, #475569);
   display: grid;
-  gap: 4px;
+  gap: 3px;
   font-size: 12px;
 }
 

@@ -513,9 +513,9 @@ describe('AIWorkbench', () => {
     await wrapper.find('[data-testid="emit-direct-edit-result"]').trigger('click')
 
     const diffCard = wrapper.get('[data-testid="workflow-diff-card"]')
-    expect(diffCard.text()).toContain('正文已挂起')
+    expect(diffCard.text()).toContain('正文待确认')
     expect(diffCard.text()).toContain('整章改写')
-    expect(diffCard.text()).toContain('请直接在正文区域接受或放弃')
+    expect(diffCard.text()).toContain('直接接受或放弃')
     expect(wrapper.find('[data-testid="workflow-result-card"]').exists()).toBe(false)
     expect(diffCard.text()).not.toContain('修改前')
     expect(diffCard.text()).not.toContain('修改后')
@@ -574,7 +574,7 @@ describe('AIWorkbench', () => {
     expect(wrapper.find('[data-testid="workflow-diff-card"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="workflow-result-card"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="workflow-diff-actions"]').text()).toContain('继续修改')
-    expect(wrapper.text()).toContain('本侧栏不再重复展示前后对比')
+    expect(wrapper.text()).toContain('已同步到正文')
   })
 
   it('injects pending candidate back into chat panel when continuing revision', async () => {

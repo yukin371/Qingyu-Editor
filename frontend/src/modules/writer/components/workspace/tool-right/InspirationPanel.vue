@@ -1,9 +1,9 @@
 <template>
   <div class="inspiration-panel">
     <header class="inspiration-panel__header">
-      <h3>灵感与黄金三章</h3>
+      <h3>灵感</h3>
       <button type="button" class="inspiration-panel__expand" @click="$emit('open-fullscreen')">
-        展开全屏 →
+        全屏
       </button>
     </header>
 
@@ -12,7 +12,21 @@
     </section>
 
     <section class="inspiration-panel__section">
+      <div class="inspiration-panel__fold-head">
+        <div>
+          <h4>模板</h4>
+          <span>{{ templateSummary }}</span>
+        </div>
+        <button
+          type="button"
+          data-testid="inspiration-toggle-template"
+          @click="templateExpanded = !templateExpanded"
+        >
+          {{ templateExpanded ? '收起' : '展开' }}
+        </button>
+      </div>
       <InspirationTemplateSelector
+        v-if="templateExpanded"
         :templates="templates"
         :active-template-id="workflow.templateId"
         :selected-template="selectedTemplate"
@@ -21,7 +35,21 @@
     </section>
 
     <section class="inspiration-panel__section">
+      <div class="inspiration-panel__fold-head">
+        <div>
+          <h4>锚点</h4>
+          <span>{{ anchorsSummary }}</span>
+        </div>
+        <button
+          type="button"
+          data-testid="inspiration-toggle-anchors"
+          @click="anchorsExpanded = !anchorsExpanded"
+        >
+          {{ anchorsExpanded ? '收起' : '展开' }}
+        </button>
+      </div>
       <InspirationAnchorsEditor
+        v-if="anchorsExpanded"
         :pitch-line="workflow.pitchLine"
         :audience-draft="audienceDraft"
         :promise-draft="promiseDraft"
@@ -40,11 +68,15 @@
     <section class="inspiration-panel__section inspiration-panel__section--golden">
       <div class="inspiration-panel__fold-head">
         <div>
-          <h4>开篇三章</h4>
-          <span>{{ goldenChapterFoldHint }}</span>
+          <h4>三章</h4>
+          <span>{{ goldenChapterSummary }}</span>
         </div>
-        <button type="button" @click="goldenChaptersExpanded = !goldenChaptersExpanded">
-          {{ goldenChaptersExpanded ? '收起' : '编辑' }}
+        <button
+          type="button"
+          data-testid="inspiration-toggle-golden"
+          @click="goldenChaptersExpanded = !goldenChaptersExpanded"
+        >
+          {{ goldenChaptersExpanded ? '收起' : '展开' }}
         </button>
       </div>
       <InspirationGoldenChapterEditor
@@ -61,6 +93,7 @@
 
     <section class="inspiration-panel__section">
       <InspirationNotesPanel
+        :expanded="notesExpanded"
         :notes="notes"
         :draft-title="draftTitle"
         :draft-content="draftContent"
@@ -69,6 +102,7 @@
         @update:draft-content="draftContent = $event"
         @create="handleCreate"
         @remove="removeNote"
+        @toggle-expanded="notesExpanded = !notesExpanded"
       />
     </section>
   </div>
@@ -161,7 +195,10 @@ const notes = ref<InspirationNote[]>([])
 const audienceDraft = ref('')
 const promiseDraft = ref('')
 const activeGoldenChapterNumber = ref<GoldenChapterPlan['chapterNumber']>(1)
-const goldenChaptersExpanded = ref(true)
+const templateExpanded = ref(false)
+const anchorsExpanded = ref(false)
+const goldenChaptersExpanded = ref(false)
+const notesExpanded = ref(false)
 const workflow = ref<CreativeWorkflowRecord>({
   version: 1,
   projectId: props.projectId,
@@ -193,16 +230,33 @@ const currentChapterNumber = computed(() => extractChapterNumber(props.chapterTi
 const shouldCollapseGoldenChapters = computed(
   () => Boolean(currentChapterNumber.value && currentChapterNumber.value > 3),
 )
-const goldenChapterFoldHint = computed(() =>
+const templateSummary = computed(() =>
+  selectedTemplate.value
+    ? `${selectedTemplate.value.name} · ${selectedTemplate.value.tagline}`
+    : '未选',
+)
+const anchorsSummary = computed(() => {
+  const parts: string[] = []
+  if (workflow.value.pitchLine.trim()) parts.push('已写定位')
+  if (workflow.value.targetAudience.length > 0) {
+    parts.push(`读者 ${workflow.value.targetAudience.length}`)
+  }
+  if (workflow.value.corePromises.length > 0) {
+    parts.push(`承诺 ${workflow.value.corePromises.length}`)
+  }
+  if (workflow.value.paceContract.trim()) parts.push('已定节奏')
+  return parts.length > 0 ? parts.join(' · ') : '待补'
+})
+const goldenChapterSummary = computed(() =>
   shouldCollapseGoldenChapters.value
-    ? '已进入正文后段，开篇规划默认收起'
-    : '用于确定前 3 章钩子与兑现',
+    ? '后段'
+    : '钩子',
 )
 const gateItems = computed(() => [
-  { label: '题材模板', done: workflow.value.gate.completedFields.hasPrimaryGenre },
-  { label: '目标读者', done: workflow.value.gate.completedFields.hasTargetAudience },
-  { label: '核心承诺', done: workflow.value.gate.completedFields.hasCorePromises },
-  { label: '节奏合约', done: workflow.value.gate.completedFields.hasPaceContract },
+  { label: '模板', done: workflow.value.gate.completedFields.hasPrimaryGenre },
+  { label: '读者', done: workflow.value.gate.completedFields.hasTargetAudience },
+  { label: '承诺', done: workflow.value.gate.completedFields.hasCorePromises },
+  { label: '节奏', done: workflow.value.gate.completedFields.hasPaceContract },
 ])
 const activeGoldenChapter = computed(
   () =>
@@ -318,7 +372,7 @@ watch(
 watch(
   [() => props.projectId, currentChapterNumber],
   () => {
-    goldenChaptersExpanded.value = !shouldCollapseGoldenChapters.value
+    goldenChaptersExpanded.value = false
   },
   { immediate: true },
 )
@@ -354,7 +408,7 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding: 14px;
+  padding: 8px 9px;
   background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
 }
 
@@ -368,7 +422,7 @@ watch(
 
 .inspiration-panel__header {
   align-items: center;
-  padding-bottom: 12px;
+  padding-bottom: 6px;
 
   h3,
   h4,
@@ -379,7 +433,7 @@ watch(
 }
 
 .inspiration-panel__header h3 {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--editor-text-primary, #0f172a);
 }
@@ -402,7 +456,7 @@ watch(
 }
 
 .inspiration-panel__expand {
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.22)) 72%, transparent);
   background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
   color: var(--editor-text-secondary, #475569);
@@ -412,16 +466,16 @@ watch(
 }
 
 .inspiration-panel__expand {
-  height: 34px;
-  padding: 0 12px;
+  height: 24px;
+  padding: 0 8px;
   border-color: rgba(251, 191, 36, 0.28);
   color: var(--color-warning-700, #b45309);
 }
 
 .inspiration-panel__section {
   display: grid;
-  gap: 12px;
-  padding: 14px 0;
+  gap: 7px;
+  padding: 7px 0;
   border-top: 1px solid var(--editor-border, #e2e8f0);
 }
 
@@ -435,34 +489,34 @@ watch(
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
 
   div {
     display: grid;
-    gap: 3px;
+    gap: 2px;
   }
 
   h4 {
     margin: 0;
     color: var(--editor-text-primary, #0f172a);
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 700;
   }
 
   span {
     color: var(--editor-text-muted, #64748b);
-    font-size: 12px;
+    font-size: 11px;
   }
 
   button {
-    height: 28px;
-    padding: 0 10px;
+    height: 22px;
+    padding: 0 7px;
     border: 1px solid var(--editor-border, #d9dee6);
     border-radius: 8px;
     background: transparent;
     color: var(--editor-text-secondary, #475569);
     cursor: pointer;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
   }
 }

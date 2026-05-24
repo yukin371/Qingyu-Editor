@@ -121,7 +121,7 @@ describe('TipTapEditorView', () => {
       }),
     })
 
-    await vi.advanceTimersByTimeAsync(300)
+    await vi.advanceTimersByTimeAsync(800)
 
     expect(saveParagraphs).toHaveBeenCalledTimes(1)
     expect(saveParagraphs).toHaveBeenCalledWith([

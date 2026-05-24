@@ -17,9 +17,7 @@
         <p>{{ visibleApplyFeedback.detail }}</p>
       </div>
       <span class="apply-feedback__mode">
-        {{
-          visibleApplyFeedback.mode ? `模式 ${applyModeText(visibleApplyFeedback.mode)}` : '已更新正文'
-        }}
+        {{ visibleApplyFeedback.mode ? applyModeText(visibleApplyFeedback.mode) : '已更新正文' }}
       </span>
     </div>
 
@@ -128,11 +126,11 @@
 
     <section v-if="showEditorDiffStatus" class="workflow-diff-card" data-testid="workflow-diff-card">
       <div class="workflow-card__meta">
-        <span class="workflow-chip workflow-chip--accent">正文已挂起</span>
+        <span class="workflow-chip workflow-chip--accent">正文待确认</span>
         <span class="workflow-chip">{{ diffModeText }}</span>
       </div>
       <p class="workflow-diff-card__hint">
-        改动已同步到正文编辑器。请直接在正文区域接受或放弃，本侧栏不再重复展示前后对比。
+        已同步到正文，直接接受或放弃。
       </p>
       <div
         v-if="hasPendingApplyPayload"
@@ -249,23 +247,20 @@ function resultPromoteActionText(candidate: WriterResultCandidate) {
 
 <style scoped lang="scss">
 .workflow-rail {
-  padding: 12px;
+  padding: 7px 9px;
   border-bottom: 1px solid var(--editor-border, rgba(0, 0, 0, 0.06));
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--editor-bg-surface, #f8fafc) 92%, transparent),
-    color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent)
-  );
+  background: var(--editor-layer-soft, #f8fafc);
   display: grid;
-  gap: 10px;
+  gap: 5px;
 }
 
 .workflow-result-card__action,
 .proposal-card__action {
   border: none;
   border-radius: 999px;
-  padding: 5px 10px;
-  background: var(--editor-accent-soft, #ecfeff);
+  min-height: 28px;
+  padding: 0 10px;
+  background: color-mix(in srgb, var(--editor-accent-soft, #ecfeff) 78%, transparent);
   color: var(--editor-accent, #0891b2);
   font-size: 11px;
   font-weight: 700;
@@ -276,83 +271,63 @@ function resultPromoteActionText(candidate: WriterResultCandidate) {
 .proposal-card__content {
   min-width: 0;
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .workflow-result-card,
 .proposal-card {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 11px 12px;
-  border: 1px solid color-mix(in srgb, var(--editor-border, #94a3b8) 72%, transparent);
-  border-radius: 14px;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--editor-layer-panel, #ffffff) 98%, transparent),
-    color-mix(in srgb, var(--editor-layer-glass, #f8fafc) 96%, transparent)
-  );
-  box-shadow:
-    var(--editor-shadow-sm, 0 10px 24px rgba(15, 23, 42, 0.05)),
-    inset 0 1px 0 color-mix(in srgb, var(--editor-text-inverse, #ffffff) 12%, transparent);
+  gap: 8px;
+  padding: 7px 9px;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #cbd5e1) 84%, transparent);
+  border-radius: 8px;
+  background: var(--editor-layer-panel, #fff);
 
   strong {
     display: block;
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 700;
     color: var(--editor-text-primary, #0f172a);
   }
 
   p {
     margin: 0;
-    font-size: 12px;
-    line-height: 1.55;
+    font-size: 11px;
+    line-height: 1.45;
     color: var(--editor-text-secondary, #475569);
   }
 }
 
 .workflow-result-card--secondary {
-  border-style: dashed;
+  background: color-mix(in srgb, var(--editor-layer-soft, #f8fafc) 82%, transparent);
 }
 
-.workflow-result-card--condensed {
-  align-items: center;
-}
-
-.workflow-result-card--condensed .workflow-result-card__content {
-  gap: 4px;
-}
-
-.proposal-card {
-  border-color: color-mix(in srgb, var(--editor-accent, #0891b2) 24%, transparent);
-}
-
-.proposal-card--condensed {
-  align-items: center;
-}
-
+.workflow-result-card--condensed .workflow-result-card__content,
 .proposal-card--condensed .proposal-card__content {
   gap: 4px;
 }
 
-.proposal-card--condensed .proposal-card__actions {
-  align-self: center;
+.proposal-card {
+  border-color: color-mix(in srgb, var(--editor-accent, #0891b2) 18%, transparent);
 }
 
 .proposal-card__actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .workflow-feedback-strip {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 14px;
+  gap: 8px;
+  padding: 6px 9px;
+  border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--editor-border, #94a3b8) 66%, transparent);
   background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
 
@@ -379,13 +354,20 @@ function resultPromoteActionText(candidate: WriterResultCandidate) {
 }
 
 .apply-feedback__content {
+  min-width: 0;
   display: grid;
-  gap: 4px;
+  gap: 2px;
+
+  p {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 .apply-feedback__mode {
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: 10px;
   color: var(--editor-text-secondary, #475569);
 }
 
@@ -393,18 +375,18 @@ function resultPromoteActionText(candidate: WriterResultCandidate) {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
 }
 
 .workflow-chip {
   display: inline-flex;
   align-items: center;
-  min-height: 20px;
-  padding: 0 8px;
+  min-height: 17px;
+  padding: 0 6px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--editor-layer-strong, #f1f5f9) 92%, transparent);
   color: var(--editor-text-secondary, #475569);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
 }
 
@@ -419,7 +401,7 @@ function resultPromoteActionText(candidate: WriterResultCandidate) {
 }
 
 .proposal-card__meta {
-  margin-bottom: 2px;
+  margin-bottom: 0;
 }
 
 .proposal-card__action--ghost {
@@ -429,37 +411,28 @@ function resultPromoteActionText(candidate: WriterResultCandidate) {
 
 .workflow-diff-card {
   display: grid;
-  gap: 10px;
-  padding: 11px 12px;
-  border-radius: 14px;
+  gap: 6px;
+  padding: 7px 9px;
+  border-radius: 8px;
   border: 1px solid color-mix(in srgb, var(--editor-accent, #0891b2) 26%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--editor-layer-panel, #ffffff) 98%, transparent),
-      color-mix(in srgb, var(--editor-accent-soft, #f0f9ff) 62%, var(--editor-bg-base, #fff) 38%)
-    ),
-    color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
-  box-shadow:
-    0 10px 24px color-mix(in srgb, var(--editor-accent, #0891b2) 10%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--editor-text-inverse, #ffffff) 12%, transparent);
+  background: color-mix(in srgb, var(--editor-accent-soft, #f0f9ff) 48%, var(--editor-layer-panel, #ffffff) 52%);
 }
 
 .workflow-diff-card__hint {
   margin: 0;
-  font-size: 12px;
-  line-height: 1.6;
+  font-size: 11px;
+  line-height: 1.5;
   color: var(--editor-text-secondary, #475569);
 }
 
 .workflow-diff-card__actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .workflow-diff-card__action {
-  min-height: 30px;
-  padding: 0 12px;
+  min-height: 28px;
+  padding: 0 11px;
   border-radius: 999px;
   border: none;
   background: color-mix(in srgb, var(--editor-accent-soft, #e0f2fe) 84%, transparent);
@@ -478,21 +451,23 @@ function resultPromoteActionText(candidate: WriterResultCandidate) {
 }
 
 @media (max-width: 920px) {
-  .workflow-rail {
-    gap: 8px;
-  }
-
   .workflow-result-card,
   .proposal-card,
   .workflow-diff-card {
-    gap: 10px;
-    padding: 10px;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 9px;
   }
 
+  .workflow-feedback-strip,
   .proposal-card__actions,
   .workflow-diff-card__actions {
     justify-content: flex-start;
     flex-wrap: wrap;
+  }
+
+  .workflow-feedback-strip {
+    border-radius: 12px;
   }
 
   .workflow-result-card__action {

@@ -23,9 +23,8 @@
     </div>
 
     <div v-else class="asset-detail-panel__empty">
-      <span>设定详情</span>
-      <strong>选择左侧资产</strong>
-      <p>这里会显示摘要、引用章节和编辑入口。</p>
+      <span class="asset-detail-panel__empty-badge">详情</span>
+      <strong>选择资产</strong>
     </div>
   </div>
 </template>
@@ -80,38 +79,37 @@ watch(
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 12px 14px;
+  gap: 8px;
+  padding: 8px 10px;
   overflow: auto;
 }
 
 .asset-detail-panel__empty {
-  flex: 1;
-  display: grid;
-  align-content: center;
-  justify-content: center;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
   gap: 6px;
-  padding: 20px;
-  text-align: center;
+  padding: 8px 10px;
+  text-align: left;
   color: var(--editor-text-muted, #6b7280);
-  font-size: 12px;
-
-  span {
-    color: var(--editor-text-ghost, #9ca3af);
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
+  font-size: 11px;
 
   strong {
-    color: var(--editor-text-primary, #111827);
-    font-size: 14px;
+    color: var(--editor-text-muted, #64748b);
+    font-size: 11px;
+    font-weight: 600;
   }
+}
 
-  p {
-    margin: 0;
-    line-height: 1.6;
-  }
+.asset-detail-panel__empty-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--editor-layer-soft, #f8fafc) 88%, transparent);
+  color: var(--editor-text-muted, #64748b);
+  font-size: 9px;
+  font-weight: 700;
 }
 </style>

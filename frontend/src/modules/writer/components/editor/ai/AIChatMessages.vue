@@ -14,7 +14,21 @@
     >
       <!-- 用户消息 -->
       <div v-if="message.role === 'user'" class="message-bubble message-user">
-        <div class="message-content">{{ message.content }}</div>
+        <div
+          v-if="parseWorkflowUserPrompt(message.content)"
+          class="message-user-task-card"
+        >
+          <div class="message-user-task-card__badge">
+            {{ parseWorkflowUserPrompt(message.content)?.badge }}
+          </div>
+          <div class="message-user-task-card__title">
+            {{ parseWorkflowUserPrompt(message.content)?.target }}
+          </div>
+          <div class="message-user-task-card__detail">
+            {{ parseWorkflowUserPrompt(message.content)?.instruction }}
+          </div>
+        </div>
+        <div v-else class="message-content">{{ message.content }}</div>
         <div class="message-time">{{ formatTime(message.timestamp) }}</div>
       </div>
 
@@ -242,9 +256,20 @@
           </div>
           <div
             class="message-content"
-            :class="{ 'message-content--pending': message.typing }"
+            :class="{
+              'message-content--pending': message.typing,
+              'message-content--collapsed': shouldCollapseAssistantMessage(message),
+            }"
             v-safe-html="renderAssistantMessage(message)"
           ></div>
+          <button
+            v-if="shouldShowAssistantCollapseToggle(message)"
+            type="button"
+            class="message-content-toggle"
+            @click="toggleAssistantMessage(message.id)"
+          >
+            {{ isAssistantMessageExpanded(message.id) ? '收起' : '展开' }}
+          </button>
           <div v-if="message.typing" class="typing-indicator">
             <span></span><span></span><span></span>
           </div>
@@ -309,10 +334,11 @@ const emit = defineEmits<{
 
 // ==================== 国际化 ====================
 const { t } = useI18n()
-const emptyHint = t('ai.emptyHint', '开始与AI助手对话...')
+const emptyHint = t('ai.emptyHint', '向 AI 说明你的想法')
 
 // ==================== Refs ====================
 const messagesContainer = ref<HTMLElement>()
+const expandedAssistantMessageIds = ref<string[]>([])
 const showPendingAssistant = computed(
   () =>
     props.isTyping &&
@@ -337,6 +363,30 @@ function renderAssistantMessage(message: ChatMessage): string {
 
 function renderPendingMarkdown(): string {
   return renderMarkdown(props.typingText || '正在思考，请稍候…')
+}
+
+function parseWorkflowUserPrompt(content: string) {
+  const lines = content
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+
+  if (lines.length < 3 || !lines[0].startsWith('[') || !lines[0].endsWith(']')) {
+    return null
+  }
+
+  const badge = lines[0].slice(1, -1).trim()
+  const target = lines.find((line) => line.startsWith('目标：'))?.replace(/^目标：/, '').trim()
+  const instruction = lines
+    .find((line) => line.startsWith('修改要求：'))
+    ?.replace(/^修改要求：/, '')
+    .trim()
+
+  if (!badge || !target || !instruction) {
+    return null
+  }
+
+  return { badge, target, instruction }
 }
 
 function toolOperationLabel(operationType: string): string {
@@ -369,6 +419,36 @@ function checkpointStageLabel(stage: string): string {
 
 function contextEvidenceItems(meta: ChatMessage['meta']) {
   return meta?.contextEvidence?.slice(0, 6) || []
+}
+
+function assistantMessageTextLength(message: ChatMessage) {
+  return (message.content || '').replace(/\s+/g, '').length
+}
+
+function isAssistantMessageExpanded(messageId: string) {
+  return expandedAssistantMessageIds.value.includes(messageId)
+}
+
+function shouldShowAssistantCollapseToggle(message: ChatMessage) {
+  return (
+    message.role === 'assistant' &&
+    !message.typing &&
+    contextEvidenceItems(message.meta).length > 0 &&
+    assistantMessageTextLength(message) > 180
+  )
+}
+
+function shouldCollapseAssistantMessage(message: ChatMessage) {
+  return shouldShowAssistantCollapseToggle(message) && !isAssistantMessageExpanded(message.id)
+}
+
+function toggleAssistantMessage(messageId: string) {
+  if (isAssistantMessageExpanded(messageId)) {
+    expandedAssistantMessageIds.value = expandedAssistantMessageIds.value.filter((id) => id !== messageId)
+    return
+  }
+
+  expandedAssistantMessageIds.value = [...expandedAssistantMessageIds.value, messageId]
 }
 
 /**
@@ -443,10 +523,10 @@ watch(
 .ai-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 8px 10px 8px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
 
   // 滚动条样式
   &::-webkit-scrollbar {
@@ -468,23 +548,23 @@ watch(
 }
 
 .empty-state {
-  flex: 1;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  text-align: center;
+  gap: 6px;
+  padding: 2px 0 4px;
+  text-align: left;
   color: var(--editor-text-muted);
 
   .empty-icon {
-    font-size: 48px;
-    margin-bottom: 16px;
+    font-size: 14px;
     color: var(--editor-text-ghost);
   }
 
   .empty-text {
     margin: 0;
-    font-size: 14px;
+    font-size: 11px;
   }
 }
 
@@ -502,9 +582,9 @@ watch(
 }
 
 .message-bubble {
-  max-width: 85%;
-  padding: 10px 14px;
-  border-radius: 14px;
+  max-width: 100%;
+  padding: 8px 10px;
+  border-radius: 12px;
   word-wrap: break-word;
 
   &.message-user {
@@ -518,18 +598,18 @@ watch(
     border: 1px solid var(--ai-border, #e2e8f0);
     border-bottom-left-radius: 4px;
     display: flex;
-    gap: 8px;
+    gap: 6px;
 
     .message-avatar {
-      width: 24px;
-      height: 24px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
       background: var(--editor-accent, #3b82f6);
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      font-size: 12px;
+      font-size: 11px;
     }
 
     .message-content-wrapper {
@@ -538,12 +618,26 @@ watch(
   }
 
   .message-content {
-    font-size: 14px;
-    line-height: 1.6;
+    font-size: 13px;
+    line-height: 1.55;
     white-space: pre-wrap;
 
     &--pending {
       color: var(--ai-text-muted, #64748b);
+    }
+
+    &--collapsed {
+      position: relative;
+      max-height: 9.2em;
+      overflow: hidden;
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: auto 0 0;
+        height: 28px;
+        background: linear-gradient(180deg, transparent, var(--ai-assistant-bg, #f1f5f9));
+      }
     }
   }
 
@@ -593,14 +687,59 @@ watch(
 
   .message-time {
     margin-top: 4px;
-    font-size: 11px;
+    font-size: 10px;
     color: var(--ai-text-muted, #64748b);
   }
 }
 
+.message-content-toggle {
+  margin-top: 6px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--editor-accent, #2563eb);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.message-user .message-content {
+  max-height: 180px;
+  overflow: auto;
+}
+
+.message-user-task-card {
+  display: grid;
+  gap: 4px;
+}
+
+.message-user-task-card__badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 18px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, #ffffff 18%, transparent);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.message-user-task-card__title {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.message-user-task-card__detail {
+  font-size: 11px;
+  line-height: 1.45;
+  color: color-mix(in srgb, #ffffff 84%, transparent);
+}
+
 .message-tool-card {
-  margin-bottom: 10px;
-  border-radius: 12px;
+  margin-bottom: 8px;
+  border-radius: 10px;
   border: 1px solid var(--ai-border, #e2e8f0);
   background:
     linear-gradient(
@@ -648,12 +787,12 @@ watch(
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 10px 12px 8px;
+  gap: 8px;
+  padding: 8px 10px 6px;
 }
 
 .message-tool-card__title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--ai-text, #0f172a);
 }
@@ -661,12 +800,12 @@ watch(
 .message-tool-card__status {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
-  padding: 0 10px;
+  min-height: 20px;
+  padding: 0 8px;
   border-radius: 999px;
   background: var(--ai-accent-soft, #eff6ff);
   color: var(--editor-accent, #1d4ed8);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -674,25 +813,25 @@ watch(
 .message-tool-card__stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 8px;
-  padding: 0 12px 10px;
+  gap: 5px 6px;
+  padding: 0 10px 8px;
   color: var(--ai-text-muted, #64748b);
-  font-size: 12px;
+  font-size: 11px;
 
   span {
     display: inline-flex;
     align-items: center;
-    min-height: 24px;
-    padding: 0 8px;
+    min-height: 20px;
+    padding: 0 7px;
     border-radius: 999px;
     background: color-mix(in srgb, var(--editor-border, #94a3b8) 22%, transparent);
   }
 }
 
 .message-tool-card__detail {
-  padding: 0 12px 12px;
-  font-size: 12px;
-  line-height: 1.6;
+  padding: 0 10px 10px;
+  font-size: 11px;
+  line-height: 1.5;
   color: var(--ai-text-muted, #64748b);
 }
 
@@ -700,10 +839,10 @@ watch(
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
-  margin: 0 0 8px;
+  gap: 5px;
+  margin: 0 0 6px;
   color: var(--ai-text-muted, #64748b);
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .message-context-evidence__label {
@@ -714,8 +853,8 @@ watch(
   display: inline-flex;
   align-items: center;
   max-width: 148px;
-  min-height: 22px;
-  padding: 0 8px;
+  min-height: 20px;
+  padding: 0 7px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--ai-border, #e2e8f0) 72%, transparent);
   background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 82%, transparent);
@@ -728,25 +867,25 @@ watch(
 .message-tool-card__blocks {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 0 12px 12px;
+  gap: 8px;
+  padding: 0 10px 10px;
 }
 
 .message-target-candidates {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 0 12px 12px;
+  gap: 6px;
+  padding: 0 10px 10px;
 }
 
 .message-target-candidate {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 4px;
+  gap: 3px;
   width: 100%;
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
   border: 1px solid rgba(191, 219, 254, 0.9);
   background: color-mix(in srgb, var(--ai-accent-soft, #eff6ff) 72%, var(--ai-bg, #ffffff));
   color: var(--ai-text, #0f172a);
@@ -765,27 +904,27 @@ watch(
 }
 
 .message-target-candidate__title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
 }
 
 .message-target-candidate__meta,
 .message-target-candidate__reason {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--ai-text-muted, #64748b);
 }
 
 .message-retrieval-hits {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 0 12px 12px;
+  gap: 6px;
+  padding: 0 10px 10px;
 }
 
 .message-retrieval-hit {
-  padding: 10px 12px;
+  padding: 8px 10px;
   border: 1px solid rgba(203, 213, 225, 0.9);
-  border-radius: 10px;
+  border-radius: 8px;
   background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.86)) 88%, transparent);
 
   &.is-selected {
@@ -803,7 +942,7 @@ watch(
 }
 
 .message-retrieval-hit__title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--ai-text, #0f172a);
 }
@@ -811,34 +950,34 @@ watch(
 .message-retrieval-hit__badge {
   display: inline-flex;
   align-items: center;
-  min-height: 20px;
-  padding: 0 8px;
+  min-height: 18px;
+  padding: 0 7px;
   border-radius: 999px;
   background: var(--ai-accent-soft, #dbeafe);
   color: var(--editor-accent, #1d4ed8);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
 }
 
 .message-retrieval-hit__reason,
 .message-retrieval-hit__excerpt {
   margin: 0;
-  font-size: 12px;
-  line-height: 1.6;
+  font-size: 11px;
+  line-height: 1.5;
   color: var(--ai-text-muted, #64748b);
 }
 
 .message-plan-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
   margin: 0;
-  padding: 0 12px 12px;
+  padding: 0 10px 10px;
 
   div {
     min-width: 0;
-    padding: 8px 10px;
-    border-radius: 10px;
+    padding: 7px 8px;
+    border-radius: 8px;
     background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.82)) 86%, transparent);
     border: 1px solid rgba(203, 213, 225, 0.8);
   }
@@ -846,14 +985,14 @@ watch(
   dt {
     margin-bottom: 4px;
     color: var(--ai-text-muted, #64748b);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
   }
 
   dd {
     margin: 0;
     color: var(--ai-text, #0f172a);
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1.5;
     word-break: break-word;
   }
@@ -862,9 +1001,9 @@ watch(
 .message-checkpoint-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   margin: 0;
-  padding: 0 12px 12px;
+  padding: 0 10px 10px;
   list-style: none;
 }
 
@@ -904,26 +1043,26 @@ watch(
 
 .message-checkpoint-item__label {
   color: var(--ai-text, #0f172a);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
 }
 
 .message-checkpoint-item__detail {
   color: var(--ai-text-muted, #64748b);
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.5;
 }
 
 .message-tool-block {
-  padding: 10px;
-  border-radius: 10px;
+  padding: 8px;
+  border-radius: 8px;
   background: color-mix(in srgb, var(--editor-layer-panel, rgba(255, 255, 255, 0.84)) 88%, transparent);
   border: 1px solid rgba(203, 213, 225, 0.9);
 }
 
 .message-tool-block__title {
-  margin-bottom: 8px;
-  font-size: 12px;
+  margin-bottom: 6px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--ai-text, #0f172a);
 }
@@ -931,11 +1070,11 @@ watch(
 .message-tool-block__columns {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 
 .message-tool-block__panel {
-  padding: 8px;
+  padding: 7px;
   border-radius: 8px;
   min-width: 0;
 }
@@ -949,8 +1088,8 @@ watch(
 }
 
 .message-tool-block__label {
-  margin-bottom: 6px;
-  font-size: 11px;
+  margin-bottom: 4px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--ai-text-muted, #64748b);
 }
@@ -963,7 +1102,7 @@ watch(
 
 .message-tool-block__line,
 .message-tool-block__empty {
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.5;
   color: var(--ai-text, #0f172a);
   word-break: break-word;

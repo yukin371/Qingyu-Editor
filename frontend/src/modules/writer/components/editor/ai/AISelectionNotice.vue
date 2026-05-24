@@ -1,9 +1,11 @@
 <template>
   <div v-if="notice" class="selection-notice" :class="`is-${notice.status}`">
-    <div class="selection-title">{{ notice.actionLabel }} · 已选中 {{ notice.text.length }} 字</div>
+    <div class="selection-heading">
+      <div class="selection-title">{{ notice.actionLabel }} · {{ notice.text.length }}字</div>
+      <div class="selection-status">{{ notice.statusText }}</div>
+    </div>
     <div class="selection-content">{{ notice.text }}</div>
-    <div v-if="notice.instructions" class="selection-extra">要求：{{ notice.instructions }}</div>
-    <div class="selection-status">{{ notice.statusText }}</div>
+    <div v-if="notice.instructions" class="selection-extra">要求 {{ notice.instructions }}</div>
   </div>
 </template>
 
@@ -18,21 +20,33 @@ defineProps<{
 
 <style scoped lang="scss">
 .selection-notice {
-  margin: 10px 12px 0;
-  border-radius: 10px;
+  margin: 8px 10px 0;
+  border-radius: 8px;
   border: 1px solid var(--ai-border-strong, var(--editor-border, #cbd5e1));
   background: color-mix(in srgb, var(--ai-bg-soft, var(--editor-bg-surface, #f8fafc)) 94%, transparent);
-  padding: 10px;
+  padding: 7px 9px;
   font-size: 12px;
-  line-height: 1.5;
+  line-height: 1.4;
   color: var(--editor-text-secondary, #334155);
 
+  .selection-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
   .selection-title {
+    min-width: 0;
     font-weight: 600;
+    color: var(--editor-text-primary, #1e293b);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .selection-content {
-    margin-top: 4px;
+    margin-top: 3px;
     color: var(--editor-text-secondary, #475569);
     white-space: nowrap;
     overflow: hidden;
@@ -40,13 +54,21 @@ defineProps<{
   }
 
   .selection-extra {
-    margin-top: 4px;
+    margin-top: 3px;
     color: var(--editor-text-primary, #1e293b);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .selection-status {
-    margin-top: 6px;
+    flex-shrink: 0;
+    max-width: 42%;
     font-weight: 600;
+    color: var(--editor-text-muted, #64748b);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   &.is-running {

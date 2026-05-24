@@ -1,7 +1,6 @@
 <template>
   <header class="workspace-topbar">
     <div class="workspace-topbar__left">
-      <div class="topbar-brand">作家2</div>
       <button class="topbar-back-btn" :title="'返回工作台'" @click="$emit('back')">
         <QyIcon name="Files" :size="14" />
         <span>{{ projectDisplayName }}</span>
@@ -11,7 +10,7 @@
     <div class="workspace-topbar__center">
       <span class="chapter-title">{{ currentChapterTitle || '未选择章节' }}</span>
       <span v-if="saveStatusLabel" class="status-text">· {{ saveStatusLabel }}</span>
-      <span class="tool-chip">{{ activeToolLabel }}</span>
+      <span v-if="shouldShowToolChip" class="tool-chip">{{ activeToolLabel }}</span>
     </div>
 
     <div class="workspace-topbar__right">
@@ -23,11 +22,19 @@
         >
           <QyIcon :name="isImmersiveMode ? 'Minus' : 'FullScreen'" :size="14" />
         </button>
-        <button class="topbar-icon-btn" :title="'设定'" @click="$emit('open-right-tool', 'assets')">
+        <button
+          class="topbar-icon-btn"
+          :class="{ 'topbar-icon-btn--active': isQuickToolActive('assets') }"
+          :aria-pressed="isQuickToolActive('assets')"
+          :title="'设定'"
+          @click="$emit('open-right-tool', 'assets')"
+        >
           <QyIcon name="FolderOpened" :size="14" />
         </button>
         <button
           class="topbar-icon-btn"
+          :class="{ 'topbar-icon-btn--active': isQuickToolActive('proofread') }"
+          :aria-pressed="isQuickToolActive('proofread')"
           :title="'校对'"
           @click="$emit('open-right-tool', 'proofread')"
         >
@@ -35,12 +42,20 @@
         </button>
         <button
           class="topbar-icon-btn"
+          :class="{ 'topbar-icon-btn--active': isQuickToolActive('inspiration') }"
+          :aria-pressed="isQuickToolActive('inspiration')"
           :title="'灵感'"
           @click="$emit('open-right-tool', 'inspiration')"
         >
           <QyIcon name="MagicStick" :size="14" />
         </button>
-        <button class="topbar-icon-btn" :title="'AI 助手'" @click="$emit('open-right-tool', 'ai')">
+        <button
+          class="topbar-icon-btn"
+          :class="{ 'topbar-icon-btn--active': isQuickToolActive('ai') }"
+          :aria-pressed="isQuickToolActive('ai')"
+          :title="'AI 助手'"
+          @click="$emit('open-right-tool', 'ai')"
+        >
           <QyIcon name="ChatDotRound" :size="14" />
         </button>
       </div>
@@ -71,10 +86,12 @@
           </button>
           <button
             class="topbar-overflow__item"
+            :class="{ 'topbar-overflow__item--active': isBottomPanelVisible }"
+            :aria-pressed="isBottomPanelVisible"
             @click="$emit('toggle-bottom-panel'); overflowOpen = false"
           >
             <QyIcon name="Memo" :size="14" />
-            <span>场景舞台</span>
+            <span>{{ bottomPanelActionLabel }}</span>
           </button>
           <button
             class="topbar-overflow__item"
@@ -210,18 +227,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { QyDialog } from '@/design-system/components'
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
 import WorkspaceSettingsPanel from '../settings/WorkspaceSettingsPanel.vue'
-import type { WorkspaceLayoutPreset } from '@/modules/writer/types/workspaceLayout'
+import type { RightToolType, WorkspaceLayoutPreset } from '@/modules/writer/types/workspaceLayout'
 
-defineProps<{
+const props = defineProps<{
   projectDisplayName: string
   currentChapterTitle: string
   activeToolLabel: string
   saveStatusLabel: string
   isImmersiveMode: boolean
+  activeRightTool: RightToolType
+  isRightToolVisible: boolean
+  isBottomPanelVisible: boolean
 }>()
 
 defineEmits<{
@@ -238,6 +258,17 @@ defineEmits<{
 const overflowOpen = ref(false)
 const showWorkspaceSettings = ref(false)
 const showHelpDocs = ref(false)
+
+const isQuickToolActive = (tool: RightToolType) =>
+  props.isRightToolVisible && props.activeRightTool === tool
+
+const bottomPanelActionLabel = computed(() =>
+  props.isBottomPanelVisible ? '收起场景舞台' : '打开场景舞台',
+)
+const shouldShowToolChip = computed(() => {
+  const label = props.activeToolLabel.trim()
+  return Boolean(label && label !== '写作' && label !== '写作模式')
+})
 
 type HelpDemoPanel = {
   label: string
@@ -468,21 +499,13 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
 
 <style scoped lang="scss">
 .workspace-topbar {
-  height: 48px;
-  padding: 0 14px;
+  height: 44px;
+  padding: 0 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #ffffff)) 96%, transparent),
-    color-mix(
-      in srgb,
-      var(--editor-layer-soft, var(--editor-bg-surface, #f5f7fa)) 92%,
-      var(--editor-layer-panel, var(--editor-bg-base, #ffffff)) 8%
-    )
-  );
+  gap: 10px;
+  background: color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #ffffff)) 98%, transparent);
   border-bottom: 1px solid var(--editor-border, #e2e8f0);
   flex-shrink: 0;
   position: relative;
@@ -494,34 +517,20 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-.topbar-brand {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 28px;
-  padding: 0 10px;
-  border-radius: 8px;
-  background: var(--editor-bg-elevated, #e8edf5);
-  color: var(--editor-text-secondary, #334155);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  gap: 6px;
 }
 
 .topbar-back-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 10px;
-  border: 1px solid color-mix(in srgb, var(--editor-border, #cbd5e1) 88%, transparent);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #ffffff)) 88%, transparent);
+  gap: 4px;
+  height: 28px;
+  padding: 0 7px;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #cbd5e1) 72%, transparent);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #ffffff)) 96%, transparent);
   color: var(--editor-text-secondary, #475569);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition:
@@ -529,7 +538,7 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
     color 120ms ease,
     border-color 120ms ease;
   white-space: nowrap;
-  max-width: 220px;
+  max-width: 196px;
   overflow: hidden;
   text-overflow: ellipsis;
 
@@ -552,22 +561,22 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 5px;
   overflow: hidden;
 }
 
 .chapter-title {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--editor-text-primary, #0f172a);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 360px;
+  max-width: 300px;
 }
 
 .status-text {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--editor-text-ghost, #94a3b8);
   white-space: nowrap;
   flex-shrink: 0;
@@ -577,13 +586,14 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  height: 22px;
-  padding: 0 8px;
+  height: 18px;
+  padding: 0 6px;
   border-radius: 999px;
-  background: var(--editor-bg-elevated, #eef2f7);
-  color: var(--editor-text-secondary, #475569);
-  font-size: 11px;
+  background: color-mix(in srgb, var(--editor-bg-elevated, #eef2f7) 62%, transparent);
+  color: var(--editor-text-ghost, #64748b);
+  font-size: 9px;
   font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .workspace-help-docs {
@@ -934,28 +944,28 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
 .workspace-topbar__right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 3px;
   flex-shrink: 0;
 }
 
 .topbar-quick-actions {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 2px;
-  border: 1px solid color-mix(in srgb, var(--editor-border, #cbd5e1) 88%, transparent);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--editor-layer-glass, var(--editor-bg-base, #ffffff)) 90%, transparent);
+  gap: 1px;
+  padding: 1px;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #cbd5e1) 72%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--editor-layer-glass, var(--editor-bg-base, #ffffff)) 96%, transparent);
 }
 
 .topbar-icon-btn {
   display: inline-flex;
   align-items: center;
-  height: 30px;
-  width: 30px;
+  height: 26px;
+  width: 26px;
   justify-content: center;
   border: none;
-  border-radius: 8px;
+  border-radius: 7px;
   background: transparent;
   color: var(--editor-text-secondary, #475569);
   cursor: pointer;
@@ -969,17 +979,24 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   }
 }
 
+.topbar-icon-btn--active {
+  background: color-mix(in srgb, var(--editor-accent-soft, #dbeafe) 26%, transparent);
+  color: var(--editor-accent-strong, var(--editor-accent, #2563eb));
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--editor-accent-soft-border, #93c5fd) 72%, transparent);
+}
+
 .topbar-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 30px;
-  padding: 0 10px;
-  border: 1px solid color-mix(in srgb, var(--editor-border, #cbd5e1) 88%, transparent);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #ffffff)) 94%, transparent);
+  height: 26px;
+  padding: 0 7px;
+  border: 1px solid color-mix(in srgb, var(--editor-border, #cbd5e1) 72%, transparent);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--editor-layer-panel, var(--editor-bg-base, #ffffff)) 98%, transparent);
   color: var(--editor-text-secondary, #475569);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
@@ -1004,11 +1021,11 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
   }
 
   &--icon {
-    padding: 0 8px;
+    padding: 0 6px;
   }
 
   &--compact {
-    width: 32px;
+    width: 26px;
     justify-content: center;
     padding: 0;
   }
@@ -1016,9 +1033,9 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
 
 .topbar-divider {
   width: 1px;
-  height: 20px;
-  background: color-mix(in srgb, var(--editor-border, #cbd5e1) 88%, transparent);
-  margin: 0 2px;
+  height: 16px;
+  background: color-mix(in srgb, var(--editor-border, #cbd5e1) 72%, transparent);
+  margin: 0 1px;
 }
 
 .topbar-overflow {
@@ -1056,6 +1073,11 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
     background: var(--editor-bg-elevated, #f1f5f9);
     color: var(--editor-text-primary, #0f172a);
   }
+}
+
+.topbar-overflow__item--active {
+  background: color-mix(in srgb, var(--editor-accent-soft, #dbeafe) 34%, transparent);
+  color: var(--editor-accent-strong, var(--editor-accent, #2563eb));
 }
 
 .topbar-overflow__divider {

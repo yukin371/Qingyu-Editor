@@ -1,22 +1,20 @@
 <template>
   <div class="ai-input-area">
     <div v-if="targetLabel" class="target-scope-bar">
-      <span class="target-scope-bar__label">当前目标</span>
       <span class="target-scope-bar__value">{{ targetLabel }}</span>
-      <span v-if="targetDetail" class="target-scope-bar__detail">{{ targetDetail }}</span>
-    </div>
-    <div v-if="contextEvidence" class="context-evidence-bar">
-      {{ contextEvidence }}
+      <span
+        v-if="targetDetail || contextEvidence"
+        class="target-scope-bar__meta"
+      >
+        {{ [targetDetail, contextEvidence].filter(Boolean).join(' · ') }}
+      </span>
     </div>
     <div v-if="context" class="chat-context-chip">
       <div class="context-copy">
-        <div class="context-header">
-          <span class="context-label">对话上下文</span>
-          <span class="context-status">下一条消息将自动携带</span>
-        </div>
+        <span class="context-label">携带上下文</span>
         <span class="context-text">{{ context.text }}</span>
         <span v-if="context.instructions" class="context-extra">
-          附带要求：{{ context.instructions }}
+          {{ context.instructions }}
         </span>
       </div>
       <button class="context-clear" type="button" @click="$emit('clearContext')">移除</button>
@@ -51,6 +49,8 @@
         :placeholder="placeholder"
         rows="1"
         :disabled="disabled"
+        @focus="isInputFocused = true"
+        @blur="isInputFocused = false"
         @keydown="handleKeyDown"
         @input="handleInput"
       ></textarea>
@@ -63,7 +63,7 @@
         <QyIcon :name="disabled ? 'Loading' : 'Promotion'" />
       </button>
     </div>
-    <div class="input-hint">
+    <div v-if="hint && isInputFocused" class="input-hint">
       <span>{{ hint }}</span>
     </div>
   </div>
@@ -117,6 +117,7 @@ const sendLabel = t('ai.send', '发送')
 
 // ==================== Refs ====================
 const inputRef = ref<HTMLTextAreaElement>()
+const isInputFocused = ref(false)
 
 // ==================== 方法 ====================
 function handleKeyDown(event: KeyboardEvent) {
@@ -152,15 +153,15 @@ defineExpose({
 
 <style scoped lang="scss">
 .ai-input-area {
-  padding: 12px 16px;
-  background: var(--ai-bg-soft, #f8fafc);
+  padding: 5px 7px 7px;
+  background: color-mix(in srgb, var(--ai-bg-soft, #f8fafc) 72%, var(--ai-bg, #ffffff));
   border-top: 1px solid var(--ai-border, #e2e8f0);
 
   .interaction-mode {
     display: inline-flex;
-    gap: 6px;
-    margin-bottom: 8px;
-    padding: 4px;
+    gap: 4px;
+    margin-bottom: 4px;
+    padding: 2px;
     border-radius: 999px;
     background: color-mix(in srgb, var(--editor-border, #e2e8f0) 28%, transparent);
   }
@@ -169,10 +170,10 @@ defineExpose({
     border: none;
     background: transparent;
     color: var(--editor-text-secondary, #475569);
-    border-radius: 999px;
-    padding: 6px 10px;
-    font-size: 12px;
-    font-weight: 600;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 600;
     cursor: pointer;
 
     &.is-active {
@@ -188,40 +189,27 @@ defineExpose({
   }
 
   .chat-context-chip {
-    margin-bottom: 8px;
-    border: 1px solid var(--editor-accent-soft-border, #bfdbfe);
-    background: var(--editor-layer-accent, #eff6ff);
+    margin-bottom: 4px;
+    border: 1px solid color-mix(in srgb, var(--editor-accent-soft-border, #bfdbfe) 72%, transparent);
+    background: color-mix(in srgb, var(--editor-layer-accent, #eff6ff) 62%, var(--ai-bg, #ffffff));
     color: var(--editor-accent, #1e3a8a);
-    border-radius: 10px;
-    padding: 6px 8px;
+    border-radius: 7px;
+    padding: 4px 6px;
     display: flex;
     align-items: flex-start;
-    gap: 10px;
-    font-size: 12px;
+    gap: 8px;
+    font-size: 10px;
 
     .context-copy {
       flex: 1;
       min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 2px;
-    }
-
-    .context-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
+      gap: 1px;
     }
 
     .context-label {
       font-weight: 600;
-    }
-
-    .context-status {
-      flex-shrink: 0;
-      color: var(--editor-accent, #1d4ed8);
-      font-size: 11px;
     }
 
     .context-text {
@@ -232,7 +220,7 @@ defineExpose({
     }
 
     .context-extra {
-      color: var(--editor-text-primary, #1e293b);
+      color: var(--editor-text-secondary, #334155);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -244,7 +232,7 @@ defineExpose({
       background: transparent;
       color: var(--editor-accent, #1d4ed8);
       cursor: pointer;
-      font-size: 12px;
+      font-size: 10px;
       padding: 0;
     }
   }
@@ -252,21 +240,15 @@ defineExpose({
   .target-scope-bar {
     display: flex;
     align-items: center;
-    gap: 6px;
-    margin-bottom: 8px;
-    padding: 6px 8px;
-    border: 1px solid color-mix(in srgb, var(--editor-border, #dbeafe) 42%, transparent);
-    background: var(--editor-layer-soft, #f8fafc);
+    gap: 5px;
+    margin-bottom: 4px;
+    padding: 3px 6px;
+    border: 1px solid color-mix(in srgb, var(--editor-border, #dbeafe) 34%, transparent);
+    background: color-mix(in srgb, var(--editor-layer-soft, #f8fafc) 82%, transparent);
     color: var(--editor-text-secondary, #334155);
-    border-radius: 8px;
-    font-size: 12px;
+    border-radius: 7px;
+    font-size: 10px;
     min-width: 0;
-  }
-
-  .target-scope-bar__label {
-    flex-shrink: 0;
-    color: var(--editor-text-muted, #64748b);
-    font-weight: 600;
   }
 
   .target-scope-bar__value {
@@ -278,20 +260,9 @@ defineExpose({
     white-space: nowrap;
   }
 
-  .target-scope-bar__detail {
-    flex-shrink: 0;
+  .target-scope-bar__meta {
+    min-width: 0;
     color: var(--editor-accent, #2563eb);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .context-evidence-bar {
-    margin: -2px 0 8px;
-    padding: 0 2px;
-    color: var(--editor-text-muted, #64748b);
-    font-size: 11px;
-    line-height: 1.5;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -299,12 +270,12 @@ defineExpose({
 
   .input-wrapper {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     align-items: flex-end;
     background: var(--editor-layer-panel, #ffffff);
     border: 1px solid var(--ai-border-strong, #cbd5e1);
-    border-radius: 12px;
-    padding: 8px;
+    border-radius: 9px;
+    padding: 4px 6px;
     transition: border-color 0.2s ease;
 
     &:focus-within {
@@ -314,14 +285,14 @@ defineExpose({
 
     .message-input {
       flex: 1;
-      min-height: 32px;
+      min-height: 24px;
       max-height: 120px;
       padding: 0;
       border: none;
       background: transparent;
       color: var(--ai-text, #0f172a);
-      font-size: 14px;
-      line-height: 1.6;
+      font-size: 12px;
+      line-height: 1.4;
       resize: none;
       outline: none;
 
@@ -336,13 +307,13 @@ defineExpose({
     }
 
     .send-button {
-      width: 32px;
-      height: 32px;
+      width: 26px;
+      height: 26px;
       padding: 0;
       border: none;
       background: var(--ai-user-bg, #2563eb);
       color: white;
-      border-radius: 8px;
+      border-radius: 7px;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -367,11 +338,11 @@ defineExpose({
   }
 
   .input-hint {
-    margin-top: 8px;
+    margin-top: 4px;
     text-align: center;
 
     span {
-      font-size: 11px;
+      font-size: 10px;
       color: var(--editor-text-ghost, #94a3b8);
     }
   }

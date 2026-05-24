@@ -38,6 +38,7 @@ test('新建项目后进入第一卷第一章，并能打开内置使用文档',
   await createBlankProject(page, `${projectNamePrefix} 文档`)
 
   await expect(page).toHaveURL(/\/writer\/project\/.+chapterId=/)
+  await expectStatusChip(page, '已打开：第一章（可直接改标题）')
   await openDirectory(page)
   await expect(page.getByRole('button', { name: /第一卷 1 个章节/ })).toBeVisible()
   await expect(page.getByRole('button', { name: /1\. 第一章/ })).toBeVisible()
@@ -156,6 +157,7 @@ test('工作台最近项目可继续创作并回到最近章节', async ({ page 
 
   await page.getByRole('button', { name: new RegExp(`${projectName} 工作台回流`) }).click()
   await expect(page).toHaveURL(/\/writer\/project\/.+chapterId=/)
+  await expectStatusChip(page, '继续创作：工作台回流')
   await expect(page.getByRole('textbox', { name: '工作台回流' })).toHaveValue('工作台回流')
 })
 
@@ -414,7 +416,13 @@ async function clearEditorBody(page: Page) {
 }
 
 async function expectSaveStatus(page: Page, label: string) {
-  await expect(page.locator('.status-text')).toContainText(label, { timeout: 10000 })
+  await expect(page.locator('.status-text')).toContainText(label, { timeout: 20000 })
+}
+
+async function expectStatusChip(page: Page, label: string) {
+  await expect(page.locator('.workspace-statusbar .status-chip').filter({ hasText: label })).toBeVisible({
+    timeout: 10000,
+  })
 }
 
 declare global {

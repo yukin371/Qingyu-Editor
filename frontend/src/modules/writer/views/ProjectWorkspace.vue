@@ -10,6 +10,11 @@
         :active-tool-label="activeToolLabel"
         :save-status-label="saveStatusLabel"
         :is-immersive-mode="isImmersiveMode"
+        :active-right-tool="workspaceLayoutStore.rightToolArea.activeTool"
+        :is-right-tool-visible="
+          workspaceLayoutStore.rightToolArea.visible && !panelStore.rightCollapsed
+        "
+        :is-bottom-panel-visible="workspaceLayoutStore.areas.bottom.visible"
         @save="handleTipTapSave"
         @export="handleExportDraft"
         @share="handleShareDraft"
@@ -300,10 +305,22 @@ const queryChapterId = computed(() => String(route.query.chapterId || ''))
 const queryTool = computed(() => String(route.query.tool || ''))
 const queryRightTool = computed(() => String(route.query.rightTool || ''))
 const resolvedActiveTool = computed<ActiveTool>(() => editorStore.activeTool ?? 'writing')
-const workspaceExtraStatusChips = ref<string[]>([])
+const workspaceStatusChips = ref<string[]>([])
+const workspaceTransientStatusChip = ref('')
+const workspaceExtraStatusChips = computed(() =>
+  workspaceTransientStatusChip.value
+    ? [...workspaceStatusChips.value, workspaceTransientStatusChip.value]
+    : workspaceStatusChips.value,
+)
+const workspaceEntryFeedback = ref('')
 const proofreadIssues = ref<ProofreadIssue[]>([])
 const focusedProofreadIssueId = ref('')
 const STANDALONE_LAST_PROJECT_KEY = 'qingyu-editor:last-project'
+const CREATED_PROJECT_ENTRY_QUERY = 'created_project'
+const CONTINUE_PROJECT_ENTRY_QUERY = 'continue_project'
+const IMPORTED_PROJECT_ENTRY_QUERY = 'imported_project'
+const CHAPTER_SWITCH_FEEDBACK_MS = 2400
+let chapterSwitchFeedbackTimer: number | null = null
 
 // =======================
 // 使用 Composables
@@ -373,7 +390,75 @@ const { encyclopediaSubView } = useLegacyEncyclopediaView()
 const { buildDirectoryOutline } = useDirectoryOutline({ availableDocMap, mockProject })
 
 const handleWorkspaceStatusChange = (chips: string[]) => {
-  workspaceExtraStatusChips.value = chips
+  workspaceStatusChips.value = chips
+}
+
+const clearChapterSwitchFeedback = () => {
+  if (chapterSwitchFeedbackTimer) {
+    window.clearTimeout(chapterSwitchFeedbackTimer)
+    chapterSwitchFeedbackTimer = null
+  }
+}
+
+const showWorkspaceTransientStatusChip = (label: string) => {
+  if (!label) {
+    return
+  }
+
+  clearChapterSwitchFeedback()
+  workspaceTransientStatusChip.value = label
+  chapterSwitchFeedbackTimer = window.setTimeout(() => {
+    workspaceTransientStatusChip.value = ''
+    chapterSwitchFeedbackTimer = null
+  }, CHAPTER_SWITCH_FEEDBACK_MS)
+}
+
+const showChapterSwitchFeedback = (chapterId: string, chapterTitle?: string) => {
+  const resolvedTitle = chapterTitle?.trim() || resolveChapterTitle(chapterId) || chapterId
+  if (!resolvedTitle) {
+    return
+  }
+
+  showWorkspaceTransientStatusChip(`已切换：${resolvedTitle}`)
+}
+
+const showChapterCreatedFeedback = (chapterTitle?: string) => {
+  const resolvedTitle = chapterTitle?.trim()
+  if (!resolvedTitle) {
+    return
+  }
+
+  showWorkspaceTransientStatusChip(`已创建：${resolvedTitle}（可直接改标题）`)
+}
+
+const showCreatedProjectEntryFeedback = (chapterTitle?: string) => {
+  const resolvedTitle = chapterTitle?.trim()
+  if (resolvedTitle) {
+    showWorkspaceTransientStatusChip(`已打开：${resolvedTitle}（可直接改标题）`)
+    return
+  }
+
+  showWorkspaceTransientStatusChip('已创建项目，已打开首章（可直接改标题）')
+}
+
+const showContinueProjectEntryFeedback = (chapterTitle?: string) => {
+  const resolvedTitle = chapterTitle?.trim()
+  if (resolvedTitle) {
+    showWorkspaceTransientStatusChip(`继续创作：${resolvedTitle}`)
+    return
+  }
+
+  showWorkspaceTransientStatusChip('已回到上次创作位置')
+}
+
+const showImportedProjectEntryFeedback = (chapterTitle?: string) => {
+  const resolvedTitle = chapterTitle?.trim()
+  if (resolvedTitle) {
+    showWorkspaceTransientStatusChip(`已导入项目：当前章节 ${resolvedTitle}`)
+    return
+  }
+
+  showWorkspaceTransientStatusChip('已导入项目，已进入工作区')
 }
 
 const toggleBottomPanel = () => {
@@ -798,6 +883,7 @@ const handleAddDoc = async () => {
     delete nextQuery.encyclopediaView
     await router.replace({ query: nextQuery })
     await focusCurrentTitleInput()
+    showChapterCreatedFeedback(newDoc.title || title)
   } catch (error) {
     console.error('[ProjectWorkspace] 创建章节失败:', error)
     message.error('创建章节失败，请重试')
@@ -981,6 +1067,7 @@ const handleChapterIdUpdate = async (chapterId: string) => {
   nextQuery.tool = 'writing'
   delete nextQuery.encyclopediaView
   await router.replace({ query: nextQuery })
+  showChapterSwitchFeedback(chapterId)
 }
 
 const handleOpenGraph = async (chapterId: string) => {
@@ -1010,6 +1097,7 @@ const handleOutlineSelect = async (node: OutlineNode) => {
     nextQuery.tool = 'writing'
     delete nextQuery.encyclopediaView
     await router.replace({ query: nextQuery })
+    showChapterSwitchFeedback(node.documentId, node.title)
   }
 }
 
@@ -1120,6 +1208,7 @@ const handleConvertToChapter = async (payload: {
       delete nextQuery.encyclopediaView
       await router.replace({ query: nextQuery })
       await focusCurrentTitleInput()
+      showChapterCreatedFeedback(defaultTitle)
     }
   } catch (error) {
     console.error('[ProjectWorkspace] 转为章节失败:', error)
@@ -1286,7 +1375,7 @@ const handleOpenFullscreenTool = (tool: string, chapterId?: string) => {
 const handleCloseFullscreen = () => {
   workspaceEditorContentRef.value?.closeFullscreen()
   normalizeToolOverlayScope()
-  workspaceExtraStatusChips.value = []
+  workspaceStatusChips.value = []
 }
 
 // 不再需要的 emit 定义，删除
@@ -1456,6 +1545,7 @@ const handleCreateStructurePlan = async (payload: WriterStructurePlanPayload) =>
       delete nextQuery.encyclopediaView
       await router.replace({ query: nextQuery })
       await focusCurrentTitleInput()
+      showChapterCreatedFeedback(resolveChapterTitle(createdDocumentIds[0]))
     }
 
     const createdCount = createdDocumentIds.length
@@ -1938,6 +2028,7 @@ onMounted(async () => {
       const nextQuery = { ...route.query } as LocationQueryRaw
       if (bootstrapChapterId) {
         nextQuery.chapterId = bootstrapChapterId
+        nextQuery.entry = CREATED_PROJECT_ENTRY_QUERY
       }
       await router.replace({
         name: 'writer-project',
@@ -1983,6 +2074,7 @@ onMounted(async () => {
   if (writerStore.timeline.currentTimeline) {
     await writerStore.loadTimelineEvents(writerStore.timeline.currentTimeline.id)
   }
+  workspaceEntryFeedback.value = typeof route.query.entry === 'string' ? route.query.entry : ''
 })
 
 // =======================
@@ -2085,6 +2177,38 @@ watch(
 )
 
 watch(
+  [
+    () => workspaceEntryFeedback.value,
+    () => workspaceEditorContentRef.value,
+    queryChapterId,
+  ],
+  async ([entryFeedback, editorContentRef, chapterId]) => {
+    if (!entryFeedback || !editorContentRef) {
+      return
+    }
+
+    workspaceEntryFeedback.value = ''
+    const resolvedChapterTitle =
+      currentChapterTitle.value || resolveChapterTitle(currentChapterId.value || chapterId)
+
+    if (entryFeedback === CREATED_PROJECT_ENTRY_QUERY) {
+      await nextTick()
+      await focusCurrentTitleInput()
+      showCreatedProjectEntryFeedback(resolvedChapterTitle)
+    } else if (entryFeedback === CONTINUE_PROJECT_ENTRY_QUERY) {
+      showContinueProjectEntryFeedback(resolvedChapterTitle)
+    } else if (entryFeedback === IMPORTED_PROJECT_ENTRY_QUERY) {
+      showImportedProjectEntryFeedback(resolvedChapterTitle)
+    }
+
+    const nextQuery = { ...route.query } as LocationQueryRaw
+    delete nextQuery.entry
+    await router.replace({ query: nextQuery })
+  },
+  { immediate: true, flush: 'post' },
+)
+
+watch(
   () => queryTool.value,
   (tool) => {
     const normalizedTool: ActiveTool = tool === 'immersive' ? 'immersive' : 'writing'
@@ -2139,6 +2263,7 @@ watch(
 )
 
 onUnmounted(() => {
+  clearChapterSwitchFeedback()
   clearAutoSaveTimer()
 })
 </script>

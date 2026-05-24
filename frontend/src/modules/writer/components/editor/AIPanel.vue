@@ -52,7 +52,7 @@
         :can-edit="canEditDirectly"
         :disabled="isTyping"
         :placeholder="t('ai.inputPlaceholder', '输入消息...')"
-        :hint="t('ai.hint', '按 Enter 发送，Shift + Enter 换行')"
+        :hint="t('ai.hint', 'Enter 发送')"
         @send="handleSend"
         @clear-context="handleClearSelectedContext"
       />
@@ -310,10 +310,10 @@ const writerTargetDetail = computed(() => {
   }
 
   if (interactionMode.value === 'edit') {
-    return '编辑类请求会生成正文 diff'
+    return '正文 diff'
   }
 
-  return '分析/聊天不会静默改正文'
+  return ''
 })
 const writerContextPacket = computed(() =>
   buildWriterAIContextPacket({
@@ -329,7 +329,7 @@ const writerContextEvidence = computed(() => {
 
   const assetCount = writerContextPacket.value.assets.length
   const truncatedHint = writerContextPacket.value.budget.truncated ? '，正文已截断' : ''
-  return `参考 ${evidence.length} 类上下文${assetCount ? `，资产 ${assetCount}` : ''}${truncatedHint}`
+  return `${evidence.length} 类上下文${assetCount ? `，资产 ${assetCount}` : ''}${truncatedHint}`
 })
 
 // ==================== 对话管理方法 ====================
@@ -1265,13 +1265,7 @@ watch(
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background:
-    radial-gradient(circle at top right, color-mix(in srgb, var(--editor-accent, #2563eb) 8%, transparent), transparent 34%),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--ai-bg, var(--editor-layer-panel, #ffffff)) 94%, transparent),
-      color-mix(in srgb, var(--ai-bg-soft, var(--editor-bg-surface, #f8fafc)) 88%, transparent)
-    );
+  background: color-mix(in srgb, var(--ai-bg, var(--editor-layer-panel, #ffffff)) 98%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {

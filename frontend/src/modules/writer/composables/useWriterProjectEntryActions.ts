@@ -13,6 +13,10 @@ interface ImportProjectAndEnterOptions {
   successMessage?: (title?: string) => string
 }
 
+const CREATED_PROJECT_ENTRY_QUERY = 'created_project'
+const CONTINUE_PROJECT_ENTRY_QUERY = 'continue_project'
+const IMPORTED_PROJECT_ENTRY_QUERY = 'imported_project'
+
 function resolveProjectId(created: CreatedProjectLike): string {
   return created?.id || created?.projectId || ''
 }
@@ -43,12 +47,22 @@ export function useWriterProjectEntryActions(routerOverride?: Router) {
   }
 
   async function continueProject(project: WorkbenchRecentProjectCard) {
-    await router.push(project.continueTarget)
+    const continueTarget = project.continueTarget as Exclude<RouteLocationRaw, string>
+    await router.push({
+      ...continueTarget,
+      query: {
+        ...(continueTarget.query || {}),
+        entry: CONTINUE_PROJECT_ENTRY_QUERY,
+      },
+    })
   }
 
   async function openCreatedProject(created: CreatedProjectLike, query?: LocationQueryRaw) {
     const projectId = resolveProjectId(created)
-    return openProject(projectId, query)
+    return openProject(projectId, {
+      ...(query || {}),
+      entry: CREATED_PROJECT_ENTRY_QUERY,
+    })
   }
 
   async function importProjectAndEnter(file: File, options: ImportProjectAndEnterOptions = {}) {
@@ -62,7 +76,7 @@ export function useWriterProjectEntryActions(routerOverride?: Router) {
     message.success(
       options.successMessage?.(result.title) || `已导入项目：${result.title || '未命名项目'}`,
     )
-    await openProject(result.projectId)
+    await openProject(result.projectId, { entry: IMPORTED_PROJECT_ENTRY_QUERY })
     return result
   }
 

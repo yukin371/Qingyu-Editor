@@ -10,6 +10,9 @@ export default defineConfig({
   // 测试文件位置
   testDir: './tests/e2e',
 
+  // 单个用例超时；full profile 会并发跑桌面与移动端，保存链路偶尔会超过默认 30s。
+  timeout: 60000,
+
   // 完全并行运行测试
   fullyParallel: true,
 

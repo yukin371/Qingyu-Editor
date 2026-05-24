@@ -48,12 +48,19 @@ describe('WorkspaceRightPanel', () => {
       },
     })
 
+  const findActivityButton = (wrapper: ReturnType<typeof mountPanel>, label: string) =>
+    wrapper
+      .findAll<HTMLButtonElement>('.workspace-activity-bar__item')
+      .find((button) => button.attributes('aria-label') === label)
+
   it('renders five right-tool activity buttons', () => {
     const wrapper = mountPanel()
+    const labels = wrapper
+      .findAll<HTMLButtonElement>('.workspace-activity-bar__item')
+      .map((button) => button.attributes('aria-label'))
 
     expect(wrapper.findAll('.workspace-activity-bar__item')).toHaveLength(5)
-    expect(wrapper.text()).toContain('日常')
-    expect(wrapper.text()).toContain('回审')
+    expect(labels).toEqual(['AI', '设定', '灵感', '审查', '校对'])
   })
 
   it('switches active tool and keeps body visible when selecting a different tool', async () => {
@@ -90,9 +97,7 @@ describe('WorkspaceRightPanel', () => {
     panelStore.setRightCollapsed(true)
     layoutStore.setRightToolVisible(false)
 
-    const proofreadButton = wrapper
-      .findAll('.workspace-activity-bar__item')
-      .find((button) => button.text().includes('校对'))
+    const proofreadButton = findActivityButton(wrapper, '校对')
     expect(proofreadButton).toBeTruthy()
 
     await proofreadButton!.trigger('click')

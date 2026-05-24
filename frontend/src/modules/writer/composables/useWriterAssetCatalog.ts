@@ -457,6 +457,8 @@ export function useWriterAssetCatalog(options: {
     effectiveScopeView.value === 'global' ? assetCatalog.value : localAssetCatalog.value,
   )
 
+  const globalAssets = computed(() => Object.values(assetCatalog.value).flatMap((assets) => assets))
+
   const filteredAssets = computed(() => {
     const keyword = options.searchKeyword.value.toLowerCase()
     const assets = visibleAssetCatalog.value[options.activeCategory.value] || []
@@ -838,6 +840,7 @@ export function useWriterAssetCatalog(options: {
     categoryOptions,
     currentCategoryMeta,
     filteredAssets,
+    globalAssets,
     emptyMessage,
     assetScopeHint: ASSET_SCOPE_HINT,
     scopeView: effectiveScopeView,

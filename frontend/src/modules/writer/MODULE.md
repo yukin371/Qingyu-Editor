@@ -45,6 +45,7 @@
 - **桌面启动链保持最小化**：`frontend/src/main.ts` 与 `router/*` 不应再强制注入 auth session、websocket 或全局 mock 状态；mock/test-mode 只允许通过显式 `?test=true` 进入，避免桌面宿主继续背在线平台启动逻辑。
 - **独立编辑器宿主默认不探测原后端**：`main.ts`、`utils/api-health.ts`、`utils/syncService.ts` 在独立编辑器运行态下不得默认请求原 `/api/v1/system/health` 或 `/health`；宿主应直接把本地桥接或本地宿主视为在线，只有显式 `?remote=true` 联调模式才允许恢复远端健康探测。
 - **remote mode 是唯一远端 writer 开关**：`data-bridge/wails.ts` 里的 `isRemoteWriterMode()` 现在是 writer 远端联调的唯一显式入口；浏览器独立宿主默认走本地 owner，不允许再靠端口猜测或“没有 Wails 就回退 HTTP”维持隐式远端模式。
+- **宿主识别底层 helper 统一归 `src/utils/runtimeHost.ts`**：writer 对外仍只暴露 `isRemoteWriterMode / isStandaloneWriterRuntime / isStandaloneLocalWriterAvailable` 这些写作语义函数；若要新增 Wails / file / 端口级判断，先收敛到共享 helper，再决定是否暴露新的 writer 语义入口。
 - **快捷键配置在独立宿主默认本地优先**：`useShortcutConfig` 在独立编辑器运行态下只允许使用 `localStorage + 默认值`，不得为了加载或重置快捷键再访问 `/writer/user/shortcuts*`，避免设置面板继续隐式依赖原后端。
 - **Story Harness 已切到桌面本地 owner**：`storyHarnessService.getLatestBatch / persistBatch / fetchChapterContext / fetchChangeRequests / triggerIndex / rebuildProjection` 在有 Wails bridge 时统一走 `Wails -> Go services -> SQLite`；浏览器独立宿主才允许保留本地缓存级 fallback，不得再把原在线 writer API 当默认真相源。
 - **writer 模块组件已完成去全局 UI 插件依赖**：`main.ts` 已移除历史全局组件注册，writer 现有组件链已迁到 Tailwind + `Qy*`。若未来重新接入 legacy 组件或新建编辑器子面板，必须在组件内完成迁移，不能再恢复全局注册兜底。

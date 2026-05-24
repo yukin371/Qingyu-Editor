@@ -16,6 +16,12 @@ cd ..
 .\dev-wails.ps1
 ```
 
+默认会先检查本地 `Qingyu-Ai-Service` 的 `http://127.0.0.1:8000/api/v1/health`；若未就绪，会自动尝试拉起本地 AI 服务，再启动 Wails 编辑器。如需只启动编辑器、不触发本地 AI 服务，可执行：
+
+```powershell
+.\dev-wails.ps1 -SkipLocalAIService
+```
+
 也可以在 `Qingyu-Editor` 目录运行：
 
 ```powershell

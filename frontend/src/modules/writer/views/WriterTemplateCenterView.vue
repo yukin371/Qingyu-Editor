@@ -119,7 +119,7 @@ import type { TemplateCatalogItem } from '@/modules/writer/types/workbench'
 
 const router = useRouter()
 const projectStore = useProjectStore()
-const { openProject } = useWriterProjectEntryActions()
+const { openCreatedProject } = useWriterProjectEntryActions()
 
 const categories = ref<Array<{ id: string; label: string; count: number }>>([])
 const templates = ref<TemplateCatalogItem[]>([])
@@ -183,10 +183,7 @@ async function handleCreateFromTemplate(payload: { title: string; summary: strin
     createDialogVisible.value = false
     detailDrawerVisible.value = false
     message.success(`已基于 ${selectedTemplateDetail.value.name} 创建新项目`)
-    await openProject(
-      result.projectId,
-      result.chapterId ? { chapterId: result.chapterId } : undefined,
-    )
+    await openCreatedProject(result, result.chapterId ? { chapterId: result.chapterId } : undefined)
   } catch (error) {
     console.error('[WriterTemplateCenter] 模板创建失败:', error)
     message.error('模板应用失败，请稍后重试')

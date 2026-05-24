@@ -34,6 +34,7 @@ vi.mock('../request', () => ({
 
 import {
   auditSensitiveWords,
+  extractAssetsWithWorkbench,
   generateStructurePlan,
   proofreadContent,
   rewriteWithWorkbench,
@@ -248,6 +249,56 @@ describe('ai workbench api', () => {
         title: '街口对峙',
         summary: '反派提前亮相。',
         reason: '把压力前置到下一段。',
+      },
+    ])
+  })
+
+  it('extracts structured asset candidates through the shared chat facade', async () => {
+    chatWithAI.mockResolvedValue({
+      reply: JSON.stringify({
+        summary: '识别到 2 个值得建档的资产。',
+        candidates: [
+          {
+            name: '林雁',
+            category: '角色',
+            summary: '主视角人物。',
+            evidence: '林雁回到潮声码头',
+          },
+          {
+            name: '潮声码头',
+            category: 'location',
+            summary: '故事发生地。',
+            evidence: '回到潮声码头',
+            alias: ['旧码头'],
+          },
+        ],
+      }),
+    })
+
+    const result = await extractAssetsWithWorkbench({
+      content: '林雁回到潮声码头，准备清理哥哥留下的船屋。',
+      projectId: 'project-1',
+      chapterId: 'chapter-1',
+      chapterTitle: '雾夜归港',
+      existingAssets: [{ assetName: '周既明', assetType: 'character' }],
+    })
+
+    expect(chatWithAI).toHaveBeenCalledWith(expect.stringContaining('当前章节正文：'), [])
+    expect(result.summary).toBe('识别到 2 个值得建档的资产。')
+    expect(result.candidates).toEqual([
+      {
+        name: '林雁',
+        category: 'character',
+        summary: '主视角人物。',
+        evidence: '林雁回到潮声码头',
+        alias: undefined,
+      },
+      {
+        name: '潮声码头',
+        category: 'location',
+        summary: '故事发生地。',
+        evidence: '回到潮声码头',
+        alias: ['旧码头'],
       },
     ])
   })

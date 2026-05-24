@@ -1,49 +1,40 @@
 <template>
   <aside
-    class="story-harness-panel flex h-full min-h-0 w-full flex-col gap-3 overflow-auto p-4"
+    class="story-harness-panel"
     data-testid="story-harness-panel"
   >
-    <header class="flex items-center justify-between gap-3">
-      <h3 class="story-harness-panel__heading text-sm font-semibold">审查</h3>
+    <header class="story-harness-panel__header">
+      <div class="story-harness-panel__title-block">
+        <h3>审查</h3>
+        <span>{{ progressMetaLabel }}</span>
+      </div>
       <Tag size="sm" variant="primary" effect="light">{{ harnessStore.writingStateLabel }}</Tag>
     </header>
 
-    <section class="flex flex-col gap-3">
-      <QyCard
-        variant="glass"
-        padding="sm"
-        shadow="never"
-        class="story-harness-panel__card space-y-3 rounded-3xl"
-      >
-        <div class="space-y-1">
-        <p class="story-harness-panel__title text-sm font-medium">
-          {{ scopeLabel || chapterTitle || '未声明场景作用域' }}
-        </p>
-        <p class="story-harness-panel__muted text-xs leading-5">
-            {{ harnessStore.chapterProgressLabel }} · {{ harnessStore.draftLength }} 字符
-          </p>
+    <section class="story-harness-panel__section">
+      <div class="story-harness-panel__block">
+        <div class="story-harness-panel__scope-row">
+          <strong>{{ scopeLabel || chapterTitle || '未声明场景作用域' }}</strong>
+          <button
+            type="button"
+            class="story-harness-panel__link-btn"
+            data-testid="story-harness-open-review-packet"
+            @click="isReviewPacketDrawerVisible = true"
+          >
+            审查包
+          </button>
         </div>
 
-        <div class="story-harness-panel__muted flex flex-wrap gap-2 text-xs">
+        <div class="story-harness-panel__chips">
           <span
             v-for="chip in summaryChips"
             :key="chip.key"
-            class="story-harness-panel__chip rounded-full px-3 py-1"
+            class="story-harness-panel__chip"
           >
             {{ chip.label }} {{ chip.count }}
           </span>
         </div>
-
-        <QyButton
-          variant="secondary"
-          size="sm"
-          class="w-full"
-          data-testid="story-harness-open-review-packet"
-          @click="isReviewPacketDrawerVisible = true"
-        >
-          审查包预览
-        </QyButton>
-      </QyCard>
+      </div>
 
       <StoryHarnessWorkflowGatePanel
         :chapter-id="chapterId"
@@ -60,103 +51,95 @@
       />
     </section>
 
-    <section class="flex flex-col gap-3">
-      <div class="flex items-center justify-between gap-3">
-        <h4 class="story-harness-panel__heading text-sm font-semibold">建议队列</h4>
-        <Tag variant="primary" size="sm">{{ harnessStore.pendingChangeRequestCount }} 待处理</Tag>
+    <section class="story-harness-panel__section">
+      <div class="story-harness-panel__section-head">
+        <h4>建议</h4>
+        <Tag variant="primary" size="sm">{{ harnessStore.pendingChangeRequestCount }}</Tag>
       </div>
 
-      <QyCard
-        variant="glass"
-        padding="sm"
-        shadow="never"
-        class="story-harness-panel__card space-y-3 rounded-3xl"
-      >
+      <div class="story-harness-panel__block">
         <template v-if="changeRequests.length || hasSavedBatchReceipt">
           <div
             v-if="hasSavedBatchReceipt"
-            class="story-harness-panel__receipt flex items-center justify-between gap-3 rounded-xl px-3 py-2"
+            class="story-harness-panel__receipt"
           >
-            <p class="story-harness-panel__secondary text-xs">{{ savedBatchReceiptStatus }}</p>
-            <span class="story-harness-panel__muted text-xs">{{ savedBatchReceiptTimestampLabel }}</span>
+            <span>{{ savedBatchReceiptStatus }}</span>
+            <time>{{ savedBatchReceiptTimestampLabel }}</time>
           </div>
 
           <div
             v-if="primaryChangeRequest"
-            class="story-harness-panel__request rounded-2xl px-3 py-3"
+            class="story-harness-panel__request"
           >
-            <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0">
-                <p class="story-harness-panel__title text-sm font-medium">{{ primaryChangeRequest?.title }}</p>
-                <p class="story-harness-panel__muted mt-1 text-xs leading-5">
+            <div class="story-harness-panel__request-head">
+              <div>
+                <strong>{{ primaryChangeRequest?.title }}</strong>
+                <p class="story-harness-panel__request-summary">
                   {{ primaryChangeRequest?.summary }}
                 </p>
+                <span class="story-harness-panel__meta">
+                  {{ primaryChangeRequestMetaLabel }}
+                </span>
               </div>
-              <div class="flex flex-wrap items-center gap-2">
-                <Tag
-                  size="sm"
-                  :variant="primaryChangeRequest?.source === 'save_batch' ? 'success' : 'info'"
-                  effect="light"
-                >
-                  {{ primaryChangeRequest?.source === 'save_batch' ? '保存后批次' : '即时预览' }}
-                </Tag>
-                <Tag
-                  size="sm"
-                  :variant="primaryChangeRequest?.severity === 'focus' ? 'warning' : 'info'"
-                  effect="light"
-                >
-                  {{ primaryChangeRequest?.severity === 'focus' ? '优先看' : '轻提示' }}
-                </Tag>
-              </div>
+              <Tag
+                size="sm"
+                :variant="primaryChangeRequest?.severity === 'focus' ? 'warning' : 'info'"
+                effect="light"
+              >
+                {{ primaryChangeRequest?.severity === 'focus' ? '优先' : '提示' }}
+              </Tag>
             </div>
-            <p class="story-harness-panel__secondary mt-2 text-xs leading-5">{{ primaryChangeRequest?.reason }}</p>
+            <p
+              v-if="primaryChangeRequestReasonPreview"
+              class="story-harness-panel__request-reason"
+            >
+              {{ primaryChangeRequestReasonPreview }}
+            </p>
           </div>
 
-          <div class="grid grid-cols-2 gap-2">
-            <QyButton
-              variant="primary"
-              size="sm"
+          <div class="story-harness-panel__actions">
+            <button
+              type="button"
+              class="story-harness-panel__primary"
               data-testid="story-harness-trigger-index"
-              :loading="isTriggeringIndex"
+              :disabled="isTriggeringIndex"
               @click="handleTriggerIndex"
             >
-              生成建议
-            </QyButton>
-            <QyButton
-              variant="secondary"
-              size="sm"
+              {{ isTriggeringIndex ? '生成中' : '生成' }}
+            </button>
+            <button
+              type="button"
+              class="story-harness-panel__secondary"
               data-testid="story-harness-open-change-requests"
               @click="isChangeRequestDrawerVisible = true"
             >
-              查看队列
-            </QyButton>
+              队列
+            </button>
+            <button
+              v-if="primaryChangeRequest"
+              type="button"
+              class="story-harness-panel__secondary"
+              data-testid="story-harness-send-primary-to-ai"
+              @click="sendPrimaryChangeRequestToAI"
+            >
+              交给 AI
+            </button>
           </div>
-          <QyButton
-            v-if="primaryChangeRequest"
-            variant="secondary"
-            size="sm"
-            class="w-full"
-            data-testid="story-harness-send-primary-to-ai"
-            @click="sendPrimaryChangeRequestToAI"
-          >
-            交给 AI
-          </QyButton>
         </template>
 
         <template v-else>
-          <p class="story-harness-panel__muted text-sm leading-6">保存章节后自动生成，或手动触发索引。</p>
-          <QyButton
-            variant="primary"
-            size="sm"
-            class="w-full"
+          <p class="story-harness-panel__empty">保存后自动生成</p>
+          <button
+            type="button"
+            class="story-harness-panel__primary story-harness-panel__primary--full"
             data-testid="story-harness-trigger-index"
-            :loading="isTriggeringIndex"
+            :disabled="isTriggeringIndex"
             @click="handleTriggerIndex"
           >
-            立即生成建议
-          </QyButton>
+            {{ isTriggeringIndex ? '生成中' : '生成' }}
+          </button>
         </template>
-      </QyCard>
+      </div>
     </section>
 
     <StoryHarnessChangeRequestDrawer
@@ -164,23 +147,22 @@
       :change-requests="changeRequests"
       :handle-change-request-decision="handleChangeRequestDecision"
     />
-      <StoryHarnessReviewPacketDrawer
-        v-model="isReviewPacketDrawerVisible"
-        :chapter-id="chapterId"
-        :chapter-title="chapterTitle"
-        :content="content"
-        :scope-label="scopeLabel"
-        :entity-stats="resolvedEntityStats"
-        :active-characters="activeCharacters"
-        :active-relations="activeRelations"
-        :change-requests="changeRequests"
-      />
-    </aside>
-  </template>
+    <StoryHarnessReviewPacketDrawer
+      v-model="isReviewPacketDrawerVisible"
+      :chapter-id="chapterId"
+      :chapter-title="chapterTitle"
+      :content="content"
+      :scope-label="scopeLabel"
+      :entity-stats="resolvedEntityStats"
+      :active-characters="activeCharacters"
+      :active-relations="activeRelations"
+      :change-requests="changeRequests"
+    />
+  </aside>
+</template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { QyButton, QyCard } from '@/design-system/components'
 import { Tag } from '@/design-system/base'
 import {
   useStoryHarnessStore,
@@ -231,6 +213,9 @@ const resolvedEntityStats = computed(() => ({
   items: props.entityStats?.items ?? 0,
   concepts: props.entityStats?.concepts ?? 0,
 }))
+const progressMetaLabel = computed(
+  () => `${props.chapterCount > 0 ? props.chapterCount : 1} 章 · ${harnessStore.draftLength} 字`,
+)
 const isChangeRequestDrawerVisible = ref(false)
 const isReviewPacketDrawerVisible = ref(false)
 const savedBatchChangeRequests = computed(() =>
@@ -247,10 +232,10 @@ const summaryChips = computed(() =>
   [
     { key: 'characters', label: '角色', count: resolvedEntityStats.value.characters },
     { key: 'locations', label: '地点', count: resolvedEntityStats.value.locations },
-    { key: 'items', label: '物品', count: resolvedEntityStats.value.items },
+    { key: 'items', label: '物件', count: resolvedEntityStats.value.items },
     { key: 'concepts', label: '概念', count: resolvedEntityStats.value.concepts },
     { key: 'relations', label: '关系', count: activeRelations.value.length },
-    { key: 'pending', label: '待处理', count: harnessStore.pendingChangeRequestCount },
+    { key: 'pending', label: '待', count: harnessStore.pendingChangeRequestCount },
   ].filter((chip) => chip.count > 0),
 )
 const primaryChangeRequest = computed(
@@ -266,10 +251,10 @@ const savedBatchReceiptTimestampLabel = computed(() => {
     return ''
   }
 
-  return `保存于 ${new Intl.DateTimeFormat('zh-CN', {
+  return new Intl.DateTimeFormat('zh-CN', {
     hour: '2-digit',
     minute: '2-digit',
-  }).format(savedBatchReceipt.value.committedAt)}`
+  }).format(savedBatchReceipt.value.committedAt)
 })
 const savedBatchReceiptStatus = computed(() => {
   if (!savedBatchReceipt.value) {
@@ -277,10 +262,28 @@ const savedBatchReceiptStatus = computed(() => {
   }
 
   if (savedBatchReceipt.value.count > 0) {
-    return `已冻结 ${savedBatchReceipt.value.count} 条建议`
+    return `冻结 ${savedBatchReceipt.value.count} 条`
   }
 
-  return '本次保存未产出建议'
+  return '无新建议'
+})
+const primaryChangeRequestMetaLabel = computed(() => {
+  const changeRequest = primaryChangeRequest.value
+  if (!changeRequest) {
+    return ''
+  }
+
+  const sourceLabel = changeRequest.source === 'save_batch' ? '保存' : '预览'
+  const severityLabel = changeRequest.severity === 'focus' ? '优先' : '提示'
+  return `${sourceLabel} · ${severityLabel}`
+})
+const primaryChangeRequestReasonPreview = computed(() => {
+  const reason = primaryChangeRequest.value?.reason?.trim()
+  if (!reason) {
+    return ''
+  }
+
+  return reason
 })
 
 const handleTriggerIndex = () => {
@@ -348,9 +351,16 @@ watch(
 )
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .story-harness-panel {
-  background: color-mix(in srgb, var(--editor-bg-surface, #f8fafc) 72%, transparent);
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  overflow: auto;
+  padding: 8px 9px;
+  background: var(--editor-layer-panel, var(--editor-bg-base, #fff));
 }
 
 @media (max-width: 1200px) {
@@ -360,34 +370,196 @@ watch(
   }
 }
 
-.story-harness-panel__heading,
-.story-harness-panel__title {
-  color: var(--editor-text-primary, #0f172a);
+.story-harness-panel__header,
+.story-harness-panel__section-head,
+.story-harness-panel__scope-row,
+.story-harness-panel__receipt,
+.story-harness-panel__request-head,
+.story-harness-panel__actions {
+  display: flex;
+  align-items: center;
 }
 
-.story-harness-panel__secondary {
-  color: var(--editor-text-secondary, #334155);
+.story-harness-panel__header,
+.story-harness-panel__section-head,
+.story-harness-panel__scope-row,
+.story-harness-panel__receipt,
+.story-harness-panel__request-head {
+  justify-content: space-between;
+  gap: 8px;
 }
 
-.story-harness-panel__muted {
-  color: var(--editor-text-muted, #64748b);
+.story-harness-panel__title-block {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+
+  h3 {
+    margin: 0;
+    font-size: 14px;
+    color: var(--editor-text-primary, #0f172a);
+  }
+
+  span {
+    color: var(--editor-text-muted, #64748b);
+    font-size: 11px;
+  }
 }
 
-.story-harness-panel__card {
-  border: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 72%, transparent);
-  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 92%, transparent);
+.story-harness-panel__section {
+  display: grid;
+  gap: 6px;
+}
+
+.story-harness-panel__section-head {
+  h4 {
+    margin: 0;
+    font-size: 13px;
+    color: var(--editor-text-primary, #0f172a);
+  }
+}
+
+.story-harness-panel__block {
+  display: grid;
+  gap: 6px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--editor-border, #e2e8f0);
+  background: color-mix(in srgb, var(--editor-layer-soft, #f8fafc) 70%, transparent);
+}
+
+.story-harness-panel__scope-row {
+  strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 12px;
+  }
+}
+
+.story-harness-panel__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .story-harness-panel__chip {
-  background: var(--editor-layer-strong, #f1f5f9);
+  color: var(--editor-text-secondary, #475569);
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .story-harness-panel__receipt {
-  background: var(--editor-layer-strong, #f1f5f9);
+  padding: 4px 0;
+  color: var(--editor-text-secondary, #475569);
+  font-size: 11px;
+
+  span {
+    font-weight: 700;
+  }
+
+  time {
+    color: var(--editor-text-muted, #64748b);
+  }
 }
 
 .story-harness-panel__request {
-  border: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 72%, transparent);
-  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 88%, transparent);
+  display: grid;
+  gap: 4px;
+  padding: 6px 0;
+  border-top: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 80%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--editor-border, #e2e8f0) 80%, transparent);
+}
+
+.story-harness-panel__request-head {
+  align-items: flex-start;
+
+  > div {
+    min-width: 0;
+  }
+
+  strong {
+    color: var(--editor-text-primary, #0f172a);
+    font-size: 12px;
+  }
+}
+
+.story-harness-panel__meta,
+.story-harness-panel__empty {
+  color: var(--editor-text-muted, #64748b);
+  font-size: 11px;
+}
+
+.story-harness-panel__empty {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.story-harness-panel__request-summary,
+.story-harness-panel__request-reason {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+}
+
+.story-harness-panel__request-summary {
+  margin: 1px 0 0;
+  color: var(--editor-text-muted, #64748b);
+  font-size: 11px;
+  line-height: 1.45;
+  -webkit-line-clamp: 2;
+}
+
+.story-harness-panel__request-reason {
+  margin: 0;
+  color: var(--editor-text-secondary, #475569);
+  font-size: 11px;
+  line-height: 1.45;
+  -webkit-line-clamp: 1;
+}
+
+.story-harness-panel__actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.story-harness-panel__primary,
+.story-harness-panel__secondary,
+.story-harness-panel__link-btn {
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 7px;
+  border: 1px solid color-mix(in srgb, var(--editor-border, rgba(148, 163, 184, 0.22)) 72%, transparent);
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 92%, transparent);
+  color: var(--editor-text-secondary, #475569);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.62;
+  }
+}
+
+.story-harness-panel__primary {
+  border-color: rgba(14, 165, 233, 0.24);
+  color: var(--editor-accent, #0284c7);
+}
+
+.story-harness-panel__primary--full {
+  width: 100%;
+}
+
+.story-harness-panel__secondary,
+.story-harness-panel__link-btn {
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+.story-harness-panel__link-btn {
+  flex: 0 0 auto;
 }
 </style>

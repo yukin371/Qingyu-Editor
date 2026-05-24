@@ -16,10 +16,13 @@
 - `wails build`：通过，生成 `build/bin/Qingyu-Editor.exe`
 - `go test ./...`：通过，`frontend/dist/.gitkeep` 提供 Go embed 占位，清理构建产物后仍可直接测试
 - Wails exe 启动存活检查：通过，构建产物启动后 8 秒仍存活
+- Wails 首屏渲染复核：通过，按窗口句柄截屏可见 `青羽编辑器` 已进入“作者工作台 / 开始今天的创作”
 - `.\scripts\release-check.ps1 -Profile quick`：通过，已验证脚本化 quick 闸门可执行
 - `git diff --check`：通过，仅提示既有文档 LF/CRLF 工作区换行警告
 
-未自动化验证：Wails GUI 内真实点击创建项目、provider key 保存后重启、系统远程服务不可用提示仍需人工执行；本轮仅确认构建、Go 包测试和 exe 可启动。
+未自动化验证：Wails GUI 内真实点击创建项目、provider key 保存后重启、系统远程服务不可用提示仍需人工执行；当前环境里 Windows UI Automation 仅能识别 `BrowserRootView` 外壳，Win32 模拟点击也未稳定触发页面导航，因此本轮仅确认构建、Go 包测试、exe 可启动与首屏真实渲染。
+
+额外提示：当前这台机器的桌面用户库 `%APPDATA%\\Qingyu-Editor\\qingyu-editor.db` 内，历史项目 `青羽项目` 已观测到重复 `sort_order`（至少一组卷排序重复、至少一组同卷章节排序重复）。现有 `chapter_service` 集成测试已经覆盖重排后顺序重写，因此这更像旧 profile 遗留数据。发布前人工冒烟请优先使用清洁 profile 或全新空白项目，不要直接拿这份本机历史项目作为 `SMOKE-03` 的唯一判断依据。
 
 ## 1. 适用范围
 
@@ -78,6 +81,7 @@
 - provider 如需真实验证，提前准备一个可用 key
 - 本地若没有远程 AI 服务，要额外验证“失败原因是否明确”
 - 发布前至少做一次“关闭编辑器再重开”的持久化检查
+- 若当前机器已有历史桌面 profile，建议先使用 `.\scripts\launch-clean-smoke.ps1` 启动干净 `APPDATA` 会话，再执行桌面人工冒烟
 
 ## 4. 自动化闸门
 
@@ -89,6 +93,50 @@
 cd E:\Github\Qingyu\Qingyu-Editor
 .\scripts\release-check.ps1 -Profile quick
 ```
+
+桌面人工 smoke 如需隔离历史 profile，可先执行：
+
+```powershell
+cd E:\Github\Qingyu\Qingyu-Editor
+.\scripts\launch-clean-smoke.ps1
+```
+
+桌面人工 smoke 结束后，如需补一份本地数据库证据摘要，可执行：
+
+```powershell
+cd E:\Github\Qingyu\Qingyu-Editor
+.\scripts\inspect-clean-smoke.ps1
+```
+
+如需把人工 smoke 后的数据库摘要作为最小闸门，可执行：
+
+```powershell
+cd E:\Github\Qingyu\Qingyu-Editor
+.\scripts\inspect-clean-smoke.ps1 -MinProjects 1 -MinVolumes 1 -MinChapters 1 -FailOnDuplicateSort
+```
+
+若本轮已经执行 `SMOKE-04` 标题 / 正文 / 自动保存，可把正文落盘也纳入闸门：
+
+```powershell
+cd E:\Github\Qingyu\Qingyu-Editor
+.\scripts\inspect-clean-smoke.ps1 -MinProjects 1 -MinVolumes 1 -MinChapters 1 -MinTotalChapterWords 1 -RequireChapterText -FailOnDuplicateSort
+```
+
+若本轮使用了明确的 smoke 标题和正文，可继续追加期望值，确认读取到的是本轮人工操作产生的数据，而不是历史残留：
+
+```powershell
+cd E:\Github\Qingyu\Qingyu-Editor
+.\scripts\inspect-clean-smoke.ps1 -MinProjects 1 -MinVolumes 1 -MinChapters 1 -MinTotalChapterWords 1 -RequireChapterText -ExpectProjectTitleContains "冒烟" -ExpectChapterTitleContains "回归标题" -ExpectChapterTextContains "回归正文" -FailOnDuplicateSort
+```
+
+说明：
+
+- 默认会读取最新 clean smoke 会话
+- 会在对应 session 目录下额外写出 `inspection.md` 与 `inspection.json`
+- 若检测到卷或章节 `sort_order` 重复，会直接在终端与报告里标红提醒
+- 加上 `-MinProjects`、`-MinVolumes`、`-MinChapters` 或 `-FailOnDuplicateSort` 后，不满足条件会返回失败退出码
+- 加上 `-MinTotalChapterWords` 与 `-RequireChapterText` 后，可确认正文 plain text 已写入本地数据库
+- 加上 `-ExpectProjectTitleContains`、`-ExpectChapterTitleContains`、`-ExpectChapterTextContains` 后，可确认 smoke 证据命中本轮指定标题和正文片段
 
 完整发布前检查：
 
@@ -131,6 +179,7 @@ git diff --check
 当前 `writer-workflow.spec.ts` 已自动覆盖的 smoke 子集：
 
 - `SMOKE-02` 新项目骨架与自动进入第一章
+- `SMOKE-02A` 新建项目后状态栏会提示“已打开：第一章（可直接改标题）”
 - `SMOKE-03` 卷内章节压栈追加
 - `SMOKE-04` 标题/正文自动保存
 - `SMOKE-05` 刷新后的标题/正文恢复
@@ -140,7 +189,8 @@ git diff --check
 - `SMOKE-18` 场景舞台不随切章自动换拍
 - `SMOKE-20` 石墨主题暗色切换
 - 额外覆盖：左侧边栏隐藏/显示后章节目录仍可访问、使用文档入口可正常打开
-- 额外覆盖：工作台最近项目可继续创作并回到最近章节、第二卷新增章节可压栈到第二卷末尾
+- 额外覆盖：工作台最近项目可继续创作并回到最近章节，且状态栏会提示“继续创作：当前章节”
+- 额外覆盖：第二卷新增章节可压栈到第二卷末尾
 
 ### 4.1 深度检查项
 
@@ -180,6 +230,10 @@ wails doctor
   - 首页主操作可点击
 - 失败级别
   - 失败即 `P0`
+- 当前补充结论（2026-05-23）
+  - 已确认：发布 zip 内桌面宿主可以进入作者工作台首屏，不是停留在进程存活层。
+  - 未确认：本机自动化环境下仍无法稳定驱动首页按钮点击，因此“主操作可点击”还不能代替人工 smoke 打勾。
+  - 辅助链路：可先运行 `.\scripts\launch-clean-smoke.ps1` 创建干净会话，再在人工 smoke 后运行 `.\scripts\inspect-clean-smoke.ps1` 导出项目/卷/章摘要，减少只靠肉眼判断的歧义。
 
 ### 5.2 新建项目骨架
 
@@ -191,6 +245,7 @@ wails doctor
 - 预期
   - 自动生成“第一卷”“第一章”
   - 自动跳转到第一章
+  - 状态栏出现“已打开：第一章（可直接改标题）”一类显性提示
   - 光标聚焦在章节标题
   - 正文区为空，不预写模板正文
 - 失败级别
@@ -212,6 +267,23 @@ wails doctor
   - 当前选中项不会被挪到列表首行
 - 失败级别
   - 顺序错乱为 `P1`
+- 执行提醒
+  - 若本机已有历史 profile，先确认测试项目不是旧脏数据样本；推荐优先用新建空白项目复核本条。
+
+### 5.3A 工作台继续创作入口
+
+`SMOKE-03A`
+
+- 步骤
+  - 返回作者工作台
+  - 点击最近项目卡上的“继续创作”
+- 预期
+  - 回到最近章节
+  - 状态栏出现“继续创作：章节名”一类显性提示
+  - 不主动抢正文标题焦点
+- 失败级别
+  - 回到错误章节为 `P1`
+  - 无提示但流程可用为 `P2`
 
 ### 5.4 标题、正文、自动保存
 

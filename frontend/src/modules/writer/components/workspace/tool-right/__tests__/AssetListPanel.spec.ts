@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import AssetListPanel from '../AssetListPanel.vue'
 
@@ -13,12 +12,6 @@ const baseProps = {
     { id: 'characters' as const, label: '角色', count: 2 },
     { id: 'locations' as const, label: '地点', count: 1 },
   ],
-  currentCategoryMeta: {
-    title: '角色',
-    eyebrow: 'Characters',
-    copy: '角色资料',
-  },
-  assetScopeHint: '基于当前项目的资产聚合结果。',
   emptyMessage: '暂无资产',
   assets: [
     {
@@ -41,6 +34,13 @@ const baseProps = {
     },
   ],
   selectedAssetId: 'asset-1',
+  canExtractAssets: true,
+  isExtractingAssets: false,
+  isCreatingExtractedAssets: false,
+  extractedAssetSummary: '',
+  extractedAssetError: '',
+  selectedExtractedAssetCount: 0,
+  extractedCandidates: [],
 }
 
 describe('AssetListPanel', () => {
@@ -93,6 +93,91 @@ describe('AssetListPanel', () => {
     await wrapper.get('.asset-list-panel__create-btn').trigger('click')
 
     expect(wrapper.emitted('create-asset')).toEqual([[]])
+  })
+
+  it('emits extract-assets from the toolbar and renders extracted candidates', async () => {
+    const wrapper = mount(AssetListPanelUnderTest, {
+      props: {
+        ...baseProps,
+        extractedAssetSummary: '识别到 2 个候选资产。',
+        selectedExtractedAssetCount: 1,
+        extractedCandidates: [
+          {
+            id: 'candidate-1',
+            name: '林雁',
+            category: 'characters' as const,
+            categoryLabel: '角色',
+            summary: '主视角人物。',
+            evidence: '林雁回到潮声码头',
+            selected: true,
+            status: 'pending' as const,
+          },
+          {
+            id: 'candidate-2',
+            name: '潮声码头',
+            category: 'locations' as const,
+            categoryLabel: '地点',
+            summary: '故事发生地。',
+            selected: false,
+            status: 'exists' as const,
+          },
+        ],
+      },
+      global: {
+        stubs: {
+          QyIcon: true,
+        },
+      },
+    })
+
+    await wrapper.get('.asset-list-panel__ai-btn').trigger('click')
+    await wrapper.get('.asset-list-panel__extractor-apply').trigger('click')
+    await wrapper.get('.asset-list-panel__extractor-check input').setValue(false)
+
+    expect(wrapper.emitted('extract-assets')).toEqual([[]])
+    expect(wrapper.emitted('create-selected-extracted-assets')).toEqual([[]])
+    expect(wrapper.emitted('toggle-extracted-asset')).toEqual([['candidate-1', false]])
+    expect(wrapper.text()).toContain('识别到 2 个候选资产。')
+    expect(wrapper.text()).toContain('林雁')
+    expect(wrapper.text()).toContain('潮声码头')
+    expect(wrapper.text()).toContain('已存在')
+  })
+
+  it('emits extracted candidate field updates from inline edit controls', async () => {
+    const wrapper = mount(AssetListPanelUnderTest, {
+      props: {
+        ...baseProps,
+        extractedCandidates: [
+          {
+            id: 'candidate-1',
+            name: '林雁',
+            category: 'characters' as const,
+            categoryLabel: '角色',
+            summary: '主视角人物。',
+            selected: true,
+            status: 'pending' as const,
+          },
+        ],
+      },
+      global: {
+        stubs: {
+          QyIcon: true,
+        },
+      },
+    })
+
+    expect(wrapper.find('.asset-list-panel__extractor-form').exists()).toBe(false)
+
+    await wrapper.get('.asset-list-panel__extractor-edit').trigger('click')
+    await wrapper.get('.asset-list-panel__extractor-input').setValue('林雁（改）')
+    await wrapper.get('.asset-list-panel__extractor-select').setValue('concepts')
+    await wrapper.get('.asset-list-panel__extractor-textarea').setValue('新的摘要')
+
+    expect(wrapper.emitted('update-extracted-asset-field')).toEqual([
+      ['candidate-1', 'name', '林雁（改）'],
+      ['candidate-1', 'writerCategory', 'concepts'],
+      ['candidate-1', 'summary', '新的摘要'],
+    ])
   })
 
   it('renders scope tabs from local to global and emits category quick-create', async () => {

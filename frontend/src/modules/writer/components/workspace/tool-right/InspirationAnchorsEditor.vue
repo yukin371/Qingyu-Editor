@@ -11,8 +11,6 @@
     </section>
 
     <section class="inspiration-anchors-editor__anchors">
-      <div class="inspiration-anchors-editor__section-head"><h4>创作锚点</h4></div>
-
       <div class="inspiration-anchors-editor__grid">
         <section class="inspiration-anchors-editor__block">
           <h5>目标读者</h5>
@@ -104,14 +102,14 @@ const getValue = (event: Event) =>
 <style scoped lang="scss">
 .inspiration-anchors-editor {
   display: grid;
-  gap: 14px;
+  gap: 10px;
 }
 
 .inspiration-anchors-editor__compact,
 .inspiration-anchors-editor__anchors,
 .inspiration-anchors-editor__block {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .inspiration-anchors-editor__section-head {
@@ -121,7 +119,7 @@ const getValue = (event: Event) =>
 
   h4 {
     margin: 0;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 700;
     color: var(--editor-text-primary, #0f172a);
   }
@@ -137,7 +135,7 @@ const getValue = (event: Event) =>
 .inspiration-anchors-editor__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .inspiration-anchors-editor__block--full {
@@ -154,8 +152,8 @@ const getValue = (event: Event) =>
   }
 
   button {
-    height: 34px;
-    padding: 0 12px;
+    height: 28px;
+    padding: 0 9px;
     border-radius: 8px;
     border: 1px solid var(--editor-border, #d9dee6);
     background: transparent;
@@ -173,7 +171,7 @@ const getValue = (event: Event) =>
   width: 100%;
   border: 1px solid var(--editor-border, #d9dee6);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   outline: none;
   resize: vertical;
   background: var(--editor-bg-surface, #f8fafc);
@@ -191,7 +189,7 @@ const getValue = (event: Event) =>
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 8px;
+  padding: 4px 7px;
   border-radius: 999px;
   background: var(--editor-bg-surface, #f8fafc);
   color: var(--editor-text-secondary, #475569);

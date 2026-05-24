@@ -66,22 +66,29 @@ describe('InspirationPanel', () => {
     const wrapper = mountPanel()
     await nextTick()
 
+    await wrapper.get('[data-testid="inspiration-toggle-template"]').trigger('click')
+    await nextTick()
     await wrapper.get('[data-testid="template-mystery"]').trigger('click')
     await nextTick()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('阶段 1 已就绪')
-    expect(wrapper.text()).toContain('踏入异常')
+    expect(wrapper.text()).toContain('阶段 1 就绪')
     expect(wrapper.text()).toContain('求知解谜')
+    expect(wrapper.text()).toContain('异常先出现')
   })
 
   it('persists workflow sidecar state across remounts', async () => {
     const wrapper = mountPanel()
     await nextTick()
 
+    await wrapper.get('[data-testid="inspiration-toggle-template"]').trigger('click')
+    await nextTick()
     await wrapper.get('[data-testid="template-building"]').trigger('click')
     await nextTick()
     await flushPromises()
+
+    await wrapper.get('[data-testid="inspiration-toggle-anchors"]').trigger('click')
+    await nextTick()
 
     const pitchInput = wrapper.find('textarea')
     await pitchInput.setValue('一个濒临破产的领地，要靠第一座工坊翻盘。')
@@ -96,6 +103,8 @@ describe('InspirationPanel', () => {
     await flushPromises()
     expect(secondWrapper.text()).toContain('建设养成')
     expect(secondWrapper.text()).toContain('第一份成果')
+    await secondWrapper.get('[data-testid="inspiration-toggle-anchors"]').trigger('click')
+    await nextTick()
     expect(secondWrapper.find('textarea').element.value).toContain('第一座工坊翻盘')
   })
 
@@ -103,10 +112,14 @@ describe('InspirationPanel', () => {
     const wrapper = mountPanel()
     await nextTick()
 
+    await wrapper.get('[data-testid="inspiration-toggle-template"]').trigger('click')
+    await nextTick()
     await wrapper.get('[data-testid="template-mystery"]').trigger('click')
     await nextTick()
     await flushPromises()
 
+    await wrapper.get('[data-testid="inspiration-toggle-golden"]').trigger('click')
+    await nextTick()
     await wrapper.get('[data-testid="golden-chapter-tab-2"]').trigger('click')
     await nextTick()
 
@@ -123,6 +136,8 @@ describe('InspirationPanel', () => {
     await nextTick()
     await flushPromises()
 
+    await secondWrapper.get('[data-testid="inspiration-toggle-golden"]').trigger('click')
+    await nextTick()
     await secondWrapper.get('[data-testid="golden-chapter-tab-2"]').trigger('click')
     await nextTick()
 
@@ -139,10 +154,10 @@ describe('InspirationPanel', () => {
     await nextTick()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('已进入正文后段，开篇规划默认收起')
+    expect(wrapper.text()).toContain('后段')
     expect(wrapper.find('[data-testid="golden-chapter-title"]').exists()).toBe(false)
 
-    await wrapper.find('.inspiration-panel__fold-head button').trigger('click')
+    await wrapper.get('[data-testid="inspiration-toggle-golden"]').trigger('click')
     await nextTick()
 
     expect(wrapper.find('[data-testid="golden-chapter-title"]').exists()).toBe(true)

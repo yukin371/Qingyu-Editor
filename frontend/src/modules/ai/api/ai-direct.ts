@@ -12,13 +12,33 @@ import type {
   AIProofreadIssue,
 } from './ai'
 import { AI_REQUEST_TIMEOUT_MS } from './request'
+import {
+  isExplicitRemoteRuntime,
+  isStandaloneDesktopShellRuntime,
+} from '../../../utils/runtimeHost'
 
-const AI_SERVICE_URL = import.meta.env.VITE_AI_SERVICE_URL
+const DEFAULT_LOCAL_AI_SERVICE_URL = 'http://127.0.0.1:8000'
+const AI_SERVICE_URL =
+  typeof import.meta.env.VITE_AI_SERVICE_URL === 'string'
+    ? import.meta.env.VITE_AI_SERVICE_URL.trim()
+    : ''
 const AI_DIRECT_MODE = import.meta.env.VITE_AI_DIRECT_MODE === 'true'
+
+export const resolveDirectServiceUrl = (): string => {
+  if (AI_SERVICE_URL) {
+    return AI_SERVICE_URL
+  }
+
+  if (isExplicitRemoteRuntime()) {
+    return ''
+  }
+
+  return isStandaloneDesktopShellRuntime() ? DEFAULT_LOCAL_AI_SERVICE_URL : ''
+}
 
 const createDirectClient = (): AxiosInstance => {
   return axios.create({
-    baseURL: AI_SERVICE_URL,
+    baseURL: resolveDirectServiceUrl(),
     timeout: AI_REQUEST_TIMEOUT_MS,
     headers: {
       'Content-Type': 'application/json',
@@ -126,7 +146,12 @@ async function sendDirectChat(
 }
 
 export const isDirectModeEnabled = (): boolean => {
-  return AI_DIRECT_MODE && typeof AI_SERVICE_URL === 'string' && AI_SERVICE_URL.trim().length > 0
+  const resolvedServiceUrl = resolveDirectServiceUrl()
+  if (!resolvedServiceUrl) {
+    return false
+  }
+
+  return AI_DIRECT_MODE || isStandaloneDesktopShellRuntime()
 }
 
 export const aiDirectApi = {
