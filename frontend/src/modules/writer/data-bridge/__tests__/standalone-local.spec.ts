@@ -62,7 +62,7 @@ describe('standaloneLocalBridge entity owners', () => {
     expect(sampleProject).toEqual(
       expect.objectContaining({
         title: '云岚验证样本',
-        chapterCount: 60,
+        chapterCount: 240,
       }),
     )
 
@@ -75,10 +75,10 @@ describe('standaloneLocalBridge entity owners', () => {
     const events = await standaloneLocalBridge.timeline.listEvents(timeline.id)
     const chapter = await standaloneLocalBridge.editor.getContent('local-validation-yunlan-chapter-1')
 
-    expect(detail.documents).toHaveLength(63)
-    expect(characters).toHaveLength(32)
-    expect(relations).toHaveLength(56)
-    expect(locations).toHaveLength(30)
+    expect(detail.documents).toHaveLength(245)
+    expect(characters).toHaveLength(88)
+    expect(relations).toHaveLength(168)
+    expect(locations).toHaveLength(86)
     expect(assets).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ entityType: 'item', name: '青铜潮铃' }),
@@ -92,9 +92,15 @@ describe('standaloneLocalBridge entity owners', () => {
         expect.objectContaining({ entityType: 'item', name: '复潮证据16' }),
         expect.objectContaining({ entityType: 'organization', name: '复潮阵营8' }),
         expect.objectContaining({ entityType: 'concept', name: '复潮规则12' }),
+        expect.objectContaining({ entityType: 'item', name: '百章证据24' }),
+        expect.objectContaining({ entityType: 'organization', name: '百章阵营12' }),
+        expect.objectContaining({ entityType: 'concept', name: '百章规则16' }),
+        expect.objectContaining({ entityType: 'item', name: '长篇证据32' }),
+        expect.objectContaining({ entityType: 'organization', name: '长篇阵营16' }),
+        expect.objectContaining({ entityType: 'concept', name: '长篇规则20' }),
       ]),
     )
-    expect(events).toHaveLength(60)
+    expect(events).toHaveLength(240)
     expect(chapter.content).toContain('@沈奕')
     expect(chapter.content).toContain('%青铜潮铃')
   })

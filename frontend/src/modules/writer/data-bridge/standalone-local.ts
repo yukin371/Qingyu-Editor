@@ -316,6 +316,48 @@ function seedValidationSampleProject(state: LocalWriterState): void {
     title,
     notes: `第三卷压力样本第 ${index + 1} 个节点，用于验证 60 章规模下的章节窗口、时间线窗口和资产筛选。`,
   }))
+  const epicVolumeId = 'local-validation-yunlan-volume-4'
+  const epicCharacterIds = Array.from({ length: 24 }, (_, index) =>
+    `local-validation-yunlan-character-epic-${index + 1}`,
+  )
+  const epicLocationIds = Array.from({ length: 24 }, (_, index) =>
+    `local-validation-yunlan-location-epic-${index + 1}`,
+  )
+  const epicItemIds = Array.from({ length: 24 }, (_, index) =>
+    `local-validation-yunlan-item-epic-${index + 1}`,
+  )
+  const epicConceptIds = Array.from({ length: 16 }, (_, index) =>
+    `local-validation-yunlan-concept-epic-${index + 1}`,
+  )
+  const epicOrganizationIds = Array.from({ length: 12 }, (_, index) =>
+    `local-validation-yunlan-organization-epic-${index + 1}`,
+  )
+  const epicChapterTemplates = Array.from({ length: 60 }, (_, index) => ({
+    chapterNumber: index + 61,
+    title: `百章压力节点${index + 1}`,
+    notes: `第四卷百章压力样本第 ${index + 1} 个节点，用于验证 120 章规模下的长篇窗口、资产筛选和时间线分段。`,
+  }))
+  const sagaVolumeId = 'local-validation-yunlan-volume-5'
+  const sagaCharacterIds = Array.from({ length: 32 }, (_, index) =>
+    `local-validation-yunlan-character-saga-${index + 1}`,
+  )
+  const sagaLocationIds = Array.from({ length: 32 }, (_, index) =>
+    `local-validation-yunlan-location-saga-${index + 1}`,
+  )
+  const sagaItemIds = Array.from({ length: 32 }, (_, index) =>
+    `local-validation-yunlan-item-saga-${index + 1}`,
+  )
+  const sagaConceptIds = Array.from({ length: 20 }, (_, index) =>
+    `local-validation-yunlan-concept-saga-${index + 1}`,
+  )
+  const sagaOrganizationIds = Array.from({ length: 16 }, (_, index) =>
+    `local-validation-yunlan-organization-saga-${index + 1}`,
+  )
+  const sagaChapterTemplates = Array.from({ length: 120 }, (_, index) => ({
+    chapterNumber: index + 121,
+    title: `长篇压测节点${index + 1}`,
+    notes: `第五卷长篇压测样本第 ${index + 1} 个节点，用于验证 240 章规模下的结构窗口、时间线分页、资产筛选和分支路线聚合。`,
+  }))
 
   state.projects.unshift({
     id: projectId,
@@ -614,6 +656,94 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       children: [],
     })),
   )
+  state.documents.push(
+    {
+      id: epicVolumeId,
+      projectId,
+      title: '第四卷 百章压力',
+      type: DocumentType.VOLUME,
+      level: 0,
+      order: 3,
+      status: DocumentStatus.PLANNED,
+      wordCount: 0,
+      tags: ['压力样本', '百章窗口'],
+      notes: '验证 120 章级别的结构舞台、时间线和资产面板压力。',
+      createdAt,
+      updatedAt,
+      children: [],
+    },
+    ...epicChapterTemplates.map((template, index): LocalDocumentRecord => ({
+      id: `local-validation-yunlan-chapter-${String(template.chapterNumber).padStart(3, '0')}`,
+      projectId,
+      parentId: epicVolumeId,
+      title: `第${template.chapterNumber}章 ${template.title}`,
+      type: DocumentType.CHAPTER,
+      level: 1,
+      order: index,
+      status: index < 30 ? DocumentStatus.WRITING : DocumentStatus.PLANNED,
+      wordCount: 0,
+      characterIds: [
+        characterIds.shenYi,
+        epicCharacterIds[index % epicCharacterIds.length],
+        epicCharacterIds[(index + 9) % epicCharacterIds.length],
+      ],
+      locationIds: [
+        epicLocationIds[index % epicLocationIds.length],
+        index % 2 === 0 ? locationIds.harbor : locationIds.shrine,
+      ],
+      timelineIds: [timelineId],
+      plotThreads: ['百章压力', index % 2 === 0 ? '群像证词' : '资产回收'],
+      tags: index < 30 ? ['百章', '推进'] : ['百章', '计划'],
+      notes: template.notes,
+      createdAt,
+      updatedAt,
+      children: [],
+    })),
+  )
+  state.documents.push(
+    {
+      id: sagaVolumeId,
+      projectId,
+      title: '第五卷 长篇压测',
+      type: DocumentType.VOLUME,
+      level: 0,
+      order: 4,
+      status: DocumentStatus.PLANNED,
+      wordCount: 0,
+      tags: ['压力样本', '240章窗口'],
+      notes: '验证 240 章级别的结构舞台、时间线、资产总览和互动分支聚合。',
+      createdAt,
+      updatedAt,
+      children: [],
+    },
+    ...sagaChapterTemplates.map((template, index): LocalDocumentRecord => ({
+      id: `local-validation-yunlan-chapter-${String(template.chapterNumber).padStart(3, '0')}`,
+      projectId,
+      parentId: sagaVolumeId,
+      title: `第${template.chapterNumber}章 ${template.title}`,
+      type: DocumentType.CHAPTER,
+      level: 1,
+      order: index,
+      status: index < 48 ? DocumentStatus.WRITING : DocumentStatus.PLANNED,
+      wordCount: 0,
+      characterIds: [
+        characterIds.shenYi,
+        sagaCharacterIds[index % sagaCharacterIds.length],
+        sagaCharacterIds[(index + 13) % sagaCharacterIds.length],
+      ],
+      locationIds: [
+        sagaLocationIds[index % sagaLocationIds.length],
+        index % 2 === 0 ? locationIds.harbor : locationIds.shrine,
+      ],
+      timelineIds: [timelineId],
+      plotThreads: ['长篇压测', index % 3 === 0 ? '证据矩阵' : '路线收束'],
+      tags: index < 48 ? ['长篇', '推进'] : ['长篇', '计划'],
+      notes: template.notes,
+      createdAt,
+      updatedAt,
+      children: [],
+    })),
+  )
 
   const chapterParagraphs: Record<string, string[]> = {
     [docIds.chapter1]: [
@@ -683,6 +813,36 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       `${locationName} 的听证席排到雨棚之外，${witnessA} 带着 ${itemName} 进入第三轮复证。`,
       `${factionName} 要求撤回证词，${witnessB} 则用 ${conceptName} 解释为什么记忆债不能再转嫁给少数守钟人。`,
       `${template.title} 用于验证超长篇压力：它连接 @沈奕、@洛琴、@潮声回路、@记忆债，并把第三卷证据继续汇入 %红账册。`,
+    ]
+  }
+  for (const [index, template] of epicChapterTemplates.entries()) {
+    const witnessA = `@百章证人${(index % epicCharacterIds.length) + 1}`
+    const witnessB = `@百章证人${((index + 9) % epicCharacterIds.length) + 1}`
+    const locationName = `#百章地点${(index % epicLocationIds.length) + 1}`
+    const itemName = `%百章证据${(index % epicItemIds.length) + 1}`
+    const conceptName = `@百章规则${(index % epicConceptIds.length) + 1}`
+    const factionName = `@百章阵营${(index % epicOrganizationIds.length) + 1}`
+    chapterParagraphs[
+      `local-validation-yunlan-chapter-${String(template.chapterNumber).padStart(3, '0')}`
+    ] = [
+      `${locationName} 的听证名单排到第 ${template.chapterNumber} 章，${witnessA} 把 ${itemName} 交给记录员。`,
+      `${factionName} 试图拆分证词链，${witnessB} 用 ${conceptName} 说明百章线索仍然指向 @潮声回路。`,
+      `${template.title} 用于验证百章压力：它关联 @沈奕、@洛琴、@记忆债，并继续把证据汇入 %红账册。`,
+    ]
+  }
+  for (const [index, template] of sagaChapterTemplates.entries()) {
+    const witnessA = `@长篇证人${(index % sagaCharacterIds.length) + 1}`
+    const witnessB = `@长篇证人${((index + 13) % sagaCharacterIds.length) + 1}`
+    const locationName = `#长篇地点${(index % sagaLocationIds.length) + 1}`
+    const itemName = `%长篇证据${(index % sagaItemIds.length) + 1}`
+    const conceptName = `@长篇规则${(index % sagaConceptIds.length) + 1}`
+    const factionName = `@长篇阵营${(index % sagaOrganizationIds.length) + 1}`
+    chapterParagraphs[
+      `local-validation-yunlan-chapter-${String(template.chapterNumber).padStart(3, '0')}`
+    ] = [
+      `${locationName} 的证词墙已经排到第 ${template.chapterNumber} 章，${witnessA} 把 ${itemName} 编入长篇证据矩阵。`,
+      `${factionName} 尝试重排路线优先级，${witnessB} 用 ${conceptName} 校验每一条证词是否仍能回到 @潮声回路。`,
+      `${template.title} 用于验证 240 章压力：它关联 @沈奕、@洛琴、@记忆债，并继续让 %红账册 承接长篇收束线。`,
     ]
   }
 
@@ -842,6 +1002,52 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       createdAt,
       updatedAt,
     })),
+    ...epicCharacterIds.map((id, index): LocalCharacterRecord => ({
+      id,
+      projectId,
+      name: `百章证人${index + 1}`,
+      alias: [`百章群像${index + 1}`],
+      summary: `第四卷第 ${index + 1} 位百章压力证人，用于验证大规模角色资产列表。`,
+      traits:
+        index % 4 === 0
+          ? ['谨慎', '群像线索', '怕钟声']
+          : index % 4 === 1
+            ? ['强硬', '熟悉旧案', '会谈判']
+            : index % 4 === 2
+              ? ['沉默', '证据敏感', '记忆破损']
+              : ['冷静', '善于复盘', '怀疑听潮司'],
+      background: `曾在百章地点${index + 1} 参与全城复潮后的二次听证。`,
+      currentState: index < 12 ? '等待出庭' : '已进入证词保护名单',
+      customStatus: {
+        testimonyRisk: 45 + index,
+        memoryDebtPressure: 25 + index * 2,
+      },
+      createdAt,
+      updatedAt,
+    })),
+    ...sagaCharacterIds.map((id, index): LocalCharacterRecord => ({
+      id,
+      projectId,
+      name: `长篇证人${index + 1}`,
+      alias: [`压测群像${index + 1}`],
+      summary: `第五卷第 ${index + 1} 位长篇压测证人，用于验证 240 章规模下的角色检索和关系图谱。`,
+      traits:
+        index % 4 === 0
+          ? ['稳重', '证词完整', '熟悉路线']
+          : index % 4 === 1
+            ? ['机敏', '擅长复盘', '关注物证']
+            : index % 4 === 2
+              ? ['迟疑', '记忆断裂', '依赖旁证']
+              : ['果断', '组织协调', '能承压'],
+      background: `曾在长篇地点${index + 1} 参与第五卷证据矩阵复核。`,
+      currentState: index < 16 ? '正在等待长篇听证' : '已纳入路线保护名单',
+      customStatus: {
+        testimonyRisk: 40 + index,
+        matrixPressure: 35 + index * 2,
+      },
+      createdAt,
+      updatedAt,
+    })),
   )
 
   state.characterRelations.push(
@@ -981,6 +1187,54 @@ function seedValidationSampleProject(state: LocalWriterState): void {
         updatedAt,
       },
     ]),
+    ...epicCharacterIds.flatMap((id, index): LocalCharacterRelationRecord[] => [
+      {
+        id: `local-validation-yunlan-relation-epic-shen-${index + 1}`,
+        projectId,
+        fromId: characterIds.shenYi,
+        toId: id,
+        type: index % 2 === 0 ? RelationType.ALLY : RelationType.OTHER,
+        strength: 30 + index,
+        notes: `沈奕需要百章证人${index + 1} 的证词维持第四卷证据链。`,
+        createdAt,
+        updatedAt,
+      },
+      {
+        id: `local-validation-yunlan-relation-epic-luo-${index + 1}`,
+        projectId,
+        fromId: characterIds.luoQin,
+        toId: id,
+        type: index % 5 === 0 ? RelationType.FRIEND : RelationType.OTHER,
+        strength: 28 + index,
+        notes: `洛琴负责复核百章证人${index + 1} 的证词污染风险。`,
+        createdAt,
+        updatedAt,
+      },
+    ]),
+    ...sagaCharacterIds.flatMap((id, index): LocalCharacterRelationRecord[] => [
+      {
+        id: `local-validation-yunlan-relation-saga-shen-${index + 1}`,
+        projectId,
+        fromId: characterIds.shenYi,
+        toId: id,
+        type: index % 2 === 0 ? RelationType.ALLY : RelationType.OTHER,
+        strength: 26 + index,
+        notes: `沈奕需要长篇证人${index + 1} 的证词维持第五卷证据矩阵。`,
+        createdAt,
+        updatedAt,
+      },
+      {
+        id: `local-validation-yunlan-relation-saga-luo-${index + 1}`,
+        projectId,
+        fromId: characterIds.luoQin,
+        toId: id,
+        type: index % 6 === 0 ? RelationType.FRIEND : RelationType.OTHER,
+        strength: 24 + index,
+        notes: `洛琴负责核对长篇证人${index + 1} 是否被路线重排影响。`,
+        createdAt,
+        updatedAt,
+      },
+    ]),
   )
 
   state.locations.push(
@@ -1095,6 +1349,34 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       updatedAt,
       children: [],
     })),
+    ...epicLocationIds.map((id, index): LocalLocationRecord => ({
+      id,
+      projectId,
+      parentId: index % 2 === 0 ? locationIds.harbor : locationIds.shrine,
+      name: `百章地点${index + 1}`,
+      description: `第四卷百章压力地点 ${index + 1}，用于验证大规模地点资产和章节筛选。`,
+      climate: index % 2 === 0 ? '雨后闷热，钟声密集' : '潮雾低垂，证词易散',
+      culture: `居民以第 ${index + 1} 组百章签名确认复潮证词。`,
+      geography: index % 2 === 0 ? '内港听证棚外圈' : '潮祠外侧新开石阶',
+      atmosphere: index % 2 === 0 ? '拥挤、嘈杂、证据轮换快' : '安静、压抑、适合终局复盘',
+      createdAt,
+      updatedAt,
+      children: [],
+    })),
+    ...sagaLocationIds.map((id, index): LocalLocationRecord => ({
+      id,
+      projectId,
+      parentId: index % 2 === 0 ? locationIds.harbor : locationIds.shrine,
+      name: `长篇地点${index + 1}`,
+      description: `第五卷长篇压测地点 ${index + 1}，用于验证 240 章规模下的地点资产和章节定位。`,
+      climate: index % 2 === 0 ? '长雨压城，证据潮湿' : '潮雾反复，路线难辨',
+      culture: `居民以第 ${index + 1} 组长篇签名确认路线证词。`,
+      geography: index % 2 === 0 ? '内港证据矩阵墙附近' : '潮祠外侧长阶',
+      atmosphere: index % 2 === 0 ? '拥挤、急促、证据被反复搬运' : '安静、绵长、适合路线收束',
+      createdAt,
+      updatedAt,
+      children: [],
+    })),
   )
 
   state.locationRelations.push(
@@ -1172,6 +1454,28 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       type: index % 3 === 0 ? LocationRelationType.CONNECTED : LocationRelationType.NEAR,
       distance: index % 2 === 0 ? '听证棚外一条街' : '潮祠石阶旁',
       notes: `复潮地点${index + 1} 对应第三卷压力章节。`,
+      createdAt,
+      updatedAt,
+    })),
+    ...epicLocationIds.map((id, index): LocalLocationRelationRecord => ({
+      id: `local-validation-yunlan-location-relation-epic-${index + 1}`,
+      projectId,
+      fromId: index % 2 === 0 ? locationIds.harbor : locationIds.shrine,
+      toId: id,
+      type: index % 3 === 0 ? LocationRelationType.CONNECTED : LocationRelationType.NEAR,
+      distance: index % 2 === 0 ? '百章听证棚外一条街' : '潮祠新石阶旁',
+      notes: `百章地点${index + 1} 对应第四卷百章压力章节。`,
+      createdAt,
+      updatedAt,
+    })),
+    ...sagaLocationIds.map((id, index): LocalLocationRelationRecord => ({
+      id: `local-validation-yunlan-location-relation-saga-${index + 1}`,
+      projectId,
+      fromId: index % 2 === 0 ? locationIds.harbor : locationIds.shrine,
+      toId: id,
+      type: index % 3 === 0 ? LocationRelationType.CONNECTED : LocationRelationType.NEAR,
+      distance: index % 2 === 0 ? '长篇证据墙外一条街' : '潮祠长阶旁',
+      notes: `长篇地点${index + 1} 对应第五卷 240 章压测章节。`,
       createdAt,
       updatedAt,
     })),
@@ -1255,6 +1559,36 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       ],
       relatedLocations: [pressureLocationIds[index % pressureLocationIds.length]],
       relatedItems: [pressureItemIds[index % pressureItemIds.length]],
+      relatedConcepts: [conceptIds.tideLoop, conceptIds.memoryDebt],
+      createdAt,
+      updatedAt,
+    })),
+    ...epicConceptIds.map((id, index): LocalConceptRecord => ({
+      id,
+      projectId,
+      name: `百章规则${index + 1}`,
+      alias: [`终局规则${index + 1}`],
+      summary: `第四卷百章听证规则 ${index + 1}，用于扩充概念资产和检索上下文。`,
+      description: `百章规则${index + 1} 定义 120 章规模下证词、地点、物证和记忆债的优先级。`,
+      category: '百章规则',
+      relatedCharacters: [characterIds.shenYi, epicCharacterIds[index % epicCharacterIds.length]],
+      relatedLocations: [epicLocationIds[index % epicLocationIds.length]],
+      relatedItems: [epicItemIds[index % epicItemIds.length]],
+      relatedConcepts: [conceptIds.tideLoop, conceptIds.memoryDebt],
+      createdAt,
+      updatedAt,
+    })),
+    ...sagaConceptIds.map((id, index): LocalConceptRecord => ({
+      id,
+      projectId,
+      name: `长篇规则${index + 1}`,
+      alias: [`压测规则${index + 1}`],
+      summary: `第五卷长篇压测规则 ${index + 1}，用于扩充 240 章级别的概念资产和 AI 检索上下文。`,
+      description: `长篇规则${index + 1} 定义 240 章规模下证词、地点、物证、路线和记忆债的优先级。`,
+      category: '长篇规则',
+      relatedCharacters: [characterIds.shenYi, sagaCharacterIds[index % sagaCharacterIds.length]],
+      relatedLocations: [sagaLocationIds[index % sagaLocationIds.length]],
+      relatedItems: [sagaItemIds[index % sagaItemIds.length]],
       relatedConcepts: [conceptIds.tideLoop, conceptIds.memoryDebt],
       createdAt,
       updatedAt,
@@ -1359,6 +1693,46 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       name: `复潮阵营${index + 1}`,
       alias: [`全城阵营${index + 1}`],
       summary: `第三卷第 ${index + 1} 个复潮听证阵营，用于验证组织资产规模。`,
+      createdAt,
+      updatedAt,
+    })),
+    ...epicItemIds.map((id, index): LocalGenericEntityRecord => ({
+      id,
+      projectId,
+      entityType: 'item',
+      name: `百章证据${index + 1}`,
+      alias: [`终局证据${index + 1}`],
+      summary: `第四卷百章证据 ${index + 1}，用于验证超大物件资产列表和正文引用解析。`,
+      createdAt,
+      updatedAt,
+    })),
+    ...epicOrganizationIds.map((id, index): LocalGenericEntityRecord => ({
+      id,
+      projectId,
+      entityType: 'organization',
+      name: `百章阵营${index + 1}`,
+      alias: [`终局阵营${index + 1}`],
+      summary: `第四卷第 ${index + 1} 个百章听证阵营，用于验证组织资产规模。`,
+      createdAt,
+      updatedAt,
+    })),
+    ...sagaItemIds.map((id, index): LocalGenericEntityRecord => ({
+      id,
+      projectId,
+      entityType: 'item',
+      name: `长篇证据${index + 1}`,
+      alias: [`压测证据${index + 1}`],
+      summary: `第五卷长篇证据 ${index + 1}，用于验证 240 章规模下的物件资产列表和正文引用解析。`,
+      createdAt,
+      updatedAt,
+    })),
+    ...sagaOrganizationIds.map((id, index): LocalGenericEntityRecord => ({
+      id,
+      projectId,
+      entityType: 'organization',
+      name: `长篇阵营${index + 1}`,
+      alias: [`压测阵营${index + 1}`],
+      summary: `第五卷第 ${index + 1} 个长篇听证阵营，用于验证组织资产规模和筛选。`,
       createdAt,
       updatedAt,
     })),
@@ -1616,6 +1990,72 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       ],
       locationIds: [pressureLocationIds[index % pressureLocationIds.length]],
       chapterIds: [`local-validation-yunlan-chapter-${String(template.chapterNumber).padStart(2, '0')}`],
+      eventType:
+        index % 4 === 0
+          ? EventType.PLOT
+          : index % 4 === 1
+            ? EventType.CHARACTER
+            : index % 4 === 2
+              ? EventType.WORLD
+              : EventType.MILESTONE,
+      importance: Math.min(10, 4 + (index % 7)),
+      createdAt,
+      updatedAt,
+    })),
+    ...epicChapterTemplates.map((template, index): LocalTimelineEventRecord => ({
+      id: `local-validation-yunlan-event-epic-${template.chapterNumber}`,
+      projectId,
+      timelineId,
+      title: template.title,
+      description: template.notes,
+      storyTime: {
+        era: '云港历',
+        year: 314,
+        season: '百章季',
+        description: `第四卷第 ${index + 1} 个百章节点`,
+      },
+      duration: index < 30 ? '一章推进' : '计划节点',
+      impact: `扩展 120 章百章压力样本，关联百章证人${(index % epicCharacterIds.length) + 1}、百章地点${(index % epicLocationIds.length) + 1} 与百章证据${(index % epicItemIds.length) + 1}。`,
+      participants: [
+        characterIds.shenYi,
+        epicCharacterIds[index % epicCharacterIds.length],
+        epicCharacterIds[(index + 9) % epicCharacterIds.length],
+      ],
+      locationIds: [epicLocationIds[index % epicLocationIds.length]],
+      chapterIds: [`local-validation-yunlan-chapter-${String(template.chapterNumber).padStart(3, '0')}`],
+      eventType:
+        index % 4 === 0
+          ? EventType.PLOT
+          : index % 4 === 1
+            ? EventType.CHARACTER
+            : index % 4 === 2
+              ? EventType.WORLD
+              : EventType.MILESTONE,
+      importance: Math.min(10, 4 + (index % 7)),
+      createdAt,
+      updatedAt,
+    })),
+    ...sagaChapterTemplates.map((template, index): LocalTimelineEventRecord => ({
+      id: `local-validation-yunlan-event-saga-${template.chapterNumber}`,
+      projectId,
+      timelineId,
+      title: template.title,
+      description: template.notes,
+      storyTime: {
+        era: '云港历',
+        year: 315,
+        season: '长篇季',
+        description: `第五卷第 ${index + 1} 个长篇压测节点`,
+      },
+      duration: index < 48 ? '一章推进' : '计划节点',
+      impact: `扩展 240 章长篇压测样本，关联长篇证人${(index % sagaCharacterIds.length) + 1}、长篇地点${(index % sagaLocationIds.length) + 1} 与长篇证据${(index % sagaItemIds.length) + 1}。`,
+      participants: [
+        characterIds.shenYi,
+        sagaCharacterIds[index % sagaCharacterIds.length],
+        sagaCharacterIds[(index + 13) % sagaCharacterIds.length],
+      ],
+      locationIds: [sagaLocationIds[index % sagaLocationIds.length]],
+      chapterIds: [`local-validation-yunlan-chapter-${String(template.chapterNumber).padStart(3, '0')}`],
       eventType:
         index % 4 === 0
           ? EventType.PLOT
