@@ -223,6 +223,40 @@ function seedValidationSampleProject(state: LocalWriterState): void {
     tideOffice: 'local-validation-yunlan-organization-tide-office',
     bellGuild: 'local-validation-yunlan-organization-bell-guild',
   }
+  const extraVolumeId = 'local-validation-yunlan-volume-2'
+  const extraCharacterIds = Array.from({ length: 8 }, (_, index) =>
+    `local-validation-yunlan-character-support-${index + 1}`,
+  )
+  const extraLocationIds = Array.from({ length: 8 }, (_, index) =>
+    `local-validation-yunlan-location-region-${index + 1}`,
+  )
+  const extraItemIds = Array.from({ length: 8 }, (_, index) =>
+    `local-validation-yunlan-item-evidence-${index + 1}`,
+  )
+  const extraConceptIds = Array.from({ length: 5 }, (_, index) =>
+    `local-validation-yunlan-concept-rule-${index + 1}`,
+  )
+  const extraOrganizationIds = Array.from({ length: 4 }, (_, index) =>
+    `local-validation-yunlan-organization-faction-${index + 1}`,
+  )
+  const extraChapterTemplates = [
+    ['第九章', '灯船夜审', '灯船上重审第一份假信，沈奕发现账册缺页与海门闸潮位相互对应。'],
+    ['第十章', '沉井旧誓', '洛琴带队进入沉井，找到听潮司第一任守钟人留下的誓词。'],
+    ['第十一章', '盐仓问供', '余照在盐仓审问旧巡捕，确认白麟三年前就买过潮铃碎片。'],
+    ['第十二章', '匠会失火', '钟匠会工坊失火，唐阙被迫公开禁钟图纸的残页。'],
+    ['第十三章', '雾桥交易', '白麟在雾桥交易银钥匙，萧蓉用潮汐图换回一名守闸人。'],
+    ['第十四章', '潮祠暗潮', '潮祠石阶提前露出，梅云确认无声钟律的第二层约束。'],
+    ['第十五章', '旧债名单', '红账册缺页被补齐，记忆债名单第一次完整呈现。'],
+    ['第十六章', '钟楼断梁', '旧钟楼断梁坠落，青铜潮铃裂纹扩大，城市记忆开始错位。'],
+    ['第十七章', '外港来客', '外港商队带来另一座城市的遗忘案例，证明白麟不是唯一买家。'],
+    ['第十八章', '雨市公证', '雨市摊主为沈奕作证，假信流转路径被公开。'],
+    ['第十九章', '司库叛逃', '梅云被迫离开听潮司，带走最后一枚账册铜钉。'],
+    ['第二十章', '潮图反证', '潮汐图显示潮声回路曾被人为改向海门闸。'],
+    ['第二十一章', '匠首投票', '唐阙召集钟匠会投票，决定是否公开禁钟图纸。'],
+    ['第二十二章', '白麟真价', '白麟说明外港愿意付出的代价，并试图分裂沈奕与洛琴。'],
+    ['第二十三章', '归潮前夜', '所有证据汇入潮祠，众人等待最后一次退潮。'],
+    ['第二十四章', '全城听证', '云港居民在钟声前听取完整证据，决定是否共同承担记忆债。'],
+  ] as const
 
   state.projects.unshift({
     id: projectId,
@@ -426,6 +460,57 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       children: [],
     },
   )
+  state.documents.push(
+    {
+      id: extraVolumeId,
+      projectId,
+      title: '第二卷 归潮听证',
+      type: DocumentType.VOLUME,
+      level: 0,
+      order: 1,
+      status: DocumentStatus.PLANNED,
+      wordCount: 0,
+      tags: ['压力样本', '长篇窗口'],
+      notes: '验证长篇章节窗口、时间线区段和资产筛选的第二卷。',
+      createdAt,
+      updatedAt,
+      children: [],
+    },
+    ...extraChapterTemplates.map(([prefix, title, notes], index): LocalDocumentRecord => {
+      const chapterNumber = index + 9
+      return {
+        id: `local-validation-yunlan-chapter-${String(chapterNumber).padStart(2, '0')}`,
+        projectId,
+        parentId: extraVolumeId,
+        title: `${prefix} ${title}`,
+        type: DocumentType.CHAPTER,
+        level: 1,
+        order: index,
+        status: index < 8 ? DocumentStatus.WRITING : DocumentStatus.PLANNED,
+        wordCount: 0,
+        characterIds: [
+          characterIds.shenYi,
+          index % 2 === 0 ? characterIds.luoQin : characterIds.yuZhao,
+          extraCharacterIds[index % extraCharacterIds.length],
+        ],
+        locationIds: [
+          index % 3 === 0
+            ? locationIds.harbor
+            : index % 3 === 1
+              ? locationIds.archive
+              : locationIds.shrine,
+          extraLocationIds[index % extraLocationIds.length],
+        ],
+        timelineIds: [timelineId],
+        plotThreads: ['归潮听证', index % 2 === 0 ? '证据链' : '阵营压力'],
+        tags: index < 8 ? ['调查', '推进'] : ['听证', '收束'],
+        notes,
+        createdAt,
+        updatedAt,
+        children: [],
+      }
+    }),
+  )
 
   const chapterParagraphs: Record<string, string[]> = {
     [docIds.chapter1]: [
@@ -468,6 +553,19 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       '@洛琴、@余照、@梅云、@唐阙 与 @白麟 站在不同的队列里，每个人都带着一笔未还清的 @记忆债。',
       '结局章用于验证多角色、多地点、多物件、多概念同时进入 AI handoff 和审查上下文。',
     ],
+  }
+  for (const [index, [, title, notes]] of extraChapterTemplates.entries()) {
+    const chapterNumber = index + 9
+    const supportName = `@证人${index + 1}`
+    const regionName = `#归潮地点${index + 1}`
+    const itemName = `%证据${index + 1}`
+    const conceptName = `@规则${(index % extraConceptIds.length) + 1}`
+    const factionName = `@阵营${(index % extraOrganizationIds.length) + 1}`
+    chapterParagraphs[`local-validation-yunlan-chapter-${String(chapterNumber).padStart(2, '0')}`] = [
+      `${regionName} 的雨比云港更冷，${supportName} 把 ${itemName} 交给 @沈奕，要求他在全城听证前读完。`,
+      `${factionName} 拒绝承认证据，@洛琴 与 @余照 分别从旧案和巡捕记录中补上缺口。`,
+      `${title} 用于验证长篇章节：${notes} 关联 ${conceptName}、@潮声回路、@记忆债，并把线索推回 %红账册。`,
+    ]
   }
 
   for (const document of state.documents.filter((item) => item.projectId === projectId)) {
@@ -589,6 +687,22 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       createdAt,
       updatedAt,
     },
+    ...extraCharacterIds.map((id, index): LocalCharacterRecord => ({
+      id,
+      projectId,
+      name: `证人${index + 1}`,
+      alias: [`归潮证人${index + 1}`],
+      summary: `第二卷第 ${index + 1} 位证人，提供归潮听证的局部证词。`,
+      traits: index % 2 === 0 ? ['谨慎', '记账', '怕水'] : ['直率', '记仇', '熟悉旧案'],
+      background: `曾在归潮地点${index + 1} 目击听潮司封存记忆。`,
+      currentState: index < 4 ? '愿意出庭作证' : '仍在权衡是否公开身份',
+      customStatus: {
+        testimonyRisk: 40 + index * 6,
+        trustValue: 35 + index * 5,
+      },
+      createdAt,
+      updatedAt,
+    })),
   )
 
   state.characterRelations.push(
@@ -680,6 +794,30 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       createdAt,
       updatedAt,
     },
+    ...extraCharacterIds.flatMap((id, index): LocalCharacterRelationRecord[] => [
+      {
+        id: `local-validation-yunlan-relation-shen-support-${index + 1}`,
+        projectId,
+        fromId: characterIds.shenYi,
+        toId: id,
+        type: index % 2 === 0 ? RelationType.ALLY : RelationType.OTHER,
+        strength: 42 + index * 4,
+        notes: `沈奕需要证人${index + 1} 的证词补齐听证链。`,
+        createdAt,
+        updatedAt,
+      },
+      {
+        id: `local-validation-yunlan-relation-luo-support-${index + 1}`,
+        projectId,
+        fromId: characterIds.luoQin,
+        toId: id,
+        type: index % 3 === 0 ? RelationType.FRIEND : RelationType.OTHER,
+        strength: 38 + index * 3,
+        notes: `洛琴负责判断证人${index + 1} 是否被听潮司旧案影响。`,
+        createdAt,
+        updatedAt,
+      },
+    ]),
   )
 
   state.locations.push(
@@ -766,6 +904,20 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       updatedAt,
       children: [],
     },
+    ...extraLocationIds.map((id, index): LocalLocationRecord => ({
+      id,
+      projectId,
+      parentId: index % 2 === 0 ? locationIds.harbor : locationIds.seaGate,
+      name: `归潮地点${index + 1}`,
+      description: `第二卷压力样本地点，用于验证地点列表、结构窗口和时间线筛选。`,
+      climate: index % 2 === 0 ? '细雨不断' : '退潮后风声很尖',
+      culture: `居民用第 ${index + 1} 种绳结记录听证证词。`,
+      geography: index % 2 === 0 ? '靠近内港旧巷' : '靠近外港潮沟',
+      atmosphere: index % 2 === 0 ? '拥挤、潮湿、消息流动快' : '空旷、危险、适合伏击',
+      createdAt,
+      updatedAt,
+      children: [],
+    })),
   )
 
   state.locationRelations.push(
@@ -824,6 +976,17 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       createdAt,
       updatedAt,
     },
+    ...extraLocationIds.map((id, index): LocalLocationRelationRecord => ({
+      id: `local-validation-yunlan-location-relation-extra-${index + 1}`,
+      projectId,
+      fromId: index % 2 === 0 ? locationIds.harbor : locationIds.seaGate,
+      toId: id,
+      type: index % 2 === 0 ? LocationRelationType.NEAR : LocationRelationType.CONNECTED,
+      distance: index % 2 === 0 ? '一段旧巷' : '退潮后半刻',
+      notes: `归潮地点${index + 1} 用于第二卷章节定位。`,
+      createdAt,
+      updatedAt,
+    })),
   )
 
   state.concepts.push(
@@ -872,6 +1035,24 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       createdAt,
       updatedAt,
     },
+    ...extraConceptIds.map((id, index): LocalConceptRecord => ({
+      id,
+      projectId,
+      name: `规则${index + 1}`,
+      alias: [`归潮规则${index + 1}`],
+      summary: `第二卷听证用规则 ${index + 1}，用于增加概念筛选和 AI 上下文密度。`,
+      description: `规则${index + 1} 约束证词、地点、物件和记忆债的可公开范围。`,
+      category: '听证规则',
+      relatedCharacters: [
+        characterIds.shenYi,
+        extraCharacterIds[index % extraCharacterIds.length],
+      ],
+      relatedLocations: [extraLocationIds[index % extraLocationIds.length]],
+      relatedItems: [extraItemIds[index % extraItemIds.length]],
+      relatedConcepts: [conceptIds.tideLoop, conceptIds.memoryDebt],
+      createdAt,
+      updatedAt,
+    })),
   )
 
   state.genericEntities.push(
@@ -935,6 +1116,26 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       createdAt,
       updatedAt,
     },
+    ...extraItemIds.map((id, index): LocalGenericEntityRecord => ({
+      id,
+      projectId,
+      entityType: 'item',
+      name: `证据${index + 1}`,
+      alias: [`归潮证据${index + 1}`],
+      summary: `第二卷听证证据 ${index + 1}，用于验证物件资产列表和正文引用解析。`,
+      createdAt,
+      updatedAt,
+    })),
+    ...extraOrganizationIds.map((id, index): LocalGenericEntityRecord => ({
+      id,
+      projectId,
+      entityType: 'organization',
+      name: `阵营${index + 1}`,
+      alias: [`归潮阵营${index + 1}`],
+      summary: `听证中第 ${index + 1} 个立场阵营，用于验证组织资产和关系图谱候选。`,
+      createdAt,
+      updatedAt,
+    })),
   )
 
   state.entityStateFields = {
@@ -1132,6 +1333,42 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       createdAt,
       updatedAt,
     },
+    ...extraChapterTemplates.map(([, title, notes], index): LocalTimelineEventRecord => {
+      const chapterNumber = index + 9
+      return {
+        id: `local-validation-yunlan-event-extra-${chapterNumber}`,
+        projectId,
+        timelineId,
+        title,
+        description: notes,
+        storyTime: {
+          era: '云港历',
+          year: 312,
+          season: '雨季',
+          description: `第二卷第 ${index + 1} 个听证节点`,
+        },
+        duration: index < 8 ? '一章推进' : '计划节点',
+        impact: `扩展第二卷压力样本，关联证人${(index % extraCharacterIds.length) + 1}、归潮地点${(index % extraLocationIds.length) + 1} 与证据${(index % extraItemIds.length) + 1}。`,
+        participants: [
+          characterIds.shenYi,
+          index % 2 === 0 ? characterIds.luoQin : characterIds.yuZhao,
+          extraCharacterIds[index % extraCharacterIds.length],
+        ],
+        locationIds: [extraLocationIds[index % extraLocationIds.length]],
+        chapterIds: [`local-validation-yunlan-chapter-${String(chapterNumber).padStart(2, '0')}`],
+        eventType:
+          index % 4 === 0
+            ? EventType.PLOT
+            : index % 4 === 1
+              ? EventType.CHARACTER
+              : index % 4 === 2
+                ? EventType.WORLD
+                : EventType.MILESTONE,
+        importance: Math.min(10, 5 + (index % 6)),
+        createdAt,
+        updatedAt,
+      }
+    }),
   )
 }
 
