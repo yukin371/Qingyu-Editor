@@ -206,6 +206,7 @@ import {
   type UpdateOutlineRequest,
 } from '@/modules/writer/api/outline'
 import { createDocument, updateDocument } from '@/modules/writer/api/document'
+import { editorApi } from '@/modules/writer/api/editor'
 import { conceptApi } from '@/modules/writer/api/concept'
 import { listEntities } from '@/modules/writer/api/entities'
 import {
@@ -247,6 +248,7 @@ import {
 } from '@/modules/writer/utils/entityParser'
 import {
   extractWriterAssetCandidates,
+  replaceProjectChapterAssetRefs,
   replaceScopeAssetRefs,
 } from '@/modules/writer/utils/writerAssetRefs'
 import type { EntityReference } from '@/modules/writer/types/entity'
@@ -759,6 +761,88 @@ const handleEditorEntityScan = async (refs: Array<{ id?: string; name: string; t
   } catch (error) {
     if (import.meta.env.DEV) {
       console.warn('[ProjectWorkspace] 同步章节资产引用失败:', error)
+    }
+  }
+}
+
+const validationSampleAssetRefSeeded = ref(false)
+
+const unwrapEditorContent = (payload: unknown): string => {
+  if (!payload || typeof payload !== 'object') {
+    return ''
+  }
+
+  const record = payload as Record<string, unknown>
+  const data = record.data && typeof record.data === 'object' ? (record.data as Record<string, unknown>) : record
+  return typeof data.content === 'string' ? data.content : ''
+}
+
+const ensureValidationSampleAssetRefs = async (projectId: string) => {
+  if (validationSampleAssetRefSeeded.value || projectId !== 'local-validation-yunlan') {
+    return
+  }
+
+  const validationSampleEnabled =
+    route.query.validationSample === 'true' || route.query.validationSample === '1'
+  if (!validationSampleEnabled) {
+    return
+  }
+
+  validationSampleAssetRefSeeded.value = true
+
+  try {
+    const chapters = flatChapters.value.filter((chapter) => chapter.nodeType !== 'directory')
+    if (chapters.length === 0) {
+      return
+    }
+
+    const [items, organizations, conceptPayload] = await Promise.all([
+      listEntities(projectId, 'item').catch(() => []),
+      listEntities(projectId, 'organization').catch(() => []),
+      conceptApi.list(projectId).catch(() => []),
+      writerStore.loadCharacters(projectId).catch(() => undefined),
+      writerStore.loadLocations(projectId).catch(() => undefined),
+    ])
+
+    const concepts = unwrapConceptList<Array<{ id: string; name: string; alias?: string[] }>>(
+      conceptPayload,
+    )
+    const entries = await Promise.all(
+      chapters.map(async (chapter) => {
+        const contentPayload = await editorApi.getContent(chapter.id).catch(() => null)
+        const rawContent = unwrapEditorContent(contentPayload)
+        const text = extractPlainTextFromEditorContent(rawContent)
+        let entityReferences: EntityReference[] = []
+        try {
+          entityReferences = extractEntitiesFromTipTapContent(JSON.parse(rawContent))
+        } catch {
+          entityReferences = parseEntityReferences(text, { includePosition: false })
+        }
+        const candidates = extractWriterAssetCandidates({
+          text,
+          characters: writerStore.characters.list || [],
+          locations: writerStore.locations.list || [],
+          items,
+          organizations,
+          concepts,
+          entityReferences,
+        }).filter((candidate) => !candidate.unresolved)
+
+        return {
+          chapterId: chapter.id,
+          candidates,
+        }
+      }),
+    )
+
+    replaceProjectChapterAssetRefs({
+      projectId,
+      entries,
+    })
+  } catch (error) {
+    validationSampleAssetRefSeeded.value = false
+    if (import.meta.env.DEV) {
+      console.warn('[ProjectWorkspace] 初始化验证样本资产引用失败:', error)
     }
   }
 }
@@ -2071,6 +2155,7 @@ onMounted(async () => {
   }
 
   await Promise.all(bootstrapTasks)
+  await ensureValidationSampleAssetRefs(pId)
   if (writerStore.timeline.currentTimeline) {
     await writerStore.loadTimelineEvents(writerStore.timeline.currentTimeline.id)
   }

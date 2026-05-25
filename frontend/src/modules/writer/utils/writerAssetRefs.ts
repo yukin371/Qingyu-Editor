@@ -526,6 +526,47 @@ export function replaceScopeAssetRefs(params: {
   })
 }
 
+export function replaceProjectChapterAssetRefs(params: {
+  projectId: string
+  entries: Array<{
+    chapterId: string
+    candidates: WriterAssetCandidate[]
+  }>
+}) {
+  const { projectId, entries } = params
+  if (!projectId || entries.length === 0) {
+    return loadWriterAssetRefState(projectId)
+  }
+
+  const now = new Date().toISOString()
+  const nextState = updateWriterAssetRefState(projectId, (state) => {
+    const chapterRefs = { ...state.chapterRefs }
+
+    for (const entry of entries) {
+      chapterRefs[entry.chapterId] = entry.candidates.map((candidate, index) => ({
+        id: `asset-ref-chapter-${entry.chapterId}-${index}`,
+        assetType: candidate.assetType,
+        assetId: candidate.assetId,
+        assetName: candidate.assetName,
+        scopeType: 'chapter',
+        scopeId: entry.chapterId,
+        source: candidate.source,
+        evidence: candidate.evidence,
+        unresolved: candidate.unresolved,
+        createdAt: now,
+        updatedAt: now,
+      }))
+    }
+
+    return {
+      ...state,
+      chapterRefs,
+    }
+  })
+
+  return nextState
+}
+
 export function extractWriterAssetCandidates(params: ExtractionParams): WriterAssetCandidate[] {
   const text = params.text || ''
   const summary = new Map<string, WriterAssetCandidate>()

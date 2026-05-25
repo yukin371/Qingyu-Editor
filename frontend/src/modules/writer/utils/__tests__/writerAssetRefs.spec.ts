@@ -8,6 +8,7 @@ import {
   loadWriterAssetRefState,
   mergeWriterAssetRefs,
   removeScopeAssetRef,
+  replaceProjectChapterAssetRefs,
   upsertScopeAssetRef,
 } from '../writerAssetRefs'
 
@@ -406,6 +407,54 @@ describe('writerAssetRefs', () => {
       chapterIds: ['chapter-1', 'chapter-2'],
       volumeIds: ['volume-1'],
       latestChapterId: 'chapter-2',
+    })
+  })
+
+  it('应批量写入章节资产引用以支持验证样本预索引', () => {
+    const projectId = 'project-bulk'
+
+    const state = replaceProjectChapterAssetRefs({
+      projectId,
+      entries: [
+        {
+          chapterId: 'chapter-1',
+          candidates: [
+            {
+              key: 'character:char-1',
+              assetType: 'character',
+              assetId: 'char-1',
+              assetName: '沈砚',
+              source: 'mention',
+            },
+          ],
+        },
+        {
+          chapterId: 'chapter-2',
+          candidates: [
+            {
+              key: 'character:char-1',
+              assetType: 'character',
+              assetId: 'char-1',
+              assetName: '沈砚',
+              source: 'mention',
+            },
+            {
+              key: 'item:item-1',
+              assetType: 'item',
+              assetId: 'item-1',
+              assetName: '铜钥匙',
+              source: 'mention',
+            },
+          ],
+        },
+      ],
+    })
+
+    expect(state.chapterRefs['chapter-1']).toHaveLength(1)
+    expect(state.chapterRefs['chapter-2']).toHaveLength(2)
+    expect(buildWriterAssetReferenceProjection(state).get('character:char-1')).toMatchObject({
+      chapterReferenceCount: 2,
+      chapterIds: ['chapter-1', 'chapter-2'],
     })
   })
 })
