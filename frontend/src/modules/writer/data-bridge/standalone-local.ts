@@ -257,6 +257,65 @@ function seedValidationSampleProject(state: LocalWriterState): void {
     ['第二十三章', '归潮前夜', '所有证据汇入潮祠，众人等待最后一次退潮。'],
     ['第二十四章', '全城听证', '云港居民在钟声前听取完整证据，决定是否共同承担记忆债。'],
   ] as const
+  const pressureVolumeId = 'local-validation-yunlan-volume-3'
+  const pressureCharacterIds = Array.from({ length: 16 }, (_, index) =>
+    `local-validation-yunlan-character-pressure-${index + 1}`,
+  )
+  const pressureLocationIds = Array.from({ length: 16 }, (_, index) =>
+    `local-validation-yunlan-location-pressure-${index + 1}`,
+  )
+  const pressureItemIds = Array.from({ length: 16 }, (_, index) =>
+    `local-validation-yunlan-item-pressure-${index + 1}`,
+  )
+  const pressureConceptIds = Array.from({ length: 12 }, (_, index) =>
+    `local-validation-yunlan-concept-pressure-${index + 1}`,
+  )
+  const pressureOrganizationIds = Array.from({ length: 8 }, (_, index) =>
+    `local-validation-yunlan-organization-pressure-${index + 1}`,
+  )
+  const pressureChapterNames = [
+    '南闸复证',
+    '雾仓暗票',
+    '旧巷证词',
+    '铜钉归档',
+    '雨桥反问',
+    '石阶退潮',
+    '白帆来函',
+    '钟匠分席',
+    '潮灯失序',
+    '司库再审',
+    '外港封线',
+    '旧债转移',
+    '夜航听证',
+    '青苔账页',
+    '断钟校准',
+    '东堤封门',
+    '潮图复写',
+    '商会撤约',
+    '证人失声',
+    '银钥回环',
+    '钟律附页',
+    '巡捕旧令',
+    '雾市对质',
+    '潮祠加印',
+    '外港旁证',
+    '司簿自证',
+    '潮铃试响',
+    '守闸换班',
+    '记忆复潮',
+    '全城签名',
+    '旧案定名',
+    '归潮二审',
+    '晨钟未落',
+    '众人分债',
+    '云港开闸',
+    '终章余声',
+  ]
+  const pressureChapterTemplates = pressureChapterNames.map((title, index) => ({
+    chapterNumber: index + 25,
+    title,
+    notes: `第三卷压力样本第 ${index + 1} 个节点，用于验证 60 章规模下的章节窗口、时间线窗口和资产筛选。`,
+  }))
 
   state.projects.unshift({
     id: projectId,
@@ -511,6 +570,50 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       }
     }),
   )
+  state.documents.push(
+    {
+      id: pressureVolumeId,
+      projectId,
+      title: '第三卷 全城复潮',
+      type: DocumentType.VOLUME,
+      level: 0,
+      order: 2,
+      status: DocumentStatus.PLANNED,
+      wordCount: 0,
+      tags: ['压力样本', '超长篇窗口'],
+      notes: '验证 60 章级别的结构舞台窗口、时间线窗口和资产筛选。',
+      createdAt,
+      updatedAt,
+      children: [],
+    },
+    ...pressureChapterTemplates.map((template, index): LocalDocumentRecord => ({
+      id: `local-validation-yunlan-chapter-${String(template.chapterNumber).padStart(2, '0')}`,
+      projectId,
+      parentId: pressureVolumeId,
+      title: `第${template.chapterNumber}章 ${template.title}`,
+      type: DocumentType.CHAPTER,
+      level: 1,
+      order: index,
+      status: index < 18 ? DocumentStatus.WRITING : DocumentStatus.PLANNED,
+      wordCount: 0,
+      characterIds: [
+        characterIds.shenYi,
+        pressureCharacterIds[index % pressureCharacterIds.length],
+        pressureCharacterIds[(index + 5) % pressureCharacterIds.length],
+      ],
+      locationIds: [
+        pressureLocationIds[index % pressureLocationIds.length],
+        index % 2 === 0 ? locationIds.harbor : locationIds.shrine,
+      ],
+      timelineIds: [timelineId],
+      plotThreads: ['全城复潮', index % 3 === 0 ? '公开证词' : '记忆债分摊'],
+      tags: index < 18 ? ['复证', '压力'] : ['复潮', '收束'],
+      notes: template.notes,
+      createdAt,
+      updatedAt,
+      children: [],
+    })),
+  )
 
   const chapterParagraphs: Record<string, string[]> = {
     [docIds.chapter1]: [
@@ -565,6 +668,21 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       `${regionName} 的雨比云港更冷，${supportName} 把 ${itemName} 交给 @沈奕，要求他在全城听证前读完。`,
       `${factionName} 拒绝承认证据，@洛琴 与 @余照 分别从旧案和巡捕记录中补上缺口。`,
       `${title} 用于验证长篇章节：${notes} 关联 ${conceptName}、@潮声回路、@记忆债，并把线索推回 %红账册。`,
+    ]
+  }
+  for (const [index, template] of pressureChapterTemplates.entries()) {
+    const witnessA = `@复潮证人${(index % pressureCharacterIds.length) + 1}`
+    const witnessB = `@复潮证人${((index + 5) % pressureCharacterIds.length) + 1}`
+    const locationName = `#复潮地点${(index % pressureLocationIds.length) + 1}`
+    const itemName = `%复潮证据${(index % pressureItemIds.length) + 1}`
+    const conceptName = `@复潮规则${(index % pressureConceptIds.length) + 1}`
+    const factionName = `@复潮阵营${(index % pressureOrganizationIds.length) + 1}`
+    chapterParagraphs[
+      `local-validation-yunlan-chapter-${String(template.chapterNumber).padStart(2, '0')}`
+    ] = [
+      `${locationName} 的听证席排到雨棚之外，${witnessA} 带着 ${itemName} 进入第三轮复证。`,
+      `${factionName} 要求撤回证词，${witnessB} 则用 ${conceptName} 解释为什么记忆债不能再转嫁给少数守钟人。`,
+      `${template.title} 用于验证超长篇压力：它连接 @沈奕、@洛琴、@潮声回路、@记忆债，并把第三卷证据继续汇入 %红账册。`,
     ]
   }
 
@@ -703,6 +821,27 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       createdAt,
       updatedAt,
     })),
+    ...pressureCharacterIds.map((id, index): LocalCharacterRecord => ({
+      id,
+      projectId,
+      name: `复潮证人${index + 1}`,
+      alias: [`全城证人${index + 1}`],
+      summary: `第三卷第 ${index + 1} 位复潮证人，提供全城听证后的补充证词。`,
+      traits:
+        index % 3 === 0
+          ? ['谨慎', '怕钟声', '熟悉旧巷']
+          : index % 3 === 1
+            ? ['直言', '记忆清楚', '抗压']
+            : ['沉默', '观察细节', '会记账'],
+      background: `曾在复潮地点${index + 1} 见过记忆债转移的后果。`,
+      currentState: index < 8 ? '愿意二次作证' : '等待全城签名结果',
+      customStatus: {
+        testimonyRisk: 50 + index * 2,
+        memoryDebtPressure: 30 + index * 3,
+      },
+      createdAt,
+      updatedAt,
+    })),
   )
 
   state.characterRelations.push(
@@ -818,6 +957,30 @@ function seedValidationSampleProject(state: LocalWriterState): void {
         updatedAt,
       },
     ]),
+    ...pressureCharacterIds.flatMap((id, index): LocalCharacterRelationRecord[] => [
+      {
+        id: `local-validation-yunlan-relation-pressure-shen-${index + 1}`,
+        projectId,
+        fromId: characterIds.shenYi,
+        toId: id,
+        type: index % 2 === 0 ? RelationType.ALLY : RelationType.OTHER,
+        strength: 36 + index * 2,
+        notes: `沈奕需要复潮证人${index + 1} 的二次证词完成全城复潮链。`,
+        createdAt,
+        updatedAt,
+      },
+      {
+        id: `local-validation-yunlan-relation-pressure-luo-${index + 1}`,
+        projectId,
+        fromId: characterIds.luoQin,
+        toId: id,
+        type: index % 4 === 0 ? RelationType.FRIEND : RelationType.OTHER,
+        strength: 34 + index * 2,
+        notes: `洛琴负责核验复潮证人${index + 1} 的记忆是否被无声钟律污染。`,
+        createdAt,
+        updatedAt,
+      },
+    ]),
   )
 
   state.locations.push(
@@ -918,6 +1081,20 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       updatedAt,
       children: [],
     })),
+    ...pressureLocationIds.map((id, index): LocalLocationRecord => ({
+      id,
+      projectId,
+      parentId: index % 2 === 0 ? locationIds.harbor : locationIds.shrine,
+      name: `复潮地点${index + 1}`,
+      description: `第三卷压力样本地点 ${index + 1}，用于验证 60 章规模下的地点资产和章节筛选。`,
+      climate: index % 2 === 0 ? '雨后闷热，钟声回响' : '海雾很低，石阶湿滑',
+      culture: `居民以第 ${index + 1} 组签名确认复潮证词。`,
+      geography: index % 2 === 0 ? '内港听证棚附近' : '潮祠外侧石阶',
+      atmosphere: index % 2 === 0 ? '拥挤、焦躁、等待宣判' : '空旷、肃穆、适合回忆',
+      createdAt,
+      updatedAt,
+      children: [],
+    })),
   )
 
   state.locationRelations.push(
@@ -987,6 +1164,17 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       createdAt,
       updatedAt,
     })),
+    ...pressureLocationIds.map((id, index): LocalLocationRelationRecord => ({
+      id: `local-validation-yunlan-location-relation-pressure-${index + 1}`,
+      projectId,
+      fromId: index % 2 === 0 ? locationIds.harbor : locationIds.shrine,
+      toId: id,
+      type: index % 3 === 0 ? LocationRelationType.CONNECTED : LocationRelationType.NEAR,
+      distance: index % 2 === 0 ? '听证棚外一条街' : '潮祠石阶旁',
+      notes: `复潮地点${index + 1} 对应第三卷压力章节。`,
+      createdAt,
+      updatedAt,
+    })),
   )
 
   state.concepts.push(
@@ -1049,6 +1237,24 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       ],
       relatedLocations: [extraLocationIds[index % extraLocationIds.length]],
       relatedItems: [extraItemIds[index % extraItemIds.length]],
+      relatedConcepts: [conceptIds.tideLoop, conceptIds.memoryDebt],
+      createdAt,
+      updatedAt,
+    })),
+    ...pressureConceptIds.map((id, index): LocalConceptRecord => ({
+      id,
+      projectId,
+      name: `复潮规则${index + 1}`,
+      alias: [`全城规则${index + 1}`],
+      summary: `第三卷复潮听证规则 ${index + 1}，用于扩充概念资产和 AI 上下文。`,
+      description: `复潮规则${index + 1} 定义全城共同承担记忆债时的证词顺序、地点约束和物证优先级。`,
+      category: '复潮规则',
+      relatedCharacters: [
+        characterIds.shenYi,
+        pressureCharacterIds[index % pressureCharacterIds.length],
+      ],
+      relatedLocations: [pressureLocationIds[index % pressureLocationIds.length]],
+      relatedItems: [pressureItemIds[index % pressureItemIds.length]],
       relatedConcepts: [conceptIds.tideLoop, conceptIds.memoryDebt],
       createdAt,
       updatedAt,
@@ -1133,6 +1339,26 @@ function seedValidationSampleProject(state: LocalWriterState): void {
       name: `阵营${index + 1}`,
       alias: [`归潮阵营${index + 1}`],
       summary: `听证中第 ${index + 1} 个立场阵营，用于验证组织资产和关系图谱候选。`,
+      createdAt,
+      updatedAt,
+    })),
+    ...pressureItemIds.map((id, index): LocalGenericEntityRecord => ({
+      id,
+      projectId,
+      entityType: 'item',
+      name: `复潮证据${index + 1}`,
+      alias: [`全城证据${index + 1}`],
+      summary: `第三卷复潮证据 ${index + 1}，用于验证大资产列表和正文引用解析。`,
+      createdAt,
+      updatedAt,
+    })),
+    ...pressureOrganizationIds.map((id, index): LocalGenericEntityRecord => ({
+      id,
+      projectId,
+      entityType: 'organization',
+      name: `复潮阵营${index + 1}`,
+      alias: [`全城阵营${index + 1}`],
+      summary: `第三卷第 ${index + 1} 个复潮听证阵营，用于验证组织资产规模。`,
       createdAt,
       updatedAt,
     })),
@@ -1369,6 +1595,39 @@ function seedValidationSampleProject(state: LocalWriterState): void {
         updatedAt,
       }
     }),
+    ...pressureChapterTemplates.map((template, index): LocalTimelineEventRecord => ({
+      id: `local-validation-yunlan-event-pressure-${template.chapterNumber}`,
+      projectId,
+      timelineId,
+      title: template.title,
+      description: template.notes,
+      storyTime: {
+        era: '云港历',
+        year: 313,
+        season: '复潮季',
+        description: `第三卷第 ${index + 1} 个复潮节点`,
+      },
+      duration: index < 18 ? '一章推进' : '计划节点',
+      impact: `扩展 60 章压力样本，关联复潮证人${(index % pressureCharacterIds.length) + 1}、复潮地点${(index % pressureLocationIds.length) + 1} 与复潮证据${(index % pressureItemIds.length) + 1}。`,
+      participants: [
+        characterIds.shenYi,
+        pressureCharacterIds[index % pressureCharacterIds.length],
+        pressureCharacterIds[(index + 5) % pressureCharacterIds.length],
+      ],
+      locationIds: [pressureLocationIds[index % pressureLocationIds.length]],
+      chapterIds: [`local-validation-yunlan-chapter-${String(template.chapterNumber).padStart(2, '0')}`],
+      eventType:
+        index % 4 === 0
+          ? EventType.PLOT
+          : index % 4 === 1
+            ? EventType.CHARACTER
+            : index % 4 === 2
+              ? EventType.WORLD
+              : EventType.MILESTONE,
+      importance: Math.min(10, 4 + (index % 7)),
+      createdAt,
+      updatedAt,
+    })),
   )
 }
 
