@@ -98,8 +98,48 @@
                 :actions="currentScopeEmptyStateActions"
                 @action="handleCurrentScopeEmptyStateAction"
               />
+              <div
+                v-if="isCurrentChapterGraphEmpty && hasCurrentScopeContextPreview"
+                class="graph-scope-preview"
+                data-testid="chapter-graph-context-preview"
+              >
+                <div class="graph-scope-preview__head">
+                  <span>当前章节上下文</span>
+                  <strong>{{ currentScopePreviewSummary }}</strong>
+                </div>
+                <div class="graph-scope-preview__groups">
+                  <section v-if="boundScopeAssetRefs.length" class="graph-scope-preview__group">
+                    <div class="graph-scope-preview__label">已接入图谱</div>
+                    <div class="graph-scope-preview__chips">
+                      <span
+                        v-for="asset in boundScopeAssetRefs.slice(0, 6)"
+                        :key="asset.id"
+                        class="graph-scope-preview__chip is-bound"
+                      >
+                        {{ formatAssetType(asset.assetType) }} · {{ asset.assetName }}
+                      </span>
+                    </div>
+                  </section>
+                  <section v-if="scopeAssetCandidates.length" class="graph-scope-preview__group">
+                    <div class="graph-scope-preview__label">正文候选</div>
+                    <div class="graph-scope-preview__chips">
+                      <span
+                        v-for="candidate in scopeAssetCandidates.slice(0, 8)"
+                        :key="candidate.key"
+                        class="graph-scope-preview__chip"
+                        :class="{ 'is-unresolved': candidate.unresolved }"
+                      >
+                        {{ formatAssetType(candidate.assetType) }} · {{ candidate.assetName }}
+                      </span>
+                    </div>
+                  </section>
+                </div>
+                <p v-if="unresolvedScopeAssetCandidates.length" class="graph-scope-preview__hint">
+                  还有 {{ unresolvedScopeAssetCandidates.length }} 个候选需要先选择类型再建档。
+                </p>
+              </div>
               <RelationshipGraph
-                v-else
+                v-if="!isCurrentChapterGraphEmpty"
                 :nodes="graphNodes"
                 :links="graphLinks"
                 :focused-node-id="focusedGraphNodeId"
@@ -660,6 +700,14 @@ const currentScopeEmptyStateActions = computed(() => {
   }> = []
 
   actions.push({ id: 'import', label: '从角色卡引入', variant: 'primary' })
+  if (bindableScopeAssetCandidates.value.length > 0) {
+    actions.push({
+      id: 'bind-candidates',
+      label: `绑定全部候选 ${bindableScopeAssetCandidates.value.length}`,
+      variant: 'secondary',
+      disabled: bindingAllCandidates.value,
+    })
+  }
   actions.push({
     id: 'bind-existing',
     label: '绑定角色卡',
@@ -673,6 +721,18 @@ const currentScopeEmptyStateActions = computed(() => {
 const globalGraphTitleTag = computed(() =>
   isGlobalGraphCreatedEmpty.value ? '空图谱' : `${characters.value.length} 个角色`,
 )
+
+const hasCurrentScopeContextPreview = computed(
+  () => boundScopeAssetRefs.value.length > 0 || scopeAssetCandidates.value.length > 0,
+)
+
+const currentScopePreviewSummary = computed(() => {
+  const boundCount = boundScopeAssetRefs.value.length
+  const candidateCount = scopeAssetCandidates.value.length
+  if (boundCount && candidateCount) return `${boundCount} 个已接入 / ${candidateCount} 个候选`
+  if (boundCount) return `${boundCount} 个已接入资产`
+  return `${candidateCount} 个正文候选`
+})
 
 const currentScopeGraphTitle = computed(() =>
   currentScopeType.value === 'volume'
@@ -728,6 +788,10 @@ const handleCurrentScopeEmptyStateAction = (actionId: string) => {
   }
   if (actionId === 'bind-existing') {
     handleBindExistingCharactersToScope()
+    return
+  }
+  if (actionId === 'bind-candidates') {
+    void handleBindAllAssetCandidates()
   }
 }
 
@@ -2009,6 +2073,87 @@ const handleOutlineNodeClick = (node: any) => {
   overflow: hidden;
   position: relative;
   min-height: 0;
+}
+
+.graph-scope-preview {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  z-index: 2;
+  width: min(680px, calc(100% - 48px));
+  transform: translateX(-50%);
+  padding: 14px 16px;
+  border: 1px solid var(--editor-border, #dbe5f5);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 94%, transparent);
+  box-shadow: 0 18px 42px color-mix(in srgb, var(--editor-shadow, #0f172a) 12%, transparent);
+}
+
+.graph-scope-preview__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--editor-text-muted, #6b7280);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.graph-scope-preview__head strong {
+  color: var(--editor-text-primary, #111827);
+  font-size: 13px;
+}
+
+.graph-scope-preview__groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.graph-scope-preview__label {
+  margin-bottom: 8px;
+  color: var(--editor-text-muted, #6b7280);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.graph-scope-preview__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.graph-scope-preview__chip {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--editor-accent, #2563eb) 18%, var(--editor-border, #dbe5f5));
+  background: color-mix(in srgb, var(--editor-accent-soft, #ecfeff) 58%, var(--editor-layer-panel, #ffffff));
+  color: var(--editor-text-secondary, #475569);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.graph-scope-preview__chip.is-bound {
+  border-color: color-mix(in srgb, var(--editor-success, #16a34a) 24%, var(--editor-border, #dbe5f5));
+  background: color-mix(in srgb, var(--editor-success-soft, #dcfce7) 52%, var(--editor-layer-panel, #ffffff));
+}
+
+.graph-scope-preview__chip.is-unresolved {
+  border-style: dashed;
+  background: color-mix(in srgb, var(--editor-warning-soft, #fef3c7) 58%, var(--editor-layer-panel, #ffffff));
+}
+
+.graph-scope-preview__hint {
+  margin: 10px 0 0;
+  color: var(--editor-text-muted, #6b7280);
+  font-size: 12px;
 }
 
 /* 动画 */

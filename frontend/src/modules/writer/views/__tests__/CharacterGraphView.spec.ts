@@ -435,6 +435,27 @@ describe('CharacterGraphView asset candidates', () => {
     expect(toastMocks.success).toHaveBeenCalledWith('已建档并绑定组织：新势力')
   })
 
+  it('keeps current chapter candidate context visible when the graph has no nodes yet', async () => {
+    editorStoreState.editorContent = JSON.stringify({
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [{ type: 'text', text: '@新势力 正在集结。' }],
+        },
+      ],
+    })
+
+    const wrapper = mountView()
+    await nextTick()
+
+    const preview = wrapper.get('[data-testid="chapter-graph-context-preview"]')
+    expect(preview.text()).toContain('当前章节上下文')
+    expect(preview.text()).toContain('正文候选')
+    expect(preview.text()).toContain('角色 · 新势力')
+    expect(preview.text()).toContain('需要先选择类型再建档')
+  })
+
   it('emits a standard workflow action when sending the selected character to AI', async () => {
     const wrapper = mountView()
     await nextTick()

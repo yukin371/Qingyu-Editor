@@ -127,10 +127,25 @@
           <div v-if="timelineWindowEvents.length === 0" class="timeline-events__empty">
             <div class="timeline-empty-card timeline-empty-card--soft">
               <span class="timeline-empty-card__eyebrow">Event Window</span>
-              <strong>当前窗口暂无事件</strong>
-              <p>
-                可以切换左侧时间线容器，或用定位器搜索事件标题、类型和时间来跳转到相邻区段。
-              </p>
+              <strong>{{ emptyTimelineTitle }}</strong>
+              <p>{{ emptyTimelineDescription }}</p>
+              <div
+                v-if="currentChapterAnchorTitle || visibleAssetSummaryItems.length"
+                class="timeline-empty-card__anchor"
+                data-testid="timeline-empty-chapter-anchor"
+              >
+                <span>{{ currentChapterAnchorLabel }}</span>
+                <strong>{{ currentChapterAnchorTitle || '当前章节' }}</strong>
+                <div v-if="visibleAssetSummaryItems.length" class="timeline-empty-card__chips">
+                  <span
+                    v-for="item in visibleAssetSummaryItems"
+                    :key="`${item.label}-${item.count}`"
+                    class="timeline-empty-card__chip"
+                  >
+                    {{ item.label }} {{ item.count }}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -271,6 +286,24 @@ const { visibleAssetSummaryItems } = useWriterAssetSummary({
   chapters: computed(() => props.chapters || []),
   activeEntities: computed(() => props.activeEntities || []),
 })
+const currentChapterSummary = computed(() =>
+  props.chapterId ? props.chapters.find((chapter) => chapter.id === props.chapterId) || null : null,
+)
+const currentChapterAnchorTitle = computed(
+  () => props.chapterTitle || currentChapterSummary.value?.title || '',
+)
+const currentChapterAnchorLabel = computed(() => {
+  if (currentChapterSummary.value?.chapterNum) return `第 ${currentChapterSummary.value.chapterNum} 章锚点`
+  return props.chapterId ? '当前章节锚点' : '待拆事件入口'
+})
+const emptyTimelineTitle = computed(() =>
+  props.chapterId ? '当前章节还没有时间线事件' : '当前窗口暂无事件',
+)
+const emptyTimelineDescription = computed(() =>
+  props.chapterId
+    ? '这里先保留当前章节锚点和资产上下文。等事件拆出来后，会按章节窗口显示冲突、转折和伏笔顺序。'
+    : '可以切换左侧时间线容器，或用定位器搜索事件标题、类型和时间来跳转到相邻区段。',
+)
 
 const orderedEvents = computed(() =>
   [...events.value].sort((a, b) => {
@@ -805,6 +838,48 @@ watch(
   color: var(--editor-text-muted, #7485a3);
   font-size: 12px;
   line-height: 1.7;
+}
+
+.timeline-empty-card__anchor {
+  width: min(420px, 100%);
+  margin-top: 8px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--editor-accent, #2563eb) 18%, var(--editor-border, #dbe5f5));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--editor-layer-panel, #ffffff) 84%, var(--editor-accent-soft, #ecfeff));
+  text-align: left;
+}
+
+.timeline-empty-card__anchor > span {
+  display: block;
+  color: var(--editor-text-muted, #7485a3);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.timeline-empty-card__anchor > strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--editor-text-primary, #21365c);
+  font-size: 15px;
+}
+
+.timeline-empty-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.timeline-empty-card__chip {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--editor-accent-soft, #ecfeff) 70%, var(--editor-layer-panel, #ffffff));
+  color: var(--editor-text-secondary, #475569);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .timeline-list__item {

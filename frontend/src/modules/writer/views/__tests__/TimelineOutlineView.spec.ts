@@ -180,6 +180,50 @@ describe('TimelineOutlineView', () => {
     )
   })
 
+  it('无事件时应显示当前章节锚点和资产上下文', async () => {
+    writerStoreState.timeline.events = []
+
+    const wrapper = mount(TimelineOutlineView, {
+      props: {
+        projectId: 'project-1',
+        chapterId: 'chapter-1',
+        chapterTitle: '第一章',
+        chapters: [
+          {
+            id: 'chapter-1',
+            projectId: 'project-1',
+            chapterNum: 1,
+            title: '第一章',
+            wordCount: 1200,
+            updatedAt: '2026-04-14T00:00:00.000Z',
+            status: 'draft',
+            nodeType: 'chapter',
+          },
+        ],
+        activeEntities: [
+          { id: 'char-1', name: '亚伯', type: 'character', summary: '犹豫' },
+          { id: 'item-1', name: '劝退任务书', type: 'item' },
+        ],
+      },
+      global: {
+        stubs: {
+          QyButton: QyButtonStub,
+          QyTag: QyTagStub,
+          QyIcon: { template: '<span />' },
+          Empty: { template: '<div />' },
+          SystemStatCard: { template: '<div />' },
+        },
+      },
+    })
+
+    const anchor = wrapper.get('[data-testid="timeline-empty-chapter-anchor"]')
+    expect(wrapper.text()).toContain('当前章节还没有时间线事件')
+    expect(anchor.text()).toContain('第 1 章锚点')
+    expect(anchor.text()).toContain('第一章')
+    expect(anchor.text()).toContain('角色 1')
+    expect(anchor.text()).toContain('物品 1')
+  })
+
   it('长篇事件轴应按 50 事件分段，并只显示当前章节附近窗口', async () => {
     writerStoreState.timeline.events = Array.from({ length: 120 }, (_, index) => ({
       id: `event-${index + 1}`,
