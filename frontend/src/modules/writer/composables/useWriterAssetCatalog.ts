@@ -163,20 +163,40 @@ export function useWriterAssetCatalog(options: {
     return map
   })
 
+  const chapterVolumeById = computed(() => {
+    const map = new Map<string, string>()
+    for (const chapter of chapters.value) {
+      const parentId = chapter.parentId || ''
+      if (parentId) {
+        map.set(chapter.id, parentId)
+      }
+    }
+    return map
+  })
+
   const assetReferenceMetaByKey = computed(() => {
     const linkedNodeCountByKey = new Map<string, Set<string>>()
+    const volumeReferenceIdsByKey = new Map<string, Set<string>>()
     const projectionByKey = buildWriterAssetReferenceProjection(assetRefState.value)
 
     for (const [chapterId, refs] of Object.entries(assetRefState.value.chapterRefs || {})) {
       const linkedNodes = nodesByChapterId.value.get(chapterId) || new Set<string>()
+      const chapterVolumeId = chapterVolumeById.value.get(chapterId) || ''
       for (const ref of refs) {
         const key = createWriterAssetRefKey(ref.assetType, ref.assetId, ref.assetName)
         if (!linkedNodeCountByKey.has(key)) {
           linkedNodeCountByKey.set(key, new Set<string>())
         }
+        if (!volumeReferenceIdsByKey.has(key)) {
+          volumeReferenceIdsByKey.set(key, new Set<string>())
+        }
         const bucket = linkedNodeCountByKey.get(key)
+        const volumeBucket = volumeReferenceIdsByKey.get(key)
         for (const nodeId of linkedNodes) {
           bucket?.add(nodeId)
+        }
+        if (chapterVolumeId) {
+          volumeBucket?.add(chapterVolumeId)
         }
       }
     }
@@ -184,6 +204,7 @@ export function useWriterAssetCatalog(options: {
     return {
       projectionByKey,
       linkedNodeCountByKey,
+      volumeReferenceIdsByKey,
     }
   })
 
@@ -191,6 +212,8 @@ export function useWriterAssetCatalog(options: {
     const key = createWriterAssetRefKey(assetType, assetId, assetName)
     const projection = assetReferenceMetaByKey.value.projectionByKey.get(key)
     const linkedNodeCount = assetReferenceMetaByKey.value.linkedNodeCountByKey.get(key)?.size || 0
+    const inferredVolumeReferenceCount =
+      assetReferenceMetaByKey.value.volumeReferenceIdsByKey.get(key)?.size || 0
 
     return {
       latestChapterId: projection?.latestChapterId,
@@ -199,7 +222,7 @@ export function useWriterAssetCatalog(options: {
         : undefined,
       linkedNodeCount,
       chapterReferenceCount: projection?.chapterIds.length || 0,
-      volumeReferenceCount: projection?.volumeIds.length || 0,
+      volumeReferenceCount: Math.max(projection?.volumeIds.length || 0, inferredVolumeReferenceCount),
       totalReferenceCount: projection?.totalReferenceCount || 0,
     }
   }

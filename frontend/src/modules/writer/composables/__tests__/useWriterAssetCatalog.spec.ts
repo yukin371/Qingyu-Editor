@@ -103,6 +103,7 @@ describe('useWriterAssetCatalog', () => {
             {
               id: 'chapter-1',
               projectId: 'project-1',
+              parentId: 'volume-1',
               chapterNum: 1,
               title: '第1章',
               wordCount: 9,
@@ -142,10 +143,12 @@ describe('useWriterAssetCatalog', () => {
     await nextTick()
 
     expect(catalog.selectedAsset.value?.chapterReferenceCount).toBe(1)
+    expect(catalog.selectedAsset.value?.volumeReferenceCount).toBe(1)
     expect(catalog.selectedDetailFields.value).toEqual(
       expect.arrayContaining([
         { label: '最近章节', value: '第1章' },
         { label: '提及章节', value: '1 章' },
+        { label: '涉及卷', value: '1 卷' },
         { label: '关联结构节点', value: '1' },
       ]),
     )
