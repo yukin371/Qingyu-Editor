@@ -89,7 +89,7 @@ function addTestModeIndicator() {
   if (!document.getElementById(TEST_MODE_INDICATOR_ID)) {
     const indicator = document.createElement('div')
     indicator.id = TEST_MODE_INDICATOR_ID
-    indicator.className = 'fixed top-4 right-4 z-[10000] cursor-move'
+    indicator.className = 'fixed top-14 right-4 z-[10000] cursor-move'
     indicator.innerHTML = `
       <div class="test-mode-badge flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900 px-3 py-1.5 text-[11px] font-medium text-white shadow-lg">
         <span class="indicator-dot w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
