@@ -21,12 +21,14 @@ import type {
   SaveRelationRequest,
   UpdateCharacterRequest,
 } from '../types/character'
+import { RelationType } from '../types/character'
 import type {
   Location,
   LocationRelation,
   SaveLocationRelationRequest,
   SaveLocationRequest,
 } from '../types/location'
+import { LocationRelationType } from '../types/location'
 import type { Concept, CreateConceptRequest, UpdateConceptRequest } from '../types/entity'
 import type {
   SaveTimelineEventRequest,
@@ -34,6 +36,7 @@ import type {
   Timeline,
   TimelineEvent,
 } from '../types/timeline'
+import { EventType } from '../types/timeline'
 import type {
   CreateProjectRequest,
   ProjectDetailResponse,
@@ -114,6 +117,7 @@ type LegacyWriterItemRecord = {
 }
 
 const STORAGE_KEY = 'writer_standalone_local_state'
+const VALIDATION_SAMPLE_PROJECT_ID = 'local-validation-yunlan'
 
 function nowIso(): string {
   return new Date().toISOString()
@@ -141,13 +145,524 @@ function createEmptyState(): LocalWriterState {
   }
 }
 
+function buildTipTapTextContent(paragraphs: string[]): string {
+  return JSON.stringify({
+    type: 'doc',
+    content: paragraphs.map((text) => ({
+      type: 'paragraph',
+      content: text ? [{ type: 'text', text }] : [],
+    })),
+  })
+}
+
+function createInitialState(): LocalWriterState {
+  const state = createEmptyState()
+  seedValidationSampleProject(state)
+  return state
+}
+
+function shouldInjectValidationSample(): boolean {
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  const params = new URLSearchParams(window.location.search)
+  return params.get('validationSample') === 'true'
+}
+
+function seedValidationSampleProject(state: LocalWriterState): void {
+  if (state.projects.some((project) => project.id === VALIDATION_SAMPLE_PROJECT_ID)) {
+    return
+  }
+
+  const createdAt = '2026-05-25T09:00:00.000Z'
+  const updatedAt = '2026-05-25T09:20:00.000Z'
+  const projectId = VALIDATION_SAMPLE_PROJECT_ID
+  const timelineId = 'local-validation-yunlan-timeline-main'
+  const docIds = {
+    volume: 'local-validation-yunlan-volume-1',
+    chapter1: 'local-validation-yunlan-chapter-1',
+    chapter2: 'local-validation-yunlan-chapter-2',
+    chapter3: 'local-validation-yunlan-chapter-3',
+    chapter4: 'local-validation-yunlan-chapter-4',
+  }
+  const characterIds = {
+    shenYi: 'local-validation-yunlan-character-shen-yi',
+    luoQin: 'local-validation-yunlan-character-luo-qin',
+    yuZhao: 'local-validation-yunlan-character-yu-zhao',
+    heMu: 'local-validation-yunlan-character-he-mu',
+  }
+  const locationIds = {
+    harbor: 'local-validation-yunlan-location-harbor',
+    market: 'local-validation-yunlan-location-market',
+    tower: 'local-validation-yunlan-location-tower',
+  }
+  const conceptId = 'local-validation-yunlan-concept-tide-loop'
+  const itemId = 'local-validation-yunlan-item-bell'
+  const organizationId = 'local-validation-yunlan-organization-tide-office'
+
+  state.projects.unshift({
+    id: projectId,
+    title: '云岚验证样本',
+    summary: '用于验证写作台工具链的完整短篇样本，覆盖正文引用、资产、关系图谱、时间线、结构舞台和审查上下文。',
+    coverUrl: '',
+    category: '东方奇幻',
+    tags: ['验证样本', '短篇', '工具链'],
+    status: 'draft',
+    visibility: 'private',
+    createdAt,
+    updatedAt,
+  })
+
+  state.documents.push(
+    {
+      id: docIds.volume,
+      projectId,
+      title: '第一卷 潮铃未响',
+      type: DocumentType.VOLUME,
+      level: 0,
+      order: 0,
+      status: DocumentStatus.WRITING,
+      wordCount: 0,
+      tags: ['主线'],
+      notes: '验证卷：串联角色、地点、物件、组织和概念。',
+      createdAt,
+      updatedAt,
+      children: [],
+    },
+    {
+      id: docIds.chapter1,
+      projectId,
+      parentId: docIds.volume,
+      title: '第一章 雨市来信',
+      type: DocumentType.CHAPTER,
+      level: 1,
+      order: 0,
+      status: DocumentStatus.WRITING,
+      wordCount: 0,
+      characterIds: [characterIds.shenYi, characterIds.luoQin],
+      locationIds: [locationIds.market],
+      timelineIds: [timelineId],
+      plotThreads: ['潮铃被盗', '洛琴身份'],
+      tags: ['开端', '线索'],
+      notes: '沈奕在雨市发现第一封假信，洛琴第一次暴露听潮司线索。',
+      createdAt,
+      updatedAt,
+      children: [],
+    },
+    {
+      id: docIds.chapter2,
+      projectId,
+      parentId: docIds.volume,
+      title: '第二章 钟楼回声',
+      type: DocumentType.CHAPTER,
+      level: 1,
+      order: 1,
+      status: DocumentStatus.WRITING,
+      wordCount: 0,
+      characterIds: [characterIds.shenYi, characterIds.yuZhao],
+      locationIds: [locationIds.tower],
+      timelineIds: [timelineId],
+      plotThreads: ['潮声回路', '余照追捕'],
+      tags: ['追逐', '世界观'],
+      notes: '钟楼回声证明潮声回路正在重启。',
+      createdAt,
+      updatedAt,
+      children: [],
+    },
+    {
+      id: docIds.chapter3,
+      projectId,
+      parentId: docIds.volume,
+      title: '第三章 听潮司的门',
+      type: DocumentType.CHAPTER,
+      level: 1,
+      order: 2,
+      status: DocumentStatus.WRITING,
+      wordCount: 0,
+      characterIds: [characterIds.luoQin, characterIds.heMu],
+      locationIds: [locationIds.harbor],
+      timelineIds: [timelineId],
+      plotThreads: ['组织真相', '贺牧背叛'],
+      tags: ['反转', '组织'],
+      notes: '洛琴带沈奕进入听潮司，贺牧交出伪造案卷。',
+      createdAt,
+      updatedAt,
+      children: [],
+    },
+    {
+      id: docIds.chapter4,
+      projectId,
+      parentId: docIds.volume,
+      title: '第四章 潮铃归位',
+      type: DocumentType.CHAPTER,
+      level: 1,
+      order: 3,
+      status: DocumentStatus.PLANNED,
+      wordCount: 0,
+      characterIds: [
+        characterIds.shenYi,
+        characterIds.luoQin,
+        characterIds.yuZhao,
+        characterIds.heMu,
+      ],
+      locationIds: [locationIds.harbor, locationIds.tower],
+      timelineIds: [timelineId],
+      plotThreads: ['终局选择', '关系结算'],
+      tags: ['高潮', '收束'],
+      notes: '最终章草案：潮铃归位，但沈奕必须决定是否公开听潮司的旧罪。',
+      createdAt,
+      updatedAt,
+      children: [],
+    },
+  )
+
+  const chapterParagraphs: Record<string, string[]> = {
+    [docIds.chapter1]: [
+      '@沈奕 把伞沿压低，穿过 #雨市 的灯棚。雨水敲在摊布上，像有人用指节反复试探一口沉默的钟。',
+      '@洛琴 递来的信纸只写着一句话：“%青铜潮铃 今夜不会响。”沈奕抬头时，远处 @听潮司 的灯已经一盏盏熄灭。',
+      '这一章用于验证正文资产引用：@沈奕、@洛琴、#雨市、%青铜潮铃、@听潮司、@潮声回路 都应进入候选或已建档资产上下文。',
+    ],
+    [docIds.chapter2]: [
+      '#旧钟楼 的回声比脚步更早抵达。@余照 站在断梯上，手里的令牌被雨水洗得发亮。',
+      '@沈奕 听见第二次钟鸣时，终于确认 @潮声回路 不是传说，而是一套会吞掉记忆的旧城机关。',
+      '余照没有拔刀，只问：“如果潮铃回到原位，你愿意让整座云港记起那场叛乱吗？”',
+    ],
+    [docIds.chapter3]: [
+      '#云港 的内港没有浪，只有被锁住的船。@洛琴 推开 @听潮司 的暗门，把一册被烧过边角的案卷放到桌上。',
+      '@贺牧 说自己只是保管钥匙的人，可他袖口露出的印泥，和伪造信上的红痕一模一样。',
+      '这一章给审查面板提供冲突：洛琴选择坦白，贺牧继续遮掩，沈奕必须判断谁在保护云港。',
+    ],
+    [docIds.chapter4]: [
+      '%青铜潮铃 被放回 #旧钟楼 的梁心。钟声没有响，整座 #云港 却同时安静下来。',
+      '@沈奕、@洛琴、@余照、@贺牧 站在同一扇门前。门后是 @听潮司 的旧罪，也是 @潮声回路 最后一次启动。',
+      '待写收束：公开真相，或让城市继续遗忘。',
+    ],
+  }
+
+  for (const document of state.documents.filter((item) => item.projectId === projectId)) {
+    const content = buildTipTapTextContent(chapterParagraphs[document.id] || [])
+    state.contents[document.id] = {
+      documentId: document.id,
+      content,
+      contentType: 'tiptap_json',
+      version: 1,
+      createdAt,
+      updatedAt,
+      lastSavedAt: updatedAt,
+    }
+    document.wordCount = countWords(content)
+  }
+
+  state.characters.push(
+    {
+      id: characterIds.shenYi,
+      projectId,
+      name: '沈奕',
+      alias: ['沈先生'],
+      summary: '失忆的旧城修铃匠，能听见潮铃残响。',
+      traits: ['克制', '敏锐', '怕欠人情'],
+      background: '三年前从云港外海被救起，对听潮司旧案只有碎片记忆。',
+      currentState: '正在追查潮铃被盗案',
+      customStatus: { courage: 4, suspicion: 72 },
+      createdAt,
+      updatedAt,
+    },
+    {
+      id: characterIds.luoQin,
+      projectId,
+      name: '洛琴',
+      alias: ['洛掌柜'],
+      summary: '雨市茶摊老板，实际是听潮司旧案的幸存记录员。',
+      traits: ['沉着', '擅长试探', '保护欲强'],
+      background: '掌握潮声回路的半份账册，不愿让沈奕重蹈覆辙。',
+      currentState: '准备向沈奕坦白身份',
+      customStatus: { trustValue: 58, secretPressure: 86 },
+      createdAt,
+      updatedAt,
+    },
+    {
+      id: characterIds.yuZhao,
+      projectId,
+      name: '余照',
+      alias: ['余捕头'],
+      summary: '云港巡捕头，奉命追捕盗铃者，却怀疑命令本身有问题。',
+      traits: ['守序', '强硬', '重证据'],
+      background: '父亲死于听潮司旧案，一直寻找案卷缺页。',
+      currentState: '与沈奕暂时结盟',
+      customStatus: { trustValue: 41, anger: 67 },
+      createdAt,
+      updatedAt,
+    },
+    {
+      id: characterIds.heMu,
+      projectId,
+      name: '贺牧',
+      alias: ['贺司簿'],
+      summary: '听潮司现任司簿，负责保管旧案卷宗。',
+      traits: ['圆滑', '谨慎', '擅长改写记录'],
+      background: '曾参与封存潮声回路，知道潮铃归位后的代价。',
+      currentState: '试图把责任推给洛琴',
+      customStatus: { disguiseStability: 35, guilt: 79 },
+      createdAt,
+      updatedAt,
+    },
+  )
+
+  state.characterRelations.push(
+    {
+      id: 'local-validation-yunlan-relation-shen-luo',
+      projectId,
+      fromId: characterIds.shenYi,
+      toId: characterIds.luoQin,
+      type: RelationType.ALLY,
+      strength: 74,
+      notes: '互相隐瞒关键信息，但目标一致。',
+      createdAt,
+      updatedAt,
+    },
+    {
+      id: 'local-validation-yunlan-relation-shen-yu',
+      projectId,
+      fromId: characterIds.shenYi,
+      toId: characterIds.yuZhao,
+      type: RelationType.FRIEND,
+      strength: 46,
+      notes: '从追捕关系转向临时合作。',
+      createdAt,
+      updatedAt,
+    },
+    {
+      id: 'local-validation-yunlan-relation-luo-he',
+      projectId,
+      fromId: characterIds.luoQin,
+      toId: characterIds.heMu,
+      type: RelationType.ENEMY,
+      strength: 88,
+      notes: '洛琴知道贺牧改写过旧案卷宗。',
+      createdAt,
+      updatedAt,
+    },
+  )
+
+  state.locations.push(
+    {
+      id: locationIds.harbor,
+      projectId,
+      name: '云港',
+      description: '被潮声回路保护也囚禁的海港城。',
+      climate: '长雨季，海雾厚重',
+      culture: '居民相信钟声能替城市保存记忆',
+      geography: '外港连海，内港藏着听潮司暗门',
+      atmosphere: '潮湿、克制、像一封没有署名的旧信',
+      createdAt,
+      updatedAt,
+      children: [],
+    },
+    {
+      id: locationIds.market,
+      projectId,
+      parentId: locationIds.harbor,
+      name: '雨市',
+      description: '云港夜间集市，消息和赝品都从这里流通。',
+      climate: '棚顶常年滴水',
+      culture: '摊主用灯色区分消息真假',
+      geography: '靠近内港旧闸',
+      atmosphere: '拥挤、低声、每个人都像在等钟响',
+      createdAt,
+      updatedAt,
+      children: [],
+    },
+    {
+      id: locationIds.tower,
+      projectId,
+      parentId: locationIds.harbor,
+      name: '旧钟楼',
+      description: '安放青铜潮铃的废弃钟楼，潮声回路的核心节点。',
+      climate: '高处风急，雨水倒灌',
+      culture: '禁钟之后无人敢上楼',
+      geography: '俯瞰云港内外两港',
+      atmosphere: '空旷、回声很长',
+      createdAt,
+      updatedAt,
+      children: [],
+    },
+  )
+
+  state.locationRelations.push(
+    {
+      id: 'local-validation-yunlan-location-relation-harbor-market',
+      projectId,
+      fromId: locationIds.harbor,
+      toId: locationIds.market,
+      type: LocationRelationType.CONTAINS,
+      distance: '步行一刻钟',
+      notes: '雨市是云港消息流入口。',
+      createdAt,
+      updatedAt,
+    },
+    {
+      id: 'local-validation-yunlan-location-relation-market-tower',
+      projectId,
+      fromId: locationIds.market,
+      toId: locationIds.tower,
+      type: LocationRelationType.CONNECTED,
+      distance: '穿过旧闸后约三条街',
+      notes: '追逐路线从雨市通向旧钟楼。',
+      createdAt,
+      updatedAt,
+    },
+  )
+
+  state.concepts.push({
+    id: conceptId,
+    projectId,
+    name: '潮声回路',
+    alias: ['记忆回路'],
+    summary: '以钟声保存并遮蔽城市记忆的旧机关。',
+    description: '潮声回路会在潮铃归位时重启，让云港居民重新记起被听潮司封存的叛乱。',
+    category: '世界规则',
+    relatedCharacters: [characterIds.shenYi, characterIds.luoQin],
+    relatedLocations: [locationIds.harbor, locationIds.tower],
+    relatedItems: [itemId],
+    relatedConcepts: [],
+    createdAt,
+    updatedAt,
+  })
+
+  state.genericEntities.push(
+    {
+      id: itemId,
+      projectId,
+      entityType: 'item',
+      name: '青铜潮铃',
+      alias: ['潮铃'],
+      summary: '启动潮声回路的核心物件，失窃后引发全篇冲突。',
+      createdAt,
+      updatedAt,
+    },
+    {
+      id: organizationId,
+      projectId,
+      entityType: 'organization',
+      name: '听潮司',
+      alias: ['司署'],
+      summary: '负责维护云港记忆秩序的旧机构，隐藏了三年前的叛乱真相。',
+      createdAt,
+      updatedAt,
+    },
+  )
+
+  state.entityStateFields = {
+    ...state.entityStateFields,
+    [conceptId]: {
+      activation: { current: 'partial', description: '第二章确认回路已部分重启' },
+      danger: { current: 8, min: 0, max: 10, description: '重启会让全城记忆回流' },
+    },
+    [itemId]: {
+      owner: { current: 'unknown', description: '第一章失窃，第四章归位' },
+      integrity: { current: 62, min: 0, max: 100, unit: '%', description: '钟体裂纹影响最终响铃' },
+    },
+    [organizationId]: {
+      exposure: { current: 'rising', description: '第三章开始暴露旧案' },
+    },
+  }
+
+  state.timelines.push({
+    id: timelineId,
+    projectId,
+    name: '主时间线',
+    description: '验证样本主线：失窃、追查、坦白、归位。',
+    startTime: { era: '云港历', year: 312, season: '雨季', description: '雨季第一夜' },
+    endTime: { era: '云港历', year: 312, season: '雨季', description: '潮铃归位夜' },
+    createdAt,
+    updatedAt,
+  })
+
+  state.timelineEvents.push(
+    {
+      id: 'local-validation-yunlan-event-letter',
+      projectId,
+      timelineId,
+      title: '雨市收到假信',
+      description: '沈奕收到关于青铜潮铃的假信，洛琴第一次提供线索。',
+      storyTime: { era: '云港历', year: 312, season: '雨季', description: '第一夜 子时前' },
+      duration: '一炷香',
+      impact: '建立潮铃失窃主冲突，并把沈奕与洛琴绑定到同一目标。',
+      participants: [characterIds.shenYi, characterIds.luoQin],
+      locationIds: [locationIds.market],
+      chapterIds: [docIds.chapter1],
+      eventType: EventType.PLOT,
+      importance: 7,
+      createdAt,
+      updatedAt,
+    },
+    {
+      id: 'local-validation-yunlan-event-tower',
+      projectId,
+      timelineId,
+      title: '旧钟楼响起第二次回声',
+      description: '余照截住沈奕，钟楼回声证明潮声回路已经被触发。',
+      storyTime: { era: '云港历', year: 312, season: '雨季', description: '第一夜 子时' },
+      duration: '半刻',
+      impact: '把案件从普通盗窃升级为城市记忆危机。',
+      participants: [characterIds.shenYi, characterIds.yuZhao],
+      locationIds: [locationIds.tower],
+      chapterIds: [docIds.chapter2],
+      eventType: EventType.WORLD,
+      importance: 8,
+      createdAt,
+      updatedAt,
+    },
+    {
+      id: 'local-validation-yunlan-event-office',
+      projectId,
+      timelineId,
+      title: '听潮司案卷暴露',
+      description: '洛琴带沈奕进入听潮司，贺牧交出被改写的旧案卷。',
+      storyTime: { era: '云港历', year: 312, season: '雨季', description: '第二夜 入夜' },
+      duration: '一场对质',
+      impact: '角色关系转向对立，终局选择被推到台前。',
+      participants: [characterIds.shenYi, characterIds.luoQin, characterIds.heMu],
+      locationIds: [locationIds.harbor],
+      chapterIds: [docIds.chapter3],
+      eventType: EventType.CHARACTER,
+      importance: 9,
+      createdAt,
+      updatedAt,
+    },
+    {
+      id: 'local-validation-yunlan-event-return',
+      projectId,
+      timelineId,
+      title: '潮铃归位',
+      description: '青铜潮铃回到旧钟楼，所有人必须决定是否让云港记起真相。',
+      storyTime: { era: '云港历', year: 312, season: '雨季', description: '第三夜 黎明前' },
+      duration: '待写高潮',
+      impact: '短篇收束点，可验证未完成章节的计划态和审查提示。',
+      participants: [
+        characterIds.shenYi,
+        characterIds.luoQin,
+        characterIds.yuZhao,
+        characterIds.heMu,
+      ],
+      locationIds: [locationIds.tower, locationIds.harbor],
+      chapterIds: [docIds.chapter4],
+      eventType: EventType.MILESTONE,
+      importance: 10,
+      createdAt,
+      updatedAt,
+    },
+  )
+}
+
 function readState(): LocalWriterState {
   const saved = storage.get<LocalWriterState | null>(STORAGE_KEY, null)
   if (!saved) {
-    return createEmptyState()
+    return createInitialState()
   }
 
-  return {
+  const state = {
     projects: Array.isArray(saved.projects) ? saved.projects : [],
     documents: Array.isArray(saved.documents) ? saved.documents : [],
     contents:
@@ -169,6 +684,12 @@ function readState(): LocalWriterState {
         ? saved.entityStateFields
         : {},
   }
+
+  if (shouldInjectValidationSample()) {
+    seedValidationSampleProject(state)
+  }
+
+  return state
 }
 
 function writeState(state: LocalWriterState): LocalWriterState {

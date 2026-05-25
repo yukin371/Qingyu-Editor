@@ -55,6 +55,42 @@ describe('standaloneLocalBridge entity owners', () => {
     localStorage.clear()
   })
 
+  it('provides a rich validation sample when standalone storage is empty', async () => {
+    const projectList = await standaloneLocalBridge.project.list()
+    const sampleProject = projectList.projects?.find((project) => project.id === 'local-validation-yunlan')
+
+    expect(sampleProject).toEqual(
+      expect.objectContaining({
+        title: '云岚验证样本',
+        chapterCount: 4,
+      }),
+    )
+
+    const detail = await standaloneLocalBridge.project.get('local-validation-yunlan')
+    const characters = await standaloneLocalBridge.character.list('local-validation-yunlan')
+    const relations = await standaloneLocalBridge.character.listRelations('local-validation-yunlan')
+    const locations = await standaloneLocalBridge.location.list('local-validation-yunlan')
+    const assets = await standaloneLocalBridge.entity.list('local-validation-yunlan')
+    const [timeline] = await standaloneLocalBridge.timeline.list('local-validation-yunlan')
+    const events = await standaloneLocalBridge.timeline.listEvents(timeline.id)
+    const chapter = await standaloneLocalBridge.editor.getContent('local-validation-yunlan-chapter-1')
+
+    expect(detail.documents).toHaveLength(5)
+    expect(characters).toHaveLength(4)
+    expect(relations).toHaveLength(3)
+    expect(locations).toHaveLength(3)
+    expect(assets).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ entityType: 'item', name: '青铜潮铃' }),
+        expect.objectContaining({ entityType: 'organization', name: '听潮司' }),
+        expect.objectContaining({ entityType: 'concept', name: '潮声回路' }),
+      ]),
+    )
+    expect(events).toHaveLength(4)
+    expect(chapter.content).toContain('@沈奕')
+    expect(chapter.content).toContain('%青铜潮铃')
+  })
+
   it('persists characters and relations in local storage', async () => {
     const first = await standaloneLocalBridge.character.create('project-1', {
       projectId: 'project-1',
