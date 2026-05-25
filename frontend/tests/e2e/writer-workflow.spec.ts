@@ -40,7 +40,7 @@ test('新建项目后进入第一卷第一章，并能打开内置使用文档',
   await expect(page).toHaveURL(/\/writer\/project\/.+chapterId=/)
   await expectStatusChip(page, '已打开：第一章（可直接改标题）')
   await openDirectory(page)
-  await expect(page.getByRole('button', { name: /第一卷 1 个章节/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /第一卷 1 章/ })).toBeVisible()
   await expect(page.getByRole('button', { name: /1\. 第一章/ })).toBeVisible()
   await openEditor(page)
   await expect(page.getByRole('textbox', { name: '第一章' })).toBeVisible()
@@ -190,8 +190,8 @@ test('第二卷新增章节应继续压栈到第二卷末尾', async ({ page }) 
 
   await openDirectory(page)
   await page.getByRole('button', { name: '新建卷' }).click()
-  await expect(page.getByRole('button', { name: /第二卷 0 个章节/ })).toBeVisible()
-  await page.getByRole('button', { name: /第二卷 0 个章节/ }).click()
+  await expect(page.getByRole('button', { name: /第二卷 0 章/ })).toBeVisible()
+  await page.getByRole('button', { name: /第二卷 0 章/ }).click()
 
   await page.getByRole('button', { name: '新建章节' }).click()
   await expect(page).toHaveURL(/chapterId=/)
@@ -199,8 +199,8 @@ test('第二卷新增章节应继续压栈到第二卷末尾', async ({ page }) 
   await expect(page.getByRole('textbox', { name: '第一章' })).toBeFocused()
 
   await openDirectory(page)
-  await expect(page.getByRole('button', { name: /第一卷 1 个章节/ })).toBeVisible()
-  await expect(page.getByRole('button', { name: /第二卷 1 个章节/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /第一卷 1 章/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /第二卷 1 章/ })).toBeVisible()
   await expect(page.getByRole('button', { name: /2\. 第一章/ })).toBeVisible()
 })
 
@@ -338,17 +338,17 @@ async function openSettings(page: Page) {
 
 async function openRightAssets(page: Page) {
   if (await isMobile(page)) {
-    if (await getAssetsPanel(page).getByRole('button', { name: '新建', exact: true }).isVisible()) {
+    if (await getAssetsPanel(page).getByRole('button', { name: '快速新建', exact: true }).isVisible()) {
       return
     }
     await page.getByRole('button', { name: '设定', exact: true }).click()
-    await expect(getAssetsPanel(page).getByRole('button', { name: '新建', exact: true })).toBeVisible()
+    await expect(getAssetsPanel(page).getByRole('button', { name: '快速新建', exact: true })).toBeVisible()
     return
   }
 
   const rightPanel = page.getByTestId('resizable-panel-right')
   await rightPanel.getByRole('button', { name: '设定', exact: true }).click()
-  await expect(rightPanel.getByRole('button', { name: '新建', exact: true })).toBeVisible()
+  await expect(rightPanel.getByRole('button', { name: '快速新建', exact: true })).toBeVisible()
 }
 
 function getAssetsPanel(page: Page) {
