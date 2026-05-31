@@ -6,8 +6,36 @@ export function AICall(arg1, arg2, arg3) {
   return window['go']['main']['App']['AICall'](arg1, arg2, arg3);
 }
 
+export function AgentProcessIntent(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['AgentProcessIntent'](arg1, arg2, arg3, arg4);
+}
+
 export function CreateChapter(arg1) {
   return window['go']['main']['App']['CreateChapter'](arg1);
+}
+
+export function CreateAgentConversation(arg1) {
+  return window['go']['main']['App']['CreateAgentConversation'](arg1);
+}
+
+export function DeleteAgentConversation(arg1) {
+  return window['go']['main']['App']['DeleteAgentConversation'](arg1);
+}
+
+export function GetAgentConversation(arg1) {
+  return window['go']['main']['App']['GetAgentConversation'](arg1);
+}
+
+export function ListAgentConversations(arg1) {
+  return window['go']['main']['App']['ListAgentConversations'](arg1);
+}
+
+export function SaveAgentMessage(arg1, arg2) {
+  return window['go']['main']['App']['SaveAgentMessage'](arg1, arg2);
+}
+
+export function UpdateAgentConversationTitle(arg1, arg2) {
+  return window['go']['main']['App']['UpdateAgentConversationTitle'](arg1, arg2);
 }
 
 export function CreateCharacter(arg1) {
@@ -212,6 +240,14 @@ export function ProcessStoryHarnessChangeRequest(arg1, arg2) {
 
 export function RebuildStoryHarnessProjection(arg1, arg2) {
   return window['go']['main']['App']['RebuildStoryHarnessProjection'](arg1, arg2);
+}
+
+export function ReviewChapter(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['ReviewChapter'](arg1, arg2, arg3, arg4);
+}
+
+export function ReviewFullProject(arg1, arg2) {
+  return window['go']['main']['App']['ReviewFullProject'](arg1, arg2);
 }
 
 export function ReorderChapters(arg1) {

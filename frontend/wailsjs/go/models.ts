@@ -1,21 +1,149 @@
 export namespace ai {
-	
+
 	export class Config {
 	    provider: string;
 	    apiKey: string;
 	    baseUrl: string;
 	    model: string;
-	
+
 	    static createFrom(source: any = {}) {
 	        return new Config(source);
 	    }
-	
+
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.provider = source["provider"];
 	        this.apiKey = source["apiKey"];
 	        this.baseUrl = source["baseUrl"];
 	        this.model = source["model"];
+	    }
+	}
+
+}
+
+export namespace agent {
+
+	export class EditorContext {
+	    currentChapterId: string;
+	    cursorPosition: number;
+	    selectedText: string;
+	    nearbyCharacters: string[];
+
+	    static createFrom(source: any = {}) {
+	        return new EditorContext(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.currentChapterId = source["currentChapterId"] || source["current_chapter_id"];
+	        this.cursorPosition = source["cursorPosition"] || source["cursor_position"];
+	        this.selectedText = source["selectedText"] || source["selected_text"];
+	        this.nearbyCharacters = source["nearbyCharacters"] || source["nearby_characters"] || [];
+	    }
+	}
+
+	export class Suggestion {
+	    id: string;
+	    type: string;
+	    action: string;
+	    targetEntity: string;
+	    targetId: string;
+	    content: string;
+	    originalContent: string;
+	    summary: string;
+
+	    static createFrom(source: any = {}) {
+	        return new Suggestion(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.type = source["type"];
+	        this.action = source["action"];
+	        this.targetEntity = source["targetEntity"] || source["target_entity"];
+	        this.targetId = source["targetId"] || source["target_id"];
+	        this.content = source["content"];
+	        this.originalContent = source["originalContent"] || source["original_content"];
+	        this.summary = source["summary"];
+	    }
+	}
+
+	export class AgentResult {
+	    content: string;
+	    suggestions: Suggestion[] = [];
+
+	    static createFrom(source: any = {}) {
+	        return new AgentResult(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.content = source["content"];
+	        if (source["suggestions"]) {
+	            this.suggestions = source["suggestions"].map((i: any) => new Suggestion(i));
+	        }
+	    }
+	}
+	export class ConversationMessage {
+	    id: string;
+	    role: string;
+	    content: string;
+	    suggestions: Suggestion[];
+	    timestamp: string;
+
+	    static createFrom(source: any = {}) {
+	        return new ConversationMessage(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.role = source["role"];
+	        this.content = source["content"];
+	        if (source["suggestions"]) {
+	            this.suggestions = source["suggestions"].map((i: any) => new Suggestion(i));
+	        }
+	        this.timestamp = source["timestamp"];
+	    }
+	}
+	export class Conversation {
+	    id: string;
+	    projectId: string;
+	    title: string;
+	    createdAt: string;
+	    updatedAt: string;
+	    messages: ConversationMessage[];
+
+	    static createFrom(source: any = {}) {
+	        return new Conversation(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.projectId = source["projectId"] || source["project_id"];
+	        this.title = source["title"];
+	        this.createdAt = source["createdAt"] || source["created_at"];
+	        this.updatedAt = source["updatedAt"] || source["updated_at"];
+	        if (source["messages"]) {
+	            this.messages = source["messages"].map((i: any) => new ConversationMessage(i));
+	        }
+	    }
+	}
+
+	export class ReviewResult {
+	    content: string;
+	    type: string;
+
+	    static createFrom(source: any = {}) {
+	        return new ReviewResult(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.content = source["content"];
+	        this.type = source["type"];
 	    }
 	}
 

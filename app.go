@@ -8,6 +8,7 @@ import (
 	"Qingyu-Editor/ai"
 	"Qingyu-Editor/database"
 	"Qingyu-Editor/services"
+	"Qingyu-Editor/services/agent"
 )
 
 type appServices struct {
@@ -23,6 +24,9 @@ type appServices struct {
 	inspiration      *services.InspirationService
 	timeline         *services.TimelineService
 	storyHarness     *services.StoryHarnessService
+	agent            *agent.AgentService
+	review           *agent.ReviewService
+	conversation     *agent.ConversationService
 }
 
 // App 主应用结构
@@ -622,6 +626,180 @@ func (a *App) RebuildStoryHarnessProjection(
 
 func (a *App) ensureDatabase() error {
 	return database.Ensure(a.appName)
+}
+
+// --- Agent 智能体 ---
+
+func (a *App) AgentProcessIntent(
+	cfg ai.Config,
+	projectID string,
+	intent string,
+	editorCtx agent.EditorContext,
+) (*agent.AgentResult, error) {
+	agentSvc, err := a.agentService(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return agentSvc.ProcessIntent(a.ctx, projectID, intent, editorCtx)
+}
+
+// --- Agent 对话持久化 ---
+
+func (a *App) CreateAgentConversation(projectID string) (*agent.Conversation, error) {
+	svc, err := a.conversationService()
+	if err != nil {
+		return nil, err
+	}
+	return svc.Create(projectID)
+}
+
+func (a *App) ListAgentConversations(projectID string) ([]agent.Conversation, error) {
+	svc, err := a.conversationService()
+	if err != nil {
+		return nil, err
+	}
+	return svc.ListByProject(projectID)
+}
+
+func (a *App) GetAgentConversation(id string) (*agent.Conversation, error) {
+	svc, err := a.conversationService()
+	if err != nil {
+		return nil, err
+	}
+	return svc.GetWithMessages(id)
+}
+
+func (a *App) DeleteAgentConversation(id string) error {
+	svc, err := a.conversationService()
+	if err != nil {
+		return err
+	}
+	return svc.Delete(id)
+}
+
+func (a *App) SaveAgentMessage(conversationID string, msg agent.ConversationMessage) (*agent.ConversationMessage, error) {
+	svc, err := a.conversationService()
+	if err != nil {
+		return nil, err
+	}
+	return svc.SaveMessage(conversationID, msg)
+}
+
+func (a *App) UpdateAgentConversationTitle(id string, title string) error {
+	svc, err := a.conversationService()
+	if err != nil {
+		return err
+	}
+	return svc.UpdateTitle(id, title)
+}
+
+// --- Agent 审查智能体 ---
+
+func (a *App) ReviewChapter(
+	cfg ai.Config,
+	projectID string,
+	chapterID string,
+	chapterTitle string,
+) (*agent.ReviewResult, error) {
+	reviewSvc, err := a.reviewService(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return reviewSvc.ReviewChapter(a.ctx, projectID, chapterID, chapterTitle)
+}
+
+func (a *App) ReviewFullProject(
+	cfg ai.Config,
+	projectID string,
+) (*agent.ReviewResult, error) {
+	reviewSvc, err := a.reviewService(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return reviewSvc.ReviewFullProject(a.ctx, projectID)
+}
+
+func (a *App) reviewService(cfg ai.Config) (*agent.ReviewService, error) {
+	a.serviceMu.Lock()
+	defer a.serviceMu.Unlock()
+	if a.services.review != nil {
+		return a.services.review, nil
+	}
+
+	chatProvider := ai.NewOpenAIChatProvider(cfg)
+
+	charSvc, err := a.characterService()
+	if err != nil {
+		return nil, err
+	}
+	volSvc, err := a.volumeService()
+	if err != nil {
+		return nil, err
+	}
+	chSvc, err := a.chapterService()
+	if err != nil {
+		return nil, err
+	}
+
+	router := agent.NewToolRouter()
+	router.Register(agent.NewListCharactersTool(charSvc))
+	router.Register(agent.NewGetCharacterTool(charSvc))
+	router.Register(agent.NewGetCharacterRelationsTool(charSvc))
+	router.Register(agent.NewListVolumesChaptersTool(volSvc, chSvc))
+	router.Register(agent.NewGetChapterContentTool(chSvc))
+
+	a.services.review = agent.NewReviewService(chatProvider, router)
+	return a.services.review, nil
+}
+
+func (a *App) agentService(cfg ai.Config) (*agent.AgentService, error) {
+	a.serviceMu.Lock()
+	defer a.serviceMu.Unlock()
+	if a.services.agent != nil {
+		return a.services.agent, nil
+	}
+
+	chatProvider := ai.NewOpenAIChatProvider(cfg)
+
+	charSvc, err := a.characterService()
+	if err != nil {
+		return nil, err
+	}
+	volSvc, err := a.volumeService()
+	if err != nil {
+		return nil, err
+	}
+	chSvc, err := a.chapterService()
+	if err != nil {
+		return nil, err
+	}
+
+	router := agent.NewToolRouter()
+	router.Register(agent.NewListCharactersTool(charSvc))
+	router.Register(agent.NewGetCharacterTool(charSvc))
+	router.Register(agent.NewGetCharacterRelationsTool(charSvc))
+	router.Register(agent.NewListVolumesChaptersTool(volSvc, chSvc))
+	router.Register(agent.NewGetChapterContentTool(chSvc))
+	router.Register(agent.NewSuggestChapterContentTool(chSvc))
+	router.Register(agent.NewSuggestCharacterTool())
+	router.Register(agent.NewSuggestOutlineTool())
+	router.Register(agent.NewSuggestRevisionTool(chSvc))
+
+	a.services.agent = agent.NewAgentService(chatProvider, router)
+	return a.services.agent, nil
+}
+
+func (a *App) conversationService() (*agent.ConversationService, error) {
+	db, err := a.serviceDB()
+	if err != nil {
+		return nil, err
+	}
+	a.serviceMu.Lock()
+	defer a.serviceMu.Unlock()
+	if a.services.conversation == nil {
+		a.services.conversation = agent.NewConversationService(db)
+	}
+	return a.services.conversation, nil
 }
 
 func (a *App) projectService() (*services.ProjectService, error) {

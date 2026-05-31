@@ -199,5 +199,25 @@ CREATE INDEX IF NOT EXISTS idx_location_relations_project ON location_relations(
 CREATE INDEX IF NOT EXISTS idx_inspiration_notes_project ON inspiration_notes(project_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_timelines_project ON timelines(project_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_timeline_events_timeline ON timeline_events(timeline_id, created_at DESC);
+CREATE TABLE IF NOT EXISTS agent_conversations (
+    id          TEXT PRIMARY KEY,
+    project_id  TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    title       TEXT NOT NULL DEFAULT '',
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS agent_messages (
+    id              TEXT PRIMARY KEY,
+    conversation_id TEXT NOT NULL REFERENCES agent_conversations(id) ON DELETE CASCADE,
+    role            TEXT NOT NULL,
+    content         TEXT NOT NULL,
+    suggestions_json TEXT NOT NULL DEFAULT '[]',
+    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_conversations_project ON agent_conversations(project_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_agent_messages_conversation ON agent_messages(conversation_id, created_at ASC);
+
 CREATE INDEX IF NOT EXISTS idx_story_harness_batches_project_chapter ON story_harness_batches(project_id, chapter_id, committed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_story_harness_change_requests_chapter_status ON story_harness_change_requests(chapter_id, status, created_at DESC);
