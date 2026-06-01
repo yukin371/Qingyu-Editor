@@ -89,7 +89,7 @@ export namespace agent {
 	    id: string;
 	    role: string;
 	    content: string;
-	    suggestions: Suggestion[];
+	    suggestions!: Suggestion[];
 	    timestamp: string;
 
 	    static createFrom(source: any = {}) {
@@ -113,7 +113,7 @@ export namespace agent {
 	    title: string;
 	    createdAt: string;
 	    updatedAt: string;
-	    messages: ConversationMessage[];
+	    messages!: ConversationMessage[];
 
 	    static createFrom(source: any = {}) {
 	        return new Conversation(source);

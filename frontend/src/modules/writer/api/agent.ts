@@ -7,6 +7,7 @@ import {
   SaveAgentMessage,
   UpdateAgentConversationTitle,
 } from '../../../../wailsjs/go/main/App'
+import { agent } from '../../../../wailsjs/go/models'
 import type { AIAgentConfig, AgentResult, EditorContext, Suggestion } from '../types/agent'
 
 /**
@@ -81,7 +82,10 @@ export async function saveMessage(
   conversationId: string,
   msg: { role: string; content: string; suggestions?: Suggestion[]; timestamp: string },
 ): Promise<ConversationMessageDTO> {
-  return SaveAgentMessage(conversationId, msg) as Promise<ConversationMessageDTO>
+  return SaveAgentMessage(
+    conversationId,
+    agent.ConversationMessage.createFrom({ ...msg, id: '' }),
+  ) as Promise<ConversationMessageDTO>
 }
 
 export async function updateConversationTitle(id: string, title: string): Promise<void> {
