@@ -78,10 +78,20 @@ export default defineConfig({
       '@/design-system': fileURLToPath(new URL('./src/design-system', import.meta.url)),
       '@/tests': fileURLToPath(new URL('./tests', import.meta.url)),
       '@writer': fileURLToPath(new URL('./src/modules/writer', import.meta.url)),
-      '@ai': fileURLToPath(new URL('./src/modules/ai', import.meta.url))
-    }
+      '@ai': fileURLToPath(new URL('./src/modules/ai', import.meta.url)),
+      '@editor-shared': fileURLToPath(new URL('../../packages/editor-shared/src', import.meta.url))
+    },
+    dedupe: [
+      'vue', 'vue-router', 'pinia',
+      '@tiptap/core', '@tiptap/pm', '@tiptap/vue-3', '@tiptap/starter-kit',
+      '@tiptap/extension-placeholder', '@tiptap/extension-character-count',
+      '@tiptap/extension-image', '@tiptap/extension-underline', '@tiptap/extension-link',
+    ]
   },
   server: {
+    watch: {
+      ignored: ['!**/../../packages/editor-shared/**']
+    },
     port: 43127,
     host: true,
     open: true,

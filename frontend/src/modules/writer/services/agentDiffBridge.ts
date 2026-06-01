@@ -9,7 +9,7 @@ import {
   clearPendingDiffs,
   setDiffCallbacks,
   type PendingDiff,
-} from '@/design-system/components/editor/QySmartKeyword/extensions/AiDiffExtension'
+} from '@editor-shared/extensions/AiDiffExtension'
 
 /**
  * 将 text_diff suggestion 应用到编辑器

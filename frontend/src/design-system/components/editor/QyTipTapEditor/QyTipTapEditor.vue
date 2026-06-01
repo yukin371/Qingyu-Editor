@@ -175,19 +175,19 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import CharacterCount from '@tiptap/extension-character-count'
 import Image from '@tiptap/extension-image'
-import QyKeywordPopover from '../QySmartKeyword/QyKeywordPopover.vue'
-import QyCompletionPopover from '../QySmartKeyword/QyCompletionPopover.vue'
-import QyEntityCreateDialog from '../QySmartKeyword/QyEntityCreateDialog.vue'
+import QyKeywordPopover from '@editor-shared/components/QySmartKeyword/QyKeywordPopover.vue'
+import QyCompletionPopover from '@editor-shared/components/QySmartKeyword/QyCompletionPopover.vue'
+import QyEntityCreateDialog from '@editor-shared/components/QySmartKeyword/QyEntityCreateDialog.vue'
 import {
   getCompletionOptionCount,
   getDefaultCompletionActiveIndex,
   shouldShowCompletionCreateAction,
-} from '../QySmartKeyword/completionCreateOption'
-import { extractMentionDraft } from '../QySmartKeyword/mentionDraft'
+} from '@editor-shared/utils/completionCreateOption'
+import { extractMentionDraft } from '@editor-shared/utils/mentionDraft'
 import QyIcon from '@/design-system/components/basic/QyIcon/QyIcon.vue'
-import { SmartKeyword, type KeywordInfo } from '../QySmartKeyword/extensions/SmartKeyword'
-import { ParagraphWithId } from '../QySmartKeyword/extensions/ParagraphWithId'
-import { AiDiffExtension } from '../QySmartKeyword/extensions/AiDiffExtension'
+import { SmartKeyword, type KeywordInfo } from '@editor-shared/extensions/SmartKeyword'
+import { ParagraphWithId } from '@editor-shared/extensions/ParagraphWithId'
+import { AiDiffExtension } from '@editor-shared/extensions/AiDiffExtension'
 import {
   clearProofreadHighlights,
   focusProofreadHighlight,
@@ -195,7 +195,7 @@ import {
   setFocusedProofreadHighlight,
   setProofreadHighlights,
   type ProofreadHighlightRange,
-} from '../QySmartKeyword/extensions/ProofreadHighlightExtension'
+} from '@editor-shared/extensions/ProofreadHighlightExtension'
 import { searchProjectKeywords, type ParagraphContent } from '@/modules/writer/api/wrapper'
 import { characterApi } from '@/modules/writer/api/character'
 import { conceptApi } from '@/modules/writer/api/concept'
@@ -203,7 +203,7 @@ import { createLocalEntity } from '@/modules/writer/api/entities'
 import { locationApi } from '@/modules/writer/api/location'
 import { createEmbeddedEditorImage } from '@/modules/writer/services/editorImageAsset.service'
 import { extractEntitiesFromTipTapContent } from '@/modules/writer/utils/entityParser'
-import { cleanParagraphLeadingSpaces } from './cleanParagraphLeadingSpaces'
+import { cleanParagraphLeadingSpaces } from '@editor-shared/utils/cleanParagraphLeadingSpaces'
 
 const props = withDefaults(
   defineProps<{

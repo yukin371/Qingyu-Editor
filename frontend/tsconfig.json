@@ -32,7 +32,14 @@
       "@/stores/*": ["src/modules/*/stores"],
       "@/design-system/*": ["src/design-system/*"],
       "@writer/*": ["src/modules/writer/*"],
-      "@ai/*": ["src/modules/ai/*"]
+      "@ai/*": ["src/modules/ai/*"],
+      "@editor-shared/*": ["../../packages/editor-shared/src/*"],
+      "vue": ["./node_modules/vue"],
+      "@tiptap/core": ["./node_modules/@tiptap/core"],
+      "@tiptap/pm": ["./node_modules/@tiptap/pm"],
+      "@tiptap/pm/*": ["./node_modules/@tiptap/pm/*"],
+      "@tiptap/vue-3": ["./node_modules/@tiptap/vue-3"],
+      "@tiptap/starter-kit": ["./node_modules/@tiptap/starter-kit"]
     },
 
     /* Types */

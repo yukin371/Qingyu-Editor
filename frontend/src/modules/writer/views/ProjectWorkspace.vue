@@ -239,8 +239,8 @@ import {
   clearPendingDiffs,
   setDiffCallbacks,
   type PendingDiff,
-} from '@/design-system/components/editor/QySmartKeyword/extensions/AiDiffExtension'
-import { mapPlainTextRangeToDocPosition } from '@/design-system/components/editor/QySmartKeyword/extensions/ProofreadHighlightExtension'
+} from '@editor-shared/extensions/AiDiffExtension'
+import { mapPlainTextRangeToDocPosition } from '@editor-shared/extensions/ProofreadHighlightExtension'
 import {
   extractEntitiesFromTipTapContent,
   groupEntitiesByType,

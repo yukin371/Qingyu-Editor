@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import type { KeywordType } from '@/design-system/components/editor/QySmartKeyword/extensions/SmartKeyword'
+import type { KeywordType } from '@editor-shared/extensions/SmartKeyword'
 
 export interface ScannedEntity {
   name: string
