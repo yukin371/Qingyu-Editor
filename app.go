@@ -726,46 +726,48 @@ func (a *App) reviewService(cfg ai.Config) (*agent.ReviewService, error) {
 		return a.services.review, nil
 	}
 
+	// serviceMu 已持有——必须使用 *Locked 变体，否则会重入死锁。
+	db, err := a.serviceDB()
+	if err != nil {
+		return nil, err
+	}
+
+	charSvc, err := a.characterServiceLocked(db)
+	if err != nil {
+		return nil, err
+	}
+	volSvc, err := a.volumeServiceLocked(db)
+	if err != nil {
+		return nil, err
+	}
+	chSvc, err := a.chapterServiceLocked(db)
+	if err != nil {
+		return nil, err
+	}
+	locSvc, err := a.locationServiceLocked(db)
+	if err != nil {
+		return nil, err
+	}
+	tlSvc, err := a.timelineServiceLocked(db)
+	if err != nil {
+		return nil, err
+	}
+	projectSvc, err := a.projectServiceLocked(db)
+	if err != nil {
+		return nil, err
+	}
+	inspirationSvc, err := a.inspirationServiceLocked(db)
+	if err != nil {
+		return nil, err
+	}
+
 	chatProvider := ai.NewOpenAIChatProvider(cfg)
-
-	charSvc, err := a.characterService()
-	if err != nil {
-		return nil, err
-	}
-	volSvc, err := a.volumeService()
-	if err != nil {
-		return nil, err
-	}
-	chSvc, err := a.chapterService()
-	if err != nil {
-		return nil, err
-	}
-
 	router := agent.NewToolRouter()
 	router.Register(agent.NewListCharactersTool(charSvc))
 	router.Register(agent.NewGetCharacterTool(charSvc))
 	router.Register(agent.NewGetCharacterRelationsTool(charSvc))
 	router.Register(agent.NewListVolumesChaptersTool(volSvc, chSvc))
 	router.Register(agent.NewGetChapterContentTool(chSvc))
-
-	// 读工具补齐（Task 5）：地点/时间线/项目/章节摘要/灵感笔记
-	locSvc, err := a.locationService()
-	if err != nil {
-		return nil, err
-	}
-	tlSvc, err := a.timelineService()
-	if err != nil {
-		return nil, err
-	}
-	projectSvc, err := a.projectService()
-	if err != nil {
-		return nil, err
-	}
-	inspirationSvc, err := a.inspirationService()
-	if err != nil {
-		return nil, err
-	}
-
 	router.Register(agent.NewListLocationsTool(locSvc))
 	router.Register(agent.NewGetLocationTool(locSvc))
 	router.Register(agent.NewGetLocationRelationsTool(locSvc))
@@ -787,21 +789,42 @@ func (a *App) agentService(cfg ai.Config) (*agent.AgentService, error) {
 		return a.services.agent, nil
 	}
 
+	// serviceMu 已持有——必须使用 *Locked 变体，否则会重入死锁。
+	db, err := a.serviceDB()
+	if err != nil {
+		return nil, err
+	}
+
+	charSvc, err := a.characterServiceLocked(db)
+	if err != nil {
+		return nil, err
+	}
+	volSvc, err := a.volumeServiceLocked(db)
+	if err != nil {
+		return nil, err
+	}
+	chSvc, err := a.chapterServiceLocked(db)
+	if err != nil {
+		return nil, err
+	}
+	locSvc, err := a.locationServiceLocked(db)
+	if err != nil {
+		return nil, err
+	}
+	tlSvc, err := a.timelineServiceLocked(db)
+	if err != nil {
+		return nil, err
+	}
+	projectSvc, err := a.projectServiceLocked(db)
+	if err != nil {
+		return nil, err
+	}
+	inspirationSvc, err := a.inspirationServiceLocked(db)
+	if err != nil {
+		return nil, err
+	}
+
 	chatProvider := ai.NewOpenAIChatProvider(cfg)
-
-	charSvc, err := a.characterService()
-	if err != nil {
-		return nil, err
-	}
-	volSvc, err := a.volumeService()
-	if err != nil {
-		return nil, err
-	}
-	chSvc, err := a.chapterService()
-	if err != nil {
-		return nil, err
-	}
-
 	router := agent.NewToolRouter()
 	router.Register(agent.NewListCharactersTool(charSvc))
 	router.Register(agent.NewGetCharacterTool(charSvc))
@@ -812,25 +835,6 @@ func (a *App) agentService(cfg ai.Config) (*agent.AgentService, error) {
 	router.Register(agent.NewSuggestCharacterTool())
 	router.Register(agent.NewSuggestOutlineTool())
 	router.Register(agent.NewSuggestRevisionTool(chSvc))
-
-	// 读工具补齐（Task 5）：地点/时间线/项目/章节摘要/灵感笔记
-	locSvc, err := a.locationService()
-	if err != nil {
-		return nil, err
-	}
-	tlSvc, err := a.timelineService()
-	if err != nil {
-		return nil, err
-	}
-	projectSvc, err := a.projectService()
-	if err != nil {
-		return nil, err
-	}
-	inspirationSvc, err := a.inspirationService()
-	if err != nil {
-		return nil, err
-	}
-
 	router.Register(agent.NewListLocationsTool(locSvc))
 	router.Register(agent.NewGetLocationTool(locSvc))
 	router.Register(agent.NewGetLocationRelationsTool(locSvc))
@@ -865,6 +869,11 @@ func (a *App) projectService() (*services.ProjectService, error) {
 	}
 	a.serviceMu.Lock()
 	defer a.serviceMu.Unlock()
+	return a.projectServiceLocked(db)
+}
+
+// projectServiceLocked 假设调用者已持有 a.serviceMu。
+func (a *App) projectServiceLocked(db *sql.DB) (*services.ProjectService, error) {
 	if a.services.project == nil {
 		a.services.project = services.NewProjectService(db)
 	}
@@ -878,6 +887,11 @@ func (a *App) volumeService() (*services.VolumeService, error) {
 	}
 	a.serviceMu.Lock()
 	defer a.serviceMu.Unlock()
+	return a.volumeServiceLocked(db)
+}
+
+// volumeServiceLocked 假设调用者已持有 a.serviceMu。
+func (a *App) volumeServiceLocked(db *sql.DB) (*services.VolumeService, error) {
 	if a.services.volume == nil {
 		a.services.volume = services.NewVolumeService(db)
 	}
@@ -891,6 +905,11 @@ func (a *App) chapterService() (*services.ChapterService, error) {
 	}
 	a.serviceMu.Lock()
 	defer a.serviceMu.Unlock()
+	return a.chapterServiceLocked(db)
+}
+
+// chapterServiceLocked 假设调用者已持有 a.serviceMu。
+func (a *App) chapterServiceLocked(db *sql.DB) (*services.ChapterService, error) {
 	if a.services.chapter == nil {
 		a.services.chapter = services.NewChapterService(db)
 	}
@@ -904,6 +923,11 @@ func (a *App) characterService() (*services.CharacterService, error) {
 	}
 	a.serviceMu.Lock()
 	defer a.serviceMu.Unlock()
+	return a.characterServiceLocked(db)
+}
+
+// characterServiceLocked 假设调用者已持有 a.serviceMu。
+func (a *App) characterServiceLocked(db *sql.DB) (*services.CharacterService, error) {
 	if a.services.character == nil {
 		a.services.character = services.NewCharacterService(db)
 	}
@@ -917,6 +941,11 @@ func (a *App) locationService() (*services.LocationService, error) {
 	}
 	a.serviceMu.Lock()
 	defer a.serviceMu.Unlock()
+	return a.locationServiceLocked(db)
+}
+
+// locationServiceLocked 假设调用者已持有 a.serviceMu。
+func (a *App) locationServiceLocked(db *sql.DB) (*services.LocationService, error) {
 	if a.services.location == nil {
 		a.services.location = services.NewLocationService(db)
 	}
@@ -978,6 +1007,11 @@ func (a *App) inspirationService() (*services.InspirationService, error) {
 	}
 	a.serviceMu.Lock()
 	defer a.serviceMu.Unlock()
+	return a.inspirationServiceLocked(db)
+}
+
+// inspirationServiceLocked 假设调用者已持有 a.serviceMu。
+func (a *App) inspirationServiceLocked(db *sql.DB) (*services.InspirationService, error) {
 	if a.services.inspiration == nil {
 		a.services.inspiration = services.NewInspirationService(db)
 	}
@@ -991,6 +1025,11 @@ func (a *App) timelineService() (*services.TimelineService, error) {
 	}
 	a.serviceMu.Lock()
 	defer a.serviceMu.Unlock()
+	return a.timelineServiceLocked(db)
+}
+
+// timelineServiceLocked 假设调用者已持有 a.serviceMu。
+func (a *App) timelineServiceLocked(db *sql.DB) (*services.TimelineService, error) {
 	if a.services.timeline == nil {
 		a.services.timeline = services.NewTimelineService(db)
 	}
