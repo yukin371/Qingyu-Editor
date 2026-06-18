@@ -216,6 +216,10 @@ export const useAgentStore = defineStore('agent', () => {
     currentConversationId.value = null
     messages.value = []
     pendingSuggestions.value = []
+    // 流式进行中清理时，必须同时清除流式状态，否则后续到达的 onDone
+    // 会因 streamingMessageId 仍指向已不存在的消息，把建议泄漏到新会话。
+    streamingMessageId.value = null
+    activeToolCall.value = null
   }
 
   async function removeConversation(id: string) {
@@ -226,6 +230,8 @@ export const useAgentStore = defineStore('agent', () => {
         currentConversationId.value = null
         messages.value = []
         pendingSuggestions.value = []
+        streamingMessageId.value = null
+        activeToolCall.value = null
       }
     } catch {
       // 删除失败不阻塞
