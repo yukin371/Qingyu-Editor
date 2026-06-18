@@ -2,7 +2,6 @@ package agent
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -42,61 +41,14 @@ func (s *ReviewService) ReviewFullProject(ctx context.Context, projectID string)
 }
 
 func (s *ReviewService) runReviewLoop(ctx context.Context, messages []ai.ChatMessage) (*ReviewResult, error) {
-	tools := s.router.ToolDefinitions()
-
-	for range maxToolCallRounds {
-		resp, err := s.provider.Chat(ctx, messages, tools)
-		if err != nil {
-			return nil, fmt.Errorf("审查 AI 调用失败: %w", err)
-		}
-
-		if !resp.HasToolCalls() {
-			return &ReviewResult{
-				Content: resp.Content,
-				Type:    "review",
-			}, nil
-		}
-
-		// 处理工具调用（与 AgentService 相同的循环逻辑）
-		assistantMsg := ai.ChatMessage{
-			"role":    "assistant",
-			"content": resp.Content,
-		}
-		tcMaps := make([]map[string]any, len(resp.ToolCalls))
-		for i, tc := range resp.ToolCalls {
-			tcMaps[i] = map[string]any{
-				"id":   tc.ID,
-				"type": "function",
-				"function": map[string]any{
-					"name":      tc.Function.Name,
-					"arguments": tc.Function.Arguments,
-				},
-			}
-		}
-		assistantMsg["tool_calls"] = tcMaps
-		messages = append(messages, assistantMsg)
-
-		for _, tc := range resp.ToolCalls {
-			var params map[string]any
-			if err := parseJSON(tc.Function.Arguments, &params); err != nil {
-				params = make(map[string]any)
-			}
-
-			result, err := s.router.Dispatch(ctx, tc.Function.Name, params)
-			if err != nil {
-				result = fmt.Sprintf("工具执行失败: %s", err)
-			}
-
-			messages = append(messages, ai.ChatMessage{
-				"role":          "tool",
-				"content":      result,
-				"tool_call_id": tc.ID,
-				"name":         tc.Function.Name,
-			})
-		}
+	content, err := runStreamingLoop(ctx, s.provider, s.router, messages)
+	if err != nil {
+		return nil, fmt.Errorf("审查 %w", err)
 	}
-
-	return nil, fmt.Errorf("审查超过最大工具调用轮数 (%d)", maxToolCallRounds)
+	return &ReviewResult{
+		Content: content,
+		Type:    "review",
+	}, nil
 }
 
 func (s *ReviewService) buildChapterReviewMessages(projectID, chapterID, chapterTitle string) []ai.ChatMessage {
@@ -136,8 +88,4 @@ func buildReviewSystemPrompt(projectID string) string {
 	parts = append(parts, "输出格式：使用 Markdown 格式，按问题严重程度分类（严重/中等/轻微），每个问题说明：位置、问题描述、建议修改方案。")
 
 	return strings.Join(parts, "\n")
-}
-
-func parseJSON(s string, v any) error {
-	return json.Unmarshal([]byte(s), v)
 }
