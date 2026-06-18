@@ -26,6 +26,18 @@ type StreamEmitter interface {
 	Error(msg string)
 }
 
+// NoopEmitter satisfies StreamEmitter with no-op behavior.
+// Used by sync code paths (ProcessIntent / ReviewChapter / ReviewFullProject)
+// that want to share runStreamingLoop without producing stream events.
+// Zero-value usable: NoopEmitter{} — no pointer required.
+type NoopEmitter struct{}
+
+func (NoopEmitter) Token(string)          {}
+func (NoopEmitter) ToolStart(string)      {}
+func (NoopEmitter) ToolEnd(string, error) {}
+func (NoopEmitter) Done(any)              {}
+func (NoopEmitter) Error(string)          {}
+
 // ---------------------------------------------------------------------------
 // RecordingEmitter — test double. Appends every call into Events for assertion.
 // ---------------------------------------------------------------------------

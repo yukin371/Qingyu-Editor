@@ -28,27 +28,50 @@ func NewReviewService(provider ai.ChatProvider, router *ToolRouter) *ReviewServi
 	}
 }
 
-// ReviewChapter 审查单个章节
+// ReviewChapter 审查单个章节（同步版本）。使用 NoopEmitter，不产生流式事件。
 func (s *ReviewService) ReviewChapter(ctx context.Context, projectID string, chapterID string, chapterTitle string) (*ReviewResult, error) {
 	messages := s.buildChapterReviewMessages(projectID, chapterID, chapterTitle)
-	return s.runReviewLoop(ctx, messages)
-}
-
-// ReviewFullProject 审查整个项目
-func (s *ReviewService) ReviewFullProject(ctx context.Context, projectID string) (*ReviewResult, error) {
-	messages := s.buildFullProjectReviewMessages(projectID)
-	return s.runReviewLoop(ctx, messages)
-}
-
-func (s *ReviewService) runReviewLoop(ctx context.Context, messages []ai.ChatMessage) (*ReviewResult, error) {
-	content, err := runStreamingLoop(ctx, s.provider, s.router, messages)
+	content, err := runStreamingLoop(ctx, s.provider, s.router, messages, NoopEmitter{})
 	if err != nil {
 		return nil, fmt.Errorf("审查失败: %w", err)
 	}
-	return &ReviewResult{
-		Content: content,
-		Type:    "review",
-	}, nil
+	return &ReviewResult{Content: content, Type: "review"}, nil
+}
+
+// ReviewChapterStream 审查单个章节（流式版本）。
+func (s *ReviewService) ReviewChapterStream(
+	ctx context.Context, projectID string, chapterID string, chapterTitle string, emitter StreamEmitter,
+) error {
+	messages := s.buildChapterReviewMessages(projectID, chapterID, chapterTitle)
+	content, err := runStreamingLoop(ctx, s.provider, s.router, messages, emitter)
+	if err != nil {
+		return err
+	}
+	emitter.Done(&ReviewResult{Content: content, Type: "review"})
+	return nil
+}
+
+// ReviewFullProject 审查整个项目（同步版本）。使用 NoopEmitter。
+func (s *ReviewService) ReviewFullProject(ctx context.Context, projectID string) (*ReviewResult, error) {
+	messages := s.buildFullProjectReviewMessages(projectID)
+	content, err := runStreamingLoop(ctx, s.provider, s.router, messages, NoopEmitter{})
+	if err != nil {
+		return nil, fmt.Errorf("审查失败: %w", err)
+	}
+	return &ReviewResult{Content: content, Type: "review"}, nil
+}
+
+// ReviewFullProjectStream 审查整个项目（流式版本）。
+func (s *ReviewService) ReviewFullProjectStream(
+	ctx context.Context, projectID string, emitter StreamEmitter,
+) error {
+	messages := s.buildFullProjectReviewMessages(projectID)
+	content, err := runStreamingLoop(ctx, s.provider, s.router, messages, emitter)
+	if err != nil {
+		return err
+	}
+	emitter.Done(&ReviewResult{Content: content, Type: "review"})
+	return nil
 }
 
 func (s *ReviewService) buildChapterReviewMessages(projectID, chapterID, chapterTitle string) []ai.ChatMessage {

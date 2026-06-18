@@ -8,24 +8,37 @@ import (
 	"Qingyu-Editor/ai"
 )
 
-// runStreamingLoop drives the up-to-6-round tool-call loop for any ChatProvider.
-// Returns the final assistant content when the provider returns a response with
-// no tool calls, or an error if maxToolCallRounds is exhausted.
+// runStreamingLoop drives the up-to-6-round tool-call loop for any ChatProvider,
+// emitting progress events to the supplied emitter.
 //
-// Note: streaming itself is layered on top of this loop in later tasks; for now
-// this is a pure refactor of the duplicated tool-call loop previously inlined
-// in AgentService.ProcessIntent and ReviewService.runReviewLoop.
+// It calls provider.ChatStream and routes content deltas to emitter.Token. For
+// each tool call it emits ToolStart before dispatch and ToolEnd (with the
+// dispatch error, if any) afterward. Done is NOT emitted here — callers wrap
+// the returned content into a typed result and emit Done themselves, so the
+// loop stays result-type-agnostic.
+//
+// On any failure (provider error, maxToolCallRounds exhausted) emitter.Error
+// is called exactly once and the error is returned.
 func runStreamingLoop(
 	ctx context.Context,
 	provider ai.ChatProvider,
 	router *ToolRouter,
 	messages []ai.ChatMessage,
+	emitter StreamEmitter,
 ) (string, error) {
 	tools := router.ToolDefinitions()
 
 	for range maxToolCallRounds {
-		resp, err := provider.Chat(ctx, messages, tools)
+		var resp *ai.ChatResponse
+		resp, err := provider.ChatStream(ctx, messages, tools, func(delta ai.StreamDelta) {
+			// 文本增量转发给 emitter；tool_calls 增量由 ChatStream 内部累积，
+			// 循环从返回的 resp.ToolCalls 读取，不在此回调内派发。
+			if delta.Content != "" {
+				emitter.Token(delta.Content)
+			}
+		})
 		if err != nil {
+			emitter.Error(err.Error())
 			return "", fmt.Errorf("AI 调用失败: %w", err)
 		}
 
@@ -59,9 +72,11 @@ func runStreamingLoop(
 				params = make(map[string]any)
 			}
 
-			result, err := router.Dispatch(ctx, tc.Function.Name, params)
-			if err != nil {
-				result = fmt.Sprintf("工具执行失败: %s", err)
+			emitter.ToolStart(tc.Function.Name)
+			result, dErr := router.Dispatch(ctx, tc.Function.Name, params)
+			emitter.ToolEnd(tc.Function.Name, dErr)
+			if dErr != nil {
+				result = fmt.Sprintf("工具执行失败: %s", dErr)
 			}
 
 			messages = append(messages, ai.ChatMessage{
@@ -73,5 +88,6 @@ func runStreamingLoop(
 		}
 	}
 
+	emitter.Error(fmt.Sprintf("超过最大工具调用轮数 (%d)", maxToolCallRounds))
 	return "", fmt.Errorf("超过最大工具调用轮数 (%d)", maxToolCallRounds)
 }

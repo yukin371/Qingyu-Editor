@@ -24,15 +24,31 @@ func NewAgentService(provider ai.ChatProvider, router *ToolRouter) *AgentService
 	}
 }
 
-// ProcessIntent 处理用户意图
+// ProcessIntent 处理用户意图（同步版本）。复用 runStreamingLoop 但使用 NoopEmitter，
+// 不产生流式事件，保持既有调用方的契约不变。
 func (s *AgentService) ProcessIntent(ctx context.Context, projectID string, intent string, editorCtx EditorContext) (*AgentResult, error) {
 	messages := s.buildMessages(projectID, intent, editorCtx)
 
-	content, err := runStreamingLoop(ctx, s.provider, s.router, messages)
+	content, err := runStreamingLoop(ctx, s.provider, s.router, messages, NoopEmitter{})
 	if err != nil {
 		return nil, err
 	}
 	return &AgentResult{Content: content}, nil
+}
+
+// ProcessIntentStream 处理用户意图（流式版本）。向 emitter 推送 token/tool 事件，
+// 成功时由本方法（而非 runStreamingLoop）emit Done(&AgentResult{...})。
+// 失败时 runStreamingLoop 已 emit Error；本方法直接返回 error。
+func (s *AgentService) ProcessIntentStream(
+	ctx context.Context, projectID string, intent string, editorCtx EditorContext, emitter StreamEmitter,
+) error {
+	messages := s.buildMessages(projectID, intent, editorCtx)
+	content, err := runStreamingLoop(ctx, s.provider, s.router, messages, emitter)
+	if err != nil {
+		return err
+	}
+	emitter.Done(&AgentResult{Content: content})
+	return nil
 }
 
 // buildMessages 构建初始消息列表
