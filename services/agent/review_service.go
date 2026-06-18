@@ -43,7 +43,7 @@ func (s *ReviewService) ReviewFullProject(ctx context.Context, projectID string)
 func (s *ReviewService) runReviewLoop(ctx context.Context, messages []ai.ChatMessage) (*ReviewResult, error) {
 	content, err := runStreamingLoop(ctx, s.provider, s.router, messages)
 	if err != nil {
-		return nil, fmt.Errorf("审查 %w", err)
+		return nil, fmt.Errorf("审查失败: %w", err)
 	}
 	return &ReviewResult{
 		Content: content,
