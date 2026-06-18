@@ -1,5 +1,5 @@
 import {
-  AgentProcessIntent,
+  AgentStreamIntent,
   CreateAgentConversation,
   DeleteAgentConversation,
   GetAgentConversation,
@@ -7,6 +7,7 @@ import {
   SaveAgentMessage,
   UpdateAgentConversationTitle,
 } from '../../../../wailsjs/go/main/App'
+import { EventsOn } from '../../../../wailsjs/runtime/runtime'
 import { agent } from '../../../../wailsjs/go/models'
 import type { AIAgentConfig, AgentResult, EditorContext, Suggestion } from '../types/agent'
 
@@ -26,21 +27,73 @@ export function getConfig(): AIAgentConfig | null {
 }
 
 /**
- * 发送意图给智能体
+ * 流式发送意图给智能体。返回 sessionID；AI 响应通过 handlers 回调推送。
+ * 订阅在 onDone 或 onError 后自动清理。
  */
-export async function sendIntent(
+export interface StreamHandlers {
+  onToken: (delta: string) => void
+  onToolStart?: (toolName: string) => void
+  onToolEnd?: (toolName: string, ok: boolean, err?: string) => void
+  onDone: (result: AgentResult) => void
+  onError: (message: string) => void
+}
+
+export async function streamIntent(
   projectId: string,
   intent: string,
   editorContext: EditorContext,
-  config?: AIAgentConfig,
-): Promise<AgentResult> {
+  config: AIAgentConfig | null,
+  handlers: StreamHandlers,
+): Promise<string> {
   const cfg = config || getConfig()
   if (!cfg || (!cfg.apiKey && !cfg.baseUrl)) {
     throw new Error('AI 未配置，请先在设置中配置 AI Provider')
   }
 
-  const result = await AgentProcessIntent(cfg, projectId, intent, editorContext)
-  return result as AgentResult
+  const sessionID = await AgentStreamIntent(cfg, projectId, intent, editorContext)
+
+  const unsubs: Array<() => void> = []
+  const cleanup = () => {
+    for (const unsub of unsubs) unsub()
+  }
+
+  // Wails EventsOn callback receives payload as first positional arg.
+  // Filter to our sessionID — ignore payloads from other sessions.
+  type TokenPayload = { sessionID: string; delta: string }
+  type ToolStartPayload = { sessionID: string; toolName: string }
+  type ToolEndPayload = { sessionID: string; toolName: string; ok: boolean; error?: string }
+  type DonePayload = { sessionID: string; agentKind: string; result: AgentResult }
+  type ErrorPayload = { sessionID: string; message: string }
+
+  unsubs.push(EventsOn('agent:token', (p: TokenPayload) => {
+    if (p.sessionID === sessionID) handlers.onToken(p.delta)
+  }))
+
+  if (handlers.onToolStart) {
+    const cb = handlers.onToolStart
+    unsubs.push(EventsOn('agent:tool_start', (p: ToolStartPayload) => {
+      if (p.sessionID === sessionID) cb(p.toolName)
+    }))
+  }
+  if (handlers.onToolEnd) {
+    const cb = handlers.onToolEnd
+    unsubs.push(EventsOn('agent:tool_end', (p: ToolEndPayload) => {
+      if (p.sessionID === sessionID) cb(p.toolName, p.ok, p.error)
+    }))
+  }
+
+  unsubs.push(EventsOn('agent:done', (p: DonePayload) => {
+    if (p.sessionID !== sessionID) return
+    cleanup()
+    handlers.onDone(p.result)
+  }))
+  unsubs.push(EventsOn('agent:error', (p: ErrorPayload) => {
+    if (p.sessionID !== sessionID) return
+    cleanup()
+    handlers.onError(p.message)
+  }))
+
+  return sessionID
 }
 
 // --- 对话持久化 API ---

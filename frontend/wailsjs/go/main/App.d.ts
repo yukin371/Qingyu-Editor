@@ -6,7 +6,11 @@ import {database} from '../models';
 
 export function AICall(arg1:ai.Config,arg2:string,arg3:string):Promise<string>;
 
-export function AgentProcessIntent(arg1:ai.Config,arg2:string,arg3:string,arg4:agent.EditorContext):Promise<agent.AgentResult>;
+export function AgentStreamIntent(arg1:ai.Config,arg2:string,arg3:string,arg4:agent.EditorContext):Promise<string>;
+
+export function ReviewChapterStream(arg1:ai.Config,arg2:string,arg3:string,arg4:string):Promise<string>;
+
+export function ReviewFullProjectStream(arg1:ai.Config,arg2:string):Promise<string>;
 
 export function CreateChapter(arg1:database.CreateChapterInput):Promise<database.Chapter>;
 
