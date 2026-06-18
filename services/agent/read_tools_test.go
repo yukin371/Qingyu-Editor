@@ -17,10 +17,14 @@ import (
 // --- 集成测试基础设施 ---
 
 type testDB struct {
-	db        *sql.DB
-	charSvc   *services.CharacterService
-	chapterSvc *services.ChapterService
-	volumeSvc  *services.VolumeService
+	db             *sql.DB
+	charSvc        *services.CharacterService
+	chapterSvc     *services.ChapterService
+	volumeSvc      *services.VolumeService
+	locationSvc    *services.LocationService
+	timelineSvc    *services.TimelineService
+	projectSvc     *services.ProjectService
+	inspirationSvc *services.InspirationService
 }
 
 func newTestDB(t *testing.T) *testDB {
@@ -44,10 +48,14 @@ func newTestDB(t *testing.T) *testDB {
 	}
 
 	return &testDB{
-		db:         db,
-		charSvc:    services.NewCharacterService(db),
-		chapterSvc: services.NewChapterService(db),
-		volumeSvc:  services.NewVolumeService(db),
+		db:             db,
+		charSvc:        services.NewCharacterService(db),
+		chapterSvc:     services.NewChapterService(db),
+		volumeSvc:      services.NewVolumeService(db),
+		locationSvc:    services.NewLocationService(db),
+		timelineSvc:    services.NewTimelineService(db),
+		projectSvc:     services.NewProjectService(db),
+		inspirationSvc: services.NewInspirationService(db),
 	}
 }
 
@@ -104,6 +112,59 @@ func (tdb *testDB) createTestChapter(t *testing.T, projectID, volumeID, title st
 		t.Fatalf("创建测试章节失败: %v", err)
 	}
 	return ch
+}
+
+func (tdb *testDB) createTestLocation(t *testing.T, projectID, name string) database.Location {
+	t.Helper()
+	loc, err := tdb.locationSvc.Create(database.CreateLocationInput{
+		ProjectID:   projectID,
+		Name:        name,
+		Description: name + "的描述",
+	})
+	if err != nil {
+		t.Fatalf("创建测试地点失败: %v", err)
+	}
+	return loc
+}
+
+func (tdb *testDB) createTestTimeline(t *testing.T, projectID, name string) database.Timeline {
+	t.Helper()
+	tl, err := tdb.timelineSvc.Create(database.CreateTimelineInput{
+		ProjectID:   projectID,
+		Name:        name,
+		Description: name + "时间线",
+	})
+	if err != nil {
+		t.Fatalf("创建测试时间线失败: %v", err)
+	}
+	return tl
+}
+
+func (tdb *testDB) createTestTimelineEvent(t *testing.T, projectID, timelineID, title string) database.TimelineEvent {
+	t.Helper()
+	evt, err := tdb.timelineSvc.CreateEvent(database.CreateTimelineEventInput{
+		ProjectID:  projectID,
+		TimelineID: timelineID,
+		Title:      title,
+		EventType:  "major",
+	})
+	if err != nil {
+		t.Fatalf("创建测试时间线事件失败: %v", err)
+	}
+	return evt
+}
+
+func (tdb *testDB) createTestInspirationNote(t *testing.T, projectID, title string) database.InspirationNote {
+	t.Helper()
+	note, err := tdb.inspirationSvc.Create(database.CreateInspirationNoteInput{
+		ProjectID: projectID,
+		Title:     title,
+		Content:   title + "的内容",
+	})
+	if err != nil {
+		t.Fatalf("创建测试灵感笔记失败: %v", err)
+	}
+	return note
 }
 
 // --- L1: ListCharactersTool ---
