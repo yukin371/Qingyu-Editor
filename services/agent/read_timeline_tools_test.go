@@ -73,16 +73,15 @@ func TestListTimelineEventsTool_ReturnsEventSummaries(t *testing.T) {
 	if len(events) != 2 {
 		t.Fatalf("expected 2 events, got %d", len(events))
 	}
-	for _, evt := range events {
-		if _, ok := evt["id"]; !ok {
-			t.Fatal("L2 should include id")
+	wantKeys := map[string]bool{"id": true, "title": true, "storyTime": true, "importance": true, "eventType": true}
+	for i, evt := range events {
+		if len(evt) != len(wantKeys) {
+			t.Fatalf("event[%d] has %d keys, want %d: %v", i, len(evt), len(wantKeys), evt)
 		}
-		if _, ok := evt["title"]; !ok {
-			t.Fatal("L2 should include title")
-		}
-		// L2 摘要不包含 description 等大字段
-		if _, ok := evt["description"]; ok {
-			t.Fatal("L2 should not include description")
+		for k := range wantKeys {
+			if _, ok := evt[k]; !ok {
+				t.Fatalf("event[%d] missing key %s", i, k)
+			}
 		}
 	}
 }
