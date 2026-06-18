@@ -52,6 +52,9 @@ export async function streamIntent(
 
   const sessionID = await AgentStreamIntent(cfg, projectId, intent, editorContext)
 
+  // 已知限制：订阅发生在 AgentStreamIntent resolve 之后。Go 端在 resolve 与首个
+  // EventsOn 之间发射的事件会被丢弃。MVP 可接受（首个 token 通常需要网络往返），
+  // 若未来本地同步工具发射早事件，需重新设计握手。
   const unsubs: Array<() => void> = []
   const cleanup = () => {
     for (const unsub of unsubs) unsub()
@@ -84,6 +87,7 @@ export async function streamIntent(
 
   unsubs.push(EventsOn('agent:done', (p: DonePayload) => {
     if (p.sessionID !== sessionID) return
+    // 先取消订阅再回调，避免回调内触发的事件二次命中已清理的监听器。
     cleanup()
     handlers.onDone(p.result)
   }))
