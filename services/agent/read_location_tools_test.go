@@ -38,6 +38,9 @@ func TestListLocationsTool_ReturnsNameAndIDOnly(t *testing.T) {
 		if _, ok := loc["name"]; !ok {
 			t.Fatal("L1 should include name")
 		}
+		if _, ok := loc["parentId"]; !ok {
+			t.Fatal("L1 should include parentId")
+		}
 		if _, ok := loc["description"]; ok {
 			t.Fatal("L1 should not include description")
 		}
