@@ -748,6 +748,34 @@ func (a *App) reviewService(cfg ai.Config) (*agent.ReviewService, error) {
 	router.Register(agent.NewListVolumesChaptersTool(volSvc, chSvc))
 	router.Register(agent.NewGetChapterContentTool(chSvc))
 
+	// 读工具补齐（Task 5）：地点/时间线/项目/章节摘要/灵感笔记
+	locSvc, err := a.locationService()
+	if err != nil {
+		return nil, err
+	}
+	tlSvc, err := a.timelineService()
+	if err != nil {
+		return nil, err
+	}
+	projectSvc, err := a.projectService()
+	if err != nil {
+		return nil, err
+	}
+	inspirationSvc, err := a.inspirationService()
+	if err != nil {
+		return nil, err
+	}
+
+	router.Register(agent.NewListLocationsTool(locSvc))
+	router.Register(agent.NewGetLocationTool(locSvc))
+	router.Register(agent.NewGetLocationRelationsTool(locSvc))
+	router.Register(agent.NewListTimelinesTool(tlSvc))
+	router.Register(agent.NewListTimelineEventsTool(tlSvc))
+	router.Register(agent.NewGetTimelineEventTool(tlSvc))
+	router.Register(agent.NewGetChapterSummaryTool(chSvc))
+	router.Register(agent.NewGetProjectSummaryTool(projectSvc))
+	router.Register(agent.NewGetInspirationNotesTool(inspirationSvc))
+
 	a.services.review = agent.NewReviewService(chatProvider, router)
 	return a.services.review, nil
 }
@@ -784,6 +812,34 @@ func (a *App) agentService(cfg ai.Config) (*agent.AgentService, error) {
 	router.Register(agent.NewSuggestCharacterTool())
 	router.Register(agent.NewSuggestOutlineTool())
 	router.Register(agent.NewSuggestRevisionTool(chSvc))
+
+	// 读工具补齐（Task 5）：地点/时间线/项目/章节摘要/灵感笔记
+	locSvc, err := a.locationService()
+	if err != nil {
+		return nil, err
+	}
+	tlSvc, err := a.timelineService()
+	if err != nil {
+		return nil, err
+	}
+	projectSvc, err := a.projectService()
+	if err != nil {
+		return nil, err
+	}
+	inspirationSvc, err := a.inspirationService()
+	if err != nil {
+		return nil, err
+	}
+
+	router.Register(agent.NewListLocationsTool(locSvc))
+	router.Register(agent.NewGetLocationTool(locSvc))
+	router.Register(agent.NewGetLocationRelationsTool(locSvc))
+	router.Register(agent.NewListTimelinesTool(tlSvc))
+	router.Register(agent.NewListTimelineEventsTool(tlSvc))
+	router.Register(agent.NewGetTimelineEventTool(tlSvc))
+	router.Register(agent.NewGetChapterSummaryTool(chSvc))
+	router.Register(agent.NewGetProjectSummaryTool(projectSvc))
+	router.Register(agent.NewGetInspirationNotesTool(inspirationSvc))
 
 	a.services.agent = agent.NewAgentService(chatProvider, router)
 	return a.services.agent, nil
