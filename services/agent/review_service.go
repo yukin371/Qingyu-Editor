@@ -45,7 +45,7 @@ func (s *ReviewService) ReviewChapterStream(
 	messages := s.buildChapterReviewMessages(projectID, chapterID, chapterTitle)
 	content, err := runStreamingLoop(ctx, s.provider, s.router, messages, emitter)
 	if err != nil {
-		return err
+		return fmt.Errorf("审查失败: %w", err)
 	}
 	emitter.Done(&ReviewResult{Content: content, Type: "review"})
 	return nil
@@ -68,7 +68,7 @@ func (s *ReviewService) ReviewFullProjectStream(
 	messages := s.buildFullProjectReviewMessages(projectID)
 	content, err := runStreamingLoop(ctx, s.provider, s.router, messages, emitter)
 	if err != nil {
-		return err
+		return fmt.Errorf("审查失败: %w", err)
 	}
 	emitter.Done(&ReviewResult{Content: content, Type: "review"})
 	return nil

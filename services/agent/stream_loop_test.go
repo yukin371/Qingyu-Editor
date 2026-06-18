@@ -170,7 +170,7 @@ type failingProvider struct{}
 func (failingProvider) Chat(context.Context, []ai.ChatMessage, []map[string]any) (*ai.ChatResponse, error) {
 	return nil, errors.New("boom")
 }
-func (f failingProvider) ChatStream(ctx context.Context, msgs []ai.ChatMessage, tools []map[string]any, onDelta ai.StreamCallback) (*ai.ChatResponse, error) {
+func (failingProvider) ChatStream(context.Context, []ai.ChatMessage, []map[string]any, ai.StreamCallback) (*ai.ChatResponse, error) {
 	return nil, errors.New("boom")
 }
 
