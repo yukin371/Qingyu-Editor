@@ -9,6 +9,8 @@ import (
 	"Qingyu-Editor/database"
 	"Qingyu-Editor/services"
 	"Qingyu-Editor/services/agent"
+
+	"github.com/google/uuid"
 )
 
 type appServices struct {
@@ -630,17 +632,27 @@ func (a *App) ensureDatabase() error {
 
 // --- Agent 智能体 ---
 
-func (a *App) AgentProcessIntent(
+// AgentStreamIntent 流式处理智能体意图。同步返回 sessionID，AI 响应通过 Wails 事件推送。
+func (a *App) AgentStreamIntent(
 	cfg ai.Config,
 	projectID string,
 	intent string,
 	editorCtx agent.EditorContext,
-) (*agent.AgentResult, error) {
+) (string, error) {
+	sessionID := uuid.NewString()
 	agentSvc, err := a.agentService(cfg)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return agentSvc.ProcessIntent(a.ctx, projectID, intent, editorCtx)
+	emitter := agent.NewWailsEmitter(a.ctx, sessionID, "creative")
+	go func() {
+		ctx, cancel := context.WithCancel(a.ctx)
+		defer cancel()
+		if err := agentSvc.ProcessIntentStream(ctx, projectID, intent, editorCtx, emitter); err != nil {
+			emitter.Error(err.Error())
+		}
+	}()
+	return sessionID, nil
 }
 
 // --- Agent 对话持久化 ---
@@ -717,6 +729,50 @@ func (a *App) ReviewFullProject(
 		return nil, err
 	}
 	return reviewSvc.ReviewFullProject(a.ctx, projectID)
+}
+
+// ReviewChapterStream 流式审查单个章节。同步返回 sessionID，审查结果通过 Wails 事件推送。
+func (a *App) ReviewChapterStream(
+	cfg ai.Config,
+	projectID string,
+	chapterID string,
+	chapterTitle string,
+) (string, error) {
+	sessionID := uuid.NewString()
+	reviewSvc, err := a.reviewService(cfg)
+	if err != nil {
+		return "", err
+	}
+	emitter := agent.NewWailsEmitter(a.ctx, sessionID, "review")
+	go func() {
+		ctx, cancel := context.WithCancel(a.ctx)
+		defer cancel()
+		if err := reviewSvc.ReviewChapterStream(ctx, projectID, chapterID, chapterTitle, emitter); err != nil {
+			emitter.Error(err.Error())
+		}
+	}()
+	return sessionID, nil
+}
+
+// ReviewFullProjectStream 流式审查整个项目。同步返回 sessionID，审查结果通过 Wails 事件推送。
+func (a *App) ReviewFullProjectStream(
+	cfg ai.Config,
+	projectID string,
+) (string, error) {
+	sessionID := uuid.NewString()
+	reviewSvc, err := a.reviewService(cfg)
+	if err != nil {
+		return "", err
+	}
+	emitter := agent.NewWailsEmitter(a.ctx, sessionID, "review")
+	go func() {
+		ctx, cancel := context.WithCancel(a.ctx)
+		defer cancel()
+		if err := reviewSvc.ReviewFullProjectStream(ctx, projectID, emitter); err != nil {
+			emitter.Error(err.Error())
+		}
+	}()
+	return sessionID, nil
 }
 
 func (a *App) reviewService(cfg ai.Config) (*agent.ReviewService, error) {
