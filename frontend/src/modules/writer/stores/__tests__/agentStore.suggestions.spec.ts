@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import type { AIAgentConfig } from '../../types/agent'
+import type { AgentResult, AIAgentConfig } from '../../types/agent'
 
-const mockSendIntent = vi.fn()
+// Mock the agent API — streamIntent 立即同步触发 onDone
+const mockStreamIntent = vi.fn()
 vi.mock('../../api/agent', () => ({
-  sendIntent: (...args: any[]) => mockSendIntent(...args),
+  streamIntent: (...args: any[]) => mockStreamIntent(...args),
 }))
 
 import { useAgentStore } from '../agentStore'
@@ -16,6 +17,14 @@ const testConfig: AIAgentConfig = {
   model: 'gpt-4',
 }
 
+/** 让 streamIntent 在内部异步触发 onDone。 */
+function mockStreamDone(result: AgentResult) {
+  mockStreamIntent.mockImplementation((_p, _i, _c, _cfg, handlers: any) => {
+    queueMicrotask(() => handlers.onDone(result))
+    return Promise.resolve('sess_test')
+  })
+}
+
 describe('agentStore suggestion management', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -24,7 +33,7 @@ describe('agentStore suggestion management', () => {
 
   describe('suggestion routing', () => {
     it('text_diff suggestions route to textDiffSuggestions', async () => {
-      mockSendIntent.mockResolvedValue({
+      mockStreamDone({
         content: '已续写',
         suggestions: [
           { id: 's1', type: 'text_diff', action: 'append', targetEntity: 'chapter', targetId: 'ch1', content: '新内容', summary: '续写' },
@@ -40,7 +49,7 @@ describe('agentStore suggestion management', () => {
     })
 
     it('entity_preview suggestions route to entityPreviewSuggestions', async () => {
-      mockSendIntent.mockResolvedValue({
+      mockStreamDone({
         content: '建议创建角色',
         suggestions: [
           { id: 's2', type: 'entity_preview', action: 'create', targetEntity: 'character', targetId: '', content: '{}', summary: '新角色' },
@@ -55,7 +64,7 @@ describe('agentStore suggestion management', () => {
     })
 
     it('mixed suggestions route correctly', async () => {
-      mockSendIntent.mockResolvedValue({
+      mockStreamDone({
         content: 'ok',
         suggestions: [
           { id: 's1', type: 'text_diff', action: 'append', targetEntity: 'chapter', targetId: 'ch1', content: '文字', summary: 't1' },
@@ -73,7 +82,7 @@ describe('agentStore suggestion management', () => {
 
   describe('suggestion state machine', () => {
     it('transitions: pending → editing → previewing', async () => {
-      mockSendIntent.mockResolvedValue({
+      mockStreamDone({
         content: 'ok',
         suggestions: [
           { id: 's1', type: 'entity_preview', action: 'create', targetEntity: 'character', targetId: '', content: '{}', summary: 'test' },
@@ -96,7 +105,7 @@ describe('agentStore suggestion management', () => {
     })
 
     it('marks suggestion as expired when content changes', async () => {
-      mockSendIntent.mockResolvedValue({
+      mockStreamDone({
         content: 'ok',
         suggestions: [
           { id: 's1', type: 'text_diff', action: 'update', targetEntity: 'chapter', targetId: 'ch1', content: 'new', originalContent: 'old', summary: 'test' },
@@ -112,7 +121,7 @@ describe('agentStore suggestion management', () => {
     })
 
     it('does not expire if content unchanged', async () => {
-      mockSendIntent.mockResolvedValue({
+      mockStreamDone({
         content: 'ok',
         suggestions: [
           { id: 's1', type: 'text_diff', action: 'update', targetEntity: 'chapter', targetId: 'ch1', content: 'new', originalContent: 'old', summary: 'test' },
@@ -129,7 +138,7 @@ describe('agentStore suggestion management', () => {
 
   describe('getSuggestionById', () => {
     it('finds suggestion across both lists', async () => {
-      mockSendIntent.mockResolvedValue({
+      mockStreamDone({
         content: 'ok',
         suggestions: [
           { id: 's1', type: 'text_diff', action: 'append', targetEntity: 'chapter', targetId: 'ch1', content: 'a', summary: 't' },

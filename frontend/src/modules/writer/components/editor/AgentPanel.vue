@@ -20,6 +20,13 @@ const messagesContainer = ref<HTMLDivElement>()
 // 建议（按类型分组）
 const entityPreviews = computed(() => store.entityPreviewSuggestions)
 
+// 是否已有流式内容：用于切换 "AI 正在思考..." 与流式消息显示
+const hasStreamingContent = computed(() => {
+  if (!store.streamingMessageId) return false
+  const msg = store.messages.find(m => m.id === store.streamingMessageId)
+  return !!msg && msg.content.length > 0
+})
+
 // 自动滚动到底部
 watch(() => store.messages.length, async () => {
   await nextTick()
@@ -78,8 +85,16 @@ function handleEditSuggestion(id: string) {
         <div class="whitespace-pre-wrap">{{ msg.content }}</div>
       </div>
 
-      <!-- 加载状态 -->
-      <div v-if="store.isLoading" class="text-center text-gray-400 text-sm py-2">
+      <!-- 工具调用状态条：仅在工具运行期间显示 -->
+      <div v-if="store.activeToolCall" class="text-xs text-gray-500 italic px-3 py-1">
+        <span class="animate-pulse">正在调用工具 {{ store.activeToolCall.name }}...</span>
+      </div>
+
+      <!-- 加载状态：仅在等待首个 token 时显示（streamingMessageId 已设但消息内容仍空） -->
+      <div
+        v-if="store.isLoading && !hasStreamingContent"
+        class="text-center text-gray-400 text-sm py-2"
+      >
         <span class="animate-pulse">AI 正在思考...</span>
       </div>
     </div>

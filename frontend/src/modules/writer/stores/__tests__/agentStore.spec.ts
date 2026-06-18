@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import type { AgentResult, AIAgentConfig } from '../../types/agent'
 
-// Mock the agent API
-const mockSendIntent = vi.fn()
+// Mock the agent API. streamIntent 接收 handlers 并在内部异步触发 onDone/onError；
+// 在测试中我们记录 handlers 以便控制回调时机。
+const mockStreamIntent = vi.fn()
 const mockCreateConversation = vi.fn()
 const mockSaveMessage = vi.fn()
 const mockListConversations = vi.fn()
@@ -12,7 +13,7 @@ const mockDeleteConversation = vi.fn()
 const mockUpdateConversationTitle = vi.fn()
 
 vi.mock('../../api/agent', () => ({
-  sendIntent: (...args: any[]) => mockSendIntent(...args),
+  streamIntent: (...args: any[]) => mockStreamIntent(...args),
   createConversation: (...args: any[]) => mockCreateConversation(...args),
   saveMessage: (...args: any[]) => mockSaveMessage(...args),
   listConversations: (...args: any[]) => mockListConversations(...args),
@@ -31,36 +32,60 @@ const testConfig: AIAgentConfig = {
   model: 'gpt-4',
 }
 
+/**
+ * 让 streamIntent 在被调用时同步触发 onDone（默认）或 onError（rejected=true）。
+ * 返回捕获到的 handlers 以便测试精细控制。
+ */
+function mockStreamImmediateDone(result: AgentResult, opts?: { sessionID?: string; reject?: Error }) {
+  mockStreamIntent.mockImplementation((_projectId, _intent, _ctx, _config, handlers: any) => {
+    if (opts?.reject) {
+      // 模拟 streamIntent 同步阶段抛错
+      throw opts.reject
+    }
+    // 异步触发 onDone，模拟事件到达。用 queueMicrotask 保证 await streamIntent 的 Promise 先 resolve。
+    queueMicrotask(() => handlers.onDone(result))
+    return Promise.resolve(opts?.sessionID ?? 'sess_test')
+  })
+}
+
+function mockStreamImmediateError(message: string) {
+  mockStreamIntent.mockImplementation((_projectId, _intent, _ctx, _config, handlers: any) => {
+    queueMicrotask(() => handlers.onError(message))
+    return Promise.resolve('sess_test')
+  })
+}
+
 describe('agentStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    // saveMessage 默认返回 resolved promise（store 用 .catch() 调用）
     mockSaveMessage.mockResolvedValue({ id: 'msg_saved' })
     mockCreateConversation.mockResolvedValue({ id: 'conv_001' })
   })
 
   describe('sendMessage', () => {
-    it('adds user message and AI response to conversation', async () => {
-      mockSendIntent.mockResolvedValue({
+    it('streams assistant message then replaces with final content on done', async () => {
+      mockStreamImmediateDone({
         content: '项目中有1个角色：林雪',
         suggestions: [],
-      } as AgentResult)
-      mockCreateConversation.mockResolvedValue({ id: 'conv_001' })
+      })
 
       const store = useAgentStore()
       await store.sendMessage('proj_001', '有哪些角色', testConfig)
 
-      // 应该有2条消息：用户 + AI
+      // 用户 + 助手（流式预创建）= 2 条
       expect(store.messages).toHaveLength(2)
       expect(store.messages[0].role).toBe('user')
       expect(store.messages[0].content).toBe('有哪些角色')
       expect(store.messages[1].role).toBe('assistant')
+      // onDone 用完整内容替换流式消息（而非追加）
       expect(store.messages[1].content).toBe('项目中有1个角色：林雪')
+      expect(store.streamingMessageId).toBeNull()
+      expect(store.isLoading).toBe(false)
     })
 
     it('stores suggestions from AI response', async () => {
-      mockSendIntent.mockResolvedValue({
+      mockStreamImmediateDone({
         content: '建议如下',
         suggestions: [
           {
@@ -73,58 +98,105 @@ describe('agentStore', () => {
             summary: '建议新建角色赵衡',
           },
         ],
-      } as AgentResult)
-      mockCreateConversation.mockResolvedValue({ id: 'conv_001' })
+      })
 
       const store = useAgentStore()
       await store.sendMessage('proj_001', '设计角色', testConfig)
 
-      // 建议应该存储在 assistant message 和 pending suggestions 中
+      // 建议应该挂到 assistant message 与 pending suggestions 中
       expect(store.messages[1].suggestions).toHaveLength(1)
       expect(store.pendingSuggestions).toHaveLength(1)
       expect(store.pendingSuggestions[0].status).toBe('pending')
     })
 
-    it('manages loading state', async () => {
-      let resolvePromise: (v: any) => void
-      mockSendIntent.mockReturnValue(new Promise(r => { resolvePromise = r }))
+    it('appends tokens to streaming message content', async () => {
+      // 精细控制：先接收 token，再触发 onDone
+      let capturedHandlers: any
+      mockStreamIntent.mockImplementation((_p, _i, _c, _cfg, handlers: any) => {
+        capturedHandlers = handlers
+        // 注意：不在此处触发 onDone，留给测试手动控制
+        return Promise.resolve('sess_token')
+      })
 
       const store = useAgentStore()
-      const promise = store.sendMessage('proj_001', '测试', testConfig)
+      const p = store.sendMessage('proj_001', '续写', testConfig)
 
-      // 等待 createConversation 完成
-      await vi.waitFor(() => expect(store.isLoading).toBe(true))
+      // sendMessage 内部先 await createConversation 再 await streamIntent，
+      // 需要让微任务队列推进，handlers 才会被捕获
+      await vi.waitFor(() => expect(capturedHandlers).toBeDefined())
 
-      resolvePromise!({ content: 'ok', suggestions: [] })
-      await promise
+      // 触发几个 token
+      capturedHandlers.onToken('第一段')
+      capturedHandlers.onToken('第二段')
+      expect(store.messages[1].content).toBe('第一段第二段')
 
-      expect(store.isLoading).toBe(false)
+      // 然后 onDone 用完整内容替换
+      capturedHandlers.onDone({ content: '完整最终内容', suggestions: [] })
+      await p
+
+      expect(store.messages[1].content).toBe('完整最终内容')
+      expect(store.streamingMessageId).toBeNull()
     })
 
-    it('handles errors gracefully', async () => {
-      mockSendIntent.mockRejectedValue(new Error('AI 服务不可用'))
-      mockCreateConversation.mockResolvedValue({ id: 'conv_001' })
+    it('sets and clears activeToolCall around tool calls', async () => {
+      let capturedHandlers: any
+      mockStreamIntent.mockImplementation((_p, _i, _c, _cfg, handlers: any) => {
+        capturedHandlers = handlers
+        return Promise.resolve('sess_tool')
+      })
+
+      const store = useAgentStore()
+      const p = store.sendMessage('proj_001', '列出角色', testConfig)
+
+      await vi.waitFor(() => expect(capturedHandlers).toBeDefined())
+
+      expect(store.activeToolCall).toBeNull()
+      capturedHandlers.onToolStart('list_characters')
+      expect(store.activeToolCall).toEqual({ name: 'list_characters', status: 'running' })
+      capturedHandlers.onToolEnd('list_characters', true)
+      expect(store.activeToolCall).toBeNull()
+
+      capturedHandlers.onDone({ content: 'ok', suggestions: [] })
+      await p
+    })
+
+    it('handles onError gracefully', async () => {
+      mockStreamImmediateError('AI 服务不可用')
 
       const store = useAgentStore()
       await store.sendMessage('proj_001', '测试', testConfig)
 
-      // 应该添加错误消息到对话
+      // 流式消息内容被替换为错误文本
       expect(store.messages).toHaveLength(2)
       expect(store.messages[1].role).toBe('assistant')
       expect(store.messages[1].content).toContain('AI 服务不可用')
       expect(store.isLoading).toBe(false)
+      expect(store.streamingMessageId).toBeNull()
+      expect(store.activeToolCall).toBeNull()
+    })
+
+    it('handles streamIntent sync rejection (e.g. missing config)', async () => {
+      mockStreamImmediateDone({ content: 'ok', suggestions: [] }, {
+        reject: new Error('AI 未配置，请先在设置中配置 AI Provider'),
+      })
+
+      const store = useAgentStore()
+      await store.sendMessage('proj_001', '测试', testConfig)
+
+      expect(store.messages[1].content).toContain('AI 未配置')
+      expect(store.isLoading).toBe(false)
+      expect(store.streamingMessageId).toBeNull()
     })
 
     it('auto-creates conversation and persists messages', async () => {
-      mockSendIntent.mockResolvedValue({ content: 'ok', suggestions: [] })
+      mockStreamImmediateDone({ content: 'ok', suggestions: [] })
       mockCreateConversation.mockResolvedValue({ id: 'conv_new' })
 
       const store = useAgentStore()
       await store.sendMessage('proj_001', '测试', testConfig)
 
-      // 应该自动创建对话
       expect(mockCreateConversation).toHaveBeenCalledWith('proj_001')
-      // 应该持久化用户消息和助手消息
+      // 用户消息 + 助手消息各一次
       expect(mockSaveMessage).toHaveBeenCalledTimes(2)
       expect(store.currentConversationId).toBe('conv_new')
     })
@@ -132,14 +204,13 @@ describe('agentStore', () => {
 
   describe('suggestions', () => {
     it('acceptSuggestion moves from pending to applied', async () => {
-      mockSendIntent.mockResolvedValue({
+      mockStreamImmediateDone({
         content: 'ok',
         suggestions: [{
           id: 'sug_001', type: 'entity_preview', action: 'create',
           targetEntity: 'character', targetId: '', content: '{}', summary: 'test',
         }],
-      } as AgentResult)
-      mockCreateConversation.mockResolvedValue({ id: 'conv_001' })
+      })
 
       const store = useAgentStore()
       await store.sendMessage('proj_001', 'test', testConfig)
@@ -150,14 +221,13 @@ describe('agentStore', () => {
     })
 
     it('rejectSuggestion removes from pending', async () => {
-      mockSendIntent.mockResolvedValue({
+      mockStreamImmediateDone({
         content: 'ok',
         suggestions: [{
           id: 'sug_001', type: 'entity_preview', action: 'create',
           targetEntity: 'character', targetId: '', content: '{}', summary: 'test',
         }],
-      } as AgentResult)
-      mockCreateConversation.mockResolvedValue({ id: 'conv_001' })
+      })
 
       const store = useAgentStore()
       await store.sendMessage('proj_001', 'test', testConfig)
@@ -169,8 +239,7 @@ describe('agentStore', () => {
 
   describe('clearConversation', () => {
     it('clears all messages and suggestions', async () => {
-      mockSendIntent.mockResolvedValue({ content: 'ok', suggestions: [] })
-      mockCreateConversation.mockResolvedValue({ id: 'conv_001' })
+      mockStreamImmediateDone({ content: 'ok', suggestions: [] })
 
       const store = useAgentStore()
       await store.sendMessage('proj_001', 'test', testConfig)
@@ -221,8 +290,6 @@ describe('agentStore', () => {
 
     it('removeConversation deletes and clears if active', async () => {
       mockDeleteConversation.mockResolvedValue(undefined)
-      mockCreateConversation.mockResolvedValue({ id: 'conv_001' })
-      mockSendIntent.mockResolvedValue({ content: 'ok', suggestions: [] })
 
       const store = useAgentStore()
       store.conversationList = [

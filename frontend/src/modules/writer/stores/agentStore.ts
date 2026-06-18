@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import {
-  sendIntent,
+  streamIntent,
   createConversation,
   saveMessage,
   listConversations,
@@ -35,6 +35,10 @@ export const useAgentStore = defineStore('agent', () => {
   const isLoading = ref(false)
   const currentConversationId = ref<string | null>(null)
   const conversationList = ref<{ id: string; title: string; updatedAt: string }[]>([])
+  // 流式渲染状态：当前正在追加 token 的助手消息 ID
+  const streamingMessageId = ref<string | null>(null)
+  // 工具调用状态条：null 表示无活动工具
+  const activeToolCall = ref<{ name: string; status: 'running' | 'done' | 'failed' } | null>(null)
 
   // 按 type 分类的 computed
   const textDiffSuggestions = computed(() =>
@@ -74,48 +78,106 @@ export const useAgentStore = defineStore('agent', () => {
       }).catch(() => {})
     }
 
+    const ctx: EditorContext = editorContext || {
+      currentChapterId: '',
+      cursorPosition: 0,
+      selectedText: '',
+      nearbyCharacters: [],
+    }
+
+    // 预创建空的助手消息，token 流式追加到它的 content
+    const aiMessage = createMessage('assistant', '')
+    messages.value.push(aiMessage)
+    streamingMessageId.value = aiMessage.id
+
     try {
-      const ctx: EditorContext = editorContext || {
-        currentChapterId: '',
-        cursorPosition: 0,
-        selectedText: '',
-        nearbyCharacters: [],
-      }
+      await streamIntent(projectId, intent, ctx, config, {
+        onToken: (delta: string) => {
+          // 按 ID 找到正在流的消息，追加 delta
+          const target = messages.value.find(m => m.id === streamingMessageId.value)
+          if (target) {
+            target.content += delta
+          }
+        },
+        onToolStart: (toolName: string) => {
+          activeToolCall.value = { name: toolName, status: 'running' }
+        },
+        onToolEnd: (_toolName: string, _ok: boolean) => {
+          // 简单处理：工具结束即清空状态条
+          activeToolCall.value = null
+        },
+        onDone: (result) => {
+          // 用户可能在流式过程中导航离开（清空 streamingMessageId），守护一下
+          if (!streamingMessageId.value) return
+          const target = messages.value.find(m => m.id === streamingMessageId.value)
+          if (target) {
+            // Go 端 onDone 返回的是完整内容，直接替换而非追加，避免重复
+            target.content = result.content
+            target.suggestions = result.suggestions
+          }
 
-      const result = await sendIntent(projectId, intent, ctx, config)
+          // 持久化最终助手消息
+          if (currentConversationId.value) {
+            saveMessage(currentConversationId.value, {
+              role: 'assistant',
+              content: result.content,
+              suggestions: result.suggestions,
+              timestamp: new Date().toISOString(),
+            }).catch(() => {})
+          }
 
-      const aiMessage = createMessage('assistant', result.content, result.suggestions)
-      messages.value.push(aiMessage)
+          if (result.suggestions?.length) {
+            const managed: ManagedSuggestion[] = result.suggestions.map(s => ({
+              ...s,
+              status: 'pending',
+            }))
+            pendingSuggestions.value.push(...managed)
+          }
 
-      // 持久化助手回复
-      if (currentConversationId.value) {
-        saveMessage(currentConversationId.value, {
-          role: 'assistant',
-          content: result.content,
-          suggestions: result.suggestions,
-          timestamp: new Date().toISOString(),
-        }).catch(() => {})
-      }
+          streamingMessageId.value = null
+          isLoading.value = false
+        },
+        onError: (message: string) => {
+          if (!streamingMessageId.value) return
+          const target = messages.value.find(m => m.id === streamingMessageId.value)
+          const errContent = `出错了：${message}`
+          if (target) {
+            target.content = errContent
+          }
 
-      if (result.suggestions?.length) {
-        const managed: ManagedSuggestion[] = result.suggestions.map(s => ({
-          ...s,
-          status: 'pending',
-        }))
-        pendingSuggestions.value.push(...managed)
-      }
+          if (currentConversationId.value) {
+            saveMessage(currentConversationId.value, {
+              role: 'assistant',
+              content: errContent,
+              timestamp: new Date().toISOString(),
+            }).catch(() => {})
+          }
+
+          streamingMessageId.value = null
+          isLoading.value = false
+          activeToolCall.value = null
+        },
+      })
     } catch (err: any) {
-      const errorMsg = createMessage('assistant', `出错了：${err.message || '未知错误'}`)
-      messages.value.push(errorMsg)
+      // streamIntent 同步阶段抛错（如配置缺失、订阅前绑定失败）
+      const errContent = `出错了：${err.message || '未知错误'}`
+      if (streamingMessageId.value) {
+        const target = messages.value.find(m => m.id === streamingMessageId.value)
+        if (target) target.content = errContent
 
-      if (currentConversationId.value) {
-        saveMessage(currentConversationId.value, {
-          role: 'assistant',
-          content: `出错了：${err.message || '未知错误'}`,
-          timestamp: new Date().toISOString(),
-        }).catch(() => {})
+        if (currentConversationId.value) {
+          saveMessage(currentConversationId.value, {
+            role: 'assistant',
+            content: errContent,
+            timestamp: new Date().toISOString(),
+          }).catch(() => {})
+        }
       }
+
+      streamingMessageId.value = null
+      activeToolCall.value = null
     } finally {
+      // 安全网：正常路径在 onDone/onError 中已清空
       isLoading.value = false
     }
   }
@@ -236,6 +298,8 @@ export const useAgentStore = defineStore('agent', () => {
     isLoading,
     currentConversationId,
     conversationList,
+    streamingMessageId,
+    activeToolCall,
     sendMessage,
     loadConversationHistory,
     loadConversation,
