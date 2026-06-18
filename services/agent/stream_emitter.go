@@ -110,11 +110,9 @@ func NewWailsEmitter(ctx context.Context, sessionID, agentKind string) *WailsEmi
 	return &WailsEmitter{ctx: ctx, sessionID: sessionID, agentKind: agentKind}
 }
 
-// AgentKind returns the agent kind this emitter was constructed with.
-// Exposed so callers (and future diagnostics) can introspect the emitter.
-func (e *WailsEmitter) AgentKind() string { return e.agentKind }
-
 func (e *WailsEmitter) Token(delta string) {
+	// TODO(throttle): 每条 token 都触发一次 IPC 派发，高频模型（>100 tok/s）
+	// 可能让前端事件队列拥塞。后续可加 buffer + 16ms 合并。
 	runtime.EventsEmit(e.ctx, "agent:token", map[string]any{
 		"sessionID": e.sessionID,
 		"delta":     delta,
