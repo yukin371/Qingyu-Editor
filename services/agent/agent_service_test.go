@@ -26,6 +26,21 @@ func (f *fakeChatProvider) Chat(ctx context.Context, messages []ai.ChatMessage, 
 	return &resp, nil
 }
 
+// ChatStream 最小流式实现：复用 Chat()，把结果通过回调一次性发出
+func (f *fakeChatProvider) ChatStream(ctx context.Context, messages []ai.ChatMessage, tools []map[string]any, onDelta ai.StreamCallback) (*ai.ChatResponse, error) {
+	resp, err := f.Chat(ctx, messages, tools)
+	if err != nil {
+		return nil, err
+	}
+	if resp.Content != "" {
+		onDelta(ai.StreamDelta{Content: resp.Content})
+	}
+	if len(resp.ToolCalls) > 0 {
+		onDelta(ai.StreamDelta{ToolCalls: resp.ToolCalls})
+	}
+	return resp, nil
+}
+
 // --- AgentService 测试 ---
 
 func TestAgentService_SimpleResponse(t *testing.T) {

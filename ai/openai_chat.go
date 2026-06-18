@@ -33,9 +33,19 @@ func (r *ChatResponse) HasToolCalls() bool {
 	return len(r.ToolCalls) > 0
 }
 
+// StreamDelta 流式增量：本 chunk 的增量文本或最终 tool_calls
+type StreamDelta struct {
+	Content   string     // 本 chunk 增量文本（非累计）
+	ToolCalls []ToolCall // finish_reason==tool_calls 时填充，一次性发出
+}
+
+// StreamCallback 流式回调，由 ChatStream 在收到 delta 时调用
+type StreamCallback func(delta StreamDelta)
+
 // ChatProvider 支持 tool calling 的 AI 接口
 type ChatProvider interface {
 	Chat(ctx context.Context, messages []ChatMessage, tools []map[string]any) (*ChatResponse, error)
+	ChatStream(ctx context.Context, messages []ChatMessage, tools []map[string]any, onDelta StreamCallback) (*ChatResponse, error)
 }
 
 // OpenAIChatProvider 支持 function calling 的 OpenAI 兼容实现
@@ -111,4 +121,10 @@ func (p *OpenAIChatProvider) Chat(ctx context.Context, messages []ChatMessage, t
 		Content:   result.Choices[0].Message.Content,
 		ToolCalls: result.Choices[0].Message.ToolCalls,
 	}, nil
+}
+
+// ChatStream 流式版本（占位实现，保持接口满足）
+// TODO(Task 3): 替换为真实 SSE 解析
+func (p *OpenAIChatProvider) ChatStream(ctx context.Context, messages []ChatMessage, tools []map[string]any, onDelta StreamCallback) (*ChatResponse, error) {
+	return nil, fmt.Errorf("ChatStream 暂未实现")
 }
