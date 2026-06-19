@@ -200,6 +200,27 @@ describe('agentStore', () => {
       expect(mockSaveMessage).toHaveBeenCalledTimes(2)
       expect(store.currentConversationId).toBe('conv_new')
     })
+
+    it('passes caller-provided editorContext through to streamIntent', async () => {
+      mockStreamImmediateDone({ content: 'ok', suggestions: [] })
+
+      const store = useAgentStore()
+      const editorContext = {
+        currentChapterId: 'ch_007',
+        cursorPosition: 42,
+        selectedText: '他推开门',
+        nearbyCharacters: ['林雪', '赵衡'],
+      }
+      await store.sendMessage('proj_001', '续写', testConfig, editorContext)
+
+      expect(mockStreamIntent).toHaveBeenCalledTimes(1)
+      const callArgs = mockStreamIntent.mock.calls[0]
+      // streamIntent(projectId, intent, editorContext, config, handlers)
+      expect(callArgs[0]).toBe('proj_001')
+      expect(callArgs[1]).toBe('续写')
+      expect(callArgs[2]).toEqual(editorContext)
+      expect(callArgs[3]).toBe(testConfig)
+    })
   })
 
   describe('suggestions', () => {

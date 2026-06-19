@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { ref, nextTick, watch, computed } from 'vue'
 import { useAgentStore } from '../../stores/agentStore'
+import { useEditorStore } from '../../stores/editorStore'
+import { useWorldStore } from '../../stores/worldStore'
+import { extractNearbyCharacters } from '../../utils/nearbyCharacters'
+import type { EditorContext } from '../../types/agent'
 import EntityPreviewCard from './ai/EntityPreviewCard.vue'
 
 const props = defineProps<{
@@ -14,6 +18,8 @@ const props = defineProps<{
 }>()
 
 const store = useAgentStore()
+const editorStore = useEditorStore()
+const worldStore = useWorldStore()
 const inputText = ref('')
 const messagesContainer = ref<HTMLDivElement>()
 
@@ -39,8 +45,20 @@ async function handleSend() {
   const text = inputText.value.trim()
   if (!text || store.isLoading) return
 
+  // 构建编辑器上下文：扫描当前章节已出现的角色名 + 当前章节 ID。
+  // cursorPosition / selectedText 暂未接入（需 TipTap selection API，独立任务）。
+  const editorContext: EditorContext = {
+    currentChapterId: editorStore.currentChapterId || '',
+    cursorPosition: 0,
+    selectedText: '',
+    nearbyCharacters: extractNearbyCharacters(
+      editorStore.content,
+      worldStore.characters.map(c => c.name),
+    ),
+  }
+
   inputText.value = ''
-  await store.sendMessage(props.projectId, text, props.aiConfig)
+  await store.sendMessage(props.projectId, text, props.aiConfig, editorContext)
 }
 
 function handleKeydown(e: KeyboardEvent) {
