@@ -170,6 +170,8 @@
       </div>
     </template>
   </WorkspaceShell>
+  <!-- 审查抽屉：Teleport 到 body，与主布局同级 -->
+  <ReviewDrawer />
 </template>
 
 <script setup lang="ts">
@@ -224,6 +226,7 @@ import WorkspaceShell from '@/modules/writer/components/workspace/WorkspaceShell
 import WorkspaceStatusbar from '@/modules/writer/components/workspace/WorkspaceStatusbar.vue'
 import WorkspaceEditorContent from '@/modules/writer/components/workspace/WorkspaceEditorContent.vue'
 import EditorLayout from '@/modules/writer/components/editor/EditorLayout.vue'
+import ReviewDrawer from '@/modules/writer/components/review/ReviewDrawer.vue'
 import {
   appendPlainTextToEditorContent,
   buildEditorContentFromPlainText,
