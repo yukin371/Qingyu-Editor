@@ -219,7 +219,7 @@
         <div class="item-actions" @click.stop>
           <QyDropdown
             :items="chapterActionItems"
-            @select="(cmd: string) => handleAction(cmd as 'edit' | 'delete', row.chapter)"
+            @select="(cmd: string) => handleAction(cmd as 'edit' | 'delete' | 'review-chapter', row.chapter)"
           >
             <div class="action-menu-btn">
               <QyIcon name="MoreFilled" :size="14" />
@@ -270,6 +270,8 @@ import { QyGhostButton, QyIcon, QyDropdown, QyInput } from '@/design-system/comp
 import type { DropdownItem } from '@/design-system/components'
 import { messageBox } from '@/design-system/services'
 import { useWriterStore } from '@/modules/writer/stores/writerStore'
+import { useReviewStore } from '@/modules/writer/stores/reviewStore'
+import { getConfig } from '@/modules/writer/api/agent'
 import { sanitizeText } from '@/utils/sanitize'
 
 interface ProjectSummary {
@@ -340,6 +342,7 @@ const isTreeExpanded = ref(true)
 const draftOnly = ref(false)
 const sortMode = ref<'chapter' | 'updated'>('chapter')
 const writerStore = useWriterStore()
+const reviewStore = useReviewStore()
 const collapsedDirectoryIds = ref<Set<string>>(new Set())
 const searchPanelRef = ref<HTMLElement | null>(null)
 const keywordSuggestions = ref<KeywordSuggestion[]>([])
@@ -381,6 +384,7 @@ const projectSwitchItems = computed<DropdownItem[]>(() =>
 )
 
 const chapterActionItems: DropdownItem[] = [
+  { key: 'review-chapter', label: '审查本章' },
   { key: 'edit', label: '重命名/设置', icon: 'icon-edit' },
   { key: 'delete', label: '删除章节', icon: 'icon-delete', danger: true, divider: true },
 ]
@@ -658,7 +662,10 @@ const isDirectoryCollapsed = (directoryId: string) => {
   return collapsedDirectoryIds.value.has(directoryId)
 }
 
-const handleAction = async (cmd: 'edit' | 'delete', chapter: ChapterSummary) => {
+const handleAction = async (
+  cmd: 'edit' | 'delete' | 'review-chapter',
+  chapter: ChapterSummary,
+) => {
   if (cmd === 'edit') {
     emit('edit-chapter', chapter)
   } else if (cmd === 'delete') {
@@ -672,6 +679,15 @@ const handleAction = async (cmd: 'edit' | 'delete', chapter: ChapterSummary) => 
     } catch {
       // 用户取消
     }
+  } else if (cmd === 'review-chapter') {
+    // store 内部已 try/catch：配置缺失时会自动置 status='error' 并打开抽屉展示错误，
+    // 这里无需再包一层。
+    await reviewStore.startChapterReview(
+      internalProjectId.value,
+      chapter.id,
+      chapter.title || '',
+      getConfig(),
+    )
   }
 }
 

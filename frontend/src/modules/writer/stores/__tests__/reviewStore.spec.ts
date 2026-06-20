@@ -90,6 +90,35 @@ describe('reviewStore', () => {
     })
   })
 
+  describe('error handling', () => {
+    it('sets status=error and errorMessage when streamReviewChapter throws synchronously (missing config)', async () => {
+      // 模拟 reviewStream.ts 在配置缺失时同步抛错
+      mockStreamReviewChapter.mockImplementation(() => {
+        throw new Error('AI 未配置，请先在设置中配置 AI Provider')
+      })
+
+      const store = useReviewStore()
+      // 不应 reject；store 内部 try/catch 已处理
+      await store.startChapterReview('proj_001', 'ch_001', '第一章', null)
+
+      expect(store.isOpen).toBe(true)
+      expect(store.activeReview).not.toBeNull()
+      expect(store.activeReview!.status).toBe('error')
+      expect(store.activeReview!.errorMessage).toContain('AI 未配置')
+    })
+
+    it('sets status=error when streamReviewProject rejects', async () => {
+      mockStreamReviewProject.mockRejectedValue(new Error('Provider 不可用'))
+
+      const store = useReviewStore()
+      await store.startProjectReview('proj_001', testConfig)
+
+      expect(store.isOpen).toBe(true)
+      expect(store.activeReview!.status).toBe('error')
+      expect(store.activeReview!.errorMessage).toBe('Provider 不可用')
+    })
+  })
+
   describe('event handlers', () => {
     it('onToken accumulates deltas into content', async () => {
       const getHandlers = captureHandlers(mockStreamReviewChapter)

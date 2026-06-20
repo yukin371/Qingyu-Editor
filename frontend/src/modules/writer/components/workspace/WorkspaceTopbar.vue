@@ -63,6 +63,14 @@
       <button class="topbar-btn topbar-btn--compact" :title="'保存'" @click="$emit('save')">
         <QyIcon name="DocumentChecked" :size="14" />
       </button>
+      <button
+        class="topbar-btn topbar-btn--review"
+        title="审查项目"
+        @click="$emit('review-project')"
+      >
+        <QyIcon name="CircleCheck" :size="14" />
+        <span>审查项目</span>
+      </button>
       <button class="topbar-btn topbar-btn--compact topbar-btn--primary" :title="'导出正文'" @click="$emit('export')">
         <QyIcon name="Download" :size="14" />
       </button>
@@ -249,6 +257,7 @@ defineEmits<{
   (e: 'save'): void
   (e: 'export'): void
   (e: 'share'): void
+  (e: 'review-project'): void
   (e: 'toggle-bottom-panel'): void
   (e: 'toggle-immersive'): void
   (e: 'open-right-tool', tool: 'ai' | 'assets' | 'proofread' | 'inspiration'): void
@@ -1028,6 +1037,23 @@ onUnmounted(() => document.removeEventListener('click', closeOverflow))
     width: 26px;
     justify-content: center;
     padding: 0;
+  }
+
+  &--review {
+    color: var(--editor-accent-strong, var(--editor-accent, #1d4ed8));
+    border-color: color-mix(in srgb, var(--editor-accent-soft-border, #93c5fd) 64%, transparent);
+    background: color-mix(in srgb, var(--editor-accent-soft, #dbeafe) 18%, transparent);
+
+    &:hover {
+      background: color-mix(in srgb, var(--editor-accent-soft, #dbeafe) 38%, transparent);
+      color: var(--editor-accent-strong, var(--editor-accent, #1d4ed8));
+      border-color: var(--editor-accent-soft-border, #93c5fd);
+    }
+
+    span {
+      font-size: 11px;
+      font-weight: 600;
+    }
   }
 }
 

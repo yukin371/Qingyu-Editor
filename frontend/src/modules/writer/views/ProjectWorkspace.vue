@@ -18,6 +18,7 @@
         @save="handleTipTapSave"
         @export="handleExportDraft"
         @share="handleShareDraft"
+        @review-project="handleReviewProject"
         @back="handleBackToDashboard"
         @toggle-immersive="handleToggleImmersive"
         @open-right-tool="handleOpenRightTool"
@@ -187,6 +188,7 @@ import { usePanelStore } from '@/modules/writer/stores/panelStore'
 import { useEditorThemeStore } from '@/modules/writer/stores/editorThemeStore'
 import { useEditorAppearanceStore } from '@/modules/writer/stores/editorAppearanceStore'
 import { useWriterStore } from '@/modules/writer/stores/writerStore'
+import { useReviewStore } from '@/modules/writer/stores/reviewStore'
 import { getWorkspaceMockProject } from '@/modules/writer/mock/workspaceMock'
 import { DocumentType } from '@/modules/writer/types/document'
 import type { OutlineNode } from '@/types/writer'
@@ -211,6 +213,7 @@ import { createDocument, updateDocument } from '@/modules/writer/api/document'
 import { editorApi } from '@/modules/writer/api/editor'
 import { conceptApi } from '@/modules/writer/api/concept'
 import { listEntities } from '@/modules/writer/api/entities'
+import { getConfig } from '@/modules/writer/api/agent'
 import {
   isStandaloneWriterRuntime,
   isWailsWriterAvailable,
@@ -297,6 +300,7 @@ const panelStore = usePanelStore()
 const editorThemeStore = useEditorThemeStore()
 const editorAppearanceStore = useEditorAppearanceStore()
 const writerStore = useWriterStore()
+const reviewStore = useReviewStore()
 const workspaceLayoutStore = useWorkspaceLayoutStore()
 
 // =======================
@@ -1082,6 +1086,11 @@ const handleStoryHarnessTriggerIndex = async () => {
 
 const handleExportDraft = () => {
   message.info('导出功能已接入入口，后续可绑定实际导出流程')
+}
+
+const handleReviewProject = () => {
+  // store 内部已 try/catch：配置缺失时会自动置 status='error' 并打开抽屉展示错误。
+  void reviewStore.startProjectReview(safeCurrentProjectId.value, getConfig())
 }
 
 const handleShareDraft = async () => {

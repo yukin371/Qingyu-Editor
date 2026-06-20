@@ -62,29 +62,44 @@ export const useReviewStore = defineStore('review', () => {
     }
     activeToolCall.value = null
 
-    const handle = await streamReviewChapter('', projectId, chapterId, chapterTitle, config, {
-      onToken: (delta) => {
-        if (activeReview.value) activeReview.value.content += delta
-      },
-      onToolStart: (name) => {
-        activeToolCall.value = { name, status: 'running' }
-      },
-      onToolEnd: (_name, _ok) => {
-        activeToolCall.value = null
-      },
-      onDone: (result) => {
-        if (activeReview.value) {
-          activeReview.value.content = result.content
-          activeReview.value.status = 'done'
-        }
-      },
-      onError: (message) => {
-        if (activeReview.value) {
-          activeReview.value.status = 'error'
-          activeReview.value.errorMessage = message
-        }
-      },
-    })
+    let handle
+    try {
+      handle = await streamReviewChapter('', projectId, chapterId, chapterTitle, config, {
+        onToken: (delta) => {
+          if (activeReview.value) activeReview.value.content += delta
+        },
+        onToolStart: (name) => {
+          activeToolCall.value = { name, status: 'running' }
+        },
+        onToolEnd: (_name, _ok) => {
+          activeToolCall.value = null
+        },
+        onDone: (result) => {
+          if (activeReview.value) {
+            activeReview.value.content = result.content
+            activeReview.value.status = 'done'
+          }
+        },
+        onError: (message) => {
+          if (activeReview.value) {
+            activeReview.value.status = 'error'
+            activeReview.value.errorMessage = message
+          }
+        },
+      })
+    } catch (err) {
+      // streamReviewChapter 可能同步抛错（如配置缺失）。统一置 error 态，
+      // 释放占位 cleanup，调用方无需 try/catch。
+      if (activeReview.value) {
+        activeReview.value.status = 'error'
+        activeReview.value.errorMessage =
+          err instanceof Error ? err.message : String(err)
+      }
+      if (currentCleanup === myCleanup) {
+        runCleanup()
+      }
+      return
+    }
 
     if (currentCleanup === myCleanup) {
       // 仍是当前 review：登记真实 unsubscribe 并写入 sessionID
@@ -119,29 +134,42 @@ export const useReviewStore = defineStore('review', () => {
     }
     activeToolCall.value = null
 
-    const handle = await streamReviewProject('', projectId, config, {
-      onToken: (delta) => {
-        if (activeReview.value) activeReview.value.content += delta
-      },
-      onToolStart: (name) => {
-        activeToolCall.value = { name, status: 'running' }
-      },
-      onToolEnd: (_name, _ok) => {
-        activeToolCall.value = null
-      },
-      onDone: (result) => {
-        if (activeReview.value) {
-          activeReview.value.content = result.content
-          activeReview.value.status = 'done'
-        }
-      },
-      onError: (message) => {
-        if (activeReview.value) {
-          activeReview.value.status = 'error'
-          activeReview.value.errorMessage = message
-        }
-      },
-    })
+    let handle
+    try {
+      handle = await streamReviewProject('', projectId, config, {
+        onToken: (delta) => {
+          if (activeReview.value) activeReview.value.content += delta
+        },
+        onToolStart: (name) => {
+          activeToolCall.value = { name, status: 'running' }
+        },
+        onToolEnd: (_name, _ok) => {
+          activeToolCall.value = null
+        },
+        onDone: (result) => {
+          if (activeReview.value) {
+            activeReview.value.content = result.content
+            activeReview.value.status = 'done'
+          }
+        },
+        onError: (message) => {
+          if (activeReview.value) {
+            activeReview.value.status = 'error'
+            activeReview.value.errorMessage = message
+          }
+        },
+      })
+    } catch (err) {
+      if (activeReview.value) {
+        activeReview.value.status = 'error'
+        activeReview.value.errorMessage =
+          err instanceof Error ? err.message : String(err)
+      }
+      if (currentCleanup === myCleanup) {
+        runCleanup()
+      }
+      return
+    }
 
     if (currentCleanup === myCleanup) {
       if (activeReview.value) activeReview.value.sessionID = handle.sessionID
