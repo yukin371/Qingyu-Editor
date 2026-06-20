@@ -7,9 +7,6 @@ import { sanitizeMarkdownHtml } from '@/utils/sanitize'
 const reviewStore = useReviewStore()
 const reportContainer = ref<HTMLDivElement | null>(null)
 
-// 配置 marked：启用 GFM 与换行（与 AIChatMessages.vue 保持一致）
-marked.setOptions({ breaks: true, gfm: true })
-
 const activeReview = computed(() => reviewStore.activeReview)
 const activeToolCall = computed(() => reviewStore.activeToolCall)
 
@@ -36,7 +33,7 @@ const renderedHtml = computed(() => {
   const raw = activeReview.value?.content || ''
   if (!raw) return ''
   try {
-    const html = marked.parse(raw) as string
+    const html = marked.parse(raw, { breaks: true, gfm: true }) as string
     return sanitizeMarkdownHtml(html)
   } catch {
     return sanitizeMarkdownHtml(raw)

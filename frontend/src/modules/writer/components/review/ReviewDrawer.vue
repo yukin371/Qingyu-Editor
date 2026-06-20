@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { onBeforeUnmount, watch } from 'vue'
 import { useReviewStore } from '../../stores/reviewStore'
 import ReviewReport from './ReviewReport.vue'
 
@@ -7,6 +8,23 @@ const reviewStore = useReviewStore()
 function handleClose() {
   reviewStore.close()
 }
+
+function handleKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') handleClose()
+}
+
+// 抽屉打开时挂全局 ESC 监听；关闭时卸载。其他模态未同时打开时无冲突。
+watch(
+  () => reviewStore.isOpen,
+  (isOpen) => {
+    if (isOpen) window.addEventListener('keydown', handleKeydown)
+    else window.removeEventListener('keydown', handleKeydown)
+  },
+)
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
 </script>
 
 <template>
