@@ -29,6 +29,7 @@ export function getConfig(): AIAgentConfig | null {
 /**
  * 流式发送意图给智能体。返回 sessionID；AI 响应通过 handlers 回调推送。
  * 订阅在 onDone 或 onError 后自动清理。
+ * conversationId 决定工具结果缓存作用域：同一对话内复用，跨对话互不污染。
  */
 export interface StreamHandlers {
   onToken: (delta: string) => void
@@ -39,6 +40,7 @@ export interface StreamHandlers {
 }
 
 export async function streamIntent(
+  conversationId: string,
   projectId: string,
   intent: string,
   editorContext: EditorContext,
@@ -50,7 +52,7 @@ export async function streamIntent(
     throw new Error('AI 未配置，请先在设置中配置 AI Provider')
   }
 
-  const sessionID = await AgentStreamIntent(cfg, projectId, intent, editorContext)
+  const sessionID = await AgentStreamIntent(cfg, conversationId, projectId, intent, editorContext)
 
   // 已知限制：订阅发生在 AgentStreamIntent resolve 之后。Go 端在 resolve 与首个
   // EventsOn 之间发射的事件会被丢弃。MVP 可接受（首个 token 通常需要网络往返），

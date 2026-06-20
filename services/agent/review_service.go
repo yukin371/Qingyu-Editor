@@ -17,7 +17,7 @@ type ReviewResult struct {
 // ReviewService 审查智能体服务
 type ReviewService struct {
 	provider ai.ChatProvider
-	router   *ToolRouter
+	router   ToolDispatcher
 }
 
 // NewReviewService 创建审查智能体服务
@@ -39,11 +39,18 @@ func (s *ReviewService) ReviewChapter(ctx context.Context, projectID string, cha
 }
 
 // ReviewChapterStream 审查单个章节（流式版本）。
+// cache 可空；非空时本会话内重复的同参工具调用命中缓存。
 func (s *ReviewService) ReviewChapterStream(
-	ctx context.Context, projectID string, chapterID string, chapterTitle string, emitter StreamEmitter,
+	ctx context.Context, projectID string, chapterID string, chapterTitle string, emitter StreamEmitter, cache *ToolCache,
 ) error {
+	router := s.router
+	if cache != nil {
+		if base, ok := s.router.(*ToolRouter); ok {
+			router = NewCachedToolRouter(base, cache)
+		}
+	}
 	messages := s.buildChapterReviewMessages(projectID, chapterID, chapterTitle)
-	content, err := runStreamingLoop(ctx, s.provider, s.router, messages, emitter)
+	content, err := runStreamingLoop(ctx, s.provider, router, messages, emitter)
 	if err != nil {
 		return fmt.Errorf("审查失败: %w", err)
 	}
@@ -62,11 +69,18 @@ func (s *ReviewService) ReviewFullProject(ctx context.Context, projectID string)
 }
 
 // ReviewFullProjectStream 审查整个项目（流式版本）。
+// cache 可空；非空时本会话内重复的同参工具调用命中缓存。
 func (s *ReviewService) ReviewFullProjectStream(
-	ctx context.Context, projectID string, emitter StreamEmitter,
+	ctx context.Context, projectID string, emitter StreamEmitter, cache *ToolCache,
 ) error {
+	router := s.router
+	if cache != nil {
+		if base, ok := s.router.(*ToolRouter); ok {
+			router = NewCachedToolRouter(base, cache)
+		}
+	}
 	messages := s.buildFullProjectReviewMessages(projectID)
-	content, err := runStreamingLoop(ctx, s.provider, s.router, messages, emitter)
+	content, err := runStreamingLoop(ctx, s.provider, router, messages, emitter)
 	if err != nil {
 		return fmt.Errorf("审查失败: %w", err)
 	}

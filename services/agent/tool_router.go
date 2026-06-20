@@ -13,6 +13,13 @@ type Tool interface {
 	Execute(ctx context.Context, params map[string]any) (string, error)
 }
 
+// ToolDispatcher 工具分发器接口。*ToolRouter 和 *CachedToolRouter 都满足此接口，
+// 让 runStreamingLoop 与 service 层可在裸 router 与带缓存 router 之间透明替换。
+type ToolDispatcher interface {
+	Dispatch(ctx context.Context, toolName string, params map[string]any) (string, error)
+	ToolDefinitions() []map[string]any
+}
+
 // ToolRouter 工具注册与分发
 type ToolRouter struct {
 	tools map[string]Tool

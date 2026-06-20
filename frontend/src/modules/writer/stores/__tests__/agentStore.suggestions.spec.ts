@@ -19,7 +19,7 @@ const testConfig: AIAgentConfig = {
 
 /** 让 streamIntent 在内部异步触发 onDone。 */
 function mockStreamDone(result: AgentResult) {
-  mockStreamIntent.mockImplementation((_p, _i, _c, _cfg, handlers: any) => {
+  mockStreamIntent.mockImplementation((_cv, _p, _i, _c, _cfg, handlers: any) => {
     queueMicrotask(() => handlers.onDone(result))
     return Promise.resolve('sess_test')
   })

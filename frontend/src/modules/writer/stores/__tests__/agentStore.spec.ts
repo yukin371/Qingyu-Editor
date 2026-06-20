@@ -37,7 +37,7 @@ const testConfig: AIAgentConfig = {
  * 返回捕获到的 handlers 以便测试精细控制。
  */
 function mockStreamImmediateDone(result: AgentResult, opts?: { sessionID?: string; reject?: Error }) {
-  mockStreamIntent.mockImplementation((_projectId, _intent, _ctx, _config, handlers: any) => {
+  mockStreamIntent.mockImplementation((_conversationId, _projectId, _intent, _ctx, _config, handlers: any) => {
     if (opts?.reject) {
       // 模拟 streamIntent 同步阶段抛错
       throw opts.reject
@@ -49,7 +49,7 @@ function mockStreamImmediateDone(result: AgentResult, opts?: { sessionID?: strin
 }
 
 function mockStreamImmediateError(message: string) {
-  mockStreamIntent.mockImplementation((_projectId, _intent, _ctx, _config, handlers: any) => {
+  mockStreamIntent.mockImplementation((_conversationId, _projectId, _intent, _ctx, _config, handlers: any) => {
     queueMicrotask(() => handlers.onError(message))
     return Promise.resolve('sess_test')
   })
@@ -112,7 +112,7 @@ describe('agentStore', () => {
     it('appends tokens to streaming message content', async () => {
       // 精细控制：先接收 token，再触发 onDone
       let capturedHandlers: any
-      mockStreamIntent.mockImplementation((_p, _i, _c, _cfg, handlers: any) => {
+      mockStreamIntent.mockImplementation((_cv, _p, _i, _c, _cfg, handlers: any) => {
         capturedHandlers = handlers
         // 注意：不在此处触发 onDone，留给测试手动控制
         return Promise.resolve('sess_token')
@@ -140,7 +140,7 @@ describe('agentStore', () => {
 
     it('sets and clears activeToolCall around tool calls', async () => {
       let capturedHandlers: any
-      mockStreamIntent.mockImplementation((_p, _i, _c, _cfg, handlers: any) => {
+      mockStreamIntent.mockImplementation((_cv, _p, _i, _c, _cfg, handlers: any) => {
         capturedHandlers = handlers
         return Promise.resolve('sess_tool')
       })
@@ -215,11 +215,12 @@ describe('agentStore', () => {
 
       expect(mockStreamIntent).toHaveBeenCalledTimes(1)
       const callArgs = mockStreamIntent.mock.calls[0]
-      // streamIntent(projectId, intent, editorContext, config, handlers)
-      expect(callArgs[0]).toBe('proj_001')
-      expect(callArgs[1]).toBe('续写')
-      expect(callArgs[2]).toEqual(editorContext)
-      expect(callArgs[3]).toBe(testConfig)
+      // streamIntent(conversationId, projectId, intent, editorContext, config, handlers)
+      expect(callArgs[0]).toBe('conv_001') // auto-created via mockCreateConversation
+      expect(callArgs[1]).toBe('proj_001')
+      expect(callArgs[2]).toBe('续写')
+      expect(callArgs[3]).toEqual(editorContext)
+      expect(callArgs[4]).toBe(testConfig)
     })
   })
 

@@ -91,7 +91,7 @@ export const useAgentStore = defineStore('agent', () => {
     streamingMessageId.value = aiMessage.id
 
     try {
-      await streamIntent(projectId, intent, ctx, config, {
+      await streamIntent(currentConversationId.value || '', projectId, intent, ctx, config, {
         onToken: (delta: string) => {
           // 按 ID 找到正在流的消息，追加 delta
           const target = messages.value.find(m => m.id === streamingMessageId.value)

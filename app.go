@@ -39,6 +39,10 @@ type App struct {
 	serviceMu sync.Mutex
 	db        *sql.DB
 	services  appServices
+	// cacheRegistry 把每个 conversation 绑定到独立的工具结果缓存。
+	// 同一对话内重复同参读工具调用命中缓存；跨对话互不污染。
+	// 生命周期：lazy create（首次 sendMessage 时）+ evict on DeleteAgentConversation。
+	cacheRegistry sync.Map // conversationID (string) -> *agent.ToolCache
 }
 
 // NewApp 创建应用实例
@@ -632,9 +636,26 @@ func (a *App) ensureDatabase() error {
 
 // --- Agent 智能体 ---
 
+// getOrCreateCache 返回 conversationID 对应的工具结果缓存；不存在则创建。
+// conversationID 为空时返回 nil（stream 内将走不缓存路径）。
+// 使用 LoadOrStore 避免并发首次创建时双写。
+func (a *App) getOrCreateCache(conversationID string) *agent.ToolCache {
+	if conversationID == "" {
+		return nil
+	}
+	if cached, ok := a.cacheRegistry.Load(conversationID); ok {
+		return cached.(*agent.ToolCache)
+	}
+	fresh := agent.NewToolCache()
+	actual, _ := a.cacheRegistry.LoadOrStore(conversationID, fresh)
+	return actual.(*agent.ToolCache)
+}
+
 // AgentStreamIntent 流式处理智能体意图。同步返回 sessionID，AI 响应通过 Wails 事件推送。
+// conversationID 决定缓存作用域：同一对话内复用工具结果，跨对话互不污染。
 func (a *App) AgentStreamIntent(
 	cfg ai.Config,
+	conversationID string,
 	projectID string,
 	intent string,
 	editorCtx agent.EditorContext,
@@ -644,11 +665,12 @@ func (a *App) AgentStreamIntent(
 	if err != nil {
 		return "", err
 	}
+	cache := a.getOrCreateCache(conversationID)
 	emitter := agent.NewWailsEmitter(a.ctx, sessionID, "creative")
 	go func() {
 		ctx, cancel := context.WithCancel(a.ctx)
 		defer cancel()
-		if err := agentSvc.ProcessIntentStream(ctx, projectID, intent, editorCtx, emitter); err != nil {
+		if err := agentSvc.ProcessIntentStream(ctx, projectID, intent, editorCtx, emitter, cache); err != nil {
 			emitter.Error(err.Error())
 		}
 	}()
@@ -686,7 +708,12 @@ func (a *App) DeleteAgentConversation(id string) error {
 	if err != nil {
 		return err
 	}
-	return svc.Delete(id)
+	if err := svc.Delete(id); err != nil {
+		return err
+	}
+	// 对话删除时驱逐对应缓存条目，避免持有孤儿缓存条目。
+	a.cacheRegistry.Delete(id)
+	return nil
 }
 
 func (a *App) SaveAgentMessage(conversationID string, msg agent.ConversationMessage) (*agent.ConversationMessage, error) {
@@ -732,8 +759,10 @@ func (a *App) ReviewFullProject(
 }
 
 // ReviewChapterStream 流式审查单个章节。同步返回 sessionID，审查结果通过 Wails 事件推送。
+// conversationID 决定缓存作用域：同一对话内复用工具结果。
 func (a *App) ReviewChapterStream(
 	cfg ai.Config,
+	conversationID string,
 	projectID string,
 	chapterID string,
 	chapterTitle string,
@@ -743,11 +772,12 @@ func (a *App) ReviewChapterStream(
 	if err != nil {
 		return "", err
 	}
+	cache := a.getOrCreateCache(conversationID)
 	emitter := agent.NewWailsEmitter(a.ctx, sessionID, "review")
 	go func() {
 		ctx, cancel := context.WithCancel(a.ctx)
 		defer cancel()
-		if err := reviewSvc.ReviewChapterStream(ctx, projectID, chapterID, chapterTitle, emitter); err != nil {
+		if err := reviewSvc.ReviewChapterStream(ctx, projectID, chapterID, chapterTitle, emitter, cache); err != nil {
 			emitter.Error(err.Error())
 		}
 	}()
@@ -755,8 +785,10 @@ func (a *App) ReviewChapterStream(
 }
 
 // ReviewFullProjectStream 流式审查整个项目。同步返回 sessionID，审查结果通过 Wails 事件推送。
+// conversationID 决定缓存作用域：同一对话内复用工具结果。
 func (a *App) ReviewFullProjectStream(
 	cfg ai.Config,
+	conversationID string,
 	projectID string,
 ) (string, error) {
 	sessionID := uuid.NewString()
@@ -764,11 +796,12 @@ func (a *App) ReviewFullProjectStream(
 	if err != nil {
 		return "", err
 	}
+	cache := a.getOrCreateCache(conversationID)
 	emitter := agent.NewWailsEmitter(a.ctx, sessionID, "review")
 	go func() {
 		ctx, cancel := context.WithCancel(a.ctx)
 		defer cancel()
-		if err := reviewSvc.ReviewFullProjectStream(ctx, projectID, emitter); err != nil {
+		if err := reviewSvc.ReviewFullProjectStream(ctx, projectID, emitter, cache); err != nil {
 			emitter.Error(err.Error())
 		}
 	}()

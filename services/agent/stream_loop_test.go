@@ -198,7 +198,7 @@ func TestProcessIntentStream_EmitsDoneWithAgentResult(t *testing.T) {
 	svc := NewAgentService(provider, NewToolRouter())
 	emitter := &RecordingEmitter{}
 
-	if err := svc.ProcessIntentStream(context.Background(), "proj", "你好", EditorContext{}, emitter); err != nil {
+	if err := svc.ProcessIntentStream(context.Background(), "proj", "你好", EditorContext{}, emitter, nil); err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
@@ -233,7 +233,7 @@ func TestProcessIntentStream_EmitsDoneWithReviewResult(t *testing.T) {
 	svc := NewReviewService(provider, router)
 	emitter := &RecordingEmitter{}
 
-	if err := svc.ReviewChapterStream(context.Background(), "proj", "ch_1", "第1章", emitter); err != nil {
+	if err := svc.ReviewChapterStream(context.Background(), "proj", "ch_1", "第1章", emitter, nil); err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 

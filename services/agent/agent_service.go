@@ -13,7 +13,7 @@ const maxToolCallRounds = 6
 // AgentService 智能体服务
 type AgentService struct {
 	provider ai.ChatProvider
-	router   *ToolRouter
+	router   ToolDispatcher
 }
 
 // NewAgentService 创建智能体服务
@@ -39,11 +39,19 @@ func (s *AgentService) ProcessIntent(ctx context.Context, projectID string, inte
 // ProcessIntentStream 处理用户意图（流式版本）。向 emitter 推送 token/tool 事件，
 // 成功时由本方法（而非 runStreamingLoop）emit Done(&AgentResult{...})。
 // 失败时 runStreamingLoop 已 emit Error；本方法直接返回 error。
+//
+// cache 可空；非空时本会话内重复的同参工具调用将命中缓存跳过底层执行。
 func (s *AgentService) ProcessIntentStream(
-	ctx context.Context, projectID string, intent string, editorCtx EditorContext, emitter StreamEmitter,
+	ctx context.Context, projectID string, intent string, editorCtx EditorContext, emitter StreamEmitter, cache *ToolCache,
 ) error {
+	router := s.router
+	if cache != nil {
+		if base, ok := s.router.(*ToolRouter); ok {
+			router = NewCachedToolRouter(base, cache)
+		}
+	}
 	messages := s.buildMessages(projectID, intent, editorCtx)
-	content, err := runStreamingLoop(ctx, s.provider, s.router, messages, emitter)
+	content, err := runStreamingLoop(ctx, s.provider, router, messages, emitter)
 	if err != nil {
 		return err
 	}

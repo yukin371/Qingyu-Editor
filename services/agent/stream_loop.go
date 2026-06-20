@@ -22,7 +22,7 @@ import (
 func runStreamingLoop(
 	ctx context.Context,
 	provider ai.ChatProvider,
-	router *ToolRouter,
+	router ToolDispatcher,
 	messages []ai.ChatMessage,
 	emitter StreamEmitter,
 ) (string, error) {
